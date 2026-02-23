@@ -21,22 +21,80 @@ import * as THREE from 'three';
 import { getLST } from '@/lib/astronomy/time';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 
-/** Zoom por FOV — único modo que tiene sentido dentro de una esfera celeste */
+/**
+ * Zoom por FOV — rueda de ratón + pinch táctil.
+ *
+ * Para el pinch se usan pointer events (no touch events) porque R3F establece
+ * `touch-action: none` en el canvas y OrbitControls también usa pointer events,
+ * lo que hace que los touchmove sean poco fiables. Al usar pointerdown/
+ * pointermove en el mismo canvas los dos handlers conviven sin conflicto:
+ * OrbitControls ignora el gesto de 2 dedos cuando enableZoom+enablePan=false
+ * y nuestro handler calcula el delta de distancia entre ambos punteros.
+ */
 function FovZoom() {
     const { camera, gl } = useThree();
     const fovRef = useRef(60);
 
     useEffect(() => {
         const canvas = gl.domElement;
+        const cam = camera as THREE.PerspectiveCamera;
+
+        // ── Rueda de ratón ──────────────────────────────────────────────────
         const onWheel = (e: WheelEvent) => {
             e.preventDefault();
             const delta = e.deltaY > 0 ? 3 : -3;
             fovRef.current = THREE.MathUtils.clamp(fovRef.current + delta, 10, 90);
-            (camera as THREE.PerspectiveCamera).fov = fovRef.current;
-            (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
+            cam.fov = fovRef.current;
+            cam.updateProjectionMatrix();
         };
+
+        // ── Pinch táctil con pointer events ────────────────────────────────
+        // Mapa pointerId → posición actual
+        const ptrs = new Map<number, { x: number; y: number }>();
+        let lastDist = 0;
+
+        const onPointerDown = (e: PointerEvent) => {
+            ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        };
+
+        const onPointerMove = (e: PointerEvent) => {
+            if (!ptrs.has(e.pointerId)) return;
+            ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            if (ptrs.size !== 2) return;
+
+            const [a, b] = [...ptrs.values()];
+            const dx = a.x - b.x;
+            const dy = a.y - b.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (lastDist === 0) { lastDist = dist; return; }
+
+            // Separar dedos (dist crece) → zoom in (FOV baja)
+            const delta = (lastDist - dist) * 0.15;
+            lastDist = dist;
+            fovRef.current = THREE.MathUtils.clamp(fovRef.current + delta, 10, 90);
+            cam.fov = fovRef.current;
+            cam.updateProjectionMatrix();
+        };
+
+        const onPointerUp = (e: PointerEvent) => {
+            ptrs.delete(e.pointerId);
+            if (ptrs.size < 2) lastDist = 0;
+        };
+
         canvas.addEventListener('wheel', onWheel, { passive: false });
-        return () => canvas.removeEventListener('wheel', onWheel);
+        canvas.addEventListener('pointerdown', onPointerDown);
+        canvas.addEventListener('pointermove', onPointerMove);
+        canvas.addEventListener('pointerup', onPointerUp);
+        canvas.addEventListener('pointercancel', onPointerUp);
+
+        return () => {
+            canvas.removeEventListener('wheel', onWheel);
+            canvas.removeEventListener('pointerdown', onPointerDown);
+            canvas.removeEventListener('pointermove', onPointerMove);
+            canvas.removeEventListener('pointerup', onPointerUp);
+            canvas.removeEventListener('pointercancel', onPointerUp);
+        };
     }, [camera, gl]);
 
     return null;
