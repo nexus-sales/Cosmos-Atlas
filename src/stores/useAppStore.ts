@@ -10,6 +10,8 @@ interface AppState {
     setTargetedObject: (obj: Star | DSO | Planet | null) => void;
     time: Date;
     setTime: (date: Date) => void;
+    isLive: boolean;
+    setIsLive: (v: boolean) => void;
     settings: {
         showConstellations: boolean;
         showGrid: boolean;
@@ -29,6 +31,8 @@ export const useAppStore = create<AppState>((set) => ({
     setTargetedObject: (obj) => set({ targetedObject: obj }),
     time: new Date(),
     setTime: (time) => set({ time }),
+    isLive: true,
+    setIsLive: (isLive) => set({ isLive }),
     settings: {
         showConstellations: true,
         showGrid: true,

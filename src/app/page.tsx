@@ -5,6 +5,7 @@ import Header from '@/components/panels/Header';
 import SidePanel from '@/components/panels/SidePanel';
 import CosmicParticles from '@/components/effects/CosmicParticles';
 import Meteors from '@/components/effects/Meteors';
+import TimeTravelControls from '@/components/panels/TimeTravelControls';
 import { useEffect } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
 
@@ -12,14 +13,16 @@ import { useGeolocation } from '@/hooks/useGeolocation';
 
 export default function Home() {
   const setTime = useAppStore((state) => state.setTime);
+  const isLive = useAppStore((state) => state.isLive);
   useGeolocation();
 
   useEffect(() => {
+    if (!isLive) return;
     const timer = setInterval(() => {
       setTime(new Date());
     }, 1000);
     return () => clearInterval(timer);
-  }, [setTime]);
+  }, [isLive, setTime]);
 
   return (
     <main className="flex flex-col h-screen w-screen overflow-hidden bg-black font-sans selection:bg-blue-500/30">
@@ -32,6 +35,7 @@ export default function Home() {
         <div className="flex flex-1 overflow-hidden">
           <div className="flex-1 relative">
             <SkyCanvas />
+            <TimeTravelControls />
           </div>
 
           <SidePanel />
