@@ -219,6 +219,14 @@ HTML sutiles en la boveda. Se activan/desactivan con el toggle **CONSTEL.** del 
 
 ---
 
+## Autor
+
+**Salvador Muñoz Portillo**  
+📧 [salvador.munoz@masvoip.com](mailto:salvador.munoz@masvoip.com)  
+🐙 [github.com/salva1962-ai](https://github.com/salva1962-ai)
+
+---
+
 ## Licencia
 
 Uso privado. Todos los derechos reservados.
