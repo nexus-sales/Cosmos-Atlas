@@ -7,6 +7,7 @@ import { Search, Star as StarIcon, Orbit, CloudFog, Sparkles, X } from 'lucide-r
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import type { Star, DSO } from '@/types/celestial';
+import { equToHor } from '@/lib/astronomy/transforms';
 
 type Filter = 'all' | 'stars' | 'galaxies' | 'nebulae' | 'clusters';
 
@@ -58,6 +59,8 @@ export default function GuideTab() {
 
     const targetedObject    = useAppStore((s) => s.targetedObject);
     const setTargetedObject = useAppStore((s) => s.setTargetedObject);
+    const observer          = useAppStore((s) => s.observer);
+    const time              = useAppStore((s) => s.time);
 
     const q = search.toLowerCase();
 
@@ -68,7 +71,10 @@ export default function GuideTab() {
             d.name.toLowerCase().includes(q) || d.id.toLowerCase().includes(q);
 
         const stars = (filter === 'all' || filter === 'stars')
-            ? [...STARS].sort((a, b) => a.mag - b.mag).filter(matchStar)
+            ? [...STARS].sort((a, b) => a.mag - b.mag).filter(matchStar).map(s => ({
+                ...s,
+                alt: equToHor(s.ra, s.dec, observer.lat, observer.lon, time).alt,
+              }))
             : [];
 
         const dsos = (filter !== 'stars')
@@ -78,11 +84,14 @@ export default function GuideTab() {
                 if (filter === 'nebulae')  return d.type === 'nebula';
                 if (filter === 'clusters') return d.type === 'cluster';
                 return true;
-              })
+              }).map(d => ({
+                ...d,
+                alt: equToHor(d.ra, d.dec, observer.lat, observer.lon, time).alt,
+              }))
             : [];
 
         return { starList: stars, dsoList: dsos };
-    }, [q, filter]);
+    }, [q, filter, observer, time]);
 
     const isTargeted = (obj: Star | DSO) => targetedObject?.name === obj.name;
 
@@ -174,6 +183,14 @@ export default function GuideTab() {
                                         <span className="text-[10px] text-white/35 shrink-0 italic hidden sm:block truncate max-w-[64px]">
                                             {star.constellation}
                                         </span>
+                                        {/* Indicador de visibilidad */}
+                                        <div
+                                            title={star.alt > 0 ? `Visible · Alt ${star.alt.toFixed(0)}°` : 'Bajo el horizonte'}
+                                            className={cn(
+                                                'w-1.5 h-1.5 rounded-full shrink-0 ml-0.5',
+                                                star.alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15'
+                                            )}
+                                        />
                                     </button>
                                     {active && <InfoCard obj={star} />}
                                 </div>
@@ -212,7 +229,7 @@ export default function GuideTab() {
 
 function DSOSection({ title, items, isTargeted, onSelect }: {
     title: string;
-    items: DSO[];
+    items: (DSO & { alt: number })[];
     isTargeted: (o: Star | DSO) => boolean;
     onSelect: (o: Star | DSO) => void;
 }) {
@@ -242,6 +259,14 @@ function DSOSection({ title, items, isTargeted, onSelect }: {
                                     <span className="text-[10px] text-white/40 font-mono">{dso.id}</span>
                                 </div>
                                 <span className="text-[10px] text-white/40 shrink-0 font-mono">{dso.mag.toFixed(1)}</span>
+                                {/* Indicador de visibilidad */}
+                                <div
+                                    title={dso.alt > 0 ? `Visible · Alt ${dso.alt.toFixed(0)}°` : 'Bajo el horizonte'}
+                                    className={cn(
+                                        'w-1.5 h-1.5 rounded-full shrink-0 ml-0.5',
+                                        dso.alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15'
+                                    )}
+                                />
                             </button>
                             {active && <InfoCard obj={dso} />}
                         </div>

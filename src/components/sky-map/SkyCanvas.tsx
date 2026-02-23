@@ -10,6 +10,7 @@ import Constellations from '@/components/sky-map/Constellations';
 import Planets from '@/components/sky-map/Planets';
 import MilkyWay from '@/components/sky-map/MilkyWay';
 import CelestialGrid from '@/components/sky-map/CelestialGrid';
+import Ecliptic from '@/components/sky-map/Ecliptic';
 import Horizon from '@/components/sky-map/Horizon';
 import BackgroundStars from '@/components/sky-map/BackgroundStars';
 import TargetPointer from '@/components/sky-map/TargetPointer';
@@ -77,6 +78,7 @@ function CelestialGroup({ children }: { children: React.ReactNode }) {
 export default function SkyCanvas() {
     const showGrid = useAppStore((state) => state.settings.showGrid);
     const showMilkyWay = useAppStore((state) => state.settings.showMilkyWay);
+    const showEcliptic = useAppStore((state) => state.settings.showEcliptic);
 
     return (
         <div className="w-full h-full bg-[#02050a] relative">
@@ -106,6 +108,7 @@ export default function SkyCanvas() {
                         <Constellations />
                         <Planets />
                         {showGrid && <CelestialGrid />}
+                        {showEcliptic && <Ecliptic />}
                         <TargetPointer />
                     </CelestialGroup>
 

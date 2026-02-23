@@ -16,6 +16,7 @@ export default function SidePanel() {
     const showGrid = useAppStore((state) => state.settings.showGrid);
     const showConstellations = useAppStore((state) => state.settings.showConstellations);
     const showMilkyWay = useAppStore((state) => state.settings.showMilkyWay);
+    const showEcliptic = useAppStore((state) => state.settings.showEcliptic);
     const toggleSetting = useAppStore((state) => state.toggleSetting);
 
     // Auto-switch to info tab when something is selected
@@ -70,11 +71,12 @@ export default function SidePanel() {
             {/* Layer toggles */}
             <div className="border-t border-white/8 p-3 shrink-0">
                 <div className="text-[8px] text-white/20 tracking-[0.25em] uppercase mb-2.5 px-1">Capas</div>
-                <div className="grid grid-cols-3 gap-1.5">
+                <div className="grid grid-cols-2 gap-1.5">
                     {[
-                        { key: 'showGrid' as const,           label: 'GRID',    icon: Grid3X3, active: showGrid },
-                        { key: 'showConstellations' as const,  label: 'CONST.',  icon: Layers,  active: showConstellations },
-                        { key: 'showMilkyWay' as const,        label: 'VÍA LÁC', icon: Layers,  active: showMilkyWay },
+                        { key: 'showGrid' as const,           label: 'GRID',       icon: Grid3X3, active: showGrid },
+                        { key: 'showConstellations' as const,  label: 'CONSTEL.',   icon: Layers,  active: showConstellations },
+                        { key: 'showMilkyWay' as const,        label: 'VÍA LÁCTEA', icon: Layers,  active: showMilkyWay },
+                        { key: 'showEcliptic' as const,        label: 'ECLÍPTICA',  icon: Layers,  active: showEcliptic },
                     ].map(({ key, label, icon: Icon, active }) => (
                         <button
                             key={key}

@@ -16,6 +16,7 @@ interface AppState {
         showConstellations: boolean;
         showGrid: boolean;
         showMilkyWay: boolean;
+        showEcliptic: boolean;
     };
     toggleSetting: (key: keyof AppState['settings']) => void;
     foundChallenges: string[];
@@ -37,6 +38,7 @@ export const useAppStore = create<AppState>((set) => ({
         showConstellations: true,
         showGrid: true,
         showMilkyWay: false,
+        showEcliptic: false,
     },
     toggleSetting: (key) =>
         set((state) => ({
