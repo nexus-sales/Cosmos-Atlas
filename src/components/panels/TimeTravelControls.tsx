@@ -160,6 +160,8 @@ export default function TimeTravelControls() {
                             step={0.1}
                             value={sliderValue}
                             onChange={handleSlider}
+                            aria-label="Línea de tiempo: desplazarse entre −10 y +10 años"
+                            title="Línea de tiempo"
                             className="w-full cursor-pointer accent-blue-500"
                         />
                         <div className="flex justify-between text-[8px] text-white/20 font-mono mt-0.5">
