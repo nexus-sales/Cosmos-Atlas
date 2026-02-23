@@ -7,6 +7,7 @@ import CelestialSphere from '@/components/sky-map/CelestialSphere';
 import Stars from '@/components/sky-map/Stars';
 import DeepSkyObjects from '@/components/sky-map/DeepSkyObjects';
 import Constellations from '@/components/sky-map/Constellations';
+import ConstellationLabels from '@/components/sky-map/ConstellationLabels';
 import Planets from '@/components/sky-map/Planets';
 import MilkyWay from '@/components/sky-map/MilkyWay';
 import CelestialGrid from '@/components/sky-map/CelestialGrid';
@@ -18,6 +19,7 @@ import { useAppStore } from '@/stores/useAppStore';
 import { Bloom, EffectComposer, Noise, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { getLST } from '@/lib/astronomy/time';
+import { equatorialTo3D } from '@/lib/astronomy/transforms';
 
 /** Zoom por FOV — único modo que tiene sentido dentro de una esfera celeste */
 function FovZoom() {
@@ -75,10 +77,66 @@ function CelestialGroup({ children }: { children: React.ReactNode }) {
     return <group ref={groupRef}>{children}</group>;
 }
 
+/**
+ * Smoothly flies the camera to face the targeted object.
+ * Runs after OrbitControls (priority 0 > -1) so our position sticks each frame.
+ */
+function CameraNavigator() {
+    const { camera } = useThree();
+    const targetedObject = useAppStore((s) => s.targetedObject);
+    const observer       = useAppStore((s) => s.observer);
+    const time           = useAppStore((s) => s.time);
+
+    const isFlying   = useRef(false);
+    const prevTarget = useRef<typeof targetedObject>(null);
+
+    useEffect(() => {
+        if (targetedObject && targetedObject !== prevTarget.current) {
+            isFlying.current = true;
+        }
+        prevTarget.current = targetedObject;
+    }, [targetedObject]);
+
+    useFrame(() => {
+        if (!isFlying.current || !targetedObject) return;
+
+        // World-space direction: apply CelestialGroup's rotation to equatorial position
+        const lst = getLST(time, observer.lon);
+        const euler = new THREE.Euler(
+            THREE.MathUtils.degToRad(90 - observer.lat),
+            THREE.MathUtils.degToRad(-lst),
+            0,
+            'XYZ',
+        );
+        const rotMatrix = new THREE.Matrix4().makeRotationFromEuler(euler);
+        const [ex, ey, ez] = equatorialTo3D(targetedObject.ra, targetedObject.dec, 1);
+        const targetWorldDir = new THREE.Vector3(ex, ey, ez).applyMatrix4(rotMatrix).normalize();
+
+        // Camera must be positioned OPPOSITE to the star to look at it
+        const targetCamPos = targetWorldDir.clone().negate().multiplyScalar(0.01);
+        const currentPos   = camera.position.clone();
+
+        // Check arrival (dot product close to 1 = same direction)
+        const dot = currentPos.normalize().dot(targetCamPos.clone().normalize());
+        if (dot > 0.9998) {
+            isFlying.current = false;
+            return;
+        }
+
+        // Lerp + normalize to stay on unit sphere × 0.01 (ease-out feel)
+        const speed = THREE.MathUtils.clamp(0.05 + (1 - dot) * 0.05, 0.04, 0.12);
+        const newPos = camera.position.clone().lerp(targetCamPos, speed).normalize().multiplyScalar(0.01);
+        camera.position.copy(newPos);
+    });
+
+    return null;
+}
+
 export default function SkyCanvas() {
-    const showGrid = useAppStore((state) => state.settings.showGrid);
-    const showMilkyWay = useAppStore((state) => state.settings.showMilkyWay);
-    const showEcliptic = useAppStore((state) => state.settings.showEcliptic);
+    const showGrid         = useAppStore((state) => state.settings.showGrid);
+    const showMilkyWay     = useAppStore((state) => state.settings.showMilkyWay);
+    const showEcliptic     = useAppStore((state) => state.settings.showEcliptic);
+    const showConstellations = useAppStore((state) => state.settings.showConstellations);
 
     return (
         <div className="w-full h-full bg-[#02050a] relative">
@@ -106,11 +164,13 @@ export default function SkyCanvas() {
                         <Stars />
                         <DeepSkyObjects />
                         <Constellations />
+                        {showConstellations && <ConstellationLabels />}
                         <Planets />
                         {showGrid && <CelestialGrid />}
                         {showEcliptic && <Ecliptic />}
                         <TargetPointer />
                     </CelestialGroup>
+                    <CameraNavigator />
 
                     {/* Horizonte en espacio mundo (plano horizontal fijo) */}
                     <Horizon />

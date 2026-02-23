@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { STARS } from '@/data/stars';
 import { DSOS } from '@/data/dsos';
@@ -16,7 +16,7 @@ const FILTERS: { id: Filter; label: string; activeClass: string }[] = [
     { id: 'stars',    label: 'ESTRELLAS', activeClass: 'bg-yellow-500/20 text-yellow-300 border-yellow-400/50' },
     { id: 'galaxies', label: 'GALAXIAS',  activeClass: 'bg-amber-500/20 text-amber-300 border-amber-400/50' },
     { id: 'nebulae',  label: 'NEBULOSAS', activeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/50' },
-    { id: 'clusters', label: 'CÃšMULOS',   activeClass: 'bg-blue-500/20 text-blue-300 border-blue-400/50' },
+    { id: 'clusters', label: 'CÚMULOS',   activeClass: 'bg-blue-500/20 text-blue-300 border-blue-400/50' },
 ];
 
 function DSOTypeIcon({ type }: { type: DSO['type'] }) {
@@ -38,7 +38,7 @@ function InfoCard({ obj }: { obj: Star | DSO }) {
             style={{ background: 'rgba(255,255,255,0.04)' }}>
             {isDSO ? (
                 <p className="text-[10px] font-bold text-white/70 uppercase tracking-wider">
-                    {(obj as DSO).type} Â· mag {(obj as DSO).mag}
+                    {(obj as DSO).type} &middot; mag {(obj as DSO).mag}
                 </p>
             ) : (
                 <p className="text-[10px] font-bold text-white/70 uppercase tracking-wider">
@@ -47,7 +47,7 @@ function InfoCard({ obj }: { obj: Star | DSO }) {
             )}
             <p className="text-[11px] text-white/80 leading-relaxed">{obj.desc}</p>
             <p className="text-[10px] text-white/40 font-mono">
-                RA {obj.ra.toFixed(2)}Â° Â· Dec {obj.dec.toFixed(2)}Â°
+                RA {obj.ra.toFixed(2)}&deg; &middot; Dec {obj.dec.toFixed(2)}&deg;
             </p>
         </div>
     );
@@ -102,12 +102,12 @@ export default function GuideTab() {
     return (
         <div className="space-y-3">
 
-            {/* â”€â”€ Buscador â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* Buscador */}
             <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                 <input
                     type="text"
-                    placeholder="Buscar objeto o constelaciÃ³n..."
+                    placeholder="Buscar objeto o constelación..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="w-full rounded-lg py-2.5 pl-10 pr-8 text-[12px] font-mono focus:outline-none transition-colors placeholder:text-white/25"
@@ -121,7 +121,7 @@ export default function GuideTab() {
                 )}
             </div>
 
-            {/* â”€â”€ Filtros â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* Filtros */}
             <div className="flex flex-wrap gap-1.5">
                 {FILTERS.map(({ id, label, activeClass }) => (
                     <button
@@ -139,13 +139,13 @@ export default function GuideTab() {
                 ))}
             </div>
 
-            {/* â”€â”€ Objetivo activo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* Objetivo activo */}
             {targetedObject && (
                 <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-blue-400/35"
                     style={{ background: 'rgba(59,130,246,0.12)' }}>
                     <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse shrink-0" />
                     <span className="text-[12px] text-blue-300 font-bold font-mono truncate flex-1">
-                        â—Ž {targetedObject.name}
+                        &#9678; {targetedObject.name}
                     </span>
                     <button title="Quitar puntero" onClick={() => setTargetedObject(null)}
                         className="text-white/35 hover:text-white/70 transition-colors shrink-0">
@@ -154,7 +154,7 @@ export default function GuideTab() {
                 </div>
             )}
 
-            {/* â”€â”€ ESTRELLAS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* ESTRELLAS */}
             {starList.length > 0 && (
                 <section>
                     <h4 className="flex items-center gap-2 text-[11px] font-bold text-white/60 tracking-[0.18em] uppercase mb-2 pb-1.5 border-b border-white/10">
@@ -175,7 +175,6 @@ export default function GuideTab() {
                                                 : 'border-transparent hover:border-white/12 hover:bg-white/4 text-white/75 hover:text-white'
                                         )}
                                     >
-                                        {/* Dot de color estrella */}
                                         <div className="w-2.5 h-2.5 rounded-full shrink-0"
                                             style={{ background: star.color, boxShadow: active ? `0 0 6px ${star.color}` : 'none' }} />
                                         <span className="text-[13px] font-semibold flex-1 truncate">{star.name}</span>
@@ -183,7 +182,6 @@ export default function GuideTab() {
                                         <span className="text-[10px] text-white/35 shrink-0 italic hidden sm:block truncate max-w-[64px]">
                                             {star.constellation}
                                         </span>
-                                        {/* Indicador de visibilidad */}
                                         <div
                                             title={star.alt > 0 ? `Visible · Alt ${star.alt.toFixed(0)}°` : 'Bajo el horizonte'}
                                             className={cn(
@@ -200,27 +198,27 @@ export default function GuideTab() {
                 </section>
             )}
 
-            {/* â”€â”€ GALAXIAS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* GALAXIAS */}
             {dsoList.filter(d => d.type === 'galaxy').length > 0 && (
                 <DSOSection title="Galaxias" items={dsoList.filter(d => d.type === 'galaxy')}
                     isTargeted={isTargeted} onSelect={handleSelect} />
             )}
 
-            {/* â”€â”€ NEBULOSAS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* NEBULOSAS */}
             {dsoList.filter(d => d.type === 'nebula').length > 0 && (
                 <DSOSection title="Nebulosas" items={dsoList.filter(d => d.type === 'nebula')}
                     isTargeted={isTargeted} onSelect={handleSelect} />
             )}
 
-            {/* â”€â”€ CÃšMULOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* CÚMULOS */}
             {dsoList.filter(d => d.type === 'cluster').length > 0 && (
-                <DSOSection title="CÃºmulos" items={dsoList.filter(d => d.type === 'cluster')}
+                <DSOSection title="Cúmulos" items={dsoList.filter(d => d.type === 'cluster')}
                     isTargeted={isTargeted} onSelect={handleSelect} />
             )}
 
             {starList.length === 0 && dsoList.length === 0 && (
                 <p className="text-center text-[12px] text-white/35 italic py-10">
-                    Sin resultados para Â«{search}Â»
+                    Sin resultados para &laquo;{search}&raquo;
                 </p>
             )}
         </div>
@@ -259,7 +257,6 @@ function DSOSection({ title, items, isTargeted, onSelect }: {
                                     <span className="text-[10px] text-white/40 font-mono">{dso.id}</span>
                                 </div>
                                 <span className="text-[10px] text-white/40 shrink-0 font-mono">{dso.mag.toFixed(1)}</span>
-                                {/* Indicador de visibilidad */}
                                 <div
                                     title={dso.alt > 0 ? `Visible · Alt ${dso.alt.toFixed(0)}°` : 'Bajo el horizonte'}
                                     className={cn(
