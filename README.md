@@ -14,6 +14,7 @@ con estrellas, constelaciones, planetas, objetos de cielo profundo y la Via Lact
 - **30+ constelaciones** - Lineas de constelacion trazadas sobre la esfera celeste con etiquetas de nombre en la boveda
 - **42 objetos de cielo profundo (DSOs)** - Galaxias, nebulosas y cumulos con datos reales
 - **Planetas del Sistema Solar** - Posiciones calculadas con `astronomy-engine` (efemerides reales)
+- **Luna con fases realistas** - Disco lunar con textura generada en canvas mostrando la iluminacion exacta segun la fase real; nombre de fase en etiqueta flotante
 - **Via Lactea** - Renderizada con shader GLSL basado en coordenadas galacticas reales
 - **Viaje temporal** - Slider flotante para explorar el cielo en cualquier fecha (+-10 anos), con reproduccion animada a velocidad variable y regreso instantaneo al tiempo real
 - **Navegacion de camara** - Al seleccionar un objeto en la Guia, la camara vuela suavemente hacia el
@@ -216,6 +217,32 @@ Clic de nuevo en el mismo objeto lo deselecciona.
 `ConstellationLabels` calcula el centroide de cada constelacion promediando vectores
 3D unitarios (evita el problema del wraparound en RA 0/360 deg) y renderiza etiquetas
 HTML sutiles en la boveda. Se activan/desactivan con el toggle **CONSTEL.** del panel lateral.
+
+---
+
+## Luna con fases realistas
+
+`Planets.tsx` incluye un componente `MoonMesh` separado que:
+
+- Calcula la posicion de la Luna con `Astronomy.Equator(Body.Moon, ...)` y la fase con `Astronomy.MoonPhase()`
+- Genera una textura `THREE.CanvasTexture` (`createMoonTexture(phase)`) dibujando geometricamente el lado iluminado:
+  - Mitad iluminada como semicirculo
+  - Terminador como elipse cuya anchura depende del coseno de la fase (creciente vs gibosa)
+  - Degradado radial de oscurecimiento limbico
+- La fase se redondea a 3 grados para evitar regenerar la textura cada frame
+- El billboard se orienta hacia la camara cada frame (`quaternion.copy(camera.quaternion)`)
+- La etiqueta flotante muestra el nombre de la fase en castellano (Luna nueva, Cuarto creciente, Luna llena, etc.) y el porcentaje de iluminacion
+
+| Fase (grados) | Nombre |
+|---|---|
+| 0 | Luna nueva |
+| 45 | Creciente concava |
+| 90 | Cuarto creciente |
+| 135 | Gibosa creciente |
+| 180 | Luna llena |
+| 225 | Gibosa menguante |
+| 270 | Cuarto menguante |
+| 315 | Creciente menguante |
 
 ---
 
