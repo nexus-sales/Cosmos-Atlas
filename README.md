@@ -7,29 +7,18 @@ Totalmente responsive e instalable como PWA.
 
 ---
 
-## Caracteristicas
-
-- **Boveda celeste 3D** - Esfera celestial completa renderizada con React Three Fiber
-- **Posicion en tiempo real** - Geolocalizacion del usuario; calculo del cielo exacto para ese lugar y momento
-- **290+ estrellas nombradas** - Catalogo con coordenadas J2000, magnitud, color espectral y descripcion
-- **30+ constelaciones** - Lineas de constelacion trazadas sobre la esfera celeste con etiquetas de nombre en la boveda
-- **42 objetos de cielo profundo (DSOs)** - Galaxias, nebulosas y cumulos con datos reales
-- **Planetas del Sistema Solar** - Posiciones calculadas con `astronomy-engine` (efemerides reales)
-- **Luna con fases realistas** - Disco billboard con textura canvas: creciente, gibosa, llena y nueva renderizadas geometricamente; nombre de fase en etiqueta flotante
-- **Via Lactea** - Renderizada con shader GLSL basado en coordenadas galacticas reales
-- **Viaje temporal** - Slider flotante +-10 anos, reproduccion animada a velocidad variable y regreso al tiempo real
-- **Navegacion de camara** - Al seleccionar un objeto en la Guia la camara vuela suavemente hacia el
-- **Ecliptica** - Linea del camino aparente del Sol (oblicuidad 23.44 deg), activable como capa
-- **Puntos cardinales** - N, NE, E, SE, S, SO, O, NO marcados en el horizonte
-- **Horizonte fisico** - Disco opaco que oculta estrellas bajo el suelo; franja de niebla y linea de horizonte
-- **Guia interactiva ampliada** - Busqueda y filtrado con 7 categorias: estrellas, planetas (Luna incluida), galaxias, nebulosas, cumulos y constelaciones; indicador verde/gris de visibilidad en tiempo real; clic para localizar en la boveda
-- **Puntero de objetivo** - Crosshair animado (3 anillos pulsantes + cruz) con color segun tipo de objeto (planeta: color propio, constelacion: indigo, galaxia: ambar, nebulosa: verde, estrella: azul)
-- **Estrellas variables** - Algol, Mira y Betelgeuse animadas con sus periodos y amplitudes reales
-- **Bloom y postprocesado** - Efecto bloom selectivo, vineta y ruido de grano
-- **Efectos visuales** - Particulas cosmicas, meteoros, atmosfera de horizonte
-- **Sidebar colapsable** - El panel lateral se colapsa a una tira de iconos en escritorio con animacion spring
-- **Responsive** - Sidebar como overlay en movil, header compacto, boton FAB para abrir la guia
-- **PWA instalable** - Manifest, iconos auto-generados y metadatos Apple; instalable en iOS, Android y escritorio
+- **Bóveda Celeste 3D Pro** - Esfera celestial completa renderizada con React Three Fiber y motor de partículas optimizado.
+- **Precisión Científica Real** - Corrección por **Precesión de los Equinoccios** (J2000 a Época Actual) y **Refracción Atmosférica** dinámica.
+- **Motor Octree para 100k+ Estrellas** - Particionamiento espacial para renderizado eficiente del catálogo completo de Hipparcos con *frustum culling*.
+- **Vía Láctea "National Geographic"** - Shader GLSL fractal (FBM) combinado con nubes de partículas estilo Gaia (espiral logarítmica).
+- **Seguimiento de Satélites (TLE)** - Órbitas en tiempo real de la **ISS**, **Hubble** y mega-constelaciones como **Starlink** (vía satellite.js).
+- **Buscador Universal SIMBAD** - Resolución remota de objetos profesionales a través de los servidores **CDS Sesame** de Estrasburgo.
+- **Simulador de Campo de Visión (FOV)** - Herramienta para astrofotografía; ajusta distancia focal y tamaño del sensor (Full Frame, APS-C).
+- **Escala de Bortle Automática** - Simulación de contaminación lumínica real que filtra la visibilidad estelar de 1 a 9.
+- **Modo Nocturno (Red Mode)** - Interfaz y shaders adaptados en rojo puro para preservar la visión nocturna del observador.
+- **Twinkling Físico** - Centelleo estelar modulado por la **Masa de Aire** (Airmass); las estrellas parpadean más cerca del horizonte.
+- **Planetas y Luna Realista** - Efemérides de alta precisión con fases lunares calculadas geométricamente.
+- **PWA Instalable** - Manifest, iconos auto-generados y metadatos; instalable en iOS, Android y escritorio.
 
 ---
 
@@ -43,7 +32,8 @@ Totalmente responsive e instalable como PWA.
 | React Three Fiber | ^9.5.0 | Renderizado 3D en canvas |
 | Three.js | ^0.183.1 | Motor 3D |
 | @react-three/drei | ^10.7.7 | Helpers 3D (Html, OrbitControls, etc.) |
-| astronomy-engine | ^2.1.19 | Efemerides planetarias y lunares reales |
+| astronomy-engine | ^2.1.19 | Efemérides planetarias y lunares reales |
+| satellite.js | ^6.0.2 | Propagación de órbitas de satélites TLE |
 | Zustand | ^5.0.11 | Estado global |
 | Tailwind CSS | ^4 | Estilos |
 | Framer Motion | ^12 | Animaciones UI |
@@ -106,10 +96,12 @@ src/
 │       ├── ConstellationLabels.tsx # Etiquetas de nombre en la boveda
 │       ├── Planets.tsx          # Planetas + Luna con fase (posiciones reales)
 │       ├── DeepSkyObjects.tsx   # Galaxias, nebulosas, cumulos
-│       ├── MilkyWay.tsx         # Shader GLSL de la Via Lactea
-│       ├── BackgroundStars.tsx  # Estrellas de fondo (campo aleatorio)
-│       ├── Ecliptic.tsx         # Linea de la eclitica
-│       ├── Horizon.tsx          # Atmosfera, horizonte y puntos cardinales
+│       ├── MilkyWay.tsx         # Vía Láctea (Shader FBM + Gaia Particles)
+│       ├── BackgroundStars.tsx  # Generador de 100k+ estrellas con Octree
+│       ├── Satellites.tsx       # Seguimiento TLE (ISS, Starlink...)
+│       ├── Ecliptic.tsx         # Línea de la eclíptica
+│       ├── Horizon.tsx          # Atmósfera, horizonte y puntos cardinales
+│       ├── FOVOverlay.tsx       # Retículo de campo de visión para astrofotografía
 │       └── TargetPointer.tsx    # Crosshair animado sobre el objeto objetivo
 │
 ├── data/
@@ -125,7 +117,8 @@ src/
 │   ├── utils.ts
 │   └── astronomy/
 │       ├── time.ts              # LST, Julian Date, conversiones de tiempo
-│       └── transforms.ts        # equatorialTo3D(), equToHor()
+│       ├── transforms.ts        # Precesión, Refracción y Coordenadas 3D
+│       └── Octree.ts            # Implementación de Octree para culling estelar
 │
 ├── stores/
 │   └── useAppStore.ts           # Estado global Zustand (time, isLive, observer, sidebarOpen, settings...)
@@ -179,6 +172,39 @@ equatorialTo3D(ra_deg, dec_deg, radius) -> [x, y, z]
 
 Esto mantiene todos los objetos alineados con el horizonte local del observador en tiempo real.
 Funciona para cualquier latitud: desde Canarias (~28 N) hasta Islandia (~65 N) o cualquier punto del globo.
+
+---
+
+## Precisión Científica (V2.0)
+
+Cosmos Atlas implementa rigor científico en cada capa de renderizado:
+
+- **Precesión de los Equinoccios**: Corrección de coordenadas J2000 a la Época Actual mediante matriz de rotación dinámica. Garantiza que las estrellas estén donde realmente se ven hoy.
+- **Refracción Atmosférica**: Cálculo del "Aumento de Altitud" aparente cerca del horizonte debido a la atmósfera terrestre.
+- **Masa de Aire (Airmass)**: Cálculo dinámico de la cantidad de atmósfera que atraviesa la luz ($X = 1/\sin(alt)$) para modular la intensidad del parpadeo estelar.
+- **Efemerides Planetarias**: Integración con `astronomy-engine` para posiciones planetarias y fases lunares con precisión de minutos de arco.
+
+---
+
+## Seguimiento de Satélites e Integración TLE
+
+El motor de satélites permite rastrear objetos artificiales en tiempo real:
+
+- **Propagación Orbital**: Uso de los algoritmos SGP4/SDP4 via `satellite.js`.
+- **Datos Dinámicos**: Integración con **CelesTrak** para descargar TLEs actualizados de la ISS y Starlink.
+- **Visibilidad Local**: Solo se renderizan los satélites que están por encima del horizonte local del observador y bajo condiciones de iluminación adecuadas.
+- **Remapeo ECI a Mundo**: Conversión directa de vectores de inercia inercial (ECI) al sistema de coordenadas de la aplicación para máximo rendimiento.
+
+---
+
+## Experiencia Visual "National Geographic"
+
+La Vía Láctea y el fondo estelar han sido rediseñados para una fidelidad técnica superior:
+
+- **Estructura Galáctica**: Combinación de una banda nebulosa procedimental (GLSL con FBM para nubes de polvo) y un cúmulo de 12,000 partículas distribuidas en **espiral logarítmica**.
+- **Motor Octree**: Gestión de un campo estelar de fondo de 100,000 unidades con un sistema de particionamiento espacial que optimiza el rendimiento en dispositivos móviles.
+- **Cromatismo H-Alpha**: Inyección manual de color en regiones clave como el Cisne (Cygnus) y Carina para resaltar nebulosidades de emisión.
+- **Buscador SIMBAD**: Acceso a la base de datos profesional del CDS de Estrasburgo, permitiendo buscar cualquier objeto del cielo profundo fuera de nuestro catálogo local.
 
 ---
 

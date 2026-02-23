@@ -22,6 +22,14 @@ const starVertexShader = `
   void main() {
     vColor = color;
 
+    // Transform position to world space to get altitude (approximate)
+    // In our scene, world Y is Zenith if the Horizon component is at Y=0.
+    vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+    float altitude = worldPosition.y / length(worldPosition.xyz); 
+    
+    // Airmass (X = 1/sin(alt)). Limiting it to avoid infinity at horizon.
+    float airmass = 1.0 / max(0.05, altitude);
+
     // Variabilidad estelar: modula brillo según período real
     float varFactor = 1.0;
     if (varAmp > 0.0 && varPer > 0.0) {
@@ -29,7 +37,11 @@ const starVertexShader = `
       varFactor = 1.0 - varAmp * 0.5 * (1.0 - sin(phase));
     }
 
-    vOpacity = varFactor * (0.78 + 0.22 * sin(uTime * 1.8 + position.x * 8.0 + position.y * 4.0));
+    // Centelleo Atmosférico (Twinkle): aumenta con la masa de aire
+    float twinkleSpeed = 1.8 + airmass * 0.5;
+    float twinkleAmp = 0.15 + airmass * 0.08;
+    vOpacity = varFactor * ( (1.0 - twinkleAmp) + twinkleAmp * sin(uTime * twinkleSpeed + position.x * 8.0 + position.y * 4.0));
+    
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
     gl_PointSize = size * varFactor * (480.0 / -mvPosition.z);
     gl_Position = projectionMatrix * mvPosition;
@@ -39,13 +51,22 @@ const starVertexShader = `
 const starFragmentShader = `
   varying vec3 vColor;
   varying float vOpacity;
+  uniform bool uNightMode;
   
   void main() {
     float r = distance(gl_PointCoord, vec2(0.5));
     if (r > 0.5) discard;
+    
+    vec3 outColor = vColor;
+    if (uNightMode) {
+        // En modo nocturno, pasamos a rojo puro basado en la luminancia
+        float luminance = dot(vColor, vec3(0.299, 0.587, 0.114));
+        outColor = vec3(luminance * 1.5, 0.0, 0.0);
+    }
+
     float strength = pow(1.0 - (r * 2.0), 1.1);
     float halo = pow(max(0.0, 1.0 - r * 1.4), 3.0) * 0.4;
-    gl_FragColor = vec4(vColor, (strength + halo) * vOpacity);
+    gl_FragColor = vec4(outColor, (strength + halo) * vOpacity);
   }
 `;
 
@@ -61,9 +82,9 @@ const HIT_RADIUS = 2.0;
  */
 const VARIABLE_STARS: Record<string, { period: number; amp: number; phase: number }> = {
     // Algol (β Persei): binaria eclipsante, período 2.867 días. Rango mag 2.12–3.39
-    'Algol':      { period: 247_814, amp: 0.48, phase: 0.0 },
+    'Algol': { period: 247_814, amp: 0.48, phase: 0.0 },
     // Mira (ο Ceti): variable de largo período, 331.96 días. Rango mag 2.0–10.1
-    'Mira':       { period: 28_681_000, amp: 0.82, phase: 1.8 },
+    'Mira': { period: 28_681_000, amp: 0.82, phase: 1.8 },
     // Betelgeuse (α Ori): semirregular, período ~420 días. Rango mag 0.0–1.3
     'Betelgeuse': { period: 36_288_000, amp: 0.22, phase: 3.1 },
 };
@@ -115,17 +136,24 @@ function StarHitbox({ star, pos }: { star: typeof STARS[0]; pos: [number, number
 
 export default function Stars() {
     const pointsRef = useRef<THREE.Points>(null);
+    const bortleScale = useAppStore((state) => state.settings.bortleScale);
+    const nightMode = useAppStore((state) => state.settings.nightMode);
 
-    const [geometry, material, starPositions] = useMemo(() => {
-        const pos = new Float32Array(STARS.length * 3);
-        const col = new Float32Array(STARS.length * 3);
-        const sz  = new Float32Array(STARS.length);
-        const varAmpArr = new Float32Array(STARS.length);
-        const varPerArr = new Float32Array(STARS.length);
-        const varPhaArr = new Float32Array(STARS.length);
+    // Mapeo Bortle -> Magnitud Límite (ajustado para que el catálogo de ~9k estrellas tenga sentido)
+    const limitingMag = 8.0 - (bortleScale - 1) * 0.5;
+
+    const [geometry, material, visibleStars, starPositions] = useMemo(() => {
+        const filteredStars = STARS.filter(s => s.mag <= limitingMag);
+
+        const pos = new Float32Array(filteredStars.length * 3);
+        const col = new Float32Array(filteredStars.length * 3);
+        const sz = new Float32Array(filteredStars.length);
+        const varAmpArr = new Float32Array(filteredStars.length);
+        const varPerArr = new Float32Array(filteredStars.length);
+        const varPhaArr = new Float32Array(filteredStars.length);
         const positions3D: [number, number, number][] = [];
 
-        STARS.forEach((star, i) => {
+        filteredStars.forEach((star, i) => {
             const p = equatorialTo3D(star.ra, star.dec, RADIUS);
             pos[i * 3] = p[0]; pos[i * 3 + 1] = p[1]; pos[i * 3 + 2] = p[2];
             positions3D.push(p);
@@ -145,22 +173,26 @@ export default function Stars() {
 
         const geom = new THREE.BufferGeometry();
         geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-        geom.setAttribute('color',    new THREE.BufferAttribute(col, 3));
-        geom.setAttribute('size',     new THREE.BufferAttribute(sz, 1));
-        geom.setAttribute('varAmp',   new THREE.BufferAttribute(varAmpArr, 1));
-        geom.setAttribute('varPer',   new THREE.BufferAttribute(varPerArr, 1));
-        geom.setAttribute('varPha',   new THREE.BufferAttribute(varPhaArr, 1));
+        geom.setAttribute('color', new THREE.BufferAttribute(col, 3));
+        geom.setAttribute('size', new THREE.BufferAttribute(sz, 1));
+        geom.setAttribute('varAmp', new THREE.BufferAttribute(varAmpArr, 1));
+        geom.setAttribute('varPer', new THREE.BufferAttribute(varPerArr, 1));
+        geom.setAttribute('varPha', new THREE.BufferAttribute(varPhaArr, 1));
 
         const mat = new THREE.ShaderMaterial({
             vertexShader: starVertexShader,
             fragmentShader: starFragmentShader,
-            uniforms: { uTime: { value: 0 }, uTimeSec: { value: Date.now() / 1000 } },
+            uniforms: {
+                uTime: { value: 0 },
+                uTimeSec: { value: Date.now() / 1000 },
+                uNightMode: { value: nightMode }
+            },
             transparent: true,
             depthWrite: false,
         });
 
-        return [geom, mat, positions3D];
-    }, []);
+        return [geom, mat, filteredStars, positions3D];
+    }, [limitingMag, nightMode]); // Re-calcular si cambia Bortle o NightMode
 
     useFrame((state) => {
         const mat = material as THREE.ShaderMaterial;
@@ -175,7 +207,7 @@ export default function Stars() {
             <points ref={pointsRef} geometry={geometry} material={material} />
 
             {/* Hitboxes invisibles para click y hover */}
-            {STARS.map((star, i) => (
+            {visibleStars.map((star, i) => (
                 <StarHitbox key={star.name} star={star} pos={starPositions[i]} />
             ))}
         </group>

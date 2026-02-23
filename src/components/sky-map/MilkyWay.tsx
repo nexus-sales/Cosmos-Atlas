@@ -37,104 +37,164 @@ uniform vec3  uGCDir;
 
 varying vec3 vLocalPos;
 
-// ── Simplex noise 2D ──────────────────────────────────────────────────────────
-vec3 mod289v3(vec3 x){ return x - floor(x*(1.0/289.0))*289.0; }
-vec2 mod289v2(vec2 x){ return x - floor(x*(1.0/289.0))*289.0; }
-vec3 permute3(vec3 x){ return mod289v3(((x*34.0)+1.0)*x); }
-float snoise(vec2 v){
-    const vec4 C = vec4(0.211324865405187,0.366025403784439,-0.577350269189626,0.024390243902439);
-    vec2 i  = floor(v + dot(v,C.yy));
-    vec2 x0 = v - i + dot(i,C.xx);
-    vec2 i1 = (x0.x > x0.y) ? vec2(1,0) : vec2(0,1);
+// ── Simplex noise 2D/3D Helpers ──────────────────────────────────────────────
+vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
+
+float snoise(vec2 v) {
+    const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+    vec2 i  = floor(v + dot(v, C.yy));
+    vec2 x0 = v - i + dot(i, C.xx);
+    vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
     vec4 x12 = x0.xyxy + C.xxzz;
     x12.xy -= i1;
-    i = mod289v2(i);
-    vec3 p = permute3(permute3(i.y+vec3(0,i1.y,1))+i.x+vec3(0,i1.x,1));
-    vec3 m = max(0.5-vec3(dot(x0,x0),dot(x12.xy,x12.xy),dot(x12.zw,x12.zw)),0.0);
+    i = mod289(i);
+    vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+    vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
     m = m*m; m = m*m;
-    vec3 x  = 2.0*fract(p*C.www)-1.0;
-    vec3 h  = abs(x)-0.5;
-    vec3 ox = floor(x+0.5);
-    vec3 a0 = x-ox;
-    m *= 1.79284291400159 - 0.85373472095314*(a0*a0+h*h);
+    vec3 x = 2.0 * fract(p * C.www) - 1.0;
+    vec3 h = abs(x) - 0.5;
+    vec3 ox = floor(x + 0.5);
+    vec3 a0 = x - ox;
+    m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);
     vec3 g;
-    g.x  = a0.x*x0.x  + h.x*x0.y;
-    g.yz = a0.yz*x12.xz + h.yz*x12.yw;
-    return 130.0*dot(m,g);
+    g.x  = a0.x * x0.x  + h.x * x0.y;
+    g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+    return 130.0 * dot(m, g);
 }
-// ─────────────────────────────────────────────────────────────────────────────
+
+// Fractal Brownian Motion (FBM) for Dust Lanes
+float fbm(vec2 p) {
+    float v = 0.0;
+    float a = 0.5;
+    mat2 m = mat2(1.6, 1.2, -1.2, 1.6);
+    for(int i=0; i<4; i++) {
+        v += a * snoise(p);
+        p = m * p * 2.02;
+        a *= 0.5;
+    }
+    return v;
+}
 
 void main() {
     vec3 dir = normalize(vLocalPos);
 
-    // Latitud galáctica exacta ─────────────────────────────────────────────────
+    // 1. Coordenadas Galácticas
     float sinB = dir.y;
     float bDeg = degrees(asin(clamp(sinB, -1.0, 1.0)));
+    float lRad = atan(dir.x, dir.z);
 
-    // Banda principal (σ ≈ 6°) + halo difuso (σ ≈ 14°) ───────────────────────
-    float mainBand  = exp(-bDeg*bDeg / 72.0);
-    float thickHalo = exp(-bDeg*bDeg / 392.0) * 0.15;
+    // 2. Estructura de la Banda
+    float mainBand  = exp(-bDeg*bDeg / 48.0); // Banda central más nítida
+    float thickHalo = exp(-bDeg*bDeg / 450.0) * 0.2;
 
-    // Centro galáctico (Sagitario) ─────────────────────────────────────────────
-    float gcDot   = dot(dir,  uGCDir);
-    float acDot   = dot(dir, -uGCDir);
-    float gcCore  = smoothstep(0.84, 1.00, gcDot) * 2.5;
-    float gcBulge = smoothstep(0.50, 0.90, gcDot) * 0.65;
-    float acDim   = 1.0 - smoothstep(0.60, 0.96, acDot) * 0.50;
+    // 3. Bulbo Galáctico (Sagitario A*)
+    float gcDot   = dot(dir, uGCDir);
+    float bulgeMask = smoothstep(0.4, 0.98, gcDot);
+    // Bulbo nítido y bulbo difuso
+    float bulge = (smoothstep(0.85, 1.0, gcDot) * 3.5 + smoothstep(0.5, 0.9, gcDot) * 1.2) * mainBand;
 
-    // Nubes estelares regionales ───────────────────────────────────────────────
-    // Cygnus X (opuesto al centro, banda norte)
-    float cygnus   = smoothstep(0.72, 0.92, dot(dir, normalize(vec3(-0.344, 0.035, -0.939))));
-    cygnus        *= 0.50 * exp(-bDeg*bDeg / 24.0);
+    // 4. Polvo Estelar (Dust Lanes / Great Rift)
+    // Usamos FBM para crear el surco irregular y fracturado
+    vec2 dustUV = vec2(lRad * 1.8, bDeg * 0.08);
+    float dustNoise = fbm(dustUV + vec2(uTime * 0.005, 0.0));
+    float dustMask = smoothstep(0.1, 0.5, dustNoise * bulgeMask + 0.1); 
+    
+    // Grieta central (Great Rift)
+    float rift = smoothstep(0.0, 0.5, gcDot) * exp(-abs(bDeg + dustNoise * 2.0) / 4.0);
 
-    // Escorpio-Centauro (entre GC y anticéntro sur)
-    float scorpius = smoothstep(0.76, 0.94, dot(dir, normalize(vec3(0.20, -0.05, 0.98))));
-    scorpius      *= 0.40 * exp(-bDeg*bDeg / 18.0);
+    // 5. Nubes de Gas y Variaciones Regionales
+    float cygnus = smoothstep(0.75, 0.95, dot(dir, normalize(vec3(-0.35, 0.05, -0.92)))) * 0.8;
+    float carina = smoothstep(0.75, 0.95, dot(dir, normalize(vec3(0.5, -0.05, 0.4)))) * 0.6;
 
-    // Nubes de Perseo / Auriga (anticéntro tenue)
-    float perseus  = smoothstep(0.80, 0.95, dot(dir, normalize(vec3(-0.30, -0.04, -0.95))));
-    perseus       *= 0.28 * exp(-bDeg*bDeg / 16.0);
+    // 6. Cromatismo (Colores NatGeo)
+    vec3 colorCore   = vec3(1.0, 0.8, 0.55); // Bulbo amarillento/naranja
+    vec3 colorArms   = vec3(0.8, 0.9, 1.0);  // Brazos blanco-azulados
+    vec3 colorGas    = vec3(1.0, 0.6, 0.7);  // Nebulosidad H-Alpha rosada
+    
+    vec3 finalColor = mix(colorArms, colorCore, bulgeMask);
+    finalColor = mix(finalColor, colorGas, cygnus * 0.3 + carina * 0.2);
 
-    // Gran Surco de Polvo (Great Rift) ─────────────────────────────────────────
-    // canal oscuro estrecho (σ ≈ 3°) que recorre el plano del lado del centro
-    float lRad    = atan(dir.x, dir.z);
-    float riftB   = exp(-bDeg*bDeg / 18.0);
-    float riftSide = smoothstep(-0.10, 0.55, gcDot);
-    float riftVar  = snoise(vec2(lRad * 2.8 + 0.3, 0.0)) * 0.35 + 0.65;
-    float rift    = riftB * riftSide * riftVar;
+    // 7. Brillo Final
+    float bright = (mainBand + thickHalo + bulge + cygnus + carina);
+    
+    // Aplicar máscara de polvo oscuro
+    float shadow = smoothstep(0.2, 0.8, dustNoise) * 0.85 * (bulgeMask * 0.5 + 0.5);
+    bright *= (1.0 - shadow * 0.9);
+    bright -= rift * 0.4;
+    bright = max(bright, 0.0);
 
-    // Textura filamentosa (ruido a lo largo de la longitud galáctica) ──────────
-    float t  = uTime * 0.0012;
-    float n1 = snoise(vec2(lRad * 2.2,        + t));
-    float n2 = snoise(vec2(lRad * 4.8 - 0.6,  - t * 0.6));
-    float n3 = snoise(vec2(lRad * 9.5 + 1.1,  + t * 0.3));
-    float noise = (n1*0.50 + n2*0.30 + n3*0.20) * mainBand * 0.32;
+    // Alpha cinemático
+    float alpha = clamp(bright * 0.18, 0.0, 0.45);
+    if (alpha < 0.005) discard;
 
-    // Brillo total ─────────────────────────────────────────────────────────────
-    float bright = (mainBand + thickHalo + gcCore + gcBulge + cygnus + scorpius + perseus) * acDim;
-    bright += noise;
-    bright -= rift * 0.72;
-    bright  = max(bright, 0.0);
-
-    // Color ────────────────────────────────────────────────────────────────────
-    vec3 bandColor = vec3(0.78, 0.87, 1.00);          // blanco-azulado
-    vec3 coreColor = vec3(1.00, 0.88, 0.68);          // núcleo cálido
-    float coreMix  = clamp(gcDot * 0.65 + 0.12, 0.0, 1.0);
-    vec3  col      = mix(bandColor, coreColor, coreMix);
-
-    // Alpha ────────────────────────────────────────────────────────────────────
-    float alpha = clamp(bright * 0.20, 0.0, 0.30);
-    if (alpha < 0.004) discard;
-
-    gl_FragColor = vec4(col, alpha);
+    gl_FragColor = vec4(finalColor, alpha);
 }
 `;
+
+// ── Componente de Partículas Estelares (Estructura Gaia) ───────────────────────
+function MilkyWayParticles() {
+    const pointsRef = useRef<THREE.Points>(null);
+
+    const [positions, colors] = useMemo(() => {
+        const count = 12000;
+        const pos = new Float32Array(count * 3);
+        const col = new Float32Array(count * 3);
+
+        const coreColor = new THREE.Color('#ffcc99');
+        const armColor = new THREE.Color('#99ccff');
+
+        for (let i = 0; i < count; i++) {
+            const i3 = i * 3;
+            // Distribución física: Núcleo denso + Brazos espirales
+            const angle = Math.random() * Math.PI * 2.0;
+            const dist = Math.pow(Math.random(), 2.5) * 50.0;
+
+            // Espiral logarítmica para los "nodos" de estrellas
+            const arm = (Math.floor(Math.random() * 2) * Math.PI); // 2 brazos principales
+            const spiral = angle * 0.5 + arm;
+
+            const x = Math.cos(spiral) * dist + (Math.random() - 0.5) * 10.0;
+            const z = Math.sin(spiral) * dist + (Math.random() - 0.5) * 10.0;
+            const y = (Math.random() - 0.5) * (3.0 / (dist * 0.1 + 1.0)); // Plano delgado
+
+            pos[i3] = x;
+            pos[i3 + 1] = y;
+            pos[i3 + 2] = z;
+
+            const c = new THREE.Color().lerpColors(armColor, coreColor, 1.0 - (dist / 50.0));
+            col[i3] = c.r;
+            col[i3 + 1] = c.g;
+            col[i3 + 2] = c.b;
+        }
+        return [pos, col];
+    }, []);
+
+    return (
+        <points ref={pointsRef}>
+            <bufferGeometry>
+                <bufferAttribute attach="attributes-position" count={positions.length / 3} array={positions} itemSize={3} args={[positions, 3]} />
+                <bufferAttribute attach="attributes-color" count={colors.length / 3} array={colors} itemSize={3} args={[colors, 3]} />
+            </bufferGeometry>
+            <pointsMaterial
+                size={0.15}
+                sizeAttenuation={true}
+                vertexColors
+                transparent
+                opacity={0.4}
+                blending={THREE.AdditiveBlending}
+                depthWrite={false}
+            />
+        </points>
+    );
+}
 
 export default function MilkyWay() {
     const meshRef = useRef<THREE.Mesh>(null);
 
     const uniforms = useMemo(() => ({
-        uTime:  { value: 0 },
+        uTime: { value: 0 },
         uGCDir: { value: GC_DIR },
     }), []);
 
@@ -145,18 +205,24 @@ export default function MilkyWay() {
     });
 
     return (
-        <mesh ref={meshRef} rotation={galacticRotation}>
-            <sphereGeometry args={[99, 96, 96]} />
-            <shaderMaterial
-                key="milkyway-v2"
-                transparent
-                side={THREE.BackSide}
-                depthWrite={false}
-                blending={THREE.AdditiveBlending}
-                uniforms={uniforms}
-                vertexShader={vertexShader}
-                fragmentShader={fragmentShader}
-            />
-        </mesh>
+        <group rotation={galacticRotation}>
+            {/* 1. Fondo Nebuloso (Shader GLSL Pro) */}
+            <mesh ref={meshRef}>
+                <sphereGeometry args={[99, 96, 96]} />
+                <shaderMaterial
+                    key="milkyway-pro-v3"
+                    transparent
+                    side={THREE.BackSide}
+                    depthWrite={false}
+                    blending={THREE.AdditiveBlending}
+                    uniforms={uniforms}
+                    vertexShader={vertexShader}
+                    fragmentShader={fragmentShader}
+                />
+            </mesh>
+
+            {/* 2. Granulado Estelar (Gaia Point Cloud) */}
+            <MilkyWayParticles />
+        </group>
     );
 }

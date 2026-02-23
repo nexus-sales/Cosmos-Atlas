@@ -1,36 +1,44 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import * as THREE from 'three';
+import { useFrame, useThree } from '@react-three/fiber';
+import { StarOctree } from '@/lib/astronomy/Octree';
+import { useAppStore } from '@/stores/useAppStore';
 
 const vertexShader = `
   attribute float size;
   attribute vec3 color;
   varying vec3 vColor;
-  varying float vSize;
 
   void main() {
     vColor = color;
-    vSize = size;
-    gl_PointSize = size;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+    gl_PointSize = size * (400.0 / -mvPosition.z);
+    gl_Position = projectionMatrix * mvPosition;
   }
 `;
 
 const fragmentShader = `
   varying vec3 vColor;
-  varying float vSize;
+  uniform bool uNightMode;
 
   void main() {
     vec2 uv = gl_PointCoord - 0.5;
     float r = length(uv) * 2.0;
     if (r > 1.0) discard;
-    float alpha = smoothstep(1.0, 0.05, r);
-    gl_FragColor = vec4(vColor, alpha * 0.90);
+    
+    vec3 outColor = vColor;
+    if (uNightMode) {
+        float luminance = dot(vColor, vec3(0.299, 0.587, 0.114));
+        outColor = vec3(luminance * 1.5, 0.0, 0.0);
+    }
+
+    float alpha = smoothstep(1.0, 0.2, r);
+    gl_FragColor = vec4(outColor, alpha * 0.7);
   }
 `;
 
-// Generador pseudo-aleatorio (LCG) — mismo campo de estrellas en cada render
 function makeRNG(seed: number) {
     let s = seed >>> 0;
     return () => {
@@ -39,99 +47,126 @@ function makeRNG(seed: number) {
     };
 }
 
-/**
- * Calcula el seno de la latitud galáctica para un punto de la esfera
- * en coordenadas cartesianas ecuatoriales (J2000).
- * Fila 3 de la matriz ecuatorial→galáctica (IAU, J2000):
- *   M3 = [ -0.86766615, -0.19807637, 0.45598379 ]
- */
 function sinGalLat(x: number, y: number, z: number): number {
     return -0.86766615 * x - 0.19807637 * y + 0.45598379 * z;
 }
 
-const TOTAL  = 18000;  // estrellas de fondo
-const RADIUS = 97;
+const TOTAL = 100000;
+const RADIUS = 96;
+const MAX_VISIBLE_STARS = 12000; // Máximo que enviamos al GPU por frame
 
 export default function BackgroundStars() {
-    const [geometry, material] = useMemo(() => {
-        const rng  = makeRNG(0xdeadbeef);
-        const pos  = new Float32Array(TOTAL * 3);
-        const col  = new Float32Array(TOTAL * 3);
-        const sz   = new Float32Array(TOTAL);
+    const pointsRef = useRef<THREE.Points>(null);
+    const nightMode = useAppStore((state) => state.settings.nightMode);
+    const bortleScale = useAppStore((state) => state.settings.bortleScale);
+    const { camera } = useThree();
+
+    // ── 1. Generar Catálogo Sintético Hipparcos ─────────────────────────────
+    const [allPositions, allColors, allSizes, allMagnitudes, octree] = useMemo(() => {
+        const positions = new Float32Array(TOTAL * 3);
+        const colors = new Float32Array(TOTAL * 3);
+        const sizes = new Float32Array(TOTAL);
+        const magnitudes = new Float32Array(TOTAL);
+        const rng = makeRNG(12345);
 
         for (let i = 0; i < TOTAL; i++) {
-            // ── Posición aleatoria uniforme en la esfera ─────────────────
-            const u     = rng() * 2 - 1;
+            const u = rng() * 2 - 1;
             const theta = rng() * Math.PI * 2;
             const sinPhi = Math.sqrt(Math.max(0, 1 - u * u));
             const px = sinPhi * Math.cos(theta);
             const py = u;
             const pz = sinPhi * Math.sin(theta);
 
-            // ── Potenciación de densidad en el plano galáctico ───────────
             const sinB = sinGalLat(px, py, pz);
-            const galWeight = Math.exp(-sinB * sinB * 8.0); // Gauss: σ ≈ 20°
+            const galWeight = Math.exp(-sinB * sinB * 12.0);
 
-            // Descartar con probabilidad para que la densidad refleje la galaxia
-            // ~30% base + 70% concentrado en el plano
-            const accept = 0.30 + 0.70 * galWeight;
-            if (rng() > accept) {
-                // Estrella descartada: posición al origen y tamaño 0 (shader discard)
-                pos[i * 3] = 0; pos[i * 3 + 1] = 0; pos[i * 3 + 2] = 0;
-                sz[i] = 0;
-                col[i * 3] = 0; col[i * 3 + 1] = 0; col[i * 3 + 2] = 0;
-                continue;
+            // Densidad galáctica
+            if (rng() > (0.15 + 0.85 * galWeight)) {
+                i--; continue; // Re-intentar para mantener TOTAL
             }
 
-            pos[i * 3]     = RADIUS * px;
-            pos[i * 3 + 1] = RADIUS * py;
-            pos[i * 3 + 2] = RADIUS * pz;
+            positions[i * 3] = px * RADIUS;
+            positions[i * 3 + 1] = py * RADIUS;
+            positions[i * 3 + 2] = pz * RADIUS;
 
-            // ── Magnitud y tamaño ────────────────────────────────────────
-            // Más brillo en el plano galáctico (más estrellas brillantes)
-            const brighterInPlane = rng() < galWeight * 0.3;
-            const mag = brighterInPlane
-                ? 2.5 + rng() * 2.0  // 2.5–4.5 (más visible)
-                : 3.5 + rng() * 3.0; // 3.5–6.5 (fondo tenue)
-            sz[i] = Math.max(0.6, (7.0 - mag) * 0.45);
+            const mag = 4.0 + rng() * 5.0; // Mag 4 a 9
+            magnitudes[i] = mag;
+            sizes[i] = Math.max(0.4, (8.5 - mag) * 0.4);
 
-            // ── Color espectral ──────────────────────────────────────────
             const t = rng();
-            if (t < 0.48) {
-                // K/M → naranja-roja (las más comunes)
-                const k = 0.80 + rng() * 0.15;
-                col[i * 3] = k; col[i * 3 + 1] = k * 0.72 + rng() * 0.10; col[i * 3 + 2] = k * 0.5 + rng() * 0.08;
-            } else if (t < 0.72) {
-                // G  → blanco-amarillo
-                const k = 0.85 + rng() * 0.15;
-                col[i * 3] = k; col[i * 3 + 1] = k * 0.92 + rng() * 0.05; col[i * 3 + 2] = k * 0.68 + rng() * 0.12;
-            } else if (t < 0.88) {
-                // A/F → blanco
-                const k = 0.88 + rng() * 0.12;
-                col[i * 3] = k * 0.92; col[i * 3 + 1] = k * 0.94; col[i * 3 + 2] = k;
-            } else {
-                // O/B → azul-blanco (las más calientes y raras)
-                const k = 0.85 + rng() * 0.15;
-                col[i * 3] = k * 0.70; col[i * 3 + 1] = k * 0.82; col[i * 3 + 2] = k;
+            if (t < 0.6) { // M/K
+                colors[i * 3] = 1.0; colors[i * 3 + 1] = 0.7; colors[i * 3 + 2] = 0.5;
+            } else if (t < 0.85) { // G/F
+                colors[i * 3] = 1.0; colors[i * 3 + 1] = 1.0; colors[i * 3 + 2] = 0.8;
+            } else { // B/A
+                colors[i * 3] = 0.7; colors[i * 3 + 1] = 0.8; colors[i * 3 + 2] = 1.0;
             }
         }
 
+        const tree = new StarOctree(positions, TOTAL);
+        return [positions, colors, sizes, magnitudes, tree];
+    }, []);
+
+    // ── 2. Preparar Geometría Dinámica para GPU ─────────────────────────────
+    const [geometry, material] = useMemo(() => {
         const geom = new THREE.BufferGeometry();
-        geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-        geom.setAttribute('color',    new THREE.BufferAttribute(col, 3));
-        geom.setAttribute('size',     new THREE.BufferAttribute(sz, 1));
+        geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(MAX_VISIBLE_STARS * 3), 3));
+        geom.setAttribute('color', new THREE.BufferAttribute(new Float32Array(MAX_VISIBLE_STARS * 3), 3));
+        geom.setAttribute('size', new THREE.BufferAttribute(new Float32Array(MAX_VISIBLE_STARS), 1));
 
         const mat = new THREE.ShaderMaterial({
             vertexShader,
             fragmentShader,
-            uniforms: {},
+            uniforms: { uNightMode: { value: nightMode } },
             transparent: true,
             depthWrite: false,
+            blending: THREE.AdditiveBlending
         });
 
         return [geom, mat];
     }, []);
 
-    return <points geometry={geometry} material={material} renderOrder={0} />;
+    // ── 3. Loop de Culling & Rendering ──────────────────────────────────────
+    const frustum = useMemo(() => new THREE.Frustum(), []);
+    const projScreenMatrix = useMemo(() => new THREE.Matrix4(), []);
+
+    useFrame(() => {
+        if (!pointsRef.current) return;
+
+        // Actualizar frustum
+        projScreenMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+        frustum.setFromProjectionMatrix(projScreenMatrix);
+
+        // Búsqueda en Octree
+        const visibleIndices: number[] = [];
+        octree.search(frustum, visibleIndices);
+
+        // Filtrado por magnitud (Bortle)
+        const limitingMag = 9.0 - (bortleScale - 1) * 0.6;
+
+        const posAttr = geometry.getAttribute('position') as THREE.BufferAttribute;
+        const colAttr = geometry.getAttribute('color') as THREE.BufferAttribute;
+        const sizAttr = geometry.getAttribute('size') as THREE.BufferAttribute;
+
+        let count = 0;
+        for (let i = 0; i < visibleIndices.length && count < MAX_VISIBLE_STARS; i++) {
+            const idx = visibleIndices[i];
+            if (allMagnitudes[idx] > limitingMag) continue;
+
+            posAttr.setXYZ(count, allPositions[idx * 3], allPositions[idx * 3 + 1], allPositions[idx * 3 + 2]);
+            colAttr.setXYZ(count, allColors[idx * 3], allColors[idx * 3 + 1], allColors[idx * 3 + 2]);
+            sizAttr.setX(count, allSizes[idx]);
+            count++;
+        }
+
+        geometry.setDrawRange(0, count);
+        posAttr.needsUpdate = true;
+        colAttr.needsUpdate = true;
+        sizAttr.needsUpdate = true;
+
+        material.uniforms.uNightMode.value = nightMode;
+    });
+
+    return <points ref={pointsRef} geometry={geometry} material={material} />;
 }
 

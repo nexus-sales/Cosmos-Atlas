@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAppStore } from '@/stores/useAppStore';
-import { Target, Info, BookOpen, Layers, Grid3X3, ChevronRight, ChevronLeft, X } from 'lucide-react';
+import { Target, Info, BookOpen, Layers, Grid3X3, ChevronRight, ChevronLeft, X, Moon, Mountain, Camera, Satellite, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChallengeTab from '@/components/panels/ChallengeTab';
 import ObjectInfoTab from '@/components/panels/ObjectInfoTab';
@@ -25,14 +25,22 @@ function useIsMobile() {
 
 export default function SidePanel() {
     const [activeTab, setActiveTab] = useState<TabType>('guide');
-    const selectedObject     = useAppStore((state) => state.selectedObject);
-    const showGrid           = useAppStore((state) => state.settings.showGrid);
+    const selectedObject = useAppStore((state) => state.selectedObject);
+    const showGrid = useAppStore((state) => state.settings.showGrid);
     const showConstellations = useAppStore((state) => state.settings.showConstellations);
-    const showMilkyWay       = useAppStore((state) => state.settings.showMilkyWay);
-    const showEcliptic       = useAppStore((state) => state.settings.showEcliptic);
-    const toggleSetting      = useAppStore((state) => state.toggleSetting);
-    const sidebarOpen        = useAppStore((state) => state.sidebarOpen);
-    const setSidebarOpen     = useAppStore((state) => state.setSidebarOpen);
+    const showMilkyWay = useAppStore((state) => state.settings.showMilkyWay);
+    const showEcliptic = useAppStore((state) => state.settings.showEcliptic);
+    const showSatellites = useAppStore((state) => state.settings.showSatellites);
+    const showStarlink = useAppStore((state) => state.settings.showStarlink);
+    const nightMode = useAppStore((state) => state.settings.nightMode);
+    const bortleScale = useAppStore((state) => state.settings.bortleScale);
+    const setBortleScale = useAppStore((state) => state.setBortleScale);
+    const showFOV = useAppStore((state) => state.settings.showFOV);
+    const focalLength = useAppStore((state) => state.settings.focalLength);
+    const setFOVParams = useAppStore((state) => state.setFOVParams);
+    const toggleSetting = useAppStore((state) => state.toggleSetting);
+    const sidebarOpen = useAppStore((state) => state.sidebarOpen);
+    const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);
 
     const isMobile = useIsMobile();
 
@@ -41,16 +49,20 @@ export default function SidePanel() {
     }, [selectedObject]);
 
     const tabs = [
-        { id: 'challenge', label: 'RETO',    icon: Target },
-        { id: 'info',      label: 'OBJETO',  icon: Info },
-        { id: 'guide',     label: 'GU\u00cdA', icon: BookOpen },
+        { id: 'challenge', label: 'RETO', icon: Target },
+        { id: 'info', label: 'OBJETO', icon: Info },
+        { id: 'guide', label: 'GU\u00cdA', icon: BookOpen },
     ] as const;
 
     const layerToggles = [
-        { key: 'showGrid' as const,          label: 'GRID',    icon: Grid3X3, active: showGrid },
+        { key: 'showGrid' as const, label: 'GRID', icon: Grid3X3, active: showGrid },
         { key: 'showConstellations' as const, label: 'CONSTEL.', icon: Layers, active: showConstellations },
-        { key: 'showMilkyWay' as const,       label: 'V\u00cdA L\u00c1CTEA', icon: Layers, active: showMilkyWay },
-        { key: 'showEcliptic' as const,       label: 'ECL\u00cdPT.', icon: Layers, active: showEcliptic },
+        { key: 'showMilkyWay' as const, label: 'V\u00cdA L\u00c1CTEA', icon: Layers, active: showMilkyWay },
+        { key: 'showEcliptic' as const, label: 'ECL\u00cdPT.', icon: Layers, active: showEcliptic },
+        { key: 'nightMode' as const, label: 'NOCTURNO', icon: Moon, active: nightMode },
+        { key: 'showFOV' as const, label: 'SIM. FOV', icon: Camera, active: showFOV },
+        { key: 'showSatellites' as const, label: 'SAT\u00c9LITES', icon: Satellite, active: showSatellites },
+        { key: 'showStarlink' as const, label: 'STARLINK', icon: Globe, active: showStarlink },
     ];
 
     // ── Desktop collapsed icon strip ─────────────────────────────────────────
@@ -164,8 +176,8 @@ export default function SidePanel() {
                 style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(59,130,246,0.2) transparent' }}
             >
                 {activeTab === 'challenge' && <ChallengeTab />}
-                {activeTab === 'info'      && <ObjectInfoTab />}
-                {activeTab === 'guide'     && <GuideTab />}
+                {activeTab === 'info' && <ObjectInfoTab />}
+                {activeTab === 'guide' && <GuideTab />}
             </div>
 
             {/* Layer toggles */}
@@ -189,13 +201,85 @@ export default function SidePanel() {
                     ))}
                 </div>
 
-                <div className="mt-2.5 flex items-center justify-between text-[8px] text-white/20 tracking-widest uppercase px-1">
-                    <span>ESTADO</span>
-                    <span className="flex items-center gap-1.5 text-emerald-500">
-                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                        ONLINE
-                    </span>
+            </div>
+
+            {/* Bortle Scale Selector */}
+            <div className="mt-4 border-t border-white/5 pt-4 px-1">
+                <div className="flex items-center gap-2 mb-2 text-[8px] text-white/20 tracking-[0.25em] uppercase">
+                    <Mountain className="w-3 h-3" />
+                    Escala de Bortle: {bortleScale}
                 </div>
+                <div className="flex gap-1 justify-between">
+                    {[1, 3, 5, 7, 9].map((val) => (
+                        <button
+                            key={val}
+                            onClick={() => setBortleScale(val)}
+                            className={cn(
+                                "flex-1 py-1 rounded-[2px] text-[9px] font-mono transition-all border",
+                                bortleScale === val
+                                    ? "bg-blue-500/20 border-blue-500/40 text-blue-400"
+                                    : "bg-white/5 border-transparent text-white/20 hover:text-white/40"
+                            )}
+                        >
+                            {val}
+                        </button>
+                    ))}
+                </div>
+                <div className="mt-1 text-[7px] text-white/10 uppercase tracking-tighter">
+                    {bortleScale <= 2 ? "Cielo Primigenio" : bortleScale <= 4 ? "Rural" : bortleScale <= 6 ? "Suburbano" : "Ciudad"}
+                </div>
+            </div>
+
+            {/* FOV Simulator Settings */}
+            {showFOV && (
+                <div className="mt-4 border-t border-white/5 pt-4 px-1 space-y-3">
+                    <div className="flex items-center gap-2 text-[8px] text-white/20 tracking-[0.25em] uppercase">
+                        <Camera className="w-3 h-3" />
+                        Ajustes de Captura
+                    </div>
+
+                    <div className="space-y-1">
+                        <div className="flex justify-between text-[7px] text-white/40 uppercase tracking-widest">
+                            <span>Focal: {focalLength}mm</span>
+                        </div>
+                        <input
+                            type="range"
+                            min="10"
+                            max="3000"
+                            step="10"
+                            value={focalLength}
+                            onChange={(e) => setFOVParams({ focalLength: Number(e.target.value) })}
+                            className="w-full h-1 bg-white/5 rounded-full appearance-none accent-blue-500 cursor-pointer"
+                        />
+                    </div>
+
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setFOVParams({ sensorWidth: 36, sensorHeight: 24 })}
+                            className={cn(
+                                "flex-1 py-1 rounded-[2px] text-[7px] font-bold transition-all border border-white/5 bg-white/5 text-white/40 hover:text-white/60"
+                            )}
+                        >
+                            Full Frame
+                        </button>
+                        <button
+                            onClick={() => setFOVParams({ sensorWidth: 23.6, sensorHeight: 15.6 })}
+                            className={cn(
+                                "flex-1 py-1 rounded-[2px] text-[7px] font-bold transition-all border border-white/5 bg-white/5 text-white/40 hover:text-white/60"
+                            )}
+                        >
+                            APS-C
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            <div className="mt-4 flex items-center justify-between text-[8px] text-white/20 tracking-widest uppercase px-1">
+                <span>ESTADO</span>
+                <span className="flex items-center gap-1.5 text-emerald-500">
+                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                    ONLINE
+                </span>
             </div>
         </motion.aside>
     );

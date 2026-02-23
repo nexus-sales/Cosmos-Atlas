@@ -12,10 +12,11 @@ import { useGeolocation } from '@/hooks/useGeolocation';
 import { BookOpen } from 'lucide-react';
 
 export default function Home() {
-  const setTime        = useAppStore((state) => state.setTime);
-  const isLive         = useAppStore((state) => state.isLive);
-  const sidebarOpen    = useAppStore((state) => state.sidebarOpen);
+  const setTime = useAppStore((state) => state.setTime);
+  const isLive = useAppStore((state) => state.isLive);
+  const sidebarOpen = useAppStore((state) => state.sidebarOpen);
   const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);
+  const nightMode = useAppStore((state) => state.settings.nightMode);
   useGeolocation();
 
   useEffect(() => {
@@ -27,7 +28,7 @@ export default function Home() {
   }, [isLive, setTime]);
 
   return (
-    <main className="flex flex-col h-screen w-screen overflow-hidden bg-black font-sans selection:bg-blue-500/30">
+    <main className={`flex flex-col h-screen w-screen overflow-hidden bg-black font-sans selection:bg-blue-500/30 transition-all duration-700 ${nightMode ? 'night-mode-active' : ''}`}>
       <CosmicParticles />
       <Meteors number={15} />
 

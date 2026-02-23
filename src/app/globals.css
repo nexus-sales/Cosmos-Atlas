@@ -99,3 +99,15 @@ body {
 .animate-meteor {
   animation: meteor 5s linear infinite;
 }
+
+/* Night Mode (Red Preservation) */
+.night-mode-active {
+  filter: grayscale(1) sepia(100%) hue-rotate(0deg) saturate(600%) brightness(0.8) !important;
+  transition: filter 0.7s ease-in-out;
+}
+
+.night-mode-active img,
+.night-mode-active video {
+  /* Prevent double filtering on media if needed, 
+     but for this app we want everything red */
+}

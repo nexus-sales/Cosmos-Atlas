@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
-import { Compass, Stars, Map as MapIcon, Info } from 'lucide-react';
+import { Compass, Stars, Map as MapIcon, Info, Search } from 'lucide-react';
+import CelestialSearch from './CelestialSearch';
 
 export default function Header() {
     const time = useAppStore((state) => state.time);
@@ -45,6 +46,11 @@ export default function Header() {
                         OBSERVATORIO VIRTUAL 3D
                     </p>
                 </div>
+            </div>
+
+            {/* Central Search Bar */}
+            <div className="flex-1 max-w-sm px-4 hidden sm:block">
+                <CelestialSearch />
             </div>
 
             <div className="flex items-center gap-4 md:gap-8 font-mono">

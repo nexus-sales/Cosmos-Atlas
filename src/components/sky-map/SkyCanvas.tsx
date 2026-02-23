@@ -1,7 +1,7 @@
 'use client';
 
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import { OrbitControls, Html } from '@react-three/drei';
 import { Suspense, useEffect, useRef } from 'react';
 import CelestialSphere from '@/components/sky-map/CelestialSphere';
 import Stars from '@/components/sky-map/Stars';
@@ -15,6 +15,8 @@ import Ecliptic from '@/components/sky-map/Ecliptic';
 import Horizon from '@/components/sky-map/Horizon';
 import BackgroundStars from '@/components/sky-map/BackgroundStars';
 import TargetPointer from '@/components/sky-map/TargetPointer';
+import FOVOverlay from '@/components/sky-map/FOVOverlay';
+import Satellites from '@/components/sky-map/Satellites';
 import { useAppStore } from '@/stores/useAppStore';
 import { Bloom, EffectComposer, Noise, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
@@ -34,6 +36,7 @@ import { equatorialTo3D } from '@/lib/astronomy/transforms';
 function FovZoom() {
     const { camera, gl } = useThree();
     const fovRef = useRef(60);
+    const setCamFov = useAppStore((state) => state.setCamFov);
 
     useEffect(() => {
         const canvas = gl.domElement;
@@ -46,6 +49,7 @@ function FovZoom() {
             fovRef.current = THREE.MathUtils.clamp(fovRef.current + delta, 10, 90);
             cam.fov = fovRef.current;
             cam.updateProjectionMatrix();
+            setCamFov(fovRef.current);
         };
 
         // ── Pinch táctil con pointer events ────────────────────────────────
@@ -75,6 +79,7 @@ function FovZoom() {
             fovRef.current = THREE.MathUtils.clamp(fovRef.current + delta, 10, 90);
             cam.fov = fovRef.current;
             cam.updateProjectionMatrix();
+            setCamFov(fovRef.current);
         };
 
         const onPointerUp = (e: PointerEvent) => {
@@ -142,10 +147,10 @@ function CelestialGroup({ children }: { children: React.ReactNode }) {
 function CameraNavigator() {
     const { camera } = useThree();
     const targetedObject = useAppStore((s) => s.targetedObject);
-    const observer       = useAppStore((s) => s.observer);
-    const time           = useAppStore((s) => s.time);
+    const observer = useAppStore((s) => s.observer);
+    const time = useAppStore((s) => s.time);
 
-    const isFlying   = useRef(false);
+    const isFlying = useRef(false);
     const prevTarget = useRef<typeof targetedObject>(null);
 
     useEffect(() => {
@@ -172,7 +177,7 @@ function CameraNavigator() {
 
         // Camera must be positioned OPPOSITE to the star to look at it
         const targetCamPos = targetWorldDir.clone().negate().multiplyScalar(0.01);
-        const currentPos   = camera.position.clone();
+        const currentPos = camera.position.clone();
 
         // Check arrival (dot product close to 1 = same direction)
         const dot = currentPos.normalize().dot(targetCamPos.clone().normalize());
@@ -191,9 +196,9 @@ function CameraNavigator() {
 }
 
 export default function SkyCanvas() {
-    const showGrid         = useAppStore((state) => state.settings.showGrid);
-    const showMilkyWay     = useAppStore((state) => state.settings.showMilkyWay);
-    const showEcliptic     = useAppStore((state) => state.settings.showEcliptic);
+    const showGrid = useAppStore((state) => state.settings.showGrid);
+    const showMilkyWay = useAppStore((state) => state.settings.showMilkyWay);
+    const showEcliptic = useAppStore((state) => state.settings.showEcliptic);
     const showConstellations = useAppStore((state) => state.settings.showConstellations);
 
     return (
@@ -218,6 +223,7 @@ export default function SkyCanvas() {
                     {/* Grupo rotado al sistema horizontal del observador */}
                     <CelestialGroup>
                         <BackgroundStars />
+                        <Satellites />
                         {showMilkyWay && <MilkyWay />}
                         <Stars />
                         <DeepSkyObjects />
@@ -238,6 +244,11 @@ export default function SkyCanvas() {
                         <Noise opacity={0.025} />
                         <Vignette eskil={false} offset={0.1} darkness={1.2} />
                     </EffectComposer>
+                    {/* El FOVOverlay necesita estar dentro del canvas para usar useThree 
+                        pero no es un objeto 3D, así que lo manejamos con cuidado o via Hud */}
+                    <Html fullscreen style={{ pointerEvents: 'none' }}>
+                        <FOVOverlay />
+                    </Html>
                 </Suspense>
             </Canvas>
         </div>
