@@ -8,12 +8,14 @@ import Meteors from '@/components/effects/Meteors';
 import TimeTravelControls from '@/components/panels/TimeTravelControls';
 import { useEffect } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
-
 import { useGeolocation } from '@/hooks/useGeolocation';
+import { BookOpen } from 'lucide-react';
 
 export default function Home() {
-  const setTime = useAppStore((state) => state.setTime);
-  const isLive = useAppStore((state) => state.isLive);
+  const setTime        = useAppStore((state) => state.setTime);
+  const isLive         = useAppStore((state) => state.isLive);
+  const sidebarOpen    = useAppStore((state) => state.sidebarOpen);
+  const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);
   useGeolocation();
 
   useEffect(() => {
@@ -32,13 +34,34 @@ export default function Home() {
       <div className="z-10 flex flex-col h-full w-full">
         <Header />
 
-        <div className="flex flex-1 overflow-hidden">
-          <div className="flex-1 relative">
+        <div className="flex flex-1 overflow-hidden relative">
+          {/* Canvas — always fills available space */}
+          <div className="flex-1 relative min-w-0">
             <SkyCanvas />
             <TimeTravelControls />
           </div>
 
+          {/* Mobile backdrop — closes sidebar on tap outside */}
+          {sidebarOpen && (
+            <div
+              className="fixed inset-0 bg-black/60 z-40 md:hidden"
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
+
+          {/* Sidebar */}
           <SidePanel />
+
+          {/* Mobile FAB — open sidebar button when closed on mobile */}
+          {!sidebarOpen && (
+            <button
+              onClick={() => setSidebarOpen(true)}
+              title="Abrir gu\u00eda"
+              className="fixed bottom-24 right-4 z-50 md:hidden w-12 h-12 rounded-full flex items-center justify-center shadow-lg border border-blue-500/40 bg-blue-600/70 backdrop-blur-sm text-white hover:bg-blue-500/80 transition-colors"
+            >
+              <BookOpen className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </div>
 

@@ -19,6 +19,8 @@ interface AppState {
         showEcliptic: boolean;
     };
     toggleSetting: (key: keyof AppState['settings']) => void;
+    sidebarOpen: boolean;
+    setSidebarOpen: (v: boolean) => void;
     foundChallenges: string[];
     addFoundChallenge: (name: string) => void;
 }
@@ -44,6 +46,8 @@ export const useAppStore = create<AppState>((set) => ({
         set((state) => ({
             settings: { ...state.settings, [key]: !state.settings[key] },
         })),
+    sidebarOpen: true,
+    setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
     foundChallenges: [],
     addFoundChallenge: (name) =>
         set((state) => ({

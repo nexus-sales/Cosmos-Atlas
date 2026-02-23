@@ -34,7 +34,20 @@ interface PlanetCfg {
     desc: (mag: number) => string;
 }
 
+function getMoonPhaseName(phase: number): string {
+    const p = ((phase % 360) + 360) % 360;
+    if (p < 22.5 || p >= 337.5) return 'Luna nueva';
+    if (p < 67.5)  return 'Creciente c\u00f3ncava';
+    if (p < 112.5) return 'Cuarto creciente';
+    if (p < 157.5) return 'Gibosa creciente';
+    if (p < 202.5) return 'Luna llena';
+    if (p < 247.5) return 'Gibosa menguante';
+    if (p < 292.5) return 'Cuarto menguante';
+    return 'Creciente menguante';
+}
+
 const PLANET_GUIDE_CONFIGS: PlanetCfg[] = [
+    { body: Astronomy.Body.Moon,    name: 'Luna',     symbol: '\u263d', color: '#d8d6c0', desc: (m) => `Sat\u00e9lite natural de la Tierra. Mag ${m.toFixed(1)}.` },
     { body: Astronomy.Body.Venus,   name: 'Venus',    symbol: '\u2640', color: '#fff8d4', desc: (m) => `Planeta m\u00e1s brillante del cielo. Mag ${m.toFixed(1)}.` },
     { body: Astronomy.Body.Jupiter, name: 'J\u00fapiter', symbol: '\u2643', color: '#ffe4b0', desc: (m) => `El gigante gaseoso del sistema solar. Mag ${m.toFixed(1)}.` },
     { body: Astronomy.Body.Mars,    name: 'Marte',    symbol: '\u2642', color: '#ff7744', desc: (m) => `El Planeta Rojo. Mag ${m.toFixed(1)}.` },
@@ -46,13 +59,22 @@ const PLANET_GUIDE_CONFIGS: PlanetCfg[] = [
 
 function buildPlanet(cfg: PlanetCfg, date: Date, lat: number, lon: number): (Planet & { alt: number }) | null {
     try {
-        const obs = new Astronomy.Observer(lat, lon, 0);
-        const eq  = Astronomy.Equator(cfg.body, date, obs, true, true);
+        const obs   = new Astronomy.Observer(lat, lon, 0);
+        const eq    = Astronomy.Equator(cfg.body, date, obs, true, true);
         const illum = Astronomy.Illumination(cfg.body, date);
-        const ra  = eq.ra * 15;
-        const dec = eq.dec;
+        const ra    = eq.ra * 15;
+        const dec   = eq.dec;
         const { alt } = equToHor(ra, dec, lat, lon, date);
-        return { name: cfg.name, symbol: cfg.symbol, ra, dec, mag: illum.mag, color: cfg.color, desc: cfg.desc(illum.mag), kind: 'planet', alt };
+
+        // For the Moon, enrich description with phase info
+        let desc = cfg.desc(illum.mag);
+        if (cfg.body === Astronomy.Body.Moon) {
+            const moonPhase = Astronomy.MoonPhase(date);
+            const pct = (illum.phase_fraction * 100).toFixed(0);
+            desc = `${getMoonPhaseName(moonPhase)} \u2014 ${pct}% iluminada. ${desc}`;
+        }
+
+        return { name: cfg.name, symbol: cfg.symbol, ra, dec, mag: illum.mag, color: cfg.color, desc, kind: 'planet', alt };
     } catch {
         return null;
     }
