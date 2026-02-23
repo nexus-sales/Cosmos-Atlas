@@ -1,6 +1,17 @@
 export type CelestialKind = 'star' | 'dso' | 'planet';
 export type DSOType = 'galaxy' | 'nebula' | 'cluster';
 
+export interface Planet {
+    name: string;
+    ra: number;
+    dec: number;
+    mag: number;
+    desc: string;
+    color: string;
+    symbol: string;
+    kind: 'planet';
+}
+
 export interface Star {
     name: string;
     ra: number;

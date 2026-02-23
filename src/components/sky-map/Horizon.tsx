@@ -1,63 +1,99 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
-import { useAppStore } from '@/stores/useAppStore';
-import { getLST } from '@/lib/astronomy/time';
+import { Html } from '@react-three/drei';
 
+/**
+ * Horizonte en espacio MUNDO (sin rotación con el cielo).
+ * El CelestialGroup de SkyCanvas ya aplica LST + latitud a todos
+ * los objetos celestes; este disco opaco bloquea el hemisferio
+ * inferior y da a los puntos cardinales una orientación correcta
+ * respecto al Norte geográfico (Z− = Norte cuando lat/lon son correctos).
+ *
+ * renderOrder=2 garantiza que se pinta SOBRE las estrellas (order 0-1).
+ */
 export default function Horizon() {
-    const groupRef = useRef<THREE.Group>(null);
-    const observer = useAppStore((state) => state.observer);
-    const time = useAppStore((state) => state.time);
-
-    useFrame(() => {
-        if (groupRef.current) {
-            const lst = getLST(time, observer.lon);
-            // Rotate the ground based on Latitude and LST
-            // This aligns the Y-up of the ground with the observer's Zenith
-            groupRef.current.rotation.set(0, 0, 0); // Reset
-
-            // 1. Rotate for LST (Longitude/Time)
-            groupRef.current.rotation.y = THREE.MathUtils.degToRad(-lst);
-            // 2. Rotate for Latitude
-            groupRef.current.rotation.x = THREE.MathUtils.degToRad(90 - observer.lat);
-        }
-    });
-
     return (
-        <group ref={groupRef}>
-            {/* Semi-transparent ground disc */}
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]}>
-                <circleGeometry args={[100, 64]} />
+        <group>
+            {/* ── Suelo opaco — oculta estrellas bajo el horizonte ─── */}
+            <mesh
+                position={[0, -0.3, 0]}
+                rotation={[-Math.PI / 2, 0, 0]}
+                renderOrder={2}
+            >
+                <circleGeometry args={[110, 72]} />
                 <meshBasicMaterial
-                    color="#101520"
-                    transparent
-                    opacity={0.4}
-                    side={THREE.DoubleSide}
+                    color="#04101d"
+                    side={THREE.FrontSide}
+                    depthWrite={true}
                 />
             </mesh>
 
-            {/* Radial grid on the ground */}
-            <gridHelper args={[200, 20, '#3a5a8a', '#1a2a4a']} position={[0, -0.45, 0]} rotation={[0, 0, 0]} />
+            {/* ── Franja de niebla en el horizonte ─────────────────── */}
+            <mesh
+                position={[0, -0.28, 0]}
+                rotation={[-Math.PI / 2, 0, 0]}
+                renderOrder={2}
+            >
+                <ringGeometry args={[82, 110, 72]} />
+                <meshBasicMaterial
+                    color="#0a1f35"
+                    transparent
+                    opacity={0.72}
+                    side={THREE.FrontSide}
+                    depthWrite={false}
+                />
+            </mesh>
 
-            {/* Compass Points */}
-            <CompassPoint label="NORD" position={[0, 0, -95]} color="#ff4444" />
-            <CompassPoint label="SOUTH" position={[0, 0, 95]} color="#44aaff" />
-            <CompassPoint label="EAST" position={[95, 0, 0]} color="#ffffff" />
-            <CompassPoint label="WEST" position={[-95, 0, 0]} color="#ffffff" />
+            {/* ── Línea del horizonte ───────────────────────────────── */}
+            <mesh
+                position={[0, -0.25, 0]}
+                rotation={[-Math.PI / 2, 0, 0]}
+                renderOrder={3}
+            >
+                <ringGeometry args={[89.5, 90.5, 128]} />
+                <meshBasicMaterial color="#1a3a5a" transparent opacity={0.5} />
+            </mesh>
+
+            {/* ── Puntos cardinales (espacio mundo: N = −Z) ────────── */}
+            <CardinalPoint label="N"  az={0}   color="#ff5555" />
+            <CardinalPoint label="NE" az={45}  color="#7799cc" />
+            <CardinalPoint label="E"  az={90}  color="#99bbff" />
+            <CardinalPoint label="SE" az={135} color="#7799cc" />
+            <CardinalPoint label="S"  az={180} color="#8888ff" />
+            <CardinalPoint label="SO" az={225} color="#7799cc" />
+            <CardinalPoint label="O"  az={270} color="#99bbff" />
+            <CardinalPoint label="NO" az={315} color="#7799cc" />
         </group>
     );
 }
 
-function CompassPoint({ label, position, color }: { label: string; position: [number, number, number]; color: string }) {
+/**
+ * Punto cardinal: az en grados (0=Norte, 90=Este, sentido horario).
+ * En espacio mundo, Norte geográfico = −Z.
+ */
+function CardinalPoint({ label, az, color }: { label: string; az: number; color: string }) {
+    const rad = THREE.MathUtils.degToRad(az);
+    const r = 90;
+    const x = r * Math.sin(rad);
+    const z = -r * Math.cos(rad);
+    const isMain = label.length === 1;
     return (
-        <group position={position}>
-            <mesh>
-                <boxGeometry args={[1, 0.1, 4]} />
-                <meshBasicMaterial color={color} transparent opacity={0.5} />
-            </mesh>
-            {/* Label would go here, optionally with Html from drei */}
-        </group>
+        <Html position={[x, isMain ? 2.5 : 1.2, z]} zIndexRange={[10, 0]}>
+            <div style={{
+                color,
+                fontSize: isMain ? '14px' : '10px',
+                fontFamily: "'Courier New', monospace",
+                fontWeight: 'bold',
+                letterSpacing: isMain ? '2px' : '1px',
+                textShadow: `0 0 10px ${color}`,
+                pointerEvents: 'none',
+                userSelect: 'none',
+                transform: 'translateX(-50%)',
+                opacity: isMain ? 0.9 : 0.55,
+            }}>
+                {label}
+            </div>
+        </Html>
     );
 }

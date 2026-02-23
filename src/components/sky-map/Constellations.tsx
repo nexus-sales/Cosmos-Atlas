@@ -42,14 +42,14 @@ export default function Constellations() {
                 <Line
                     key={i}
                     points={points}
-                    color="#3a5a8a"
-                    lineWidth={1}
+                    color="#5090c8"
+                    lineWidth={1.5}
                     transparent
-                    opacity={0.3}
+                    opacity={0.55}
                     dashed={true}
-                    dashScale={2}
-                    dashSize={0.5}
-                    gapSize={0.5}
+                    dashScale={3}
+                    dashSize={0.6}
+                    gapSize={0.4}
                 />
             ))}
         </group>

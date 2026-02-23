@@ -1,11 +1,13 @@
 import { create } from 'zustand';
-import { Star, DSO, Observer } from '../types/celestial';
+import { Star, DSO, Observer, Planet } from '../types/celestial';
 
 interface AppState {
     observer: Observer;
     setObserver: (observer: Observer) => void;
-    selectedObject: Star | DSO | null;
-    setSelectedObject: (obj: Star | DSO | null) => void;
+    selectedObject: Star | DSO | Planet | null;
+    setSelectedObject: (obj: Star | DSO | Planet | null) => void;
+    targetedObject: Star | DSO | Planet | null;
+    setTargetedObject: (obj: Star | DSO | Planet | null) => void;
     time: Date;
     setTime: (date: Date) => void;
     settings: {
@@ -23,12 +25,14 @@ export const useAppStore = create<AppState>((set) => ({
     setObserver: (observer) => set({ observer }),
     selectedObject: null,
     setSelectedObject: (obj) => set({ selectedObject: obj }),
+    targetedObject: null,
+    setTargetedObject: (obj) => set({ targetedObject: obj }),
     time: new Date(),
     setTime: (time) => set({ time }),
     settings: {
         showConstellations: true,
         showGrid: true,
-        showMilkyWay: true,
+        showMilkyWay: false,
     },
     toggleSetting: (key) =>
         set((state) => ({

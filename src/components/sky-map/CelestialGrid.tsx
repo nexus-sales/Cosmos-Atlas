@@ -7,43 +7,45 @@ import { equatorialTo3D } from '@/lib/astronomy/transforms';
 export default function CelestialGrid() {
     const RADIUS = 90;
 
-    const gridLines = useMemo(() => {
-        const lines: [number, number, number][][] = [];
+    const lineGeometries = useMemo(() => {
+        const results: THREE.BufferGeometry[] = [];
 
+        // Círculos de declinación (paralelos)
         for (let dec = -60; dec <= 60; dec += 30) {
-            const circle: [number, number, number][] = [];
+            const pts: number[] = [];
             for (let ra = 0; ra <= 360; ra += 5) {
-                circle.push(equatorialTo3D(ra, dec, RADIUS));
+                const p = equatorialTo3D(ra, dec, RADIUS);
+                pts.push(...p);
             }
-            lines.push(circle);
+            const geom = new THREE.BufferGeometry();
+            geom.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+            results.push(geom);
         }
 
+        // Meridianos (líneas de ascensión recta)
         for (let ra = 0; ra < 360; ra += 30) {
-            const line: [number, number, number][] = [];
+            const pts: number[] = [];
             for (let dec = -90; dec <= 90; dec += 5) {
-                line.push(equatorialTo3D(ra, dec, RADIUS));
+                const p = equatorialTo3D(ra, dec, RADIUS);
+                pts.push(...p);
             }
-            lines.push(line);
+            const geom = new THREE.BufferGeometry();
+            geom.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+            results.push(geom);
         }
 
-        return lines;
+        return results;
     }, []);
 
     return (
         <group>
-            {gridLines.map((points, i) => (
+            {lineGeometries.map((geom, i) => (
                 <line key={i}>
-                    <bufferGeometry>
-                        <bufferAttribute
-                            attach="attributes-position"
-                            count={points.length}
-                            array={new Float32Array(points.flat())}
-                            itemSize={3}
-                        />
-                    </bufferGeometry>
+                    <primitive object={geom} attach="geometry" />
                     <lineBasicMaterial color="#3a5a8a" transparent opacity={0.1} />
                 </line>
             ))}
         </group>
     );
 }
+
