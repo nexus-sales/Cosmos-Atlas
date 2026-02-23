@@ -2,22 +2,109 @@
 
 import { STARS } from '@/data/stars';
 import { DSOS } from '@/data/dsos';
+import { CONSTELLATIONS } from '@/data/constellations';
 import { useAppStore } from '@/stores/useAppStore';
-import { Search, Star as StarIcon, Orbit, CloudFog, Sparkles, X } from 'lucide-react';
+import { Search, Star as StarIcon, Orbit, CloudFog, Sparkles, X, Globe2, Share2 } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import type { Star, DSO } from '@/types/celestial';
-import { equToHor } from '@/lib/astronomy/transforms';
+import type { Star, DSO, Planet } from '@/types/celestial';
+import { equToHor, equatorialTo3D } from '@/lib/astronomy/transforms';
+import * as THREE from 'three';
+import * as Astronomy from 'astronomy-engine';
 
-type Filter = 'all' | 'stars' | 'galaxies' | 'nebulae' | 'clusters';
+type Filter = 'all' | 'stars' | 'planets' | 'galaxies' | 'nebulae' | 'clusters' | 'constellations';
 
 const FILTERS: { id: Filter; label: string; activeClass: string }[] = [
-    { id: 'all',      label: 'TODOS',     activeClass: 'bg-white/15 text-white border-white/30' },
-    { id: 'stars',    label: 'ESTRELLAS', activeClass: 'bg-yellow-500/20 text-yellow-300 border-yellow-400/50' },
-    { id: 'galaxies', label: 'GALAXIAS',  activeClass: 'bg-amber-500/20 text-amber-300 border-amber-400/50' },
-    { id: 'nebulae',  label: 'NEBULOSAS', activeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/50' },
-    { id: 'clusters', label: 'CÚMULOS',   activeClass: 'bg-blue-500/20 text-blue-300 border-blue-400/50' },
+    { id: 'all',            label: 'TODOS',     activeClass: 'bg-white/15 text-white border-white/30' },
+    { id: 'stars',          label: 'ESTRELLAS', activeClass: 'bg-yellow-500/20 text-yellow-300 border-yellow-400/50' },
+    { id: 'planets',        label: 'PLANETAS',  activeClass: 'bg-orange-500/20 text-orange-300 border-orange-400/50' },
+    { id: 'galaxies',       label: 'GALAXIAS',  activeClass: 'bg-amber-500/20 text-amber-300 border-amber-400/50' },
+    { id: 'nebulae',        label: 'NEBULOSAS', activeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/50' },
+    { id: 'clusters',       label: 'C\u00DAMULOS',  activeClass: 'bg-blue-500/20 text-blue-300 border-blue-400/50' },
+    { id: 'constellations', label: 'CONSTEL.',  activeClass: 'bg-indigo-500/20 text-indigo-300 border-indigo-400/50' },
 ];
+
+// ── Planet ephemeris helpers ─────────────────────────────────────────────────
+
+interface PlanetCfg {
+    body: Astronomy.Body;
+    name: string;
+    symbol: string;
+    color: string;
+    desc: (mag: number) => string;
+}
+
+const PLANET_GUIDE_CONFIGS: PlanetCfg[] = [
+    { body: Astronomy.Body.Venus,   name: 'Venus',    symbol: '\u2640', color: '#fff8d4', desc: (m) => `Planeta m\u00e1s brillante del cielo. Mag ${m.toFixed(1)}.` },
+    { body: Astronomy.Body.Jupiter, name: 'J\u00fapiter', symbol: '\u2643', color: '#ffe4b0', desc: (m) => `El gigante gaseoso del sistema solar. Mag ${m.toFixed(1)}.` },
+    { body: Astronomy.Body.Mars,    name: 'Marte',    symbol: '\u2642', color: '#ff7744', desc: (m) => `El Planeta Rojo. Mag ${m.toFixed(1)}.` },
+    { body: Astronomy.Body.Saturn,  name: 'Saturno',  symbol: '\u2644', color: '#f5d97a', desc: (m) => `Anillos visibles en telescopio. Mag ${m.toFixed(1)}.` },
+    { body: Astronomy.Body.Mercury, name: 'Mercurio', symbol: '\u263f', color: '#b8c8d8', desc: (m) => `El planeta m\u00e1s escurridizo. Mag ${m.toFixed(1)}.` },
+    { body: Astronomy.Body.Uranus,  name: 'Urano',    symbol: '\u26e2', color: '#a8dff0', desc: (m) => `Gigante de hielo. Mag ${m.toFixed(1)}.` },
+    { body: Astronomy.Body.Neptune, name: 'Neptuno',  symbol: '\u2646', color: '#4060ff', desc: (m) => `El gigante azul. Mag ${m.toFixed(1)}.` },
+];
+
+function buildPlanet(cfg: PlanetCfg, date: Date, lat: number, lon: number): (Planet & { alt: number }) | null {
+    try {
+        const obs = new Astronomy.Observer(lat, lon, 0);
+        const eq  = Astronomy.Equator(cfg.body, date, obs, true, true);
+        const illum = Astronomy.Illumination(cfg.body, date);
+        const ra  = eq.ra * 15;
+        const dec = eq.dec;
+        const { alt } = equToHor(ra, dec, lat, lon, date);
+        return { name: cfg.name, symbol: cfg.symbol, ra, dec, mag: illum.mag, color: cfg.color, desc: cfg.desc(illum.mag), kind: 'planet', alt };
+    } catch {
+        return null;
+    }
+}
+
+// ── Constellation centroid helpers ───────────────────────────────────────────
+
+const STAR_MAP = new Map(STARS.map((s) => [s.name, s]));
+
+/** Inverse of equatorialTo3D(ra, dec, 1) */
+function vec3ToRaDec(x: number, y: number, z: number): { ra: number; dec: number } {
+    const dec = 90 - Math.acos(Math.max(-1, Math.min(1, y))) * 180 / Math.PI;
+    const ra  = ((Math.atan2(z, x) * 180 / Math.PI + 180) % 360 + 360) % 360;
+    return { ra, dec };
+}
+
+/** Pre-compute constellation centroid positions as Planet-shaped objects */
+function buildConstellationTargets(): Planet[] {
+    return Object.keys(CONSTELLATIONS).map((name) => {
+        const pairs = CONSTELLATIONS[name];
+        const starNames = new Set<string>();
+        pairs.forEach(([a, b]) => { starNames.add(a); starNames.add(b); });
+
+        const sum = new THREE.Vector3();
+        let count = 0;
+        starNames.forEach((sn) => {
+            const s = STAR_MAP.get(sn);
+            if (!s) return;
+            const [x, y, z] = equatorialTo3D(s.ra, s.dec, 1);
+            sum.add(new THREE.Vector3(x, y, z));
+            count++;
+        });
+        if (count === 0) return null;
+
+        const unit = sum.divideScalar(count).normalize();
+        const { ra, dec } = vec3ToRaDec(unit.x, unit.y, unit.z);
+        return {
+            name,
+            ra,
+            dec,
+            mag: 0,
+            desc: `Constelaci\u00f3n de ${name} \u2014 ${count} estrellas en el cat\u00e1logo`,
+            color: '#b4d2ff',
+            symbol: '\u2736',   // ✶ marker to identify constellation targets
+            kind: 'planet' as const,
+        };
+    }).filter(Boolean) as Planet[];
+}
+
+const CONSTELLATION_TARGETS = buildConstellationTargets();
+
+// ── Icon / style helpers ─────────────────────────────────────────────────────
 
 function DSOTypeIcon({ type }: { type: DSO['type'] }) {
     if (type === 'galaxy') return <Orbit    className="w-3.5 h-3.5 text-amber-400 shrink-0" />;
@@ -31,14 +118,24 @@ function dsoActiveClass(type: DSO['type']) {
     return 'border-blue-400/40 bg-blue-500/10 text-blue-300';
 }
 
-function InfoCard({ obj }: { obj: Star | DSO }) {
-    const isDSO = 'type' in obj && 'id' in obj;
+function InfoCard({ obj }: { obj: Star | DSO | Planet }) {
+    const isDSO           = 'id' in obj;
+    const isPlanet        = !isDSO && 'kind' in obj && (obj as Planet).kind === 'planet';
+    const isConstellation = isPlanet && (obj as Planet).symbol === '\u2736';
     return (
         <div className="mx-1 mb-2 mt-0.5 p-3 rounded-md border border-white/12 space-y-1.5"
             style={{ background: 'rgba(255,255,255,0.04)' }}>
             {isDSO ? (
                 <p className="text-[10px] font-bold text-white/70 uppercase tracking-wider">
                     {(obj as DSO).type} &middot; mag {(obj as DSO).mag}
+                </p>
+            ) : isConstellation ? (
+                <p className="text-[10px] font-bold text-white/70 uppercase tracking-wider">
+                    &#10038; Constelaci&oacute;n
+                </p>
+            ) : isPlanet ? (
+                <p className="text-[10px] font-bold text-white/70 uppercase tracking-wider">
+                    {(obj as Planet).symbol} Planeta &middot; mag {(obj as Planet).mag.toFixed(1)}
                 </p>
             ) : (
                 <p className="text-[10px] font-bold text-white/70 uppercase tracking-wider">
@@ -53,9 +150,11 @@ function InfoCard({ obj }: { obj: Star | DSO }) {
     );
 }
 
+// ── Main component ───────────────────────────────────────────────────────────
+
 export default function GuideTab() {
-    const [search, setSearch]   = useState('');
-    const [filter, setFilter]   = useState<Filter>('all');
+    const [search, setSearch] = useState('');
+    const [filter, setFilter] = useState<Filter>('all');
 
     const targetedObject    = useAppStore((s) => s.targetedObject);
     const setTargetedObject = useAppStore((s) => s.setTargetedObject);
@@ -64,11 +163,12 @@ export default function GuideTab() {
 
     const q = search.toLowerCase();
 
-    const { starList, dsoList } = useMemo(() => {
+    const { starList, dsoList, planetList, constellationList } = useMemo(() => {
         const matchStar = (s: Star) =>
             s.name.toLowerCase().includes(q) || s.constellation.toLowerCase().includes(q);
         const matchDSO = (d: DSO) =>
             d.name.toLowerCase().includes(q) || d.id.toLowerCase().includes(q);
+        const matchName = (n: string) => n.toLowerCase().includes(q);
 
         const stars = (filter === 'all' || filter === 'stars')
             ? [...STARS].sort((a, b) => a.mag - b.mag).filter(matchStar).map(s => ({
@@ -77,7 +177,7 @@ export default function GuideTab() {
               }))
             : [];
 
-        const dsos = (filter !== 'stars')
+        const dsos = (filter === 'all' || filter === 'galaxies' || filter === 'nebulae' || filter === 'clusters')
             ? DSOS.filter((d) => {
                 if (!matchDSO(d)) return false;
                 if (filter === 'galaxies') return d.type === 'galaxy';
@@ -90,12 +190,27 @@ export default function GuideTab() {
               }))
             : [];
 
-        return { starList: stars, dsoList: dsos };
+        const planets = (filter === 'all' || filter === 'planets')
+            ? PLANET_GUIDE_CONFIGS
+                .map(cfg => buildPlanet(cfg, time, observer.lat, observer.lon))
+                .filter((p): p is Planet & { alt: number } => p !== null && matchName(p.name))
+            : [];
+
+        const constellations = (filter === 'all' || filter === 'constellations')
+            ? CONSTELLATION_TARGETS
+                .filter(c => matchName(c.name))
+                .map(c => ({
+                    ...c,
+                    alt: equToHor(c.ra, c.dec, observer.lat, observer.lon, time).alt,
+                }))
+            : [];
+
+        return { starList: stars, dsoList: dsos, planetList: planets, constellationList: constellations };
     }, [q, filter, observer, time]);
 
-    const isTargeted = (obj: Star | DSO) => targetedObject?.name === obj.name;
+    const isTargeted = (obj: Star | DSO | Planet) => targetedObject?.name === obj.name;
 
-    const handleSelect = (obj: Star | DSO) => {
+    const handleSelect = (obj: Star | DSO | Planet) => {
         setTargetedObject(isTargeted(obj) ? null : obj);
     };
 
@@ -107,7 +222,7 @@ export default function GuideTab() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                 <input
                     type="text"
-                    placeholder="Buscar objeto o constelación..."
+                    placeholder="Buscar objeto o constelaci\u00f3n..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="w-full rounded-lg py-2.5 pl-10 pr-8 text-[12px] font-mono focus:outline-none transition-colors placeholder:text-white/25"
@@ -154,6 +269,48 @@ export default function GuideTab() {
                 </div>
             )}
 
+            {/* PLANETAS */}
+            {planetList.length > 0 && (
+                <section>
+                    <h4 className="flex items-center gap-2 text-[11px] font-bold text-white/60 tracking-[0.18em] uppercase mb-2 pb-1.5 border-b border-white/10">
+                        <Globe2 className="w-3.5 h-3.5 text-orange-400/70" />
+                        Planetas <span className="text-white/35 text-[10px] font-normal">({planetList.length})</span>
+                    </h4>
+                    <div className="space-y-0.5">
+                        {planetList.map((planet) => {
+                            const active = isTargeted(planet);
+                            return (
+                                <div key={planet.name}>
+                                    <button
+                                        onClick={() => handleSelect(planet)}
+                                        className={cn(
+                                            'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all border',
+                                            active
+                                                ? 'border-orange-400/40 bg-orange-500/10 text-orange-200'
+                                                : 'border-transparent hover:border-white/12 hover:bg-white/4 text-white/75 hover:text-white'
+                                        )}
+                                    >
+                                        <span className="text-[14px] shrink-0 leading-none" style={{ color: planet.color }}>
+                                            {planet.symbol}
+                                        </span>
+                                        <span className="text-[13px] font-semibold flex-1 truncate">{planet.name}</span>
+                                        <span className="text-[10px] text-white/40 shrink-0 font-mono">{planet.mag.toFixed(1)}</span>
+                                        <div
+                                            title={planet.alt > 0 ? `Visible \u00b7 Alt ${planet.alt.toFixed(0)}\u00b0` : 'Bajo el horizonte'}
+                                            className={cn(
+                                                'w-1.5 h-1.5 rounded-full shrink-0 ml-0.5',
+                                                planet.alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15'
+                                            )}
+                                        />
+                                    </button>
+                                    {active && <InfoCard obj={planet} />}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </section>
+            )}
+
             {/* ESTRELLAS */}
             {starList.length > 0 && (
                 <section>
@@ -183,7 +340,7 @@ export default function GuideTab() {
                                             {star.constellation}
                                         </span>
                                         <div
-                                            title={star.alt > 0 ? `Visible · Alt ${star.alt.toFixed(0)}°` : 'Bajo el horizonte'}
+                                            title={star.alt > 0 ? `Visible \u00b7 Alt ${star.alt.toFixed(0)}\u00b0` : 'Bajo el horizonte'}
                                             className={cn(
                                                 'w-1.5 h-1.5 rounded-full shrink-0 ml-0.5',
                                                 star.alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15'
@@ -210,13 +367,52 @@ export default function GuideTab() {
                     isTargeted={isTargeted} onSelect={handleSelect} />
             )}
 
-            {/* CÚMULOS */}
+            {/* C\u00DAMULOS */}
             {dsoList.filter(d => d.type === 'cluster').length > 0 && (
-                <DSOSection title="Cúmulos" items={dsoList.filter(d => d.type === 'cluster')}
+                <DSOSection title="C\u00famulos" items={dsoList.filter(d => d.type === 'cluster')}
                     isTargeted={isTargeted} onSelect={handleSelect} />
             )}
 
-            {starList.length === 0 && dsoList.length === 0 && (
+            {/* CONSTELACIONES */}
+            {constellationList.length > 0 && (
+                <section>
+                    <h4 className="flex items-center gap-2 text-[11px] font-bold text-white/60 tracking-[0.18em] uppercase mb-2 pb-1.5 border-b border-white/10">
+                        <Share2 className="w-3.5 h-3.5 text-indigo-400/70" />
+                        Constelaciones <span className="text-white/35 text-[10px] font-normal">({constellationList.length})</span>
+                    </h4>
+                    <div className="space-y-0.5">
+                        {constellationList.map((c) => {
+                            const active = isTargeted(c);
+                            return (
+                                <div key={c.name}>
+                                    <button
+                                        onClick={() => handleSelect(c)}
+                                        className={cn(
+                                            'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all border',
+                                            active
+                                                ? 'border-indigo-400/40 bg-indigo-500/10 text-indigo-200'
+                                                : 'border-transparent hover:border-white/12 hover:bg-white/4 text-white/75 hover:text-white'
+                                        )}
+                                    >
+                                        <span className="text-[11px] text-indigo-400/60 shrink-0">&#10038;</span>
+                                        <span className="text-[13px] font-semibold flex-1 truncate">{c.name}</span>
+                                        <div
+                                            title={c.alt > 0 ? `Visible \u00b7 Alt ${c.alt.toFixed(0)}\u00b0` : 'Bajo el horizonte'}
+                                            className={cn(
+                                                'w-1.5 h-1.5 rounded-full shrink-0 ml-0.5',
+                                                c.alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15'
+                                            )}
+                                        />
+                                    </button>
+                                    {active && <InfoCard obj={c} />}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </section>
+            )}
+
+            {starList.length === 0 && dsoList.length === 0 && planetList.length === 0 && constellationList.length === 0 && (
                 <p className="text-center text-[12px] text-white/35 italic py-10">
                     Sin resultados para &laquo;{search}&raquo;
                 </p>
@@ -228,8 +424,8 @@ export default function GuideTab() {
 function DSOSection({ title, items, isTargeted, onSelect }: {
     title: string;
     items: (DSO & { alt: number })[];
-    isTargeted: (o: Star | DSO) => boolean;
-    onSelect: (o: Star | DSO) => void;
+    isTargeted: (o: Star | DSO | Planet) => boolean;
+    onSelect: (o: Star | DSO | Planet) => void;
 }) {
     return (
         <section>
@@ -258,7 +454,7 @@ function DSOSection({ title, items, isTargeted, onSelect }: {
                                 </div>
                                 <span className="text-[10px] text-white/40 shrink-0 font-mono">{dso.mag.toFixed(1)}</span>
                                 <div
-                                    title={dso.alt > 0 ? `Visible · Alt ${dso.alt.toFixed(0)}°` : 'Bajo el horizonte'}
+                                    title={dso.alt > 0 ? `Visible \u00b7 Alt ${dso.alt.toFixed(0)}\u00b0` : 'Bajo el horizonte'}
                                     className={cn(
                                         'w-1.5 h-1.5 rounded-full shrink-0 ml-0.5',
                                         dso.alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15'

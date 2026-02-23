@@ -53,9 +53,15 @@ export default function TargetPointer() {
 
     if (!targetedObject || !position) return null;
 
-    const isGalaxy = 'type' in targetedObject && (targetedObject as { type: string }).type === 'galaxy';
-    const isNebula = 'type' in targetedObject && (targetedObject as { type: string }).type === 'nebula';
-    const accentColor = isGalaxy ? '#f59e0b' : isNebula ? '#34d399' : '#60a5fa';
+    const isGalaxy        = 'type' in targetedObject && (targetedObject as { type: string }).type === 'galaxy';
+    const isNebula        = 'type' in targetedObject && (targetedObject as { type: string }).type === 'nebula';
+    const isPlanet        = 'kind' in targetedObject && (targetedObject as { kind: string }).kind === 'planet';
+    const isConstellation = isPlanet && (targetedObject as { symbol: string }).symbol === '\u2736';
+    const accentColor = isGalaxy        ? '#f59e0b'
+                      : isNebula        ? '#34d399'
+                      : isConstellation ? '#818cf8'
+                      : isPlanet        ? (targetedObject as { color: string }).color
+                      : '#60a5fa';
 
     return (
         <group position={position}>
