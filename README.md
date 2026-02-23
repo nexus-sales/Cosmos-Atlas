@@ -13,6 +13,7 @@ Planetario interactivo en tiempo real renderizado en 3D en el navegador. Muestra
 - **42 objetos de cielo profundo (DSOs)** — Galaxias, nebulosas y cúmulos con datos reales
 - **Planetas del Sistema Solar** — Posiciones calculadas con `astronomy-engine` (efemérides reales)
 - **Vía Láctea** — Renderizada con shader GLSL basado en coordenadas galácticas reales
+- **Viaje temporal** — Slider flotante para explorar el cielo en cualquier fecha (±10 años), con reproducción animada a velocidad variable y regreso instantáneo al tiempo real
 - **Guía interactiva** — Panel de búsqueda y filtrado con puntero celestial animado
 - **Puntero de objetivo** — Al seleccionar un objeto en la guía, aparece un crosshair animado apuntando a él en la bóveda
 - **Efectos visuales** — Partículas cósmicas, meteoros, atmósfera de horizonte
@@ -60,7 +61,7 @@ npm start
 
 ## 📁 Estructura del proyecto
 
-```
+```text
 src/
 ├── app/
 │   ├── globals.css        # Estilos globales
@@ -77,7 +78,8 @@ src/
 │   │   ├── SidePanel.tsx         # Panel lateral (tabs)
 │   │   ├── GuideTab.tsx          # Guía interactiva de objetos celestes
 │   │   ├── ObjectInfoTab.tsx     # Detalle del objeto seleccionado
-│   │   └── ChallengeTab.tsx      # Retos de observación
+│   │   ├── ChallengeTab.tsx      # Retos de observación
+│   │   └── TimeTravelControls.tsx # Slider de viaje temporal
 │   │
 │   └── sky-map/
 │       ├── SkyCanvas.tsx         # Canvas 3D principal (orquestador)
@@ -119,16 +121,20 @@ src/
 ## 🌠 Catálogo de datos
 
 ### Estrellas (`stars.ts`)
+
 290+ estrellas con nombre propio ordenadas por magnitud. Cada estrella incluye:
+
 - Coordenadas J2000 (RA en grados, Dec en grados)
 - Magnitud aparente, color espectral, radio de renderizado
 - Constelación y descripción
 
 ### Constelaciones (`constellations.ts`)
-30+ constelaciones definidas como secuencias de pares de estrellas (líneas).  
+
+30+ constelaciones definidas como secuencias de pares de estrellas (líneas).
 Incluye: Orión, Casiopea, Osa Mayor, Osa Menor, Cygnus, Lyra, Aquila, Serpens, Hércules, Perseo, Auriga, Géminis, Cepheus, Corvus, Crux, Centaurus y más.
 
 ### Objetos de cielo profundo (`dsos.ts`)
+
 42 objetos clasificados en 3 tipos:
 
 | Tipo | Ejemplos |
@@ -143,21 +149,39 @@ Incluye: Orión, Casiopea, Osa Mayor, Osa Menor, Cygnus, Lyra, Aquila, Serpens, 
 
 La bóveda celeste usa un sistema de referencia ecuatorial transformado a 3D:
 
-```
+```text
 equatorialTo3D(ra_deg, dec_deg, radius) → [x, y, z]
 ```
 
 El componente `CelestialGroup` aplica cada frame la rotación:
-- `rotation.x = 90° - latitud`  
+
+- `rotation.x = 90° - latitud`
 - `rotation.y = -LST` (tiempo sidéreo local)
 
 Esto mantiene todos los objetos celestes alineados correctamente con el horizonte local del observador en tiempo real.
 
 ---
 
+## ⏱️ Viaje temporal
+
+El control `TimeTravelControls` flota en la parte inferior central del canvas. Al activarlo, el tick de tiempo real se pausa y se toma el instante actual como referencia:
+
+| Control | Función |
+|---|---|
+| Slider (−10a / +10a) | Salta a cualquier fecha arrastrando |
+| Presets `−10a −1a −1m −1s −1d` | Saltos rápidos hacia atrás/adelante |
+| ▶ / ⏸ | Reproduce el tiempo hacia adelante |
+| `VEL: 1h/s 1d/s 1s/s 1m/s` | Velocidad de reproducción |
+| `AHORA` | Vuelve al tiempo real |
+
+La píldora del botón se vuelve ámbar cuando hay un offset activo y muestra el desfase en formato legible (`+3.2a`, `−45d`, `+12h`…).
+
+---
+
 ## 🎯 Puntero de objetivo
 
 Al hacer clic en cualquier objeto en la **Guía**, el store global actualiza `targetedObject`. El componente `TargetPointer` lee este estado, calcula la posición 3D del objeto y renderiza:
+
 - 3 anillos pulsantes animados (desfasados 120° en fase)
 - Crosshair de 4 líneas a 0°/90°/180°/270°
 - Etiqueta HTML flotante con el nombre del objeto
