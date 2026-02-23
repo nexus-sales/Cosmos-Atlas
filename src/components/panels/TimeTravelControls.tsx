@@ -25,14 +25,18 @@ export default function TimeTravelControls() {
     const setTime = useAppStore((s) => s.setTime);
     const isLive = useAppStore((s) => s.isLive);
     const setIsLive = useAppStore((s) => s.setIsLive);
+    const storeTime = useAppStore((s) => s.time);
 
     const [expanded, setExpanded] = useState(false);
     const [offsetDays, setOffsetDays] = useState(0);
     const [playing, setPlaying] = useState(false);
     const [speedIdx, setSpeedIdx] = useState(1);
+    // refMs mirrors refMsRef for use during render (refs cannot be read in render)
+    const [refMs, setRefMs] = useState(0);
 
     // Refs for use inside intervals (avoid stale closures)
-    const refMsRef = useRef(Date.now());
+    // Initialized to 0; always assigned via storeTime.getTime() before use
+    const refMsRef = useRef(0);
     const offsetDaysRef = useRef(0);
     const playIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -44,7 +48,9 @@ export default function TimeTravelControls() {
     // Capture current live time as reference and switch to time travel
     const enterTimeTravel = () => {
         if (isLive) {
-            refMsRef.current = Date.now();
+            const now = storeTime.getTime();
+            refMsRef.current = now;
+            setRefMs(now);
             setIsLive(false);
         }
     };
@@ -94,8 +100,8 @@ export default function TimeTravelControls() {
         };
     }, [playing, speedIdx, setTime]);
 
-    // Display date
-    const displayMs = isLive ? Date.now() : refMsRef.current + offsetDays * 86_400_000;
+    // Display date: when live, use the store time (updated by the live interval)
+    const displayMs = isLive ? storeTime.getTime() : refMs + offsetDays * 86_400_000;
     const displayDate = new Date(displayMs);
 
     const formatOffset = () => {
