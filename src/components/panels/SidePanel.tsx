@@ -111,17 +111,20 @@ export default function SidePanel() {
     }
 
     // ── Full panel (desktop open OR mobile overlay) ───────────────────────────
+    const mobileHidden = isMobile && !sidebarOpen;
     return (
         <motion.aside
             initial={false}
-            animate={{ x: 0 }}
-            exit={{ x: 300 }}
+            animate={{ x: mobileHidden ? 300 : 0 }}
             transition={{ type: 'spring', stiffness: 350, damping: 35 }}
             className={cn(
                 'z-50 flex flex-col overflow-hidden shadow-2xl border-l border-white/5 shrink-0',
                 isMobile ? 'fixed top-0 right-0 h-full w-[300px]' : 'relative w-[300px]'
             )}
-            style={{ background: 'linear-gradient(180deg, rgba(4,12,28,0.97) 0%, rgba(2,6,18,0.99) 100%)' }}
+            style={{
+                background: 'linear-gradient(180deg, rgba(4,12,28,0.97) 0%, rgba(2,6,18,0.99) 100%)',
+                pointerEvents: mobileHidden ? 'none' : 'auto',
+            }}
         >
             {/* Tabs + close/collapse button */}
             <div className="flex border-b border-white/8 h-12 shrink-0">
