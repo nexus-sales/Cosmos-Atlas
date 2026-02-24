@@ -392,6 +392,51 @@ Clic de nuevo en el mismo objeto lo deselecciona.
 
 ## Changelog
 
+### v2.5 - 2026-02-24 (Calibracion visual y trazabilidad)
+
+#### Via Lactea: correcciones de rendering y exposicion
+- Reorden de capas para evitar conflictos visuales (`renderOrder` negativo en Via Lactea).
+- Ajustes de profundidad para evitar artefactos:
+  - `depthWrite: false`
+  - `depthTest: false`
+- Mezcla de color mas controlada:
+  - `AdditiveBlending` -> `NormalBlending` en shader y particulas.
+  - `toneMapped: false` para mantener contraste.
+- Recalibracion del shader:
+  - Menor bulbo/halo.
+  - Mayor peso de carriles oscuros.
+  - Alpha maximo reducido para evitar nucleo quemado.
+- Particulas de la banda con menor tamano/opacidad para quitar velo blanco.
+
+#### Fondo celeste
+- `CelestialSphere` ajustada a `BackSide` sin transparencia para evitar mezcla innecesaria en la cola de transparencias.
+
+#### Escala de Bortle: comportamiento claro en UI y render
+- Selector actualizado de `[1,3,5,7,9]` a `[1..9]` (incluye el valor por defecto 4).
+- Curvas de visibilidad recalibradas para que el cambio sea perceptible:
+  - `Stars.tsx`: limite de magnitud mas agresivo.
+  - `BackgroundStars.tsx`: limite de magnitud mas agresivo para campo tenue.
+
+#### Satelites y Starlink: identificables y auditables
+- Visibilidad mejorada de puntos:
+  - Tamano/opacidad mayores.
+  - `renderOrder` alto.
+  - `depthTest/depthWrite` ajustados para evitar ocultacion por otras capas.
+  - Margen de horizonte ampliado a `-5 deg`.
+- Tooltip en cielo:
+  - Al pasar el raton sobre un punto se muestra su nombre.
+- Panel con telemetria:
+  - Leyenda de color (`ISS/Hubble` y `Starlink`).
+  - Contadores `visibles/cargados` por grupo.
+  - Estado de carga Starlink: `idle | loading | ok | error`.
+- Store global ampliado con `satelliteInfo` para exponer esos datos en tiempo real.
+
+#### Nota operativa
+- Starlink depende de fetch cliente a CelesTrak.
+  Si hay bloqueo de red/CORS, el estado pasa a `error` y los contadores quedan en `0`.
+
+---
+
 ### v2.4 — 2026-02-24 (Realidad Científica Total)
 
 #### 🪐 Sistema Solar Completo

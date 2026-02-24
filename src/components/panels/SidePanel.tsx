@@ -128,11 +128,11 @@ export default function SidePanel() {
     return (
         <motion.aside
             initial={false}
-            animate={{ x: mobileHidden ? 300 : 0 }}
+            animate={{ x: mobileHidden ? 280 : 0 }}
             transition={{ type: 'spring', stiffness: 350, damping: 35 }}
             className={cn(
                 'z-50 flex flex-col overflow-hidden shadow-2xl border-l border-white/5 shrink-0',
-                isMobile ? 'fixed top-0 right-0 h-full w-[300px]' : 'relative w-[300px]'
+                isMobile ? 'fixed top-0 right-0 h-full w-[280px]' : 'relative w-[300px]'
             )}
             style={{
                 background: 'linear-gradient(180deg, rgba(4,12,28,0.97) 0%, rgba(2,6,18,0.99) 100%)',
@@ -165,9 +165,14 @@ export default function SidePanel() {
                 <button
                     onClick={() => setSidebarOpen(false)}
                     title={isMobile ? 'Cerrar' : 'Colapsar'}
-                    className="w-10 flex items-center justify-center text-white/25 hover:text-white/60 transition-colors shrink-0 border-l border-white/8"
+                    className={cn(
+                        "flex items-center justify-center transition-colors shrink-0 border-l border-white/8",
+                        isMobile
+                            ? "w-14 bg-white/5 hover:bg-red-500/30 text-white/60 hover:text-red-400"
+                            : "w-10 text-white/25 hover:text-white/60"
+                    )}
                 >
-                    {isMobile ? <X className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                    {isMobile ? <X className="w-5 h-5" /> : <ChevronRight className="w-4 h-4" />}
                 </button>
             </div>
 

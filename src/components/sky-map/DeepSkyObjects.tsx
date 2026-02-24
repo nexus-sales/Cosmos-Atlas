@@ -1,12 +1,12 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import * as THREE from 'three';
 import { DSOS } from '@/data/dsos';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { useAppStore } from '@/stores/useAppStore';
 import { Html } from '@react-three/drei';
-import { DSOType } from '@/types/celestial';
+import { DSOType, DSO } from '@/types/celestial';
 
 function createDSOTexture(type: DSOType, color: string): THREE.CanvasTexture {
     const size = 128;
@@ -68,15 +68,78 @@ function createDSOTexture(type: DSOType, color: string): THREE.CanvasTexture {
     return tex;
 }
 
-export default function DeepSkyObjects() {
+// ── Componente individual de DSO con hover ─────────────────────────────────────
+interface DSOData extends DSO {
+    pos: [number, number, number];
+    visualSize: number;
+    texture: THREE.CanvasTexture;
+}
+
+function DSOItem({ dso }: { dso: DSOData }) {
+    const [hovered, setHovered] = useState(false);
     const setSelectedObject = useAppStore((state) => state.setSelectedObject);
+    const nightMode = useAppStore((state) => state.settings.nightMode);
+
+    const displayColor = nightMode ? '#ff4444' : dso.color;
+
+    return (
+        <group position={dso.pos}>
+            {/* Hitbox invisible para hover */}
+            <mesh
+                onClick={(e) => { e.stopPropagation(); setSelectedObject(dso); }}
+                onPointerOver={() => { setHovered(true); document.body.style.cursor = 'pointer'; }}
+                onPointerOut={() => { setHovered(false); document.body.style.cursor = 'default'; }}
+            >
+                <sphereGeometry args={[Math.max(1.5, dso.visualSize), 8, 8]} />
+                <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+            </mesh>
+
+            {/* Textura visual del DSO */}
+            <mesh>
+                <planeGeometry args={[dso.visualSize, dso.visualSize]} />
+                <meshBasicMaterial
+                    map={dso.texture}
+                    transparent
+                    opacity={0.7}
+                    depthWrite={false}
+                    blending={THREE.AdditiveBlending}
+                />
+            </mesh>
+
+            {/* Label solo en hover */}
+            {hovered && (
+                <Html distanceFactor={15} zIndexRange={[100, 0]}>
+                    <div style={{
+                        color: displayColor,
+                        fontSize: '11px',
+                        fontFamily: "'Courier New', monospace",
+                        textShadow: `0 0 8px ${displayColor}, 0 0 3px black`,
+                        pointerEvents: 'none',
+                        whiteSpace: 'nowrap',
+                        transform: 'translateY(-20px)',
+                        background: 'rgba(0,0,0,0.6)',
+                        padding: '3px 8px',
+                        borderRadius: '4px',
+                        border: `1px solid ${displayColor}66`,
+                        fontWeight: 'bold',
+                    }}>
+                        {dso.id}
+                        <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px' }}>
+                            {dso.name} · mag {dso.mag.toFixed(1)}
+                        </div>
+                    </div>
+                </Html>
+            )}
+        </group>
+    );
+}
+
+export default function DeepSkyObjects() {
     const DSO_RADIUS = 94;
 
     const dsoData = useMemo(() => {
         return DSOS.map((dso) => {
-            const pos = equatorialTo3D(dso.ra, dso.dec, DSO_RADIUS);
-            // Conversion arcmin to units on sphere (R=94)
-            // circumference = 2 * PI * 94 = 590 units. 590 / (360 * 60) = 0.027 units per arcmin
+            const pos = equatorialTo3D(dso.ra, dso.dec, DSO_RADIUS) as [number, number, number];
             const visualSize = Math.max(0.4, (dso.sizeArcmin || 10) * 0.027 * 1.5);
             const texture = createDSOTexture(dso.type, dso.color);
             return { ...dso, pos, visualSize, texture };
@@ -86,40 +149,7 @@ export default function DeepSkyObjects() {
     return (
         <group>
             {dsoData.map((dso) => (
-                <group key={dso.id} position={dso.pos}>
-                    <mesh
-                        onClick={(e) => { e.stopPropagation(); setSelectedObject(dso); }}
-                        onPointerOver={() => { document.body.style.cursor = 'pointer'; }}
-                        onPointerOut={() => { document.body.style.cursor = 'default'; }}
-                    >
-                        <planeGeometry args={[dso.visualSize, dso.visualSize]} />
-                        <meshBasicMaterial
-                            map={dso.texture}
-                            transparent
-                            opacity={0.7}
-                            depthWrite={false}
-                            blending={THREE.AdditiveBlending}
-                        />
-                    </mesh>
-
-                    <Html distanceFactor={15} zIndexRange={[50, 0]}>
-                        <div style={{
-                            color: dso.color,
-                            fontSize: '9px',
-                            fontFamily: "'Courier New', monospace",
-                            textShadow: '0 0 5px black',
-                            pointerEvents: 'none',
-                            whiteSpace: 'nowrap',
-                            transform: 'translateY(12px) translateX(-50%)',
-                            background: 'rgba(0,0,0,0.4)',
-                            padding: '1px 4px',
-                            borderRadius: '2px',
-                            border: `0.5px solid ${dso.color}44`
-                        }}>
-                            {dso.id} <span style={{ opacity: 0.6 }}>{dso.mag.toFixed(1)}</span>
-                        </div>
-                    </Html>
-                </group>
+                <DSOItem key={dso.id} dso={dso} />
             ))}
         </group>
     );

@@ -140,6 +140,10 @@ function dsoActiveClass(type: DSO['type']) {
     return 'border-blue-400/40 bg-blue-500/10 text-blue-300';
 }
 
+function skyObjectKey(obj: { name: string; ra: number; dec: number }, prefix: string) {
+    return `${prefix}:${obj.name}:${obj.ra.toFixed(6)}:${obj.dec.toFixed(6)}`;
+}
+
 function InfoCard({ obj }: { obj: Star | DSO | Planet }) {
     const isDSO           = 'id' in obj;
     const isPlanet        = !isDSO && 'kind' in obj && (obj as Planet).kind === 'planet';
@@ -302,7 +306,7 @@ export default function GuideTab() {
                         {planetList.map((planet) => {
                             const active = isTargeted(planet);
                             return (
-                                <div key={planet.name}>
+                                <div key={skyObjectKey(planet, 'planet')}>
                                     <button
                                         onClick={() => handleSelect(planet)}
                                         className={cn(
@@ -344,7 +348,7 @@ export default function GuideTab() {
                         {starList.map((star) => {
                             const active = isTargeted(star);
                             return (
-                                <div key={star.name}>
+                                <div key={skyObjectKey(star, 'star')}>
                                     <button
                                         onClick={() => handleSelect(star)}
                                         className={cn(
@@ -406,7 +410,7 @@ export default function GuideTab() {
                         {constellationList.map((c) => {
                             const active = isTargeted(c);
                             return (
-                                <div key={c.name}>
+                                <div key={skyObjectKey(c, 'constellation')}>
                                     <button
                                         onClick={() => handleSelect(c)}
                                         className={cn(

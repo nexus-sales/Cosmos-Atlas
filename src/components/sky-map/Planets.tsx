@@ -57,8 +57,6 @@ const PLANET_CONFIGS: PlanetConfig[] = [
     },
 ];
 
-const PLANET_RADIUS = 95;
-
 // ── Physical constants ────────────────────────────────────────────────────────
 const RADII_KM: Record<string, number> = {
     'Mercurio': 2439.7,
@@ -71,17 +69,6 @@ const RADII_KM: Record<string, number> = {
 };
 
 const AU_KM = 149597870.7;
-
-/** Matches Body enum to Spanish names used in config */
-const BODY_NAME_MAP: Record<string, string> = {
-    'Mercurio': 'Mercury',
-    'Venus': 'Venus',
-    'Marte': 'Mars',
-    'Júpiter': 'Jupiter',
-    'Saturno': 'Saturn',
-    'Urano': 'Uranus',
-    'Neptuno': 'Neptune',
-};
 
 // ── Moon helpers ─────────────────────────────────────────────────────────────
 
@@ -108,29 +95,28 @@ function updateMoonCanvas(canvas: HTMLCanvasElement, phase: number, color1 = '#d
     const cx = S / 2, cy = S / 2, r = S / 2 - 6;
     const H = Math.PI / 2;
 
-    // Reset and clip
     ctx.save();
     ctx.clearRect(0, 0, S, S);
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.clip();
 
-    // Background: night side (dark blue-gray)
+    // Background: night side
     ctx.fillStyle = color2;
     ctx.fillRect(0, 0, S, S);
 
     const p = ((phase % 360) + 360) % 360;
-    const wax = p <= 180;               // waxing (right side lit) vs waning (left side lit)
-    const phi = wax ? p : 360 - p;     // phase within the half-cycle (0-180)
-    const termB = Math.abs(Math.cos(phi * Math.PI / 180)) * r; // terminator ellipse semi-minor
+    const wax = p <= 180;
+    const phi = wax ? p : 360 - p;
+    const termB = Math.abs(Math.cos(phi * Math.PI / 180)) * r;
 
     // Draw the lit half-disc
     ctx.fillStyle = color1;
     ctx.beginPath();
     if (wax) {
-        ctx.arc(cx, cy, r, -H, H);  // right half
+        ctx.arc(cx, cy, r, -H, H);
     } else {
-        ctx.arc(cx, cy, r, H, -H);  // left half
+        ctx.arc(cx, cy, r, H, -H);
     }
     ctx.closePath();
     ctx.fill();
@@ -158,13 +144,59 @@ function updateMoonCanvas(canvas: HTMLCanvasElement, phase: number, color1 = '#d
         ctx.fill();
     }
 
-    // Limb-darkening
-    const g = ctx.createRadialGradient(cx - r * 0.2, cy - r * 0.25, r * 0.05, cx, cy, r);
-    g.addColorStop(0, 'rgba(255,255,245,0.12)');
-    g.addColorStop(0.6, 'rgba(0,0,0,0)');
-    g.addColorStop(1, 'rgba(0,0,0,0.45)');
+    // Limb-darkening centrado (corregido)
+    const g = ctx.createRadialGradient(cx, cy, r * 0.3, cx, cy, r);
+    g.addColorStop(0, 'rgba(255,255,245,0.08)');
+    g.addColorStop(0.5, 'rgba(0,0,0,0)');
+    g.addColorStop(1, 'rgba(0,0,0,0.35)');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, S, S);
+    ctx.restore();
+}
+
+/**
+ * Creates a simple planet disc texture (for outer planets that don't show phases).
+ * Includes subtle limb darkening and optional surface features.
+ */
+function createPlanetTexture(canvas: HTMLCanvasElement, color: string, hasRings = false) {
+    const S = 256;
+    if (canvas.width !== S) canvas.width = canvas.height = S;
+    const ctx = canvas.getContext('2d')!;
+    const cx = S / 2, cy = S / 2, r = S / 2 - 8;
+
+    ctx.save();
+    ctx.clearRect(0, 0, S, S);
+
+    // Main disc with gradient
+    const mainGrad = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.2, 0, cx, cy, r);
+    mainGrad.addColorStop(0, color);
+    mainGrad.addColorStop(0.7, color);
+    mainGrad.addColorStop(1, 'rgba(0,0,0,0.4)');
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = mainGrad;
+    ctx.fill();
+
+    // Subtle bands for gas giants
+    if (!hasRings) {
+        ctx.globalAlpha = 0.15;
+        for (let i = 0; i < 4; i++) {
+            const y = cy - r * 0.6 + i * r * 0.4;
+            ctx.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+            ctx.fillRect(cx - r, y, r * 2, r * 0.15);
+        }
+        ctx.globalAlpha = 1;
+    }
+
+    // Limb darkening
+    const limbGrad = ctx.createRadialGradient(cx, cy, r * 0.5, cx, cy, r);
+    limbGrad.addColorStop(0, 'transparent');
+    limbGrad.addColorStop(0.8, 'transparent');
+    limbGrad.addColorStop(1, 'rgba(0,0,0,0.5)');
+    ctx.fillStyle = limbGrad;
+    ctx.fill();
+
     ctx.restore();
 }
 
@@ -241,27 +273,39 @@ function MoonMesh({ planet, phase }: { planet: Planet & { pos: [number, number, 
     );
 }
 
+// Planetas interiores muestran fases, exteriores no
+const INNER_PLANETS = ['Mercurio', 'Venus'];
+
 function PlanetMesh({ planet }: { planet: Planet & { pos: [number, number, number]; angularSize: number; phase: number; ringTilt?: number; moons?: Astronomy.JupiterMoonsInfo } }) {
     const meshRef = useRef<THREE.Group>(null);
     const setSelectedObject = useAppStore((state) => state.setSelectedObject);
 
-    // Visual size: 1 arcsec = 0.00045 units roughly on sphere R=95
-    // multiplier to make them visible without zoom, but proportional
-    const size = Math.max(0.15, planet.angularSize * 0.02);
+    // Tamaño visual proporcional al tamaño angular real
+    const size = Math.max(0.18, planet.angularSize * 0.025);
+    const isInnerPlanet = INNER_PLANETS.includes(planet.name);
+    const hasSaturnRings = planet.name === 'Saturno';
 
     const [texture] = useState(() => {
         const canvas = document.createElement('canvas');
         const tex = new THREE.CanvasTexture(canvas);
-        updateMoonCanvas(canvas, planet.phase, planet.color, '#110505');
+        if (isInnerPlanet) {
+            updateMoonCanvas(canvas, planet.phase, planet.color, '#110505');
+        } else {
+            createPlanetTexture(canvas, planet.color, hasSaturnRings);
+        }
         tex.needsUpdate = true;
         return tex;
     });
 
     useEffect(() => {
         const canvas = texture.image as HTMLCanvasElement;
-        updateMoonCanvas(canvas, planet.phase, planet.color, '#110505');
+        if (isInnerPlanet) {
+            updateMoonCanvas(canvas, planet.phase, planet.color, '#110505');
+        } else {
+            createPlanetTexture(canvas, planet.color, hasSaturnRings);
+        }
         texture.needsUpdate = true;
-    }, [planet.phase, texture, planet.color]);
+    }, [planet.phase, texture, planet.color, isInnerPlanet, hasSaturnRings]);
 
     useEffect(() => { return () => texture.dispose(); }, [texture]);
 
@@ -278,32 +322,34 @@ function PlanetMesh({ planet }: { planet: Planet & { pos: [number, number, numbe
                 </mesh>
 
                 {/* Atmosphere halo */}
-                <mesh scale={[1.4, 1.4, 1]}>
+                <mesh scale={[1.3, 1.3, 1]}>
                     <planeGeometry args={[size * 2, size * 2]} />
-                    <meshBasicMaterial color={planet.color} transparent opacity={0.08} depthWrite={false} />
+                    <meshBasicMaterial color={planet.color} transparent opacity={0.06} depthWrite={false} />
                 </mesh>
 
-                {/* Real Saturn Rings Tilt */}
-                {planet.name === 'Saturno' && planet.ringTilt !== undefined && (
+                {/* Saturn Rings - now using real tilt */}
+                {hasSaturnRings && planet.ringTilt !== undefined && (
                     <mesh rotation={[planet.ringTilt, 0, 0]}>
-                        <ringGeometry args={[size * 2.2, size * 4.5, 64]} />
-                        <meshBasicMaterial color="#e8c870" transparent opacity={0.5} side={THREE.DoubleSide} depthWrite={false} />
+                        <ringGeometry args={[size * 1.8, size * 3.5, 64]} />
+                        <meshBasicMaterial color="#d4b896" transparent opacity={0.6} side={THREE.DoubleSide} depthWrite={false} />
                     </mesh>
                 )}
             </group>
 
-            {/* Jupiter Moons (Galilean) */}
+            {/* Jupiter Galilean Moons */}
             {planet.name === 'Júpiter' && planet.moons && (
                 <group>
-                    {[planet.moons.io, planet.moons.europa, planet.moons.ganymede, planet.moons.callisto].map((m, idx) => {
-                        // Moons are in units of Jupiter radius. 
-                        // Visual offset = m.x * (planet size in units)
-                        const offset = new THREE.Vector3(m.x * size, m.y * size, m.z * size);
-                        // Moons are very small points
+                    {[
+                        { moon: planet.moons.io, name: 'Io', color: '#ffcc66' },
+                        { moon: planet.moons.europa, name: 'Europa', color: '#ffffff' },
+                        { moon: planet.moons.ganymede, name: 'Ganímedes', color: '#cccccc' },
+                        { moon: planet.moons.callisto, name: 'Calisto', color: '#999999' },
+                    ].map(({ moon, color }, idx) => {
+                        const offset = new THREE.Vector3(moon.x * size * 1.5, moon.y * size * 0.3, moon.z * size);
                         return (
                             <mesh key={idx} position={offset}>
-                                <sphereGeometry args={[size * 0.05, 8, 8]} />
-                                <meshBasicMaterial color="#ffffff" />
+                                <sphereGeometry args={[size * 0.06, 8, 8]} />
+                                <meshBasicMaterial color={color} />
                             </mesh>
                         );
                     })}
