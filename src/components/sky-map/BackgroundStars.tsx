@@ -34,8 +34,11 @@ const fragmentShader = `
         outColor = vec3(luminance * 1.5, 0.0, 0.0);
     }
 
-    float alpha = smoothstep(1.0, 0.2, r);
-    gl_FragColor = vec4(outColor, alpha * 0.7);
+    // Perfil de brillo: núcleo brillante + caída suave
+    float core  = pow(max(0.0, 1.0 - r), 2.2);    // Núcleo compacto
+    float halo  = pow(max(0.0, 1.0 - r * 0.7), 5.0) * 0.25; // Halo suave
+    float alpha = core + halo;
+    gl_FragColor = vec4(outColor, alpha);
   }
 `;
 
@@ -51,9 +54,9 @@ function sinGalLat(x: number, y: number, z: number): number {
     return -0.86766615 * x - 0.19807637 * y + 0.45598379 * z;
 }
 
-const TOTAL = 100000;
+const TOTAL = 60000;            // Menos ruido de fondo
 const RADIUS = 96;
-const MAX_VISIBLE_STARS = 12000; // Máximo que enviamos al GPU por frame
+const MAX_VISIBLE_STARS = 10000; // Máximo que enviamos al GPU por frame
 
 export default function BackgroundStars() {
     const pointsRef = useRef<THREE.Points>(null);
@@ -89,9 +92,14 @@ export default function BackgroundStars() {
             positions[i * 3 + 1] = py * RADIUS;
             positions[i * 3 + 2] = pz * RADIUS;
 
-            const mag = 4.0 + rng() * 5.0; // Mag 4 a 9
+            // Distribución de magnitudes: pocas brillantes, muchas tenues
+            // Se simula la función de luminosidad estelar real
+            const mag = 5.0 + Math.pow(rng(), 0.7) * 4.0; // Mag 5–9, sesgado a tenues
             magnitudes[i] = mag;
-            sizes[i] = Math.max(0.4, (8.5 - mag) * 0.4);
+            // ESCALA EXPONENCIAL: la diferencia visual entre mag 5 y mag 9 es enorme
+            // pow(0.55, mag) da una curva similar a la escala Pogson real
+            const brightness = Math.pow(0.55, mag - 5.0); // 1.0 en mag5, ~0.04 en mag9
+            sizes[i] = Math.max(0.1, brightness * 1.2);   // 0.1–1.2 px en unidades de escena
 
             const t = rng();
             if (t < 0.6) { // M/K
@@ -142,7 +150,9 @@ export default function BackgroundStars() {
         octree.search(frustum, visibleIndices);
 
         // Filtrado por magnitud (Bortle)
-        const limitingMag = 9.0 - (bortleScale - 1) * 0.6;
+        // Bortle 1 (cielo oscuro) → hasta mag 9.0
+        // Bortle 9 (ciudad densa)  → hasta mag 4.5
+        const limitingMag = 9.0 - (bortleScale - 1) * 0.55;
 
         const posAttr = geometry.getAttribute('position') as THREE.BufferAttribute;
         const colAttr = geometry.getAttribute('color') as THREE.BufferAttribute;

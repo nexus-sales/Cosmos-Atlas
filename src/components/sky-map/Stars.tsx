@@ -59,14 +59,20 @@ const starFragmentShader = `
     
     vec3 outColor = vColor;
     if (uNightMode) {
-        // En modo nocturno, pasamos a rojo puro basado en la luminancia
         float luminance = dot(vColor, vec3(0.299, 0.587, 0.114));
         outColor = vec3(luminance * 1.5, 0.0, 0.0);
     }
 
-    float strength = pow(1.0 - (r * 2.0), 1.1);
-    float halo = pow(max(0.0, 1.0 - r * 1.4), 3.0) * 0.4;
-    gl_FragColor = vec4(outColor, (strength + halo) * vOpacity);
+    // Núcleo compacto y brillante (Pogson real: mayor brillo = pico más agudo)
+    float core   = pow(max(0.0, 1.0 - r * 2.0), 1.8);
+    // Halo difuso para estrellas brillantes
+    float halo   = pow(max(0.0, 0.5 - r), 3.0) * 0.6;
+    // Cruz de difracción suave (sugiere telescopio/ojo real)
+    float dx     = abs(gl_PointCoord.x - 0.5);
+    float dy     = abs(gl_PointCoord.y - 0.5);
+    float spikes = (exp(-dx * 40.0) + exp(-dy * 40.0)) * 0.08;
+    float alpha  = clamp((core + halo + spikes) * vOpacity, 0.0, 1.0);
+    gl_FragColor = vec4(outColor, alpha);
   }
 `;
 
@@ -160,7 +166,13 @@ export default function Stars() {
 
             const color = new THREE.Color(star.color || '#ffffff');
             col[i * 3] = color.r; col[i * 3 + 1] = color.g; col[i * 3 + 2] = color.b;
-            sz[i] = Math.max(1.5, (6.5 - star.mag) * 0.95);
+            // Escala Pogson exponencial: una estrella de Mag 1 es 100x más brillante que Mag 6
+            // Factor = 10^(-0.4 * mag) normalizado en base a Mag 0 = referencia
+            const pogson = Math.pow(10.0, -0.4 * star.mag);      // luminosidad relativa
+            const refPogson = Math.pow(10.0, -0.4 * -1.5);        // referencia: más brillante (-1.5 Sirius)
+            const normBright = Math.min(1.0, pogson / refPogson); // 0.0..1.0
+            // Tamaño: brillantes grandes (hasta ~5.5), tenues casi invisibles (0.3)
+            sz[i] = 0.3 + normBright * 5.2;
 
             // Atributos de variabilidad
             const varInfo = VARIABLE_STARS[star.name];

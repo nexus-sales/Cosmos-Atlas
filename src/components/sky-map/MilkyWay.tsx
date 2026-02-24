@@ -125,45 +125,94 @@ void main() {
     bright -= rift * 0.4;
     bright = max(bright, 0.0);
 
-    // Alpha cinemático
-    float alpha = clamp(bright * 0.18, 0.0, 0.45);
+    // Alpha cinemático – más sutil para no aplastar el cielo de estrellas
+    float alpha = clamp(bright * 0.12, 0.0, 0.32);
     if (alpha < 0.005) discard;
 
     gl_FragColor = vec4(finalColor, alpha);
 }
 `;
 
+// ── Textura de punto difuso generada en canvas ─────────────────────────────
+function createGlowTexture(): THREE.Texture {
+    const size = 64;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d')!;
+
+    // Gradiente radial: blanco en el centro → transparente en el borde
+    const gradient = ctx.createRadialGradient(
+        size / 2, size / 2, 0,
+        size / 2, size / 2, size / 2
+    );
+    gradient.addColorStop(0.0, 'rgba(255, 255, 255, 1.0)');
+    gradient.addColorStop(0.3, 'rgba(255, 255, 255, 0.6)');
+    gradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.1)');
+    gradient.addColorStop(1.0, 'rgba(255, 255, 255, 0.0)');
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, size, size);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+    return texture;
+}
+
 // ── Componente de Partículas Estelares (Estructura Gaia) ───────────────────────
 function MilkyWayParticles() {
     const pointsRef = useRef<THREE.Points>(null);
 
+    // Crear textura de glow una sola vez
+    const glowTexture = useMemo(() => createGlowTexture(), []);
+
     const [positions, colors] = useMemo(() => {
-        const count = 12000;
+        const count = 14000;
         const pos = new Float32Array(count * 3);
         const col = new Float32Array(count * 3);
 
-        const coreColor = new THREE.Color('#ffcc99');
-        const armColor = new THREE.Color('#99ccff');
+        const coreColor = new THREE.Color('#ffdd99');  // Bulbo dorado cálido
+        const armColor = new THREE.Color('#aaccff');  // Brazos azul-blanco
+        const rimColor = new THREE.Color('#ffffff');  // Estrellas lejanas blancas
+
+        const SPHERE_R = 97; // Radio ligeramente menor que la esfera de fondo (99)
 
         for (let i = 0; i < count; i++) {
             const i3 = i * 3;
+
             // Distribución física: Núcleo denso + Brazos espirales
+            const t = Math.random();
+            const dist = Math.pow(t, 2.2); // 0..1, concentrado cerca del centro
+
+            const arm = Math.floor(Math.random() * 2) * Math.PI; // 2 brazos (0 y π)
             const angle = Math.random() * Math.PI * 2.0;
-            const dist = Math.pow(Math.random(), 2.5) * 50.0;
+            const spiral = angle * 0.45 + arm;
 
-            // Espiral logarítmica para los "nodos" de estrellas
-            const arm = (Math.floor(Math.random() * 2) * Math.PI); // 2 brazos principales
-            const spiral = angle * 0.5 + arm;
+            // Latitud galáctica: distribución gaussiana estrecha
+            // más delgada alejándose del centro
+            const bWidth = Math.PI * 0.04 * (1.0 + dist * 0.5); // ±~7° cerca, ±~11° lejos
+            const latAngle = (Math.random() - 0.5) * 2.0 * bWidth;
 
-            const x = Math.cos(spiral) * dist + (Math.random() - 0.5) * 10.0;
-            const z = Math.sin(spiral) * dist + (Math.random() - 0.5) * 10.0;
-            const y = (Math.random() - 0.5) * (3.0 / (dist * 0.1 + 1.0)); // Plano delgado
+            // Dirección en plano galáctico
+            const cosLat = Math.cos(latAngle);
+            const dx = Math.cos(spiral) * cosLat;
+            const dy = Math.sin(latAngle);
+            const dz = Math.sin(spiral) * cosLat;
 
-            pos[i3] = x;
-            pos[i3 + 1] = y;
-            pos[i3 + 2] = z;
+            // Proyectar sobre la esfera con radio SPHERE_R,
+            // añadiendo algo de profundidad aleatoria para variedad
+            const r = SPHERE_R * (0.92 + Math.random() * 0.08);
+            pos[i3] = dx * r;
+            pos[i3 + 1] = dy * r;
+            pos[i3 + 2] = dz * r;
 
-            const c = new THREE.Color().lerpColors(armColor, coreColor, 1.0 - (dist / 50.0));
+            // Color: más cálido en el centro, más azul/blanco en los brazos
+            const coreFrac = Math.pow(1.0 - dist, 3.0);
+            const rimFrac = dist * 0.4;
+            const c = new THREE.Color()
+                .lerpColors(armColor, coreColor, coreFrac)
+                .lerp(rimColor, rimFrac);
+
             col[i3] = c.r;
             col[i3 + 1] = c.g;
             col[i3 + 2] = c.b;
@@ -174,15 +223,29 @@ function MilkyWayParticles() {
     return (
         <points ref={pointsRef}>
             <bufferGeometry>
-                <bufferAttribute attach="attributes-position" count={positions.length / 3} array={positions} itemSize={3} args={[positions, 3]} />
-                <bufferAttribute attach="attributes-color" count={colors.length / 3} array={colors} itemSize={3} args={[colors, 3]} />
+                <bufferAttribute
+                    attach="attributes-position"
+                    count={positions.length / 3}
+                    array={positions}
+                    itemSize={3}
+                    args={[positions, 3]}
+                />
+                <bufferAttribute
+                    attach="attributes-color"
+                    count={colors.length / 3}
+                    array={colors}
+                    itemSize={3}
+                    args={[colors, 3]}
+                />
             </bufferGeometry>
             <pointsMaterial
-                size={0.15}
-                sizeAttenuation={true}
-                vertexColors
-                transparent
-                opacity={0.4}
+                map={glowTexture}          // ← textura difusa: elimina los cuadrados
+                size={0.4}                 // tamaño sutil
+                sizeAttenuation={true}     // se hace menor con la distancia
+                vertexColors               // usa el array de colores personalizados
+                transparent={true}
+                opacity={0.35}             // más transparente para no dominar la escena
+                alphaTest={0.01}           // descarta píxeles casi transparentes
                 blending={THREE.AdditiveBlending}
                 depthWrite={false}
             />
