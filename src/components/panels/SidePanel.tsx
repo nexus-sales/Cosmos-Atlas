@@ -41,6 +41,7 @@ export default function SidePanel() {
     const toggleSetting = useAppStore((state) => state.toggleSetting);
     const sidebarOpen = useAppStore((state) => state.sidebarOpen);
     const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);
+    const satelliteInfo = useAppStore((state) => state.satelliteInfo);
 
     const isMobile = useIsMobile();
 
@@ -227,6 +228,37 @@ export default function SidePanel() {
                 </div>
                 <div className="mt-1 text-[7px] text-white/10 uppercase tracking-tighter">
                     {bortleScale <= 2 ? "Cielo Primigenio" : bortleScale <= 4 ? "Rural" : bortleScale <= 6 ? "Suburbano" : "Ciudad"}
+                </div>
+            </div>
+
+            {/* Satellite/Starlink legend + counters */}
+            <div className="mt-4 border-t border-white/5 pt-4 px-1 space-y-2">
+                <div className="text-[8px] text-white/20 tracking-[0.25em] uppercase">Satélites</div>
+                <div className="grid grid-cols-2 gap-2 text-[9px]">
+                    <div className="rounded border border-white/10 bg-white/5 px-2 py-1.5">
+                        <div className="flex items-center gap-1.5 text-white/70">
+                            <span className="inline-block w-2 h-2 rounded-full bg-white" />
+                            ISS/Hubble
+                        </div>
+                        <div className="mt-1 text-white/45">
+                            {satelliteInfo.visibleSpecial}/{satelliteInfo.loadedSpecial} visibles
+                        </div>
+                    </div>
+                    <div className="rounded border border-white/10 bg-white/5 px-2 py-1.5">
+                        <div className="flex items-center gap-1.5 text-white/70">
+                            <span className="inline-block w-2 h-2 rounded-full bg-[#88aaff]" />
+                            Starlink
+                        </div>
+                        <div className="mt-1 text-white/45">
+                            {satelliteInfo.visibleStarlink}/{satelliteInfo.loadedStarlink} visibles
+                        </div>
+                    </div>
+                </div>
+                <div className="text-[8px] text-white/25 uppercase tracking-wider">
+                    Estado Starlink: {satelliteInfo.starlinkStatus}
+                </div>
+                <div className="text-[7px] text-white/15">
+                    Pasa el ratón por un punto para ver su nombre.
                 </div>
             </div>
 

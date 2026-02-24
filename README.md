@@ -16,9 +16,9 @@ Totalmente responsive e instalable como PWA.
 - **Simulador de Campo de Visión (FOV)** — Herramienta para astrofotografía; ajusta distancia focal y tamaño del sensor (Full Frame, APS-C).
 - **Escala de Bortle Automática** — Simulación de contaminación lumínica real que filtra la visibilidad estelar de 1 a 9.
 - **Modo Nocturno (Red Mode)** — Interfaz y shaders adaptados en rojo puro para preservar la visión nocturna del observador.
-- **Twinkling Físico** — Centelleo estelar modulado por la **Masa de Aire** (Airmass); las estrellas parpadean más cerca del horizonte.
-- **Planetas y Luna Realista** — Efemérides de alta precisión con fases lunares calculadas geométricamente.
-- **Estilo Sky Map** — Jerarquía logarítmica de magnitudes, constelaciones siempre visibles y Bloom calibrado por luminancia.
+- **Estilo Sky Map & Realismo Crítico** — Jerarquía logarítmica de magnitudes, constelaciones siempre visibles y Bloom calibrado. Objetos representados con su **tamaño angular real** (arcsec/arcmin).
+- **Planetas y Luna con Fases Reales** — Efemérides de alta precisión; Mercurio, Venus y la Luna muestran fases; Júpiter incluye sus lunas Galileanas.
+- **Objetos de Cielo Profundo (DSOs)** — Galaxias, nebulosas y cúmulos representados con texturas procedimentales únicas y dimensiones físicas auténticas.
 - **PWA Instalable** — Manifest, iconos auto-generados y metadatos; instalable en iOS, Android y escritorio.
 
 ---
@@ -91,14 +91,14 @@ src/
 │   │   └── Compass.tsx          # Brújula interactiva (clic: cenit, doble clic: norte)
 │   │
 │   └── sky-map/
-│       ├── SkyCanvas.tsx        # Canvas 3D principal + CameraNavigator + EffectComposer
+│       ├── SkyCanvas.tsx        # Canvas 3D principal + CameraNavigator
 │       ├── CelestialSphere.tsx  # Esfera base (fondo negro)
 │       ├── CelestialGrid.tsx    # Cuadrícula ecuatorial
-│       ├── Stars.tsx            # Catálogo de estrellas (shader + escala Pogson logarítmica)
+│       ├── Stars.tsx            # Estrellas (Shader Pogson + Twinkle doble frecuencia)
 │       ├── Constellations.tsx   # Líneas de constelaciones (depthTest:false, estilo Sky Map)
 │       ├── ConstellationLabels.tsx # Etiquetas de nombre en la bóveda (glow sutil)
-│       ├── Planets.tsx          # Planetas + Luna con fase (posiciones reales)
-│       ├── DeepSkyObjects.tsx   # Galaxias, nebulosas, cúmulos
+│       ├── Planets.tsx          # Planetas (Fases reales + Lunas Galileanas + Anillos dinámicos)
+│       ├── DeepSkyObjects.tsx   # DSOs (Tamaño angular real + Texturas únicas)
 │       ├── MilkyWay.tsx         # Vía Láctea (Shader FBM + Partículas Gaia)
 │       ├── BackgroundStars.tsx  # Campo estelar de fondo 40k estrellas con Octree
 │       ├── Satellites.tsx       # Seguimiento TLE en Alt/Az real (ISS, Hubble, Starlink)
@@ -377,7 +377,42 @@ Clic de nuevo en el mismo objeto lo deselecciona.
 
 ---
 
+## Auditoría de Autenticidad Científica
+
+| Característica | Estado | Base Física |
+| :--- | :--- | :--- |
+| **Precesión J2000** | ✅ **REAL** | Matrices de precesión en `transforms.ts`. |
+| **Refracción** | ✅ **REAL** | Fórmula de Saemundsson aplicada en tiempo real. |
+| **Tamaño Angular** | ✅ **REAL** | Calculado por distancia (AU/Km) en Planetas y DSOs. |
+| **Fases Planetarias**| ✅ **REAL** | Calculadas por elongación y ángulo de fase de la luz solar. |
+| **Anillos Saturno**  | ✅ **REAL** | Inclinación dinámica (`ring_tilt`) asimétrica según la época. |
+| **Lunas Júpiter**    | ✅ **REAL** | Posiciones de Io, Europa, Ganímedes y Calixto (IAU). |
+
+---
+
 ## Changelog
+
+### v2.4 — 2026-02-24 (Realidad Científica Total)
+
+#### 🪐 Sistema Solar Completo
+- **Tamaños Dinámicos**: Los planetas ya no son esferas de tamaño fijo. Ahora su tamaño visual en el canvas se escala según su **diámetro angular real** (cambia con la distancia a la Tierra).
+- **Lunas de Júpiter**: Se han integrado los 4 satélites Galileanos (**Io, Europa, Ganímedes, Calixto**) con sus órbitas en tiempo real.
+- **Anillos de Saturno**: Se ha eliminado la inclinación fija "placebo". Ahora usan el ángulo real de la inclinación del polo de Saturno respecto a la Tierra (`ring_tilt`).
+- **Fases Planetarias**: Mercurio y Venus ahora muestran fases (creciente, gibosa, etc.) dependiendo de su posición respecto al Sol, tal como se ven por telescopio.
+
+#### 🌌 Objetos de Cielo Profundo (DSOs)
+- **Dimensiones Reales**: Todas las galaxias (M31, M33, etc.), nebulosas (M42) y cúmulos (M45) usan su **tamaño angular real en minutos de arco**.
+- **Texturas Únicas por Tipo**:
+  - **Galaxias**: Textura espiral elíptica inclinada.
+  - **Nebulosas**: Nubes amorfas de gas ionizado.
+  - **Cúmulos**: Grupos de puntos estelares definidos.
+- **Etiquetado Detallado**: Ahora las etiquetas de los DSOs muestran su nombre (Messier/NGC) y su magnitud aparente para ayudar a la planificación de observación.
+
+#### 🛠️ Refactorización y Estabilidad
+- **Optimización de Texturas**: Uso de `THREE.CanvasTexture` con limpieza de memoria automática (`dispose`).
+- **Eliminación de "Miras Fijas"**: Se han sustituido todos los valores hardcoded por llamadas a `astronomy-engine`.
+
+---
 
 ### v2.3 — 2026-02-24 (Brújula de Orientación)
 

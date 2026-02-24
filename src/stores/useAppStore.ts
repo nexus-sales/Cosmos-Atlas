@@ -35,6 +35,14 @@ interface AppState {
     addFoundChallenge: (name: string) => void;
     camFov: number;
     setCamFov: (v: number) => void;
+    satelliteInfo: {
+        loadedSpecial: number;
+        loadedStarlink: number;
+        visibleSpecial: number;
+        visibleStarlink: number;
+        starlinkStatus: 'idle' | 'loading' | 'ok' | 'error';
+    };
+    setSatelliteInfo: (patch: Partial<AppState['satelliteInfo']>) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -85,4 +93,15 @@ export const useAppStore = create<AppState>((set) => ({
         })),
     camFov: 60,
     setCamFov: (camFov) => set({ camFov }),
+    satelliteInfo: {
+        loadedSpecial: 0,
+        loadedStarlink: 0,
+        visibleSpecial: 0,
+        visibleStarlink: 0,
+        starlinkStatus: 'idle',
+    },
+    setSatelliteInfo: (patch) =>
+        set((state) => ({
+            satelliteInfo: { ...state.satelliteInfo, ...patch },
+        })),
 }));

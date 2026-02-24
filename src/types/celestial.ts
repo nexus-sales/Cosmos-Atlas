@@ -32,6 +32,7 @@ export interface DSO {
     mag: number;
     desc: string;
     color: string;
+    sizeArcmin?: number;
 }
 
 export interface Challenge {

@@ -153,7 +153,7 @@ export default function BackgroundStars() {
         // Filtrado por magnitud (Bortle)
         // Bortle 1 (cielo oscuro) → hasta mag 9.0
         // Bortle 9 (ciudad densa)  → hasta mag 4.5
-        const limitingMag = 9.0 - (bortleScale - 1) * 0.55;
+        const limitingMag = 7.5 - (bortleScale - 1) * 0.65;
 
         const posAttr = geometry.getAttribute('position') as THREE.BufferAttribute;
         const colAttr = geometry.getAttribute('color') as THREE.BufferAttribute;

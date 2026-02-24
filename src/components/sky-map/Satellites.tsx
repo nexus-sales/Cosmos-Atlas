@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
+import { Html } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as satellite from 'satellite.js';
 import { useAppStore } from '@/stores/useAppStore';
@@ -13,6 +14,15 @@ interface SatelliteData {
     color: string;
     size: number;
 }
+
+type RenderKind = 'special' | 'starlink';
+type SatellitePoint = {
+    name: string;
+    satrec: satellite.SatRec;
+    color: string;
+    size: number;
+    kind: RenderKind;
+};
 
 const SATELLITES_TLE: SatelliteData[] = [
     {
@@ -42,14 +52,22 @@ const MAX_SATS = 6000;
 
 export default function Satellites() {
     const pointsRef = useRef<THREE.Points>(null);
+    const renderedSatsRef = useRef<SatellitePoint[]>([]);
+    const prevVisibleRef = useRef({ special: -1, starlink: -1 });
     const time = useAppStore((state) => state.time);
     const observer = useAppStore((state) => state.observer);
     const nightMode = useAppStore((state) => state.settings.nightMode);
     const showSatellites = useAppStore((state) => state.settings.showSatellites);
     const showStarlink = useAppStore((state) => state.settings.showStarlink);
+    const setSatelliteInfo = useAppStore((state) => state.setSatelliteInfo);
+    const [hoveredSat, setHoveredSat] = useState<{
+        name: string;
+        color: string;
+        position: [number, number, number];
+    } | null>(null);
 
-    const [specialSats, setSpecialSats] = useState<{ name: string, satrec: satellite.SatRec, color: string, size: number }[]>([]);
-    const [starlinkSats, setStarlinkSats] = useState<{ name: string, satrec: satellite.SatRec, color: string, size: number }[]>([]);
+    const [specialSats, setSpecialSats] = useState<SatellitePoint[]>([]);
+    const [starlinkSats, setStarlinkSats] = useState<SatellitePoint[]>([]);
 
     // ── 1. Carga de TLEs ────────────────────────────────────────────────────
     useEffect(() => {
@@ -58,9 +76,11 @@ export default function Satellites() {
             name: s.name,
             satrec: satellite.twoline2satrec(s.tle1, s.tle2),
             color: s.color,
-            size: s.size
+            size: s.size,
+            kind: 'special' as const
         }));
         setSpecialSats(initial);
+        setSatelliteInfo({ loadedSpecial: initial.length });
 
         // Fetch ISS Real
         fetch('https://celestrak.org/NORAD/elements/gp.php?CATNR=25544&FORMAT=tle')
@@ -69,19 +89,31 @@ export default function Satellites() {
                 const lines = t.split('\n').filter(l => l.trim().length > 0);
                 if (lines.length >= 3) {
                     setSpecialSats(prev => [
-                        { name: lines[0].trim(), satrec: satellite.twoline2satrec(lines[1], lines[2]), color: '#ffffff', size: 4.0 },
+                        {
+                            name: lines[0].trim(),
+                            satrec: satellite.twoline2satrec(lines[1], lines[2]),
+                            color: '#ffffff',
+                            size: 4.0,
+                            kind: 'special'
+                        },
                         ...prev.filter(s => !s.name.includes('ISS'))
                     ]);
                 }
             })
             .catch(() => { });
-    }, []);
+    }, [setSatelliteInfo]);
+
+    useEffect(() => {
+        setSatelliteInfo({ loadedSpecial: specialSats.length });
+    }, [setSatelliteInfo, specialSats.length]);
 
     useEffect(() => {
         if (!showStarlink) {
             setStarlinkSats([]);
+            setSatelliteInfo({ loadedStarlink: 0, visibleStarlink: 0, starlinkStatus: 'idle' });
             return;
         }
+        setSatelliteInfo({ starlinkStatus: 'loading' });
 
         // Fetch Starlink
         fetch('https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle')
@@ -95,15 +127,21 @@ export default function Satellites() {
                             name: lines[i].trim(),
                             satrec: satellite.twoline2satrec(lines[i + 1], lines[i + 2]),
                             color: '#88aaff',
-                            size: 1.2
+                            size: 1.2,
+                            kind: 'starlink'
                         });
                     }
                 }
                 // Limitar a los primeros 2000 para no destruir CPUs modestas
-                setStarlinkSats(records.slice(0, 2000));
+                const capped = records.slice(0, 2000);
+                setStarlinkSats(capped);
+                setSatelliteInfo({ loadedStarlink: capped.length, starlinkStatus: 'ok' });
             })
-            .catch(() => { });
-    }, [showStarlink]);
+            .catch(() => {
+                setStarlinkSats([]);
+                setSatelliteInfo({ loadedStarlink: 0, visibleStarlink: 0, starlinkStatus: 'error' });
+            });
+    }, [setSatelliteInfo, showStarlink]);
 
     const [geometry, material] = useMemo(() => {
         const geom = new THREE.BufferGeometry();
@@ -112,11 +150,14 @@ export default function Satellites() {
         geom.setAttribute('size', new THREE.BufferAttribute(new Float32Array(MAX_SATS), 1));
 
         const mat = new THREE.PointsMaterial({
-            size: 2,
+            size: 3.2,
             vertexColors: true,
             transparent: true,
-            opacity: 0.9,
+            opacity: 1.0,
             sizeAttenuation: false,
+            depthWrite: false,
+            depthTest: false,
+            toneMapped: false,
             blending: THREE.AdditiveBlending
         });
 
@@ -136,6 +177,8 @@ export default function Satellites() {
         const sizAttr = geometry.getAttribute('size') as THREE.BufferAttribute;
 
         let count = 0;
+        let visibleSpecial = 0;
+        let visibleStarlink = 0;
         const gmst = satellite.gstime(time);
         const observerGd = {
             longitude: satellite.degreesToRadians(observer.lon),
@@ -144,6 +187,7 @@ export default function Satellites() {
         };
 
         const allSats = [...specialSats, ...starlinkSats];
+        renderedSatsRef.current.length = 0;
 
         allSats.forEach((sat) => {
             if (count >= MAX_SATS) return;
@@ -156,7 +200,7 @@ export default function Satellites() {
             const look = satellite.ecfToLookAngles(observerGd, posEcf);
 
             // Solo si está por encima del horizonte
-            if (look.elevation > 0) {
+            if (look.elevation > THREE.MathUtils.degToRad(-5)) {
                 // Convertir Alt/Az a coordenadas 3D en el espacio horizontal local.
                 // Sistema de la escena (sin CelestialGroup):
                 //   +Y = cénit, +X = Este, -Z = Norte (frente del observador)
@@ -173,6 +217,9 @@ export default function Satellites() {
                 const color = new THREE.Color(nightMode ? '#ff0000' : sat.color);
                 colAttr.setXYZ(count, color.r, color.g, color.b);
                 sizAttr.setX(count, sat.size);
+                renderedSatsRef.current[count] = sat;
+                if (sat.kind === 'special') visibleSpecial++;
+                else visibleStarlink++;
                 count++;
             }
         });
@@ -181,7 +228,62 @@ export default function Satellites() {
         posAttr.needsUpdate = true;
         colAttr.needsUpdate = true;
         sizAttr.needsUpdate = true;
+
+        if (
+            visibleSpecial !== prevVisibleRef.current.special ||
+            visibleStarlink !== prevVisibleRef.current.starlink
+        ) {
+            prevVisibleRef.current.special = visibleSpecial;
+            prevVisibleRef.current.starlink = visibleStarlink;
+            useAppStore.getState().setSatelliteInfo({
+                visibleSpecial,
+                visibleStarlink,
+            });
+        }
     });
 
-    return <points ref={pointsRef} geometry={geometry} material={material} />;
+    return (
+        <>
+            <points
+                ref={pointsRef}
+                geometry={geometry}
+                material={material}
+                renderOrder={6}
+                onPointerMove={(e) => {
+                    if (e.index === undefined) return;
+                    const sat = renderedSatsRef.current[e.index];
+                    if (!sat) return;
+                    setHoveredSat({
+                        name: sat.name,
+                        color: sat.color,
+                        position: [e.point.x, e.point.y, e.point.z],
+                    });
+                }}
+                onPointerOut={() => setHoveredSat(null)}
+            />
+            {hoveredSat && (
+                <Html position={hoveredSat.position} distanceFactor={120} zIndexRange={[90, 0]}>
+                    <div
+                        style={{
+                            background: 'rgba(2,8,20,0.90)',
+                            border: `1px solid ${hoveredSat.color}66`,
+                            borderRadius: '4px',
+                            padding: '4px 8px',
+                            color: hoveredSat.color,
+                            fontSize: '10px',
+                            fontFamily: "'Courier New', monospace",
+                            fontWeight: 'bold',
+                            whiteSpace: 'nowrap',
+                            letterSpacing: '0.6px',
+                            pointerEvents: 'none',
+                            textShadow: `0 0 8px ${hoveredSat.color}`,
+                            transform: 'translateX(-50%) translateY(-20px)',
+                        }}
+                    >
+                        {hoveredSat.name}
+                    </div>
+                </Html>
+            )}
+        </>
+    );
 }

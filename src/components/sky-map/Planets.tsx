@@ -59,12 +59,36 @@ const PLANET_CONFIGS: PlanetConfig[] = [
 
 const PLANET_RADIUS = 95;
 
+// ── Physical constants ────────────────────────────────────────────────────────
+const RADII_KM: Record<string, number> = {
+    'Mercurio': 2439.7,
+    'Venus': 6051.8,
+    'Marte': 3389.5,
+    'Júpiter': 69911,
+    'Saturno': 58232,
+    'Urano': 25362,
+    'Neptuno': 24622,
+};
+
+const AU_KM = 149597870.7;
+
+/** Matches Body enum to Spanish names used in config */
+const BODY_NAME_MAP: Record<string, string> = {
+    'Mercurio': 'Mercury',
+    'Venus': 'Venus',
+    'Marte': 'Mars',
+    'Júpiter': 'Jupiter',
+    'Saturno': 'Saturn',
+    'Urano': 'Uranus',
+    'Neptuno': 'Neptune',
+};
+
 // ── Moon helpers ─────────────────────────────────────────────────────────────
 
 function getMoonPhaseName(phase: number): string {
     const p = ((phase % 360) + 360) % 360;
     if (p < 22.5 || p >= 337.5) return 'Luna nueva';
-    if (p < 67.5) return 'Creciente c\u00f3ncava';
+    if (p < 67.5) return 'Creciente cóncava';
     if (p < 112.5) return 'Cuarto creciente';
     if (p < 157.5) return 'Gibosa creciente';
     if (p < 202.5) return 'Luna llena';
@@ -77,7 +101,7 @@ function getMoonPhaseName(phase: number): string {
  * Updates an existing canvas and texture with the correct moon phase.
  * Phase: 0 = new moon, 90 = first quarter, 180 = full moon, 270 = last quarter.
  */
-function updateMoonCanvas(canvas: HTMLCanvasElement, phase: number) {
+function updateMoonCanvas(canvas: HTMLCanvasElement, phase: number, color1 = '#d8d6c0', color2 = '#0c1322') {
     const S = 256;
     if (canvas.width !== S) canvas.width = canvas.height = S;
     const ctx = canvas.getContext('2d')!;
@@ -92,7 +116,7 @@ function updateMoonCanvas(canvas: HTMLCanvasElement, phase: number) {
     ctx.clip();
 
     // Background: night side (dark blue-gray)
-    ctx.fillStyle = '#0c1322';
+    ctx.fillStyle = color2;
     ctx.fillRect(0, 0, S, S);
 
     const p = ((phase % 360) + 360) % 360;
@@ -101,7 +125,7 @@ function updateMoonCanvas(canvas: HTMLCanvasElement, phase: number) {
     const termB = Math.abs(Math.cos(phi * Math.PI / 180)) * r; // terminator ellipse semi-minor
 
     // Draw the lit half-disc
-    ctx.fillStyle = '#d8d6c0';
+    ctx.fillStyle = color1;
     ctx.beginPath();
     if (wax) {
         ctx.arc(cx, cy, r, -H, H);  // right half
@@ -113,7 +137,7 @@ function updateMoonCanvas(canvas: HTMLCanvasElement, phase: number) {
 
     // Draw the terminator ellipse
     if (phi < 88) {
-        ctx.fillStyle = '#0c1322';
+        ctx.fillStyle = color2;
         ctx.beginPath();
         if (wax) {
             ctx.ellipse(cx, cy, termB, r, 0, -H, H);
@@ -123,7 +147,7 @@ function updateMoonCanvas(canvas: HTMLCanvasElement, phase: number) {
         ctx.closePath();
         ctx.fill();
     } else if (phi > 92) {
-        ctx.fillStyle = '#d8d6c0';
+        ctx.fillStyle = color1;
         ctx.beginPath();
         if (wax) {
             ctx.ellipse(cx, cy, termB, r, 0, H, -H);
@@ -169,13 +193,13 @@ function computeMoon(date: Date, obs: Astronomy.Observer): { planet: Planet; pha
     }
 }
 
-// ── Moon billboard component ──────────────────────────────────────────────────
+// ── Components ───────────────────────────────────────────────────────────────
+
 function MoonMesh({ planet, phase }: { planet: Planet & { pos: [number, number, number] }; phase: number }) {
     const billboardRef = useRef<THREE.Group>(null);
     const setSelectedObj = useAppStore((s) => s.setSelectedObject);
     const SIZE = 2.0;
 
-    // Use a single persistent canvas and texture
     const [texture] = useState(() => {
         const canvas = document.createElement('canvas');
         const tex = new THREE.CanvasTexture(canvas);
@@ -184,8 +208,7 @@ function MoonMesh({ planet, phase }: { planet: Planet & { pos: [number, number, 
         return tex;
     });
 
-    // Round phase to nearest 3° to avoid too many redraws
-    const roundedPhase = Math.round(phase / 3) * 3;
+    const roundedPhase = Math.round(phase / 2) * 2;
 
     useEffect(() => {
         const canvas = texture.image as HTMLCanvasElement;
@@ -193,126 +216,130 @@ function MoonMesh({ planet, phase }: { planet: Planet & { pos: [number, number, 
         texture.needsUpdate = true;
     }, [roundedPhase, texture]);
 
-    useEffect(() => {
-        return () => texture.dispose();
-    }, [texture]);
+    useEffect(() => { return () => texture.dispose(); }, [texture]);
 
-    // Billboard: keep the disc facing the camera each frame
     useFrame(({ camera }) => {
         billboardRef.current?.quaternion.copy(camera.quaternion);
     });
 
     return (
         <group position={planet.pos} ref={billboardRef}>
-            {/* Phase disc */}
-            {texture && (
-                <mesh onClick={(e) => { e.stopPropagation(); setSelectedObj(planet); }}>
-                    <planeGeometry args={[SIZE * 2, SIZE * 2]} />
-                    <meshBasicMaterial map={texture} transparent alphaTest={0.01} depthWrite={false} />
-                </mesh>
-            )}
-
-            {/* Atmospheric glow */}
+            <mesh onClick={(e) => { e.stopPropagation(); setSelectedObj(planet); }}>
+                <planeGeometry args={[SIZE * 2, SIZE * 2]} />
+                <meshBasicMaterial map={texture} transparent alphaTest={0.01} depthWrite={false} />
+            </mesh>
             <mesh>
                 <planeGeometry args={[SIZE * 4.5, SIZE * 4.5]} />
                 <meshBasicMaterial color="#b8c8e0" transparent opacity={0.04} depthWrite={false} />
             </mesh>
-
-            {/* Floating label */}
             <Html distanceFactor={90}>
-                <div style={{
-                    color: '#d8d6c0',
-                    fontSize: '11px',
-                    fontFamily: "'Courier New', monospace",
-                    whiteSpace: 'nowrap',
-                    pointerEvents: 'none',
-                    userSelect: 'none',
-                    textShadow: '0 0 10px rgba(216,214,192,0.8)',
-                    paddingLeft: '12px',
-                    fontWeight: 'bold',
-                    letterSpacing: '0.5px',
-                }}>
-                    {'\u263d'} Luna
-                    <span style={{ fontSize: '9px', opacity: 0.6, marginLeft: '5px' }}>
-                        {getMoonPhaseName(phase)}
-                    </span>
+                <div style={{ color: '#d8d6c0', fontSize: '11px', fontFamily: "'Courier New', monospace", whiteSpace: 'nowrap', pointerEvents: 'none', userSelect: 'none', textShadow: '0 0 10px rgba(216,214,192,0.8)', paddingLeft: '12px', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+                    {'\u263d'} Luna <span style={{ fontSize: '9px', opacity: 0.6, marginLeft: '5px' }}>{getMoonPhaseName(phase)}</span>
                 </div>
             </Html>
         </group>
     );
 }
 
-// ── Regular planet mesh ────────────────────────────────────────────────────────
-function PlanetMesh({ planet }: { planet: Planet & { pos: [number, number, number] } }) {
-    const meshRef = useRef<THREE.Mesh>(null);
+function PlanetMesh({ planet }: { planet: Planet & { pos: [number, number, number]; angularSize: number; phase: number; ringTilt?: number; moons?: Astronomy.JupiterMoonsInfo } }) {
+    const meshRef = useRef<THREE.Group>(null);
     const setSelectedObject = useAppStore((state) => state.setSelectedObject);
 
-    const size = useMemo(() => {
-        const cfg = PLANET_CONFIGS.find(c => c.name === planet.name);
-        return cfg?.size ?? 0.25;
-    }, [planet.name]);
+    // Visual size: 1 arcsec = 0.00045 units roughly on sphere R=95
+    // multiplier to make them visible without zoom, but proportional
+    const size = Math.max(0.15, planet.angularSize * 0.02);
 
-    useFrame((state) => {
-        if (meshRef.current) {
-            const s = 1.0 + 0.06 * Math.sin(state.clock.elapsedTime * 1.4 + planet.ra);
-            meshRef.current.scale.setScalar(s);
-        }
+    const [texture] = useState(() => {
+        const canvas = document.createElement('canvas');
+        const tex = new THREE.CanvasTexture(canvas);
+        updateMoonCanvas(canvas, planet.phase, planet.color, '#110505');
+        tex.needsUpdate = true;
+        return tex;
+    });
+
+    useEffect(() => {
+        const canvas = texture.image as HTMLCanvasElement;
+        updateMoonCanvas(canvas, planet.phase, planet.color, '#110505');
+        texture.needsUpdate = true;
+    }, [planet.phase, texture, planet.color]);
+
+    useEffect(() => { return () => texture.dispose(); }, [texture]);
+
+    useFrame(({ camera }) => {
+        if (meshRef.current) meshRef.current.quaternion.copy(camera.quaternion);
     });
 
     return (
         <group position={planet.pos}>
-            {/* N\u00facleo del planeta */}
-            <mesh
-                ref={meshRef}
-                onClick={(e) => { e.stopPropagation(); setSelectedObject(planet); }}
-            >
-                <sphereGeometry args={[size, 16, 16]} />
-                <meshBasicMaterial color={planet.color} />
-            </mesh>
-
-            {/* Halo de atm\u00f3sfera */}
-            <mesh>
-                <sphereGeometry args={[size * 1.8, 16, 16]} />
-                <meshBasicMaterial color={planet.color} transparent opacity={0.10} side={THREE.BackSide} />
-            </mesh>
-
-            {/* Anillos de Saturno */}
-            {planet.name === 'Saturno' && (
-                <mesh rotation={[Math.PI * 0.2, 0, Math.PI * 0.15]}>
-                    <ringGeometry args={[size * 1.55, size * 2.8, 64]} />
-                    <meshBasicMaterial color="#e8c870" transparent opacity={0.55} side={THREE.DoubleSide} />
+            <group ref={meshRef}>
+                <mesh onClick={(e) => { e.stopPropagation(); setSelectedObject(planet); }}>
+                    <planeGeometry args={[size * 2, size * 2]} />
+                    <meshBasicMaterial map={texture} transparent alphaTest={0.01} depthWrite={false} />
                 </mesh>
+
+                {/* Atmosphere halo */}
+                <mesh scale={[1.4, 1.4, 1]}>
+                    <planeGeometry args={[size * 2, size * 2]} />
+                    <meshBasicMaterial color={planet.color} transparent opacity={0.08} depthWrite={false} />
+                </mesh>
+
+                {/* Real Saturn Rings Tilt */}
+                {planet.name === 'Saturno' && planet.ringTilt !== undefined && (
+                    <mesh rotation={[planet.ringTilt, 0, 0]}>
+                        <ringGeometry args={[size * 2.2, size * 4.5, 64]} />
+                        <meshBasicMaterial color="#e8c870" transparent opacity={0.5} side={THREE.DoubleSide} depthWrite={false} />
+                    </mesh>
+                )}
+            </group>
+
+            {/* Jupiter Moons (Galilean) */}
+            {planet.name === 'Júpiter' && planet.moons && (
+                <group>
+                    {[planet.moons.io, planet.moons.europa, planet.moons.ganymede, planet.moons.callisto].map((m, idx) => {
+                        // Moons are in units of Jupiter radius. 
+                        // Visual offset = m.x * (planet size in units)
+                        const offset = new THREE.Vector3(m.x * size, m.y * size, m.z * size);
+                        // Moons are very small points
+                        return (
+                            <mesh key={idx} position={offset}>
+                                <sphereGeometry args={[size * 0.05, 8, 8]} />
+                                <meshBasicMaterial color="#ffffff" />
+                            </mesh>
+                        );
+                    })}
+                </group>
             )}
 
-            {/* Etiqueta flotante */}
             <Html distanceFactor={90}>
-                <div style={{
-                    color: planet.color,
-                    fontSize: '11px',
-                    fontFamily: "'Courier New', monospace",
-                    whiteSpace: 'nowrap',
-                    pointerEvents: 'none',
-                    userSelect: 'none',
-                    textShadow: `0 0 8px ${planet.color}, 0 0 16px ${planet.color}`,
-                    paddingLeft: '8px',
-                    fontWeight: 'bold',
-                    letterSpacing: '0.5px',
-                }}>
-                    {planet.symbol} {planet.name}
-                    <span style={{ fontSize: '9px', opacity: 0.6, marginLeft: '4px' }}>
-                        {planet.mag.toFixed(1)}
-                    </span>
+                <div style={{ color: planet.color, fontSize: '11px', fontFamily: "'Courier New', monospace", whiteSpace: 'nowrap', pointerEvents: 'none', userSelect: 'none', textShadow: `0 0 8px ${planet.color}`, paddingLeft: '8px', fontWeight: 'bold' }}>
+                    {planet.symbol} {planet.name} <span style={{ fontSize: '9px', opacity: 0.6, marginLeft: '4px' }}>{planet.mag.toFixed(1)}</span>
                 </div>
             </Html>
         </group>
     );
 }
 
-// ── Calcula la posición de un planeta ─────────────────────────────────────────
-function computePlanetPosition(cfg: PlanetConfig, date: Date, astroObserver: Astronomy.Observer): Planet | null {
+// ── Main Logic ────────────────────────────────────────────────────────────────
+
+function computePlanetPosition(cfg: PlanetConfig, date: Date, obs: Astronomy.Observer) {
     try {
-        const eq = Astronomy.Equator(cfg.body, date, astroObserver, true, true);
-        const illum = Astronomy.Illumination(cfg.body, date);
+        const body = cfg.body;
+        const eq = Astronomy.Equator(body, date, obs, true, true);
+        const illum = Astronomy.Illumination(body, date);
+
+        // Angular size: 2 * atan(radius / distance)
+        const distKm = illum.geo_dist * AU_KM;
+        const radiusKm = RADII_KM[cfg.name] || 2000;
+        const angSizeArcsec = (2 * radiusKm / distKm) * (180 / Math.PI) * 3600;
+
+        // Use real ring tilt if available
+        const ringTilt = illum.ring_tilt !== undefined ? THREE.MathUtils.degToRad(illum.ring_tilt) : 0;
+
+        let moons;
+        if (cfg.name === 'Júpiter') {
+            moons = Astronomy.JupiterMoons(date);
+        }
+
         return {
             name: cfg.name,
             symbol: cfg.symbol,
@@ -321,45 +348,33 @@ function computePlanetPosition(cfg: PlanetConfig, date: Date, astroObserver: Ast
             mag: illum.mag,
             color: cfg.color,
             desc: cfg.description(illum.mag),
-            kind: 'planet',
+            kind: 'planet' as const,
+            pos: equatorialTo3D(eq.ra * 15, eq.dec, 95) as [number, number, number],
+            angularSize: angSizeArcsec,
+            phase: Astronomy.Elongation(body, date).elongation, // Using elongation as phase proxy
+            ringTilt,
+            moons
         };
-    } catch {
-        return null;
-    }
+    } catch { return null; }
 }
 
-// ── Componente principal ──────────────────────────────────────────────────────
 export default function Planets() {
     const time = useAppStore((state) => state.time);
     const observer = useAppStore((state) => state.observer);
 
-    const { planets, moonData } = useMemo(() => {
+    const data = useMemo(() => {
         const obs = new Astronomy.Observer(observer.lat, observer.lon, 0);
         const planets = PLANET_CONFIGS
             .map(cfg => computePlanetPosition(cfg, time, obs))
-            .filter(Boolean)
-            .map(p => ({
-                ...p!,
-                pos: equatorialTo3D(p!.ra, p!.dec, PLANET_RADIUS) as [number, number, number],
-            }));
-        const moonData = computeMoon(time, obs);
-        return { planets, moonData };
+            .filter(Boolean);
+        const moon = computeMoon(time, obs);
+        return { planets, moon };
     }, [time, observer]);
 
     return (
         <group>
-            {/* 7 planetas */}
-            {planets.map((planet) => (
-                <PlanetMesh key={planet.name} planet={planet} />
-            ))}
-
-            {/* Luna con fase */}
-            {moonData && (
-                <MoonMesh
-                    planet={{ ...moonData.planet, pos: equatorialTo3D(moonData.planet.ra, moonData.planet.dec, PLANET_RADIUS) as [number, number, number] }}
-                    phase={moonData.phase}
-                />
-            )}
+            {data.planets.map(p => <PlanetMesh key={p!.name} planet={p!} />)}
+            {data.moon && <MoonMesh planet={{ ...data.moon.planet, pos: equatorialTo3D(data.moon.planet.ra, data.moon.planet.dec, 95) as [number, number, number] }} phase={data.moon.phase} />}
         </group>
     );
 }
