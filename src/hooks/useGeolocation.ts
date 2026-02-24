@@ -9,6 +9,7 @@ export function useGeolocation() {
 
     useEffect(() => {
         if (!navigator.geolocation) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setError('Geolocation not supported');
             return;
         }

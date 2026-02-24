@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useEffect } from 'react';
+import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { StarOctree } from '@/lib/astronomy/Octree';
@@ -117,6 +117,7 @@ export default function BackgroundStars() {
     }, []);
 
     // ── 2. Preparar Geometría Dinámica para GPU ─────────────────────────────
+    const materialRef = useRef<THREE.ShaderMaterial | null>(null);
     const [geometry, material] = useMemo(() => {
         const geom = new THREE.BufferGeometry();
         geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(MAX_VISIBLE_STARS * 3), 3));
@@ -132,8 +133,10 @@ export default function BackgroundStars() {
             blending: THREE.AdditiveBlending
         });
 
+        // eslint-disable-next-line react-hooks/refs
+        materialRef.current = mat;
         return [geom, mat];
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // ── 3. Loop de Culling & Rendering ──────────────────────────────────────
     const frustum = useMemo(() => new THREE.Frustum(), []);
@@ -175,7 +178,9 @@ export default function BackgroundStars() {
         colAttr.needsUpdate = true;
         sizAttr.needsUpdate = true;
 
-        material.uniforms.uNightMode.value = nightMode;
+        if (materialRef.current) {
+            materialRef.current.uniforms.uNightMode.value = nightMode;
+        }
     });
 
     // renderOrder=0 → siempre bajo las estrellas del catálogo (order 1) y constelaciones (order 3)

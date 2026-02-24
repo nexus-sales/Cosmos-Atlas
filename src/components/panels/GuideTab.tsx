@@ -3,6 +3,7 @@
 import { STARS } from '@/data/stars';
 import { DSOS } from '@/data/dsos';
 import { CONSTELLATIONS } from '@/data/constellations';
+import { getConstellationDisplayName } from '@/data/constellationNames';
 import { useAppStore } from '@/stores/useAppStore';
 import { Search, Star as StarIcon, Orbit, CloudFog, Sparkles, X, Globe2, Share2 } from 'lucide-react';
 import { useState, useMemo } from 'react';
@@ -116,7 +117,7 @@ function buildConstellationTargets(): Planet[] {
             ra,
             dec,
             mag: 0,
-            desc: `Constelaci\u00f3n de ${name} \u2014 ${count} estrellas en el cat\u00e1logo`,
+            desc: `Constelaci\u00f3n de ${getConstellationDisplayName(name)} \u2014 ${count} estrellas en el cat\u00e1logo`,
             color: '#b4d2ff',
             symbol: '\u2736',   // ✶ marker to identify constellation targets
             kind: 'planet' as const,
@@ -165,7 +166,7 @@ function InfoCard({ obj }: { obj: Star | DSO | Planet }) {
                 </p>
             ) : (
                 <p className="text-[10px] font-bold text-white/70 uppercase tracking-wider">
-                    {(obj as Star).constellation}
+                    {getConstellationDisplayName((obj as Star).constellation)}
                 </p>
             )}
             <p className="text-[11px] text-white/80 leading-relaxed">{obj.desc}</p>
@@ -224,7 +225,7 @@ export default function GuideTab() {
 
         const constellations = (filter === 'all' || filter === 'constellations')
             ? CONSTELLATION_TARGETS
-                .filter(c => matchName(c.name))
+                .filter(c => matchName(c.name) || matchName(getConstellationDisplayName(c.name)))
                 .map(c => ({
                     ...c,
                     alt: equToHor(c.ra, c.dec, observer.lat, observer.lon, time).alt,
@@ -286,7 +287,9 @@ export default function GuideTab() {
                     style={{ background: 'rgba(59,130,246,0.12)' }}>
                     <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse shrink-0" />
                     <span className="text-[12px] text-blue-300 font-bold font-mono truncate flex-1">
-                        &#9678; {targetedObject.name}
+                        &#9678; {'kind' in targetedObject && targetedObject.kind === 'planet' && targetedObject.symbol === '\u2736'
+                            ? getConstellationDisplayName(targetedObject.name)
+                            : targetedObject.name}
                     </span>
                     <button title="Quitar puntero" onClick={() => setTargetedObject(null)}
                         className="text-white/35 hover:text-white/70 transition-colors shrink-0">
@@ -363,7 +366,7 @@ export default function GuideTab() {
                                         <span className="text-[13px] font-semibold flex-1 truncate">{star.name}</span>
                                         <span className="text-[10px] text-white/40 shrink-0 font-mono">{star.mag.toFixed(1)}</span>
                                         <span className="text-[10px] text-white/35 shrink-0 italic hidden sm:block truncate max-w-[64px]">
-                                            {star.constellation}
+                                            {getConstellationDisplayName(star.constellation)}
                                         </span>
                                         <div
                                             title={star.alt > 0 ? `Visible \u00b7 Alt ${star.alt.toFixed(0)}\u00b0` : 'Bajo el horizonte'}
@@ -421,7 +424,7 @@ export default function GuideTab() {
                                         )}
                                     >
                                         <span className="text-[11px] text-indigo-400/60 shrink-0">&#10038;</span>
-                                        <span className="text-[13px] font-semibold flex-1 truncate">{c.name}</span>
+                                        <span className="text-[13px] font-semibold flex-1 truncate">{getConstellationDisplayName(c.name)}</span>
                                         <div
                                             title={c.alt > 0 ? `Visible \u00b7 Alt ${c.alt.toFixed(0)}\u00b0` : 'Bajo el horizonte'}
                                             className={cn(

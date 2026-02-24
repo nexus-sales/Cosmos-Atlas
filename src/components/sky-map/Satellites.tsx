@@ -41,12 +41,6 @@ const SATELLITES_TLE: SatelliteData[] = [
     }
 ];
 
-// Reemplazar con datos reales de CelesTrak periódicamente
-const CELESTRAK_URLS = {
-    stations: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=last-30-days&FORMAT=tle',
-    starlink: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle'
-};
-
 const RADIUS = 95;
 const MAX_SATS = 6000;
 
@@ -128,7 +122,7 @@ export default function Satellites() {
                             satrec: satellite.twoline2satrec(lines[i + 1], lines[i + 2]),
                             color: '#88aaff',
                             size: 1.2,
-                            kind: 'starlink'
+                            kind: 'starlink' as const
                         });
                     }
                 }

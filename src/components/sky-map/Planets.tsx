@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState, useEffect } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
@@ -69,6 +69,7 @@ const RADII_KM: Record<string, number> = {
 };
 
 const AU_KM = 149597870.7;
+const MOON_RADIUS_KM = 1737.4;
 
 // ── Moon helpers ─────────────────────────────────────────────────────────────
 
@@ -101,8 +102,12 @@ function updateMoonCanvas(canvas: HTMLCanvasElement, phase: number, color1 = '#d
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.clip();
 
-    // Background: night side
-    ctx.fillStyle = color2;
+    // Base lunar disc with soft radial falloff
+    const base = ctx.createRadialGradient(cx - r * 0.35, cy - r * 0.35, r * 0.1, cx, cy, r);
+    base.addColorStop(0, '#f2f0de');
+    base.addColorStop(0.65, color1);
+    base.addColorStop(1, '#9aa2b0');
+    ctx.fillStyle = base;
     ctx.fillRect(0, 0, S, S);
 
     const p = ((phase % 360) + 360) % 360;
@@ -111,7 +116,7 @@ function updateMoonCanvas(canvas: HTMLCanvasElement, phase: number, color1 = '#d
     const termB = Math.abs(Math.cos(phi * Math.PI / 180)) * r;
 
     // Draw the lit half-disc
-    ctx.fillStyle = color1;
+    ctx.fillStyle = '#f4f2e2';
     ctx.beginPath();
     if (wax) {
         ctx.arc(cx, cy, r, -H, H);
@@ -144,7 +149,15 @@ function updateMoonCanvas(canvas: HTMLCanvasElement, phase: number, color1 = '#d
         ctx.fill();
     }
 
-    // Limb-darkening centrado (corregido)
+    // Night-side tint
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.fillStyle = color2;
+    ctx.globalAlpha = 0.55;
+    ctx.fillRect(0, 0, S, S);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+
+    // Limb-darkening centrado
     const g = ctx.createRadialGradient(cx, cy, r * 0.3, cx, cy, r);
     g.addColorStop(0, 'rgba(255,255,245,0.08)');
     g.addColorStop(0.5, 'rgba(0,0,0,0)');
@@ -201,12 +214,14 @@ function createPlanetTexture(canvas: HTMLCanvasElement, color: string, hasRings 
 }
 
 /** Compute Moon equatorial position and phase for a given date */
-function computeMoon(date: Date, obs: Astronomy.Observer): { planet: Planet; phase: number } | null {
+function computeMoon(date: Date, obs: Astronomy.Observer): { planet: Planet & { angularSize: number }; phase: number } | null {
     try {
         const eq = Astronomy.Equator(Astronomy.Body.Moon, date, obs, true, true);
         const illum = Astronomy.Illumination(Astronomy.Body.Moon, date);
         const phase = Astronomy.MoonPhase(date);
         const pct = (illum.phase_fraction * 100).toFixed(0);
+        const distKm = illum.geo_dist * AU_KM;
+        const angSizeArcsec = (2 * MOON_RADIUS_KM / distKm) * (180 / Math.PI) * 3600;
         return {
             planet: {
                 name: 'Luna',
@@ -217,6 +232,7 @@ function computeMoon(date: Date, obs: Astronomy.Observer): { planet: Planet; pha
                 color: '#d8d6c0',
                 desc: `${getMoonPhaseName(phase)} \u2014 ${pct}% iluminada. Sat\u00e9lite natural de la Tierra.`,
                 kind: 'planet',
+                angularSize: angSizeArcsec,
             },
             phase,
         };
@@ -227,46 +243,53 @@ function computeMoon(date: Date, obs: Astronomy.Observer): { planet: Planet; pha
 
 // ── Components ───────────────────────────────────────────────────────────────
 
-function MoonMesh({ planet, phase }: { planet: Planet & { pos: [number, number, number] }; phase: number }) {
-    const billboardRef = useRef<THREE.Group>(null);
+function MoonMesh({ planet, phase }: { planet: Planet & { pos: [number, number, number]; angularSize: number }; phase: number }) {
+    const meshRef = useRef<THREE.Mesh>(null);
+    const glowRef = useRef<THREE.Mesh>(null);
     const setSelectedObj = useAppStore((s) => s.setSelectedObject);
-    const SIZE = 2.0;
+    const SIZE = THREE.MathUtils.clamp(planet.angularSize * 0.001, 1.5, 2.6);
+    const textureRef = useRef<THREE.CanvasTexture | null>(null);
 
-    const [texture] = useState(() => {
+    const texture = useMemo(() => {
         const canvas = document.createElement('canvas');
         const tex = new THREE.CanvasTexture(canvas);
         updateMoonCanvas(canvas, phase);
         tex.needsUpdate = true;
+        textureRef.current = tex;
         return tex;
-    });
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const roundedPhase = Math.round(phase / 2) * 2;
 
     useEffect(() => {
         const canvas = texture.image as HTMLCanvasElement;
         updateMoonCanvas(canvas, roundedPhase);
+        // eslint-disable-next-line react-hooks/immutability
         texture.needsUpdate = true;
     }, [roundedPhase, texture]);
 
     useEffect(() => { return () => texture.dispose(); }, [texture]);
 
-    useFrame(({ camera }) => {
-        billboardRef.current?.quaternion.copy(camera.quaternion);
-    });
-
     return (
-        <group position={planet.pos} ref={billboardRef}>
-            <mesh onClick={(e) => { e.stopPropagation(); setSelectedObj(planet); }}>
-                <planeGeometry args={[SIZE * 2, SIZE * 2]} />
-                <meshBasicMaterial map={texture} transparent alphaTest={0.01} depthWrite={false} />
+        <group position={planet.pos}>
+            {/* Luna como esfera 3D real */}
+            <mesh ref={meshRef} onClick={(e) => { e.stopPropagation(); setSelectedObj(planet); }}>
+                <sphereGeometry args={[SIZE, 32, 32]} />
+                <meshBasicMaterial 
+                    map={texture} 
+                    transparent 
+                    depthWrite={false} 
+                    toneMapped={false}
+                />
             </mesh>
-            <mesh>
-                <planeGeometry args={[SIZE * 4.5, SIZE * 4.5]} />
-                <meshBasicMaterial color="#b8c8e0" transparent opacity={0.04} depthWrite={false} />
+            {/* Glow suave alrededor */}
+            <mesh ref={glowRef}>
+                <sphereGeometry args={[SIZE * 1.15, 32, 32]} />
+                <meshBasicMaterial color="#b8c8e0" transparent opacity={0.08} depthWrite={false} side={THREE.BackSide} />
             </mesh>
             <Html distanceFactor={90}>
-                <div style={{ color: '#d8d6c0', fontSize: '11px', fontFamily: "'Courier New', monospace", whiteSpace: 'nowrap', pointerEvents: 'none', userSelect: 'none', textShadow: '0 0 10px rgba(216,214,192,0.8)', paddingLeft: '12px', fontWeight: 'bold', letterSpacing: '0.5px' }}>
-                    {'\u263d'} Luna <span style={{ fontSize: '9px', opacity: 0.6, marginLeft: '5px' }}>{getMoonPhaseName(phase)}</span>
+                <div style={{ color: '#d8d6c0', fontSize: '12px', fontFamily: "'Courier New', monospace", whiteSpace: 'nowrap', pointerEvents: 'none', userSelect: 'none', textShadow: '0 0 10px rgba(216,214,192,0.8)', paddingLeft: '12px', fontWeight: 'bold', letterSpacing: '0.3px' }}>
+                    {'\u263d'} Luna <span style={{ fontSize: '10px', opacity: 0.7 }}>{getMoonPhaseName(phase)}</span>
                 </div>
             </Html>
         </group>
@@ -277,15 +300,17 @@ function MoonMesh({ planet, phase }: { planet: Planet & { pos: [number, number, 
 const INNER_PLANETS = ['Mercurio', 'Venus'];
 
 function PlanetMesh({ planet }: { planet: Planet & { pos: [number, number, number]; angularSize: number; phase: number; ringTilt?: number; moons?: Astronomy.JupiterMoonsInfo } }) {
-    const meshRef = useRef<THREE.Group>(null);
+    const sphereRef = useRef<THREE.Mesh>(null);
+    const ringRef = useRef<THREE.Mesh>(null);
     const setSelectedObject = useAppStore((state) => state.setSelectedObject);
+    const textureRef = useRef<THREE.CanvasTexture | null>(null);
 
     // Tamaño visual proporcional al tamaño angular real
     const size = Math.max(0.18, planet.angularSize * 0.025);
     const isInnerPlanet = INNER_PLANETS.includes(planet.name);
     const hasSaturnRings = planet.name === 'Saturno';
 
-    const [texture] = useState(() => {
+    const texture = useMemo(() => {
         const canvas = document.createElement('canvas');
         const tex = new THREE.CanvasTexture(canvas);
         if (isInnerPlanet) {
@@ -294,8 +319,9 @@ function PlanetMesh({ planet }: { planet: Planet & { pos: [number, number, numbe
             createPlanetTexture(canvas, planet.color, hasSaturnRings);
         }
         tex.needsUpdate = true;
+        textureRef.current = tex;
         return tex;
-    });
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         const canvas = texture.image as HTMLCanvasElement;
@@ -304,37 +330,38 @@ function PlanetMesh({ planet }: { planet: Planet & { pos: [number, number, numbe
         } else {
             createPlanetTexture(canvas, planet.color, hasSaturnRings);
         }
+        // eslint-disable-next-line react-hooks/immutability
         texture.needsUpdate = true;
     }, [planet.phase, texture, planet.color, isInnerPlanet, hasSaturnRings]);
 
     useEffect(() => { return () => texture.dispose(); }, [texture]);
 
-    useFrame(({ camera }) => {
-        if (meshRef.current) meshRef.current.quaternion.copy(camera.quaternion);
-    });
-
     return (
         <group position={planet.pos}>
-            <group ref={meshRef}>
-                <mesh onClick={(e) => { e.stopPropagation(); setSelectedObject(planet); }}>
-                    <planeGeometry args={[size * 2, size * 2]} />
-                    <meshBasicMaterial map={texture} transparent alphaTest={0.01} depthWrite={false} />
-                </mesh>
+            {/* Planeta como esfera 3D real */}
+            <mesh ref={sphereRef} onClick={(e) => { e.stopPropagation(); setSelectedObject(planet); }}>
+                <sphereGeometry args={[size, 32, 32]} />
+                <meshBasicMaterial 
+                    map={texture} 
+                    transparent 
+                    depthWrite={false} 
+                    toneMapped={false}
+                />
+            </mesh>
 
-                {/* Atmosphere halo */}
-                <mesh scale={[1.3, 1.3, 1]}>
-                    <planeGeometry args={[size * 2, size * 2]} />
-                    <meshBasicMaterial color={planet.color} transparent opacity={0.06} depthWrite={false} />
-                </mesh>
+            {/* Atmosphere halo - esfera ligeramente más grande */}
+            <mesh>
+                <sphereGeometry args={[size * 1.12, 32, 32]} />
+                <meshBasicMaterial color={planet.color} transparent opacity={0.06} depthWrite={false} side={THREE.BackSide} />
+            </mesh>
 
-                {/* Saturn Rings - now using real tilt */}
-                {hasSaturnRings && planet.ringTilt !== undefined && (
-                    <mesh rotation={[planet.ringTilt, 0, 0]}>
-                        <ringGeometry args={[size * 1.8, size * 3.5, 64]} />
-                        <meshBasicMaterial color="#d4b896" transparent opacity={0.6} side={THREE.DoubleSide} depthWrite={false} />
-                    </mesh>
-                )}
-            </group>
+            {/* Saturn Rings - usando inclinación real */}
+            {hasSaturnRings && planet.ringTilt !== undefined && (
+                <mesh ref={ringRef} rotation={[planet.ringTilt, 0, 0]}>
+                    <ringGeometry args={[size * 1.6, size * 3.2, 64]} />
+                    <meshBasicMaterial color="#d4b896" transparent opacity={0.7} side={THREE.DoubleSide} depthWrite={false} />
+                </mesh>
+            )}
 
             {/* Jupiter Galilean Moons */}
             {planet.name === 'Júpiter' && planet.moons && (
@@ -348,7 +375,7 @@ function PlanetMesh({ planet }: { planet: Planet & { pos: [number, number, numbe
                         const offset = new THREE.Vector3(moon.x * size * 1.5, moon.y * size * 0.3, moon.z * size);
                         return (
                             <mesh key={idx} position={offset}>
-                                <sphereGeometry args={[size * 0.06, 8, 8]} />
+                                <sphereGeometry args={[size * 0.1, 8, 8]} />
                                 <meshBasicMaterial color={color} />
                             </mesh>
                         );
@@ -357,8 +384,8 @@ function PlanetMesh({ planet }: { planet: Planet & { pos: [number, number, numbe
             )}
 
             <Html distanceFactor={90}>
-                <div style={{ color: planet.color, fontSize: '11px', fontFamily: "'Courier New', monospace", whiteSpace: 'nowrap', pointerEvents: 'none', userSelect: 'none', textShadow: `0 0 8px ${planet.color}`, paddingLeft: '8px', fontWeight: 'bold' }}>
-                    {planet.symbol} {planet.name} <span style={{ fontSize: '9px', opacity: 0.6, marginLeft: '4px' }}>{planet.mag.toFixed(1)}</span>
+                <div style={{ color: planet.color, fontSize: '12px', fontFamily: "'Courier New', monospace", whiteSpace: 'nowrap', pointerEvents: 'none', userSelect: 'none', textShadow: `0 0 8px ${planet.color}`, paddingLeft: '8px', fontWeight: 'bold' }}>
+                    {planet.symbol} {planet.name} <span style={{ fontSize: '10px', opacity: 0.7 }}>{planet.mag.toFixed(1)}</span>
                 </div>
             </Html>
         </group>

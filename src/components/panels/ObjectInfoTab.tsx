@@ -1,12 +1,12 @@
 'use client';
 
 import { useAppStore } from '@/stores/useAppStore';
-import { MousePointer2, Star, Navigation, Zap, Eye, EyeOff, Globe } from 'lucide-react';
+import { MousePointer2, Star as StarIcon, Navigation, Zap, Eye, EyeOff, Globe } from 'lucide-react';
 import { useCelestialVisibility } from '@/hooks/useCelestialVisibility';
-import { cn } from '@/lib/utils';
+import type { Star, DSO, Planet } from '@/types/celestial';
 
 export default function ObjectInfoTab() {
-    const selected = useAppStore((state) => state.selectedObject);
+    const selected = useAppStore((state) => state.selectedObject) as Star | DSO | Planet | null;
     const coords = useCelestialVisibility(selected?.ra || 0, selected?.dec || 0);
 
     if (!selected) {
@@ -24,9 +24,9 @@ export default function ObjectInfoTab() {
     }
 
     const isStar = 'constellation' in selected;
-    const isPlanet = 'kind' in selected && (selected as any).kind === 'planet';
-    const typeLabel = isStar ? 'ESTRELLA' : isPlanet ? 'PLANETA' : ((selected as any).type?.toUpperCase?.() ?? 'OBJETO');
-    const accentColor = isStar ? '#60a5fa' : isPlanet ? (selected as any).color : '#a78bfa';
+    const isPlanet = 'kind' in selected && (selected as Planet).kind === 'planet';
+    const typeLabel = isStar ? 'ESTRELLA' : isPlanet ? 'PLANETA' : ((selected as DSO).type?.toUpperCase?.() ?? 'OBJETO');
+    const accentColor = isStar ? '#60a5fa' : isPlanet ? (selected as Planet).color : '#a78bfa';
     const isVisible = coords.alt > 0;
 
     return (
@@ -41,7 +41,7 @@ export default function ObjectInfoTab() {
                 <div className="flex items-start justify-between mb-3">
                     <span className="text-[8px] font-bold tracking-[0.25em] px-2 py-1 rounded-sm"
                         style={{ background: `${accentColor}18`, color: accentColor }}>
-                        {typeLabel}{isPlanet ? ` ${(selected as any).symbol}` : ''}
+                        {typeLabel}{isPlanet ? ` ${(selected as Planet).symbol}` : ''}
                     </span>
                     <span className="text-[9px] font-mono"
                         style={{ color: isVisible ? '#4ade80' : '#f87171' }}>
@@ -56,9 +56,9 @@ export default function ObjectInfoTab() {
 
                 {isStar && (
                     <div className="flex items-center gap-2 mb-3">
-                        <Star className="w-2.5 h-2.5" style={{ color: accentColor }} />
+                        <StarIcon className="w-2.5 h-2.5" style={{ color: accentColor }} />
                         <span className="text-[9px] font-mono tracking-wider" style={{ color: `${accentColor}90` }}>
-                            {(selected as any).constellation}
+                            {(selected as Star).constellation}
                         </span>
                     </div>
                 )}

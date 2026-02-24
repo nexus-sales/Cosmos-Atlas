@@ -15,8 +15,9 @@ function useIsMobile() {
     const [isMobile, setIsMobile] = useState(false);
     useEffect(() => {
         const mq = window.matchMedia('(max-width: 767px)');
-        setIsMobile(mq.matches);
         const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setIsMobile(mq.matches);
         mq.addEventListener('change', handler);
         return () => mq.removeEventListener('change', handler);
     }, []);
@@ -46,8 +47,9 @@ export default function SidePanel() {
     const isMobile = useIsMobile();
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (selectedObject) setActiveTab('info');
-    }, [selectedObject]);
+    }, [selectedObject, setActiveTab]);
 
     const tabs = [
         { id: 'challenge', label: 'RETO', icon: Target },

@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo } from 'react';
-import * as THREE from 'three';
 import { Line } from '@react-three/drei';
 import { CONSTELLATIONS } from '@/data/constellations';
 import { STARS } from '@/data/stars';

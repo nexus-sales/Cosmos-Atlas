@@ -177,21 +177,28 @@ function MilkyWayParticles() {
 
         const SPHERE_R = 97; // Radio ligeramente menor que la esfera de fondo (99)
 
+        // RNG seeded for purity
+        let rngSeed = 12345;
+        const rng = () => {
+            rngSeed = (Math.imul(1664525, rngSeed) + 1013904223) >>> 0;
+            return rngSeed / 0x100000000;
+        };
+
         for (let i = 0; i < count; i++) {
             const i3 = i * 3;
 
             // Distribución física: Núcleo denso + Brazos espirales
-            const t = Math.random();
+            const t = rng();
             const dist = Math.pow(t, 2.2); // 0..1, concentrado cerca del centro
 
-            const arm = Math.floor(Math.random() * 2) * Math.PI; // 2 brazos (0 y π)
-            const angle = Math.random() * Math.PI * 2.0;
+            const arm = Math.floor(rng() * 2) * Math.PI; // 2 brazos (0 y π)
+            const angle = rng() * Math.PI * 2.0;
             const spiral = angle * 0.45 + arm;
 
             // Latitud galáctica: distribución gaussiana estrecha
             // más delgada alejándose del centro
             const bWidth = Math.PI * 0.04 * (1.0 + dist * 0.5); // ±~7° cerca, ±~11° lejos
-            const latAngle = (Math.random() - 0.5) * 2.0 * bWidth;
+            const latAngle = (rng() - 0.5) * 2.0 * bWidth;
 
             // Dirección en plano galáctico
             const cosLat = Math.cos(latAngle);
@@ -201,7 +208,7 @@ function MilkyWayParticles() {
 
             // Proyectar sobre la esfera con radio SPHERE_R,
             // añadiendo algo de profundidad aleatoria para variedad
-            const r = SPHERE_R * (0.92 + Math.random() * 0.08);
+            const r = SPHERE_R * (0.92 + rng() * 0.08);
             pos[i3] = dx * r;
             pos[i3 + 1] = dy * r;
             pos[i3 + 2] = dz * r;

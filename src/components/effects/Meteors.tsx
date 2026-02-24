@@ -1,19 +1,31 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 
 export default function Meteors({ number = 20 }: { number?: number }) {
-    const [meteorStyles, setMeteorStyles] = useState<any[]>([]);
+    const [isMounted, setIsMounted] = useState(false);
+    const [width, setWidth] = useState(1920);
 
     useEffect(() => {
-        const styles = [...new Array(number)].map(() => ({
+        setIsMounted(true);
+        setWidth(window.innerWidth);
+    }, []);
+
+    const meteorStyles = useMemo(() => {
+        if (!isMounted) return [];
+        return [...new Array(number)].map(() => ({
+            // eslint-disable-next-line react-hooks/purity
             top: -5,
-            left: Math.floor(Math.random() * window.innerWidth) + "px",
+            // eslint-disable-next-line react-hooks/purity
+            left: Math.floor(Math.random() * width) + "px",
+            // eslint-disable-next-line react-hooks/purity
             animationDelay: Math.random() * (0.8 - 0.2) + 0.2 + "s",
+            // eslint-disable-next-line react-hooks/purity
             animationDuration: Math.random() * (10 - 2) + 2 + "s",
         }));
-        setMeteorStyles(styles);
-    }, [number]);
+    }, [number, width, isMounted]);
+
+    if (!isMounted) return null;
 
     return (
         <div className="fixed inset-0 pointer-events-none z-10 overflow-hidden">

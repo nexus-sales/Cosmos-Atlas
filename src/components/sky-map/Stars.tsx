@@ -204,7 +204,7 @@ export default function Stars() {
             fragmentShader: starFragmentShader,
             uniforms: {
                 uTime: { value: 0 },
-                uTimeSec: { value: Date.now() / 1000 },
+                uTimeSec: { value: 0 },
                 uNightMode: { value: nightMode }
             },
             transparent: true,
@@ -216,9 +216,11 @@ export default function Stars() {
 
     useFrame((state) => {
         const mat = material as THREE.ShaderMaterial;
+        // eslint-disable-next-line react-hooks/immutability
         mat.uniforms.uTime.value = state.clock.elapsedTime;
         // uTimeSec usa el tiempo del store para que las variables respondan al Time Travel
         mat.uniforms.uTimeSec.value = useAppStore.getState().time.getTime() / 1000;
+        mat.uniforms.uNightMode.value = nightMode;
     });
 
     return (

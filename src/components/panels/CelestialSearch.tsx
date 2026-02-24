@@ -4,11 +4,18 @@ import { useState, useEffect, useRef } from 'react';
 import { Search, Loader2, Star, Globe, Crosshair } from 'lucide-react';
 import { useAppStore } from '@/stores/useAppStore';
 import { STARS } from '@/data/stars';
-import { cn } from '@/lib/utils';
+import type { Star as StarType } from '@/types/celestial';
+
+interface SearchResult extends Partial<StarType> {
+    type: 'star' | 'dso' | 'error';
+    source?: 'local' | 'simbad';
+    name?: string;
+    constellation?: string;
+}
 
 export default function CelestialSearch() {
     const [query, setQuery] = useState('');
-    const [results, setResults] = useState<any[]>([]);
+    const [results, setResults] = useState<SearchResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -37,7 +44,7 @@ export default function CelestialSearch() {
         const localMatches = STARS.filter(s =>
             s.name.toLowerCase().includes(val.toLowerCase()) ||
             s.constellation.toLowerCase().includes(val.toLowerCase())
-        ).slice(0, 5).map(s => ({ ...s, type: 'star', source: 'local' }));
+        ).slice(0, 5).map(s => ({ ...s, type: 'star' as const, source: 'local' as const }));
 
         setResults(localMatches);
         setIsOpen(true);
@@ -60,14 +67,14 @@ export default function CelestialSearch() {
                     name: nameMatch ? nameMatch[1] : query.toUpperCase(),
                     ra: parseFloat(raMatch[1]),
                     dec: parseFloat(decMatch[1]),
-                    type: 'dso',
-                    source: 'simbad',
-                    mag: 10, // Default for non-local
+                    type: 'dso' as const,
+                    source: 'simbad' as const,
+                    mag: 10,
                     constellation: 'Simbad Data'
                 };
                 setResults([newObj]);
             } else {
-                setResults([{ name: 'No se encontraron resultados en SIMBAD', type: 'error' }]);
+                setResults([{ name: 'No se encontraron resultados en SIMBAD', type: 'error' as const }]);
             }
         } catch (error) {
             console.error(error);
@@ -76,9 +83,9 @@ export default function CelestialSearch() {
         }
     };
 
-    const selectObject = (obj: any) => {
+    const selectObject = (obj: SearchResult) => {
         if (obj.type === 'error') return;
-        setTargetedObject(obj);
+        setTargetedObject(obj as StarType);
         setIsOpen(false);
         setQuery('');
     };

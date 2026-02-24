@@ -1,21 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { CHALLENGES } from '@/data/challenges';
 import { useAppStore } from '@/stores/useAppStore';
 import { Trophy, Compass, Lightbulb } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function ChallengeTab() {
-    const [mounted, setMounted] = useState(false);
-    useEffect(() => setMounted(true), []);
-
-    const dayN = Math.floor((new Date().getTime() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+    const dayN = useMemo(() => {
+        return Math.floor((new Date().getTime() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+    }, []);
     const challenge = CHALLENGES[dayN % CHALLENGES.length];
     const foundChallenges = useAppStore((state) => state.foundChallenges);
     const isFound = foundChallenges.includes(challenge.name);
-
-    if (!mounted) return <div className="animate-pulse space-y-4 pt-4"><div className="h-32 bg-white/5 rounded-lg" /><div className="h-24 bg-white/5 rounded-lg" /></div>;
 
     return (
         <div className="space-y-6">
@@ -43,7 +40,7 @@ export default function ChallengeTab() {
                 </h3>
 
                 <p className="text-sm text-white/60 leading-relaxed mb-4 italic">
-                    "{challenge.hint}"
+                    &ldquo;{challenge.hint}&rdquo;
                 </p>
 
                 {!isFound && (

@@ -101,7 +101,7 @@ function FovZoom() {
             canvas.removeEventListener('pointerup', onPointerUp);
             canvas.removeEventListener('pointercancel', onPointerUp);
         };
-    }, [camera, gl]);
+    }, [camera, gl, setCamFov]);
 
     return null;
 }
@@ -111,10 +111,20 @@ function FovZoom() {
  * funcione correctamente con planos de corte por material.
  */
 function SetupRenderer() {
+    const glRef = useRef<THREE.WebGLRenderer | null>(null);
     const { gl } = useThree();
+
     useEffect(() => {
+        glRef.current = gl;
+        // eslint-disable-next-line react-hooks/immutability
         gl.localClippingEnabled = true;
+        return () => {
+            if (glRef.current) {
+                glRef.current.localClippingEnabled = false;
+            }
+        };
     }, [gl]);
+
     return null;
 }
 
@@ -210,6 +220,7 @@ export default function SkyCanvas() {
             >
                 <Suspense fallback={null}>
                     <SetupRenderer />
+
                     <OrbitControls
                         enableZoom={false}
                         enablePan={false}

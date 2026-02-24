@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import * as THREE from 'three';
 import { Html } from '@react-three/drei';
 import { CONSTELLATIONS } from '@/data/constellations';
+import { getConstellationDisplayName } from '@/data/constellationNames';
 import { STARS } from '@/data/stars';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { useAppStore } from '@/stores/useAppStore';
@@ -38,7 +39,7 @@ export default function ConstellationLabels() {
 
             const centroid = sum.divideScalar(count).normalize();
             const pos = centroid.multiplyScalar(85).toArray() as [number, number, number];
-            return [{ name, pos }];
+            return [{ name, label: getConstellationDisplayName(name), pos }];
         });
     }, []);
 
@@ -52,7 +53,7 @@ export default function ConstellationLabels() {
 
     return (
         <>
-            {labels.map(({ name, pos }) => (
+            {labels.map(({ name, label, pos }) => (
                 <Html
                     key={name}
                     position={pos}
@@ -64,14 +65,14 @@ export default function ConstellationLabels() {
                     <span style={{
                         color: textColor,
                         fontFamily: "'Courier New', Courier, monospace",
-                        fontSize: '10px',
+                        fontSize: '12px',
                         fontWeight: 700,
-                        letterSpacing: '0.28em',
+                        letterSpacing: '0.22em',
                         textTransform: 'uppercase',
                         whiteSpace: 'nowrap',
                         textShadow: `0 0 12px ${glowColor}, 0 0 4px ${glowColor}`,
                     }}>
-                        {name.toUpperCase()}
+                        {label.toUpperCase()}
                     </span>
                 </Html>
             ))}

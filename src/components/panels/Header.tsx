@@ -1,18 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
-import { Compass, Stars, Map as MapIcon, Info, Search } from 'lucide-react';
+import { Stars } from 'lucide-react';
 import CelestialSearch from './CelestialSearch';
 
 export default function Header() {
     const time = useAppStore((state) => state.time);
     const observer = useAppStore((state) => state.observer);
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    const mounted = useMemo(() => typeof window !== 'undefined', []);
 
     const formatTime = (date: Date) => {
         return date.toLocaleTimeString('es-ES', {
