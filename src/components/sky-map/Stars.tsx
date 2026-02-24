@@ -37,10 +37,13 @@ const starVertexShader = `
       varFactor = 1.0 - varAmp * 0.5 * (1.0 - sin(phase));
     }
 
-    // Centelleo Atmosférico (Twinkle): aumenta con la masa de aire
-    float twinkleSpeed = 1.8 + airmass * 0.5;
-    float twinkleAmp = 0.15 + airmass * 0.08;
-    vOpacity = varFactor * ( (1.0 - twinkleAmp) + twinkleAmp * sin(uTime * twinkleSpeed + position.x * 8.0 + position.y * 4.0));
+    // Centelleo Atmosférico (Twinkle): modulación de doble frecuencia
+    // Simula mejor la turbulencia pulsante de la atmósfera
+    float twinkleSpeed = 1.6 + airmass * 0.4;
+    float twinkleAmp = 0.12 + airmass * 0.08;
+    float t = uTime * twinkleSpeed;
+    float noise = sin(t + position.x * 12.0) * 0.7 + sin(t * 1.5 + position.y * 7.0) * 0.3;
+    vOpacity = varFactor * ( (1.0 - twinkleAmp) + twinkleAmp * noise );
     
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
     gl_PointSize = size * varFactor * (480.0 / -mvPosition.z);
@@ -60,7 +63,7 @@ const starFragmentShader = `
     vec3 outColor = vColor;
     if (uNightMode) {
         float luminance = dot(vColor, vec3(0.299, 0.587, 0.114));
-        outColor = vec3(luminance * 1.5, 0.0, 0.0);
+        outColor = vec3(luminance * 1.8, 0.0, 0.0);
     }
 
     // Núcleo compacto y brillante (Pogson real: mayor brillo = pico más agudo)
@@ -82,24 +85,22 @@ const HIT_RADIUS = 2.0;
 
 /**
  * Estrellas variables conocidas con sus parámetros de variabilidad.
- * period: período en segundos.
- * amp: amplitud de modulación [0-1]. 1.0 = apagado completo en mínimo.
- * phase: desfase inicial en radianes.
  */
 const VARIABLE_STARS: Record<string, { period: number; amp: number; phase: number }> = {
-    // Algol (β Persei): binaria eclipsante, período 2.867 días. Rango mag 2.12–3.39
     'Algol': { period: 247_814, amp: 0.48, phase: 0.0 },
-    // Mira (ο Ceti): variable de largo período, 331.96 días. Rango mag 2.0–10.1
     'Mira': { period: 28_681_000, amp: 0.82, phase: 1.8 },
-    // Betelgeuse (α Ori): semirregular, período ~420 días. Rango mag 0.0–1.3
     'Betelgeuse': { period: 36_288_000, amp: 0.22, phase: 3.1 },
+    'Eta Car': { period: 480_000_000, amp: 0.55, phase: 0.0 }, // Añadida Eta Carinae
 };
 
 
 /** Hitbox invisible que detecta click/hover para cada estrella nombrada */
 function StarHitbox({ star, pos }: { star: typeof STARS[0]; pos: [number, number, number] }) {
     const setSelectedObject = useAppStore((state) => state.setSelectedObject);
+    const nightMode = useAppStore((state) => state.settings.nightMode);
     const [hovered, setHovered] = useState(false);
+
+    const displayColor = nightMode ? '#ff3333' : star.color;
 
     return (
         <group position={pos}>
@@ -116,17 +117,17 @@ function StarHitbox({ star, pos }: { star: typeof STARS[0]; pos: [number, number
                 <Html distanceFactor={120} zIndexRange={[100, 0]}>
                     <div style={{
                         background: 'rgba(2,8,20,0.88)',
-                        border: `1px solid ${star.color}55`,
+                        border: `1px solid ${displayColor}55`,
                         borderRadius: '4px',
                         padding: '4px 10px',
-                        color: star.color,
+                        color: displayColor,
                         fontSize: '11px',
                         fontFamily: "'Courier New', monospace",
                         fontWeight: 'bold',
                         whiteSpace: 'nowrap',
                         letterSpacing: '1px',
                         pointerEvents: 'none',
-                        textShadow: `0 0 10px ${star.color}`,
+                        textShadow: `0 0 10px ${displayColor}`,
                         transform: 'translateX(-50%) translateY(-28px)',
                     }}>
                         {star.name}
@@ -146,7 +147,7 @@ export default function Stars() {
     const nightMode = useAppStore((state) => state.settings.nightMode);
 
     // Mapeo Bortle -> Magnitud Límite (ajustado para que el catálogo de ~9k estrellas tenga sentido)
-    const limitingMag = 8.0 - (bortleScale - 1) * 0.5;
+    const limitingMag = 5.5 - (bortleScale - 1) * 0.45;
 
     const [geometry, material, visibleStars, starPositions] = useMemo(() => {
         const filteredStars = STARS.filter(s => s.mag <= limitingMag);

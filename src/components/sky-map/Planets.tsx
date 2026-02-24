@@ -64,7 +64,7 @@ const PLANET_RADIUS = 95;
 function getMoonPhaseName(phase: number): string {
     const p = ((phase % 360) + 360) % 360;
     if (p < 22.5 || p >= 337.5) return 'Luna nueva';
-    if (p < 67.5)  return 'Creciente c\u00f3ncava';
+    if (p < 67.5) return 'Creciente c\u00f3ncava';
     if (p < 112.5) return 'Cuarto creciente';
     if (p < 157.5) return 'Gibosa creciente';
     if (p < 202.5) return 'Luna llena';
@@ -74,18 +74,19 @@ function getMoonPhaseName(phase: number): string {
 }
 
 /**
- * Generates a canvas texture showing the correct moon phase.
+ * Updates an existing canvas and texture with the correct moon phase.
  * Phase: 0 = new moon, 90 = first quarter, 180 = full moon, 270 = last quarter.
  */
-function createMoonTexture(phase: number): THREE.CanvasTexture {
+function updateMoonCanvas(canvas: HTMLCanvasElement, phase: number) {
     const S = 256;
-    const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = S;
+    if (canvas.width !== S) canvas.width = canvas.height = S;
     const ctx = canvas.getContext('2d')!;
     const cx = S / 2, cy = S / 2, r = S / 2 - 6;
     const H = Math.PI / 2;
 
-    // Clip all drawing to the moon circle
+    // Reset and clip
+    ctx.save();
+    ctx.clearRect(0, 0, S, S);
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.clip();
@@ -110,61 +111,56 @@ function createMoonTexture(phase: number): THREE.CanvasTexture {
     ctx.closePath();
     ctx.fill();
 
-    // Draw the terminator ellipse to turn the half-disc into crescent or gibbous
+    // Draw the terminator ellipse
     if (phi < 88) {
-        // Crescent: dark terminator cuts into the lit half from the inside
         ctx.fillStyle = '#0c1322';
         ctx.beginPath();
         if (wax) {
-            ctx.ellipse(cx, cy, termB, r, 0, -H, H);   // right-side dark ellipse
+            ctx.ellipse(cx, cy, termB, r, 0, -H, H);
         } else {
-            ctx.ellipse(cx, cy, termB, r, 0, H, -H);   // left-side dark ellipse
+            ctx.ellipse(cx, cy, termB, r, 0, H, -H);
         }
         ctx.closePath();
         ctx.fill();
     } else if (phi > 92) {
-        // Gibbous: lit terminator extends the lit zone into the dark half
         ctx.fillStyle = '#d8d6c0';
         ctx.beginPath();
         if (wax) {
-            ctx.ellipse(cx, cy, termB, r, 0, H, -H);   // left-side lit ellipse
+            ctx.ellipse(cx, cy, termB, r, 0, H, -H);
         } else {
-            ctx.ellipse(cx, cy, termB, r, 0, -H, H);   // right-side lit ellipse
+            ctx.ellipse(cx, cy, termB, r, 0, -H, H);
         }
         ctx.closePath();
         ctx.fill();
     }
 
-    // Subtle limb-darkening + atmosphere glow
+    // Limb-darkening
     const g = ctx.createRadialGradient(cx - r * 0.2, cy - r * 0.25, r * 0.05, cx, cy, r);
-    g.addColorStop(0,   'rgba(255,255,245,0.12)');
+    g.addColorStop(0, 'rgba(255,255,245,0.12)');
     g.addColorStop(0.6, 'rgba(0,0,0,0)');
-    g.addColorStop(1,   'rgba(0,0,0,0.45)');
+    g.addColorStop(1, 'rgba(0,0,0,0.45)');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, S, S);
-
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.needsUpdate = true;
-    return tex;
+    ctx.restore();
 }
 
 /** Compute Moon equatorial position and phase for a given date */
 function computeMoon(date: Date, obs: Astronomy.Observer): { planet: Planet; phase: number } | null {
     try {
-        const eq    = Astronomy.Equator(Astronomy.Body.Moon, date, obs, true, true);
+        const eq = Astronomy.Equator(Astronomy.Body.Moon, date, obs, true, true);
         const illum = Astronomy.Illumination(Astronomy.Body.Moon, date);
         const phase = Astronomy.MoonPhase(date);
-        const pct   = (illum.phase_fraction * 100).toFixed(0);
+        const pct = (illum.phase_fraction * 100).toFixed(0);
         return {
             planet: {
-                name:   'Luna',
+                name: 'Luna',
                 symbol: '\u263d',
-                ra:     eq.ra * 15,
-                dec:    eq.dec,
-                mag:    illum.mag,
-                color:  '#d8d6c0',
-                desc:   `${getMoonPhaseName(phase)} \u2014 ${pct}% iluminada. Sat\u00e9lite natural de la Tierra.`,
-                kind:   'planet',
+                ra: eq.ra * 15,
+                dec: eq.dec,
+                mag: illum.mag,
+                color: '#d8d6c0',
+                desc: `${getMoonPhaseName(phase)} \u2014 ${pct}% iluminada. Sat\u00e9lite natural de la Tierra.`,
+                kind: 'planet',
             },
             phase,
         };
@@ -175,19 +171,31 @@ function computeMoon(date: Date, obs: Astronomy.Observer): { planet: Planet; pha
 
 // ── Moon billboard component ──────────────────────────────────────────────────
 function MoonMesh({ planet, phase }: { planet: Planet & { pos: [number, number, number] }; phase: number }) {
-    const billboardRef   = useRef<THREE.Group>(null);
+    const billboardRef = useRef<THREE.Group>(null);
     const setSelectedObj = useAppStore((s) => s.setSelectedObject);
     const SIZE = 2.0;
 
-    // Round phase to nearest 3° so the texture doesn't update every frame
+    // Use a single persistent canvas and texture
+    const [texture] = useState(() => {
+        const canvas = document.createElement('canvas');
+        const tex = new THREE.CanvasTexture(canvas);
+        updateMoonCanvas(canvas, phase);
+        tex.needsUpdate = true;
+        return tex;
+    });
+
+    // Round phase to nearest 3° to avoid too many redraws
     const roundedPhase = Math.round(phase / 3) * 3;
-    const [texture, setTexture] = useState<THREE.CanvasTexture | null>(null);
 
     useEffect(() => {
-        const tex = createMoonTexture(roundedPhase);
-        setTexture(tex);
-        return () => { tex.dispose(); };
-    }, [roundedPhase]);
+        const canvas = texture.image as HTMLCanvasElement;
+        updateMoonCanvas(canvas, roundedPhase);
+        texture.needsUpdate = true;
+    }, [roundedPhase, texture]);
+
+    useEffect(() => {
+        return () => texture.dispose();
+    }, [texture]);
 
     // Billboard: keep the disc facing the camera each frame
     useFrame(({ camera }) => {
@@ -322,7 +330,7 @@ function computePlanetPosition(cfg: PlanetConfig, date: Date, astroObserver: Ast
 
 // ── Componente principal ──────────────────────────────────────────────────────
 export default function Planets() {
-    const time     = useAppStore((state) => state.time);
+    const time = useAppStore((state) => state.time);
     const observer = useAppStore((state) => state.observer);
 
     const { planets, moonData } = useMemo(() => {

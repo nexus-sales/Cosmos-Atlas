@@ -86,14 +86,14 @@ void main() {
     float lRad = atan(dir.x, dir.z);
 
     // 2. Estructura de la Banda
-    float mainBand  = exp(-bDeg*bDeg / 48.0); // Banda central más nítida
-    float thickHalo = exp(-bDeg*bDeg / 450.0) * 0.2;
+    float mainBand  = exp(-bDeg*bDeg / 36.0); // Banda central más nítida
+    float thickHalo = exp(-bDeg*bDeg / 260.0) * 0.08;
 
     // 3. Bulbo Galáctico (Sagitario A*)
     float gcDot   = dot(dir, uGCDir);
     float bulgeMask = smoothstep(0.4, 0.98, gcDot);
     // Bulbo nítido y bulbo difuso
-    float bulge = (smoothstep(0.85, 1.0, gcDot) * 3.5 + smoothstep(0.5, 0.9, gcDot) * 1.2) * mainBand;
+    float bulge = (smoothstep(0.85, 1.0, gcDot) * 1.35 + smoothstep(0.5, 0.9, gcDot) * 0.55) * mainBand;
 
     // 4. Polvo Estelar (Dust Lanes / Great Rift)
     // Usamos FBM para crear el surco irregular y fracturado
@@ -117,16 +117,16 @@ void main() {
     finalColor = mix(finalColor, colorGas, cygnus * 0.3 + carina * 0.2);
 
     // 7. Brillo Final
-    float bright = (mainBand + thickHalo + bulge + cygnus + carina);
+    float bright = (mainBand * 0.55 + thickHalo + bulge * 0.75 + cygnus * 0.35 + carina * 0.25);
     
     // Aplicar máscara de polvo oscuro
     float shadow = smoothstep(0.2, 0.8, dustNoise) * 0.85 * (bulgeMask * 0.5 + 0.5);
-    bright *= (1.0 - shadow * 0.9);
-    bright -= rift * 0.4;
+    bright *= (1.0 - shadow * 1.1);
+    bright -= rift * 0.55;
     bright = max(bright, 0.0);
 
     // Alpha cinemático – ajustado para mejor visibilidad
-    float alpha = clamp(bright * 0.18, 0.0, 0.48);
+    float alpha = clamp(bright * 0.075, 0.0, 0.22);
     if (alpha < 0.005) discard;
 
     gl_FragColor = vec4(finalColor, alpha);
@@ -240,11 +240,11 @@ function MilkyWayParticles() {
             </bufferGeometry>
             <pointsMaterial
                 map={glowTexture}          // ← textura difusa: elimina los cuadrados
-                size={0.4}                 // tamaño sutil
+                size={0.32}                 // tamaño sutil
                 sizeAttenuation={true}     // se hace menor con la distancia
                 vertexColors               // usa el array de colores personalizados
                 transparent={true}
-                opacity={0.45}             // ajustado para mejor visibilidad
+                opacity={0.22}             // ajustado para mejor visibilidad
                 alphaTest={0.01}           // descarta píxeles casi transparentes
                 blending={THREE.NormalBlending}
                 depthWrite={false}
@@ -293,3 +293,4 @@ export default function MilkyWay() {
         </group>
     );
 }
+

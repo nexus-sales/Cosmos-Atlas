@@ -87,7 +87,8 @@ src/
 │   │   ├── GuideTab.tsx         # Guía interactiva (estrellas, planetas, Luna, DSOs, constelaciones)
 │   │   ├── ObjectInfoTab.tsx    # Detalle del objeto seleccionado
 │   │   ├── ChallengeTab.tsx     # Retos de observación
-│   │   └── TimeTravelControls.tsx # Slider de viaje temporal
+│   │   ├── TimeTravelControls.tsx # Slider de viaje temporal
+│   │   └── Compass.tsx          # Brújula interactiva (clic: cenit, doble clic: norte)
 │   │
 │   └── sky-map/
 │       ├── SkyCanvas.tsx        # Canvas 3D principal + CameraNavigator + EffectComposer
@@ -377,6 +378,18 @@ Clic de nuevo en el mismo objeto lo deselecciona.
 ---
 
 ## Changelog
+
+### v2.3 — 2026-02-24 (Brújula de Orientación)
+
+#### 🧭 Nueva Brújula Interactiva
+- **Rosa de los vientos** en esquina inferior izquierda
+- Aguja roja que siempre apunta al norte visual
+- Indicador de dirección cardinal (N, NE, E, SE, S, SO, O, NO) y grados
+- **Clic simple**: centra la vista en el cenit (mirando hacia arriba)
+- **Doble clic**: centra la vista mirando al norte (horizonte)
+- Estilo glass morphism coherente con la UI existente
+
+---
 
 ### v2.2 — 2026-02-24 (Constelaciones Completas + Vía Láctea Mejorada)
 

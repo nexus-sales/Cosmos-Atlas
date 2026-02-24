@@ -16,6 +16,7 @@ import Horizon from '@/components/sky-map/Horizon';
 import BackgroundStars from '@/components/sky-map/BackgroundStars';
 import TargetPointer from '@/components/sky-map/TargetPointer';
 import FOVOverlay from '@/components/sky-map/FOVOverlay';
+import Compass from '@/components/panels/Compass';
 import Satellites from '@/components/sky-map/Satellites';
 import { useAppStore } from '@/stores/useAppStore';
 import { Bloom, EffectComposer, Noise, Vignette } from '@react-three/postprocessing';
@@ -250,6 +251,8 @@ export default function SkyCanvas() {
                     </EffectComposer>
                     {/* FOVOverlay maneja su propio Html wrapper internamente */}
                     <FOVOverlay />
+                    {/* Brújula con reset de orientación */}
+                    <Compass />
                 </Suspense>
             </Canvas>
         </div>

@@ -210,7 +210,7 @@ export default function SidePanel() {
                     Escala de Bortle: {bortleScale}
                 </div>
                 <div className="flex gap-1 justify-between">
-                    {[1, 3, 5, 7, 9].map((val) => (
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((val) => (
                         <button
                             key={val}
                             onClick={() => setBortleScale(val)}

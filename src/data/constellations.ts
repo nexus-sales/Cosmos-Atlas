@@ -56,29 +56,29 @@ export const CONSTELLATIONS: Record<string, [string, string][]> = {
         ["Castor", "Propus"],
     ],
     "Cygnus": [
-        ["Deneb",     "Sadr"],
-        ["Sadr",      "Albireo"],
-        ["Sadr",      "Gienah Cyg"],
-        ["Sadr",      "Fawaris"],
-        ["Fawaris",   "Deneb"],
+        ["Deneb", "Sadr"],
+        ["Sadr", "Albireo"],
+        ["Sadr", "Gienah Cyg"],
+        ["Sadr", "Fawaris"],
+        ["Fawaris", "Deneb"],
     ],
     "Perseus": [
         ["Mirfak", "Algol"],
         ["Mirfak", "Atik"],
-        ["Algol",  "Atik"],
+        ["Algol", "Atik"],
     ],
     "Taurus": [
         ["Aldebaran", "Elnath"],
     ],
     "Virgo": [
-        ["Spica",  "Porrima"],
+        ["Spica", "Porrima"],
         ["Porrima", "Vindemiatrix"],
-        ["Spica",  "Heze"],
+        ["Spica", "Heze"],
     ],
     "Boötes": [
         ["Arcturus", "Muphrid"],
         ["Arcturus", "Izar"],
-        ["Izar",     "Muphrid"],
+        ["Izar", "Muphrid"],
     ],
     "Sagittarius": [
         ["Kaus Australis", "Kaus Media"],
@@ -87,7 +87,7 @@ export const CONSTELLATIONS: Record<string, [string, string][]> = {
     ],
     "Aquila": [
         ["Tarazed", "Altair"],
-        ["Altair",  "Alshain"],
+        ["Altair", "Alshain"],
     ],
     "Andromeda": [
         ["Alpheratz", "Mirach"],
@@ -103,44 +103,44 @@ export const CONSTELLATIONS: Record<string, [string, string][]> = {
         ["Sirius", "Mirzam"],
         ["Sirius", "Adhara"],
         ["Sirius", "Wezen"],
-        ["Wezen",  "Aludra"],
-        ["Wezen",  "Adhara"],
+        ["Wezen", "Aludra"],
+        ["Wezen", "Adhara"],
     ],
 
     // ── Nuevas constelaciones ─────────────────────────────────────────────────────
 
     "Lyra": [
-        ["Vega",    "Sheliak"],
+        ["Vega", "Sheliak"],
         ["Sheliak", "Sulafat"],
         ["Sulafat", "Vega"],
         ["Sheliak", "Sulafat"],
     ],
 
     "Auriga": [
-        ["Capella",    "Menkaliman"],
+        ["Capella", "Menkaliman"],
         ["Menkaliman", "Elnath"],
-        ["Elnath",     "Hassaleh"],
-        ["Hassaleh",   "Capella"],
-        ["Capella",    "Hassaleh"],
+        ["Elnath", "Hassaleh"],
+        ["Hassaleh", "Capella"],
+        ["Capella", "Hassaleh"],
     ],
 
     "Ursa Minor": [
         ["Polaris", "Kochab"],
-        ["Kochab",  "Pherkad"],
+        ["Kochab", "Pherkad"],
     ],
 
     "Ophiuchus": [
         ["Rasalhague", "Cebalrai"],
-        ["Cebalrai",   "Yed Prior"],
-        ["Yed Prior",  "Zeta Oph"],
-        ["Zeta Oph",   "Sabik"],
-        ["Sabik",      "Rasalhague"],
+        ["Cebalrai", "Yed Prior"],
+        ["Yed Prior", "Zeta Oph"],
+        ["Zeta Oph", "Sabik"],
+        ["Sabik", "Rasalhague"],
     ],
 
     "Corvus": [
         ["Gienah Crv", "Kraz"],
-        ["Kraz",       "Algorab"],
-        ["Algorab",    "Gienah Crv"],
+        ["Kraz", "Algorab"],
+        ["Algorab", "Gienah Crv"],
     ],
 
     "Crux": [
@@ -149,13 +149,13 @@ export const CONSTELLATIONS: Record<string, [string, string][]> = {
     ],
 
     "Aries": [
-        ["Hamal",   "Sheratan"],
+        ["Hamal", "Sheratan"],
     ],
 
     "Cepheus": [
         ["Alderamin", "Alfirk"],
-        ["Alfirk",    "Errai"],
-        ["Errai",     "Alderamin"],
+        ["Alfirk", "Errai"],
+        ["Errai", "Alderamin"],
     ],
 
     "Hercules": [
@@ -168,9 +168,9 @@ export const CONSTELLATIONS: Record<string, [string, string][]> = {
 
     "Centaurus": [
         ["Alpha Centauri", "Hadar"],
-        ["Hadar",          "Muhlifain"],
-        ["Muhlifain",      "Menkent"],
-        ["Menkent",        "Alpha Centauri"],
+        ["Hadar", "Muhlifain"],
+        ["Muhlifain", "Menkent"],
+        ["Menkent", "Alpha Centauri"],
     ],
 
     "Libra": [
@@ -178,13 +178,13 @@ export const CONSTELLATIONS: Record<string, [string, string][]> = {
     ],
 
     "Aquarius": [
-        ["Sadalsuud",  "Sadalmelik"],
+        ["Sadalsuud", "Sadalmelik"],
         ["Sadalmelik", "Skat"],
     ],
 
     "Capricornus": [
-        ["Algedi",      "Dabih"],
-        ["Dabih",       "Deneb Algedi"],
+        ["Algedi", "Dabih"],
+        ["Dabih", "Deneb Algedi"],
     ],
 
     // ══════════════════════════════════════════════════════════════════════════════
@@ -196,7 +196,7 @@ export const CONSTELLATIONS: Record<string, [string, string][]> = {
         ["Eltanin", "Rastaban"],
         ["Rastaban", "Grumium"],
         ["Grumium", "Chi Dra"],
-        ["Eltanin", "Aldhibah"],
+        ["Chi Dra", "Aldhibah"],
         ["Aldhibah", "Athebyne"],
         ["Athebyne", "Edasich"],
         ["Edasich", "Thuban"],
@@ -291,7 +291,7 @@ export const CONSTELLATIONS: Record<string, [string, string][]> = {
 
     // ── Vulpecula (La Zorra) ───────────────────────────────────────────────────────
     "Vulpecula": [
-        ["Anser", "Anser"], // Constelación pequeña de una estrella principal
+        ["Anser", "1 Vul"],
     ],
 
     // ── Lacerta (El Lagarto) ───────────────────────────────────────────────────────
@@ -498,7 +498,7 @@ export const CONSTELLATIONS: Record<string, [string, string][]> = {
 
     // ── Octans (El Octante) ────────────────────────────────────────────────────────
     "Octans": [
-        ["Nu Oct", "Nu Oct"],
+        ["Nu Oct", "Sigma Oct"],
     ],
 
     // ── Canes Venatici (Los Perros de Caza) ────────────────────────────────────────
