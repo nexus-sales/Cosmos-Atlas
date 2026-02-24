@@ -86,84 +86,94 @@ function getMoonPhaseName(phase: number): string {
 }
 
 /**
- * Updates an existing canvas and texture with the correct moon phase.
- * Phase: 0 = new moon, 90 = first quarter, 180 = full moon, 270 = last quarter.
+ * Updates an existing canvas and texture with lunar surface features (craters, maria).
+ * This texture is used with lighting to create realistic phases.
  */
 function updateMoonCanvas(canvas: HTMLCanvasElement, phase: number, color1 = '#d8d6c0', color2 = '#0c1322') {
     const S = 256;
     if (canvas.width !== S) canvas.width = canvas.height = S;
     const ctx = canvas.getContext('2d')!;
-    const cx = S / 2, cy = S / 2, r = S / 2 - 6;
-    const H = Math.PI / 2;
+    const cx = S / 2, cy = S / 2, r = S / 2 - 2;
 
     ctx.save();
     ctx.clearRect(0, 0, S, S);
+    
+    // Base lunar surface
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.clip();
 
-    // Base lunar disc with soft radial falloff
-    const base = ctx.createRadialGradient(cx - r * 0.35, cy - r * 0.35, r * 0.1, cx, cy, r);
-    base.addColorStop(0, '#f2f0de');
-    base.addColorStop(0.65, color1);
-    base.addColorStop(1, '#9aa2b0');
+    // Base color with subtle gradient - más brillante
+    const base = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.1, cx, cy, r);
+    base.addColorStop(0, '#f5f5f0');
+    base.addColorStop(0.5, '#d8d8d0');
+    base.addColorStop(1, '#b8b8b0');
     ctx.fillStyle = base;
     ctx.fillRect(0, 0, S, S);
 
-    const p = ((phase % 360) + 360) % 360;
-    const wax = p <= 180;
-    const phi = wax ? p : 360 - p;
-    const termB = Math.abs(Math.cos(phi * Math.PI / 180)) * r;
-
-    // Draw the lit half-disc
-    ctx.fillStyle = '#f4f2e2';
+    // Maria (dark spots) - simplified lunar features - más contraste
+    ctx.fillStyle = 'rgba(90, 90, 100, 0.5)';
+    
+    // Oceanus Procellarum
     ctx.beginPath();
-    if (wax) {
-        ctx.arc(cx, cy, r, -H, H);
-    } else {
-        ctx.arc(cx, cy, r, H, -H);
-    }
-    ctx.closePath();
+    ctx.arc(cx - r * 0.35, cy - r * 0.1, r * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Mare Imbrium
+    ctx.beginPath();
+    ctx.arc(cx - r * 0.15, cy - r * 0.35, r * 0.18, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Mare Serenitatis
+    ctx.beginPath();
+    ctx.arc(cx + r * 0.15, cy - r * 0.25, r * 0.14, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Mare Tranquillitatis
+    ctx.beginPath();
+    ctx.arc(cx + r * 0.25, cy - r * 0.1, r * 0.12, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Mare Crisium
+    ctx.beginPath();
+    ctx.ellipse(cx + r * 0.35, cy - r * 0.35, r * 0.08, r * 0.12, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Mare Nubium
+    ctx.beginPath();
+    ctx.arc(cx - r * 0.2, cy + r * 0.2, r * 0.15, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Mare Humorum
+    ctx.beginPath();
+    ctx.arc(cx - r * 0.35, cy + r * 0.1, r * 0.1, 0, Math.PI * 2);
     ctx.fill();
 
-    // Draw the terminator ellipse
-    if (phi < 88) {
-        ctx.fillStyle = color2;
+    // Craters (small dark spots)
+    ctx.fillStyle = 'rgba(80, 80, 85, 0.3)';
+    const craters = [
+        { x: 0.2, y: -0.15, r: 0.06 },
+        { x: -0.1, y: 0.3, r: 0.05 },
+        { x: 0.35, y: 0.2, r: 0.04 },
+        { x: -0.25, y: -0.3, r: 0.05 },
+        { x: 0.05, y: 0.1, r: 0.04 },
+        { x: -0.4, y: 0.15, r: 0.06 },
+        { x: 0.15, y: -0.45, r: 0.04 },
+    ];
+    
+    craters.forEach(c => {
         ctx.beginPath();
-        if (wax) {
-            ctx.ellipse(cx, cy, termB, r, 0, -H, H);
-        } else {
-            ctx.ellipse(cx, cy, termB, r, 0, H, -H);
-        }
-        ctx.closePath();
+        ctx.arc(cx + c.x * r, cy + c.y * r, r * c.r, 0, Math.PI * 2);
         ctx.fill();
-    } else if (phi > 92) {
-        ctx.fillStyle = color1;
-        ctx.beginPath();
-        if (wax) {
-            ctx.ellipse(cx, cy, termB, r, 0, H, -H);
-        } else {
-            ctx.ellipse(cx, cy, termB, r, 0, -H, H);
-        }
-        ctx.closePath();
-        ctx.fill();
-    }
+    });
 
-    // Night-side tint
-    ctx.globalCompositeOperation = 'multiply';
-    ctx.fillStyle = color2;
-    ctx.globalAlpha = 0.55;
-    ctx.fillRect(0, 0, S, S);
-    ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = 'source-over';
+    // Subtle limb darkening
+    const limbGrad = ctx.createRadialGradient(cx, cy, r * 0.6, cx, cy, r);
+    limbGrad.addColorStop(0, 'transparent');
+    limbGrad.addColorStop(1, 'rgba(0,0,0,0.3)');
+    ctx.fillStyle = limbGrad;
+    ctx.fill();
 
-    // Limb-darkening centrado
-    const g = ctx.createRadialGradient(cx, cy, r * 0.3, cx, cy, r);
-    g.addColorStop(0, 'rgba(255,255,245,0.08)');
-    g.addColorStop(0.5, 'rgba(0,0,0,0)');
-    g.addColorStop(1, 'rgba(0,0,0,0.35)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, S, S);
     ctx.restore();
 }
 
@@ -272,14 +282,18 @@ function MoonMesh({ planet, phase }: { planet: Planet & { pos: [number, number, 
 
     return (
         <group position={planet.pos}>
-            {/* Luna como esfera 3D real */}
+            {/* Luna como esfera 3D real con iluminación */}
             <mesh ref={meshRef} onClick={(e) => { e.stopPropagation(); setSelectedObj(planet); }}>
                 <sphereGeometry args={[SIZE, 32, 32]} />
-                <meshBasicMaterial 
+                <meshStandardMaterial 
                     map={texture} 
                     transparent 
                     depthWrite={false} 
                     toneMapped={false}
+                    roughness={0.8}
+                    metalness={0.0}
+                    emissive="#222222"
+                    emissiveIntensity={0.15}
                 />
             </mesh>
             {/* Glow suave alrededor */}
@@ -338,14 +352,16 @@ function PlanetMesh({ planet }: { planet: Planet & { pos: [number, number, numbe
 
     return (
         <group position={planet.pos}>
-            {/* Planeta como esfera 3D real */}
+            {/* Planeta como esfera 3D real con iluminación */}
             <mesh ref={sphereRef} onClick={(e) => { e.stopPropagation(); setSelectedObject(planet); }}>
                 <sphereGeometry args={[size, 32, 32]} />
-                <meshBasicMaterial 
+                <meshStandardMaterial 
                     map={texture} 
                     transparent 
                     depthWrite={false} 
                     toneMapped={false}
+                    roughness={0.7}
+                    metalness={0.1}
                 />
             </mesh>
 
@@ -359,7 +375,7 @@ function PlanetMesh({ planet }: { planet: Planet & { pos: [number, number, numbe
             {hasSaturnRings && planet.ringTilt !== undefined && (
                 <mesh ref={ringRef} rotation={[planet.ringTilt, 0, 0]}>
                     <ringGeometry args={[size * 1.6, size * 3.2, 64]} />
-                    <meshBasicMaterial color="#d4b896" transparent opacity={0.7} side={THREE.DoubleSide} depthWrite={false} />
+                    <meshStandardMaterial color="#d4b896" transparent opacity={0.7} side={THREE.DoubleSide} depthWrite={false} />
                 </mesh>
             )}
 
@@ -376,7 +392,7 @@ function PlanetMesh({ planet }: { planet: Planet & { pos: [number, number, numbe
                         return (
                             <mesh key={idx} position={offset}>
                                 <sphereGeometry args={[size * 0.1, 8, 8]} />
-                                <meshBasicMaterial color={color} />
+                                <meshStandardMaterial color={color} roughness={0.8} />
                             </mesh>
                         );
                     })}

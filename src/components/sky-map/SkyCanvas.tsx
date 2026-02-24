@@ -220,6 +220,16 @@ export default function SkyCanvas() {
             >
                 <Suspense fallback={null}>
                     <SetupRenderer />
+                    
+                    {/* Iluminación para planetas y Luna (meshStandardMaterial) */}
+                    {/* Luz ambiental suave para el lado oscuro */}
+                    <ambientLight intensity={0.15} />
+                    {/* Luz direccional que simula el Sol - viene desde +X (Este) */}
+                    <directionalLight 
+                        position={[100, 0, 0]} 
+                        intensity={3.5} 
+                        color="#ffffff"
+                    />
 
                     <OrbitControls
                         enableZoom={false}

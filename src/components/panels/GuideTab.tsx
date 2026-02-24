@@ -16,13 +16,13 @@ import * as Astronomy from 'astronomy-engine';
 type Filter = 'all' | 'stars' | 'planets' | 'galaxies' | 'nebulae' | 'clusters' | 'constellations';
 
 const FILTERS: { id: Filter; label: string; activeClass: string }[] = [
-    { id: 'all',            label: 'TODOS',     activeClass: 'bg-white/15 text-white border-white/30' },
-    { id: 'stars',          label: 'ESTRELLAS', activeClass: 'bg-yellow-500/20 text-yellow-300 border-yellow-400/50' },
-    { id: 'planets',        label: 'PLANETAS',  activeClass: 'bg-orange-500/20 text-orange-300 border-orange-400/50' },
-    { id: 'galaxies',       label: 'GALAXIAS',  activeClass: 'bg-amber-500/20 text-amber-300 border-amber-400/50' },
-    { id: 'nebulae',        label: 'NEBULOSAS', activeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/50' },
-    { id: 'clusters',       label: 'C\u00DAMULOS',  activeClass: 'bg-blue-500/20 text-blue-300 border-blue-400/50' },
-    { id: 'constellations', label: 'CONSTEL.',  activeClass: 'bg-indigo-500/20 text-indigo-300 border-indigo-400/50' },
+    { id: 'all', label: 'TODOS', activeClass: 'bg-white/15 text-white border-white/30' },
+    { id: 'stars', label: 'ESTRELLAS', activeClass: 'bg-yellow-500/20 text-yellow-300 border-yellow-400/50' },
+    { id: 'planets', label: 'PLANETAS', activeClass: 'bg-orange-500/20 text-orange-300 border-orange-400/50' },
+    { id: 'galaxies', label: 'GALAXIAS', activeClass: 'bg-amber-500/20 text-amber-300 border-amber-400/50' },
+    { id: 'nebulae', label: 'NEBULOSAS', activeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/50' },
+    { id: 'clusters', label: 'C\u00DAMULOS', activeClass: 'bg-blue-500/20 text-blue-300 border-blue-400/50' },
+    { id: 'constellations', label: 'CONSTEL.', activeClass: 'bg-indigo-500/20 text-indigo-300 border-indigo-400/50' },
 ];
 
 // ── Planet ephemeris helpers ─────────────────────────────────────────────────
@@ -38,7 +38,7 @@ interface PlanetCfg {
 function getMoonPhaseName(phase: number): string {
     const p = ((phase % 360) + 360) % 360;
     if (p < 22.5 || p >= 337.5) return 'Luna nueva';
-    if (p < 67.5)  return 'Creciente c\u00f3ncava';
+    if (p < 67.5) return 'Creciente c\u00f3ncava';
     if (p < 112.5) return 'Cuarto creciente';
     if (p < 157.5) return 'Gibosa creciente';
     if (p < 202.5) return 'Luna llena';
@@ -48,23 +48,23 @@ function getMoonPhaseName(phase: number): string {
 }
 
 const PLANET_GUIDE_CONFIGS: PlanetCfg[] = [
-    { body: Astronomy.Body.Moon,    name: 'Luna',     symbol: '\u263d', color: '#d8d6c0', desc: (m) => `Sat\u00e9lite natural de la Tierra. Mag ${m.toFixed(1)}.` },
-    { body: Astronomy.Body.Venus,   name: 'Venus',    symbol: '\u2640', color: '#fff8d4', desc: (m) => `Planeta m\u00e1s brillante del cielo. Mag ${m.toFixed(1)}.` },
+    { body: Astronomy.Body.Moon, name: 'Luna', symbol: '\u263d', color: '#d8d6c0', desc: (m) => `Sat\u00e9lite natural de la Tierra. Mag ${m.toFixed(1)}.` },
+    { body: Astronomy.Body.Venus, name: 'Venus', symbol: '\u2640', color: '#fff8d4', desc: (m) => `Planeta m\u00e1s brillante del cielo. Mag ${m.toFixed(1)}.` },
     { body: Astronomy.Body.Jupiter, name: 'J\u00fapiter', symbol: '\u2643', color: '#ffe4b0', desc: (m) => `El gigante gaseoso del sistema solar. Mag ${m.toFixed(1)}.` },
-    { body: Astronomy.Body.Mars,    name: 'Marte',    symbol: '\u2642', color: '#ff7744', desc: (m) => `El Planeta Rojo. Mag ${m.toFixed(1)}.` },
-    { body: Astronomy.Body.Saturn,  name: 'Saturno',  symbol: '\u2644', color: '#f5d97a', desc: (m) => `Anillos visibles en telescopio. Mag ${m.toFixed(1)}.` },
+    { body: Astronomy.Body.Mars, name: 'Marte', symbol: '\u2642', color: '#ff7744', desc: (m) => `El Planeta Rojo. Mag ${m.toFixed(1)}.` },
+    { body: Astronomy.Body.Saturn, name: 'Saturno', symbol: '\u2644', color: '#f5d97a', desc: (m) => `Anillos visibles en telescopio. Mag ${m.toFixed(1)}.` },
     { body: Astronomy.Body.Mercury, name: 'Mercurio', symbol: '\u263f', color: '#b8c8d8', desc: (m) => `El planeta m\u00e1s escurridizo. Mag ${m.toFixed(1)}.` },
-    { body: Astronomy.Body.Uranus,  name: 'Urano',    symbol: '\u26e2', color: '#a8dff0', desc: (m) => `Gigante de hielo. Mag ${m.toFixed(1)}.` },
-    { body: Astronomy.Body.Neptune, name: 'Neptuno',  symbol: '\u2646', color: '#4060ff', desc: (m) => `El gigante azul. Mag ${m.toFixed(1)}.` },
+    { body: Astronomy.Body.Uranus, name: 'Urano', symbol: '\u26e2', color: '#a8dff0', desc: (m) => `Gigante de hielo. Mag ${m.toFixed(1)}.` },
+    { body: Astronomy.Body.Neptune, name: 'Neptuno', symbol: '\u2646', color: '#4060ff', desc: (m) => `El gigante azul. Mag ${m.toFixed(1)}.` },
 ];
 
 function buildPlanet(cfg: PlanetCfg, date: Date, lat: number, lon: number): (Planet & { alt: number }) | null {
     try {
-        const obs   = new Astronomy.Observer(lat, lon, 0);
-        const eq    = Astronomy.Equator(cfg.body, date, obs, true, true);
+        const obs = new Astronomy.Observer(lat, lon, 0);
+        const eq = Astronomy.Equator(cfg.body, date, obs, true, true);
         const illum = Astronomy.Illumination(cfg.body, date);
-        const ra    = eq.ra * 15;
-        const dec   = eq.dec;
+        const ra = eq.ra * 15;
+        const dec = eq.dec;
         const { alt } = equToHor(ra, dec, lat, lon, date);
 
         // For the Moon, enrich description with phase info
@@ -88,7 +88,7 @@ const STAR_MAP = new Map(STARS.map((s) => [s.name, s]));
 /** Inverse of equatorialTo3D(ra, dec, 1) */
 function vec3ToRaDec(x: number, y: number, z: number): { ra: number; dec: number } {
     const dec = 90 - Math.acos(Math.max(-1, Math.min(1, y))) * 180 / Math.PI;
-    const ra  = ((Math.atan2(z, x) * 180 / Math.PI + 180) % 360 + 360) % 360;
+    const ra = ((Math.atan2(z, x) * 180 / Math.PI + 180) % 360 + 360) % 360;
     return { ra, dec };
 }
 
@@ -130,9 +130,9 @@ const CONSTELLATION_TARGETS = buildConstellationTargets();
 // ── Icon / style helpers ─────────────────────────────────────────────────────
 
 function DSOTypeIcon({ type }: { type: DSO['type'] }) {
-    if (type === 'galaxy') return <Orbit    className="w-3.5 h-3.5 text-amber-400 shrink-0" />;
+    if (type === 'galaxy') return <Orbit className="w-3.5 h-3.5 text-amber-400 shrink-0" />;
     if (type === 'nebula') return <CloudFog className="w-3.5 h-3.5 text-emerald-400 shrink-0" />;
-    return                        <Sparkles className="w-3.5 h-3.5 text-blue-400 shrink-0" />;
+    return <Sparkles className="w-3.5 h-3.5 text-blue-400 shrink-0" />;
 }
 
 function dsoActiveClass(type: DSO['type']) {
@@ -146,8 +146,8 @@ function skyObjectKey(obj: { name: string; ra: number; dec: number }, prefix: st
 }
 
 function InfoCard({ obj }: { obj: Star | DSO | Planet }) {
-    const isDSO           = 'id' in obj;
-    const isPlanet        = !isDSO && 'kind' in obj && (obj as Planet).kind === 'planet';
+    const isDSO = 'id' in obj;
+    const isPlanet = !isDSO && 'kind' in obj && (obj as Planet).kind === 'planet';
     const isConstellation = isPlanet && (obj as Planet).symbol === '\u2736';
     return (
         <div className="mx-1 mb-2 mt-0.5 p-3 rounded-md border border-white/12 space-y-1.5"
@@ -183,10 +183,10 @@ export default function GuideTab() {
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState<Filter>('all');
 
-    const targetedObject    = useAppStore((s) => s.targetedObject);
+    const targetedObject = useAppStore((s) => s.targetedObject);
     const setTargetedObject = useAppStore((s) => s.setTargetedObject);
-    const observer          = useAppStore((s) => s.observer);
-    const time              = useAppStore((s) => s.time);
+    const observer = useAppStore((s) => s.observer);
+    const time = useAppStore((s) => s.time);
 
     const q = search.toLowerCase();
 
@@ -198,29 +198,30 @@ export default function GuideTab() {
         const matchName = (n: string) => n.toLowerCase().includes(q);
 
         const stars = (filter === 'all' || filter === 'stars')
-            ? [...STARS].sort((a, b) => a.mag - b.mag).filter(matchStar).map(s => ({
+            ? [...STARS].filter(matchStar).map(s => ({
                 ...s,
                 alt: equToHor(s.ra, s.dec, observer.lat, observer.lon, time).alt,
-              }))
+            })).sort((a, b) => a.name.localeCompare(b.name))
             : [];
 
         const dsos = (filter === 'all' || filter === 'galaxies' || filter === 'nebulae' || filter === 'clusters')
             ? DSOS.filter((d) => {
                 if (!matchDSO(d)) return false;
                 if (filter === 'galaxies') return d.type === 'galaxy';
-                if (filter === 'nebulae')  return d.type === 'nebula';
+                if (filter === 'nebulae') return d.type === 'nebula';
                 if (filter === 'clusters') return d.type === 'cluster';
                 return true;
-              }).map(d => ({
+            }).map(d => ({
                 ...d,
                 alt: equToHor(d.ra, d.dec, observer.lat, observer.lon, time).alt,
-              }))
+            })).sort((a, b) => a.name.localeCompare(b.name))
             : [];
 
         const planets = (filter === 'all' || filter === 'planets')
             ? PLANET_GUIDE_CONFIGS
                 .map(cfg => buildPlanet(cfg, time, observer.lat, observer.lon))
                 .filter((p): p is Planet & { alt: number } => p !== null && matchName(p.name))
+                .sort((a, b) => a.name.localeCompare(b.name))
             : [];
 
         const constellations = (filter === 'all' || filter === 'constellations')
@@ -230,6 +231,7 @@ export default function GuideTab() {
                     ...c,
                     alt: equToHor(c.ra, c.dec, observer.lat, observer.lon, time).alt,
                 }))
+                .sort((a, b) => getConstellationDisplayName(a.name).localeCompare(getConstellationDisplayName(b.name)))
             : [];
 
         return { starList: stars, dsoList: dsos, planetList: planets, constellationList: constellations };
