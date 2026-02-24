@@ -1,12 +1,13 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { DSOS } from '@/data/dsos';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { useAppStore } from '@/stores/useAppStore';
 import { Html } from '@react-three/drei';
 import { DSOType, DSO } from '@/types/celestial';
+import { getDSOImage, preloadDSOImage } from '@/data/dsoImages';
 
 function createDSOTexture(type: DSOType, color: string): THREE.CanvasTexture {
     const size = 128;
@@ -68,17 +69,72 @@ function createDSOTexture(type: DSOType, color: string): THREE.CanvasTexture {
     return tex;
 }
 
+/**
+ * Carga textura de imagen real o fallback procedimental
+ */
+function useDSOTexture(dso: DSO): THREE.Texture {
+    const [texture, setTexture] = useState<THREE.CanvasTexture | THREE.Texture | null>(null);
+    const fallbackRef = useRef<THREE.CanvasTexture | null>(null);
+
+    useEffect(() => {
+        // Crear fallback procedimental
+        fallbackRef.current = createDSOTexture(dso.type, dso.color);
+
+        // Intentar cargar imagen real
+        const dsoImage = getDSOImage(dso.id);
+        if (!dsoImage) {
+            setTexture(fallbackRef.current);
+            return;
+        }
+
+        preloadDSOImage(dso.id).then((img) => {
+            if (img) {
+                const canvas = document.createElement('canvas');
+                canvas.width = canvas.height = 512;
+                const ctx = canvas.getContext('2d')!;
+                
+                // Dibujar imagen centrada
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, 512, 512);
+                
+                // Escalar y centrar imagen
+                const scale = Math.min(512 / img.width, 512 / img.height) * 0.9;
+                const w = img.width * scale;
+                const h = img.height * scale;
+                const x = (512 - w) / 2;
+                const y = (512 - h) / 2;
+                
+                ctx.drawImage(img, x, y, w, h);
+                
+                const tex = new THREE.CanvasTexture(canvas);
+                tex.needsUpdate = true;
+                setTexture(tex);
+            } else {
+                setTexture(fallbackRef.current);
+            }
+        });
+
+        return () => {
+            if (texture && texture !== fallbackRef.current) {
+                texture.dispose();
+            }
+        };
+    }, [dso.id, dso.type, dso.color]);
+
+    return texture || fallbackRef.current || createDSOTexture(dso.type, dso.color);
+}
+
 // ── Componente individual de DSO con hover ─────────────────────────────────────
 interface DSOData extends DSO {
     pos: [number, number, number];
     visualSize: number;
-    texture: THREE.CanvasTexture;
 }
 
 function DSOItem({ dso }: { dso: DSOData }) {
     const [hovered, setHovered] = useState(false);
     const setSelectedObject = useAppStore((state) => state.setSelectedObject);
     const nightMode = useAppStore((state) => state.settings.nightMode);
+    const texture = useDSOTexture(dso);
 
     const displayColor = nightMode ? '#ff4444' : dso.color;
 
@@ -98,7 +154,7 @@ function DSOItem({ dso }: { dso: DSOData }) {
             <mesh>
                 <planeGeometry args={[dso.visualSize, dso.visualSize]} />
                 <meshBasicMaterial
-                    map={dso.texture}
+                    map={texture}
                     transparent
                     opacity={0.7}
                     depthWrite={false}
@@ -141,8 +197,7 @@ export default function DeepSkyObjects() {
         return DSOS.map((dso) => {
             const pos = equatorialTo3D(dso.ra, dso.dec, DSO_RADIUS) as [number, number, number];
             const visualSize = Math.max(0.4, (dso.sizeArcmin || 10) * 0.027 * 1.5);
-            const texture = createDSOTexture(dso.type, dso.color);
-            return { ...dso, pos, visualSize, texture };
+            return { ...dso, pos, visualSize };
         });
     }, []);
 

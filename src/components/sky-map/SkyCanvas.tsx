@@ -18,6 +18,7 @@ import TargetPointer from '@/components/sky-map/TargetPointer';
 import FOVOverlay from '@/components/sky-map/FOVOverlay';
 import Compass from '@/components/panels/Compass';
 import Satellites from '@/components/sky-map/Satellites';
+import MeteorShower from '@/components/effects/MeteorShower';
 import { useAppStore } from '@/stores/useAppStore';
 import { Bloom, EffectComposer, Noise, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
@@ -262,6 +263,9 @@ export default function SkyCanvas() {
 
                     {/* Horizonte en espacio mundo (plano horizontal fijo) */}
                     <Horizon />
+
+                    {/* Lluvia de meteoros real (IMO data) — componente R3F */}
+                    <MeteorShower />
 
                     <EffectComposer>
                         {/* Bloom: umbral alto → solo estrellas brillantes (mag<2) tienen corona.
