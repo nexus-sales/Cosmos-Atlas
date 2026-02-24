@@ -54,9 +54,9 @@ function sinGalLat(x: number, y: number, z: number): number {
     return -0.86766615 * x - 0.19807637 * y + 0.45598379 * z;
 }
 
-const TOTAL = 60000;            // Menos ruido de fondo
+const TOTAL = 40000;            // 40k — fondo estelar sin abrumar al catálogo
 const RADIUS = 96;
-const MAX_VISIBLE_STARS = 10000; // Máximo que enviamos al GPU por frame
+const MAX_VISIBLE_STARS = 8000; // Máximo que enviamos al GPU por frame
 
 export default function BackgroundStars() {
     const pointsRef = useRef<THREE.Points>(null);
@@ -81,10 +81,11 @@ export default function BackgroundStars() {
             const pz = sinPhi * Math.sin(theta);
 
             const sinB = sinGalLat(px, py, pz);
-            const galWeight = Math.exp(-sinB * sinB * 12.0);
+            // Concentración galáctica más fuerte: 25× hacia el plano vs. polos
+            const galWeight = Math.exp(-sinB * sinB * 25.0);
 
-            // Densidad galáctica
-            if (rng() > (0.15 + 0.85 * galWeight)) {
+            // Densidad galáctica: mínimo 8% isotrópico + 92% concentrado
+            if (rng() > (0.08 + 0.92 * galWeight)) {
                 i--; continue; // Re-intentar para mantener TOTAL
             }
 
@@ -92,14 +93,14 @@ export default function BackgroundStars() {
             positions[i * 3 + 1] = py * RADIUS;
             positions[i * 3 + 2] = pz * RADIUS;
 
-            // Distribución de magnitudes: pocas brillantes, muchas tenues
-            // Se simula la función de luminosidad estelar real
-            const mag = 5.0 + Math.pow(rng(), 0.7) * 4.0; // Mag 5–9, sesgado a tenues
+            // Magnitudes: sesgado fuertemente a tenues (mag 6·5–9)
+            // Para que no compitan con el catálogo (Stars.tsx cubre mag <8)
+            const mag = 6.5 + Math.pow(rng(), 0.55) * 2.5; // Mag 6.5–9
             magnitudes[i] = mag;
-            // ESCALA EXPONENCIAL: la diferencia visual entre mag 5 y mag 9 es enorme
-            // pow(0.55, mag) da una curva similar a la escala Pogson real
-            const brightness = Math.pow(0.55, mag - 5.0); // 1.0 en mag5, ~0.04 en mag9
-            sizes[i] = Math.max(0.1, brightness * 1.2);   // 0.1–1.2 px en unidades de escena
+            // Pogson: cada mag es 2.512× más oscuro. Ref en mag 6.5
+            const brightness = Math.pow(2.512, 6.5 - mag); // 1.0 en mag6.5, ~0.02 en mag9
+            // Tamaño muy pequeño: 0.08–0.55 px para que sean "polvo estelar"
+            sizes[i] = Math.max(0.08, brightness * 0.55);
 
             const t = rng();
             if (t < 0.6) { // M/K
@@ -177,6 +178,7 @@ export default function BackgroundStars() {
         material.uniforms.uNightMode.value = nightMode;
     });
 
-    return <points ref={pointsRef} geometry={geometry} material={material} />;
+    // renderOrder=0 → siempre bajo las estrellas del catálogo (order 1) y constelaciones (order 3)
+    return <points ref={pointsRef} geometry={geometry} material={material} renderOrder={0} />;
 }
 

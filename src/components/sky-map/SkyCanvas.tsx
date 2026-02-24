@@ -223,7 +223,6 @@ export default function SkyCanvas() {
                     {/* Grupo rotado al sistema horizontal del observador */}
                     <CelestialGroup>
                         <BackgroundStars />
-                        <Satellites />
                         {showMilkyWay && <MilkyWay />}
                         <Stars />
                         <DeepSkyObjects />
@@ -234,15 +233,20 @@ export default function SkyCanvas() {
                         {showEcliptic && <Ecliptic />}
                         <TargetPointer />
                     </CelestialGroup>
+
+                    {/* Satélites en espacio mundo horizontal (Alt/Az), NO dentro del CelestialGroup */}
+                    <Satellites />
                     <CameraNavigator />
 
                     {/* Horizonte en espacio mundo (plano horizontal fijo) */}
                     <Horizon />
 
                     <EffectComposer>
-                        <Bloom luminanceThreshold={0.15} mipmapBlur intensity={1.5} radius={0.4} />
-                        <Noise opacity={0.025} />
-                        <Vignette eskil={false} offset={0.1} darkness={1.2} />
+                        {/* Bloom: umbral alto → solo estrellas brillantes (mag<2) tienen corona.
+                            Las tenues quedan como puntos limpios. Estilo Sky Map. */}
+                        <Bloom luminanceThreshold={0.35} mipmapBlur intensity={1.0} radius={0.3} />
+                        <Noise opacity={0.02} />
+                        <Vignette eskil={false} offset={0.08} darkness={1.35} />
                     </EffectComposer>
                     {/* El FOVOverlay necesita estar dentro del canvas para usar useThree 
                         pero no es un objeto 3D, así que lo manejamos con cuidado o via Hud */}

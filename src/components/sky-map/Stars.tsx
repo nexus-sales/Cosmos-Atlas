@@ -166,13 +166,20 @@ export default function Stars() {
 
             const color = new THREE.Color(star.color || '#ffffff');
             col[i * 3] = color.r; col[i * 3 + 1] = color.g; col[i * 3 + 2] = color.b;
-            // Escala Pogson exponencial: una estrella de Mag 1 es 100x más brillante que Mag 6
-            // Factor = 10^(-0.4 * mag) normalizado en base a Mag 0 = referencia
-            const pogson = Math.pow(10.0, -0.4 * star.mag);      // luminosidad relativa
-            const refPogson = Math.pow(10.0, -0.4 * -1.5);        // referencia: más brillante (-1.5 Sirius)
-            const normBright = Math.min(1.0, pogson / refPogson); // 0.0..1.0
-            // Tamaño: brillantes grandes (hasta ~5.5), tenues casi invisibles (0.3)
-            sz[i] = 0.3 + normBright * 5.2;
+
+            // ── Escala Logarítmica Agresiva (estilo Sky Map) ─────────────────
+            // La diferencia visual entre Sirius (-1.46) y una estrella de mag 5
+            // debe ser enorme. Usamos pow(10, -0.4*mag) = Pogson puro.
+            // Referencia: Sirius = -1.46 (la más brillante del catálogo)
+            // Rango: Sirius → límite ~8. El contraste visual debe ser ~10:1
+            const refMag = -1.5; // mag de referencia (Sirius)
+            // brightness cae un factor 2.512 por cada magnitud
+            const brightness = Math.pow(2.512, refMag - star.mag); // >1 para brillantes, <<1 para tenues
+            // Mapeamos brightness [0..1] a tamaño con curva de potencia para máximo contraste
+            const normB = Math.min(1.0, brightness); // sirius = 1.0, mag 5 ≈ 0.017
+            // Curva cóncava: magnitudes intermedias siguen siendo muy pequeñas
+            // Brillantes (mag <2): 3.5–6.0 px, medias (mag 3-4): 0.8–1.5, tenues (mag 5+): <0.5
+            sz[i] = 0.15 + Math.pow(normB, 0.55) * 5.85;
 
             // Atributos de variabilidad
             const varInfo = VARIABLE_STARS[star.name];
@@ -214,14 +221,18 @@ export default function Stars() {
     });
 
     return (
-        <group>
-            {/* Renderizado visual en shader */}
-            <points ref={pointsRef} geometry={geometry} material={material} />
+        <group renderOrder={1}>
+            {/* Renderizado visual en shader — encima de BackgroundStars (order 0) */}
+            <points ref={pointsRef} geometry={geometry} material={material} renderOrder={1} />
 
-            {/* Hitboxes invisibles para click y hover */}
-            {visibleStars.map((star, i) => (
-                <StarHitbox key={star.name} star={star} pos={starPositions[i]} />
-            ))}
+            {/* Hitboxes invisibles para click y hover — solo estrellas visibles a simple vista */}
+            {visibleStars
+                .map((star, originalIdx) => ({ star, pos: starPositions[originalIdx] }))
+                .filter(({ star }) => star.mag <= 5.5)
+                .map(({ star, pos }) => (
+                    <StarHitbox key={star.name} star={star} pos={pos} />
+                ))
+            }
         </group>
     );
 }

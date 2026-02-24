@@ -6,18 +6,24 @@ import { Html } from '@react-three/drei';
 import { CONSTELLATIONS } from '@/data/constellations';
 import { STARS } from '@/data/stars';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
+import { useAppStore } from '@/stores/useAppStore';
 
 const STAR_MAP = new Map(STARS.map((s) => [s.name, s]));
 
-/** Constellation name labels rendered at each constellation's centroid */
+/**
+ * Etiquetas de constelación al estilo Sky Map:
+ * - Letras espaciadas en MAYÚSCULAS con brillo sutil
+ * - Opacidad moderada para no competir con las estrellas
+ * - zIndexRange alto para superponerse siempre al canvas 3D
+ */
 export default function ConstellationLabels() {
+    const nightMode = useAppStore((state) => state.settings.nightMode);
+
     const labels = useMemo(() => {
         return Object.entries(CONSTELLATIONS).flatMap(([name, pairs]) => {
-            // Collect unique star names for this constellation
             const starNames = new Set<string>();
             pairs.forEach(([a, b]) => { starNames.add(a); starNames.add(b); });
 
-            // Average 3D unit vectors (handles RA wraparound correctly)
             const sum = new THREE.Vector3();
             let count = 0;
             starNames.forEach((sName) => {
@@ -36,6 +42,14 @@ export default function ConstellationLabels() {
         });
     }, []);
 
+    // En modo noche las letras son rojizas tenues
+    const textColor = nightMode
+        ? 'rgba(200,80,80,0.5)'
+        : 'rgba(130,190,255,0.55)';
+    const glowColor = nightMode
+        ? 'rgba(160,40,40,0.35)'
+        : 'rgba(80,150,255,0.4)';
+
     return (
         <>
             {labels.map(({ name, pos }) => (
@@ -44,17 +58,18 @@ export default function ConstellationLabels() {
                     position={pos}
                     center
                     distanceFactor={12}
+                    zIndexRange={[200, 100]}
                     style={{ pointerEvents: 'none', userSelect: 'none' }}
                 >
                     <span style={{
-                        color: 'rgba(180,210,255,0.35)',
-                        fontFamily: 'monospace',
-                        fontSize: '11px',
+                        color: textColor,
+                        fontFamily: "'Courier New', Courier, monospace",
+                        fontSize: '10px',
                         fontWeight: 700,
-                        letterSpacing: '0.22em',
+                        letterSpacing: '0.28em',
                         textTransform: 'uppercase',
                         whiteSpace: 'nowrap',
-                        textShadow: '0 0 8px rgba(100,160,255,0.3)',
+                        textShadow: `0 0 12px ${glowColor}, 0 0 4px ${glowColor}`,
                     }}>
                         {name.toUpperCase()}
                     </span>

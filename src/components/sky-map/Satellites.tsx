@@ -5,7 +5,6 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import * as satellite from 'satellite.js';
 import { useAppStore } from '@/stores/useAppStore';
-import { equatorialTo3D } from '@/lib/astronomy/transforms';
 
 interface SatelliteData {
     name: string;
@@ -158,14 +157,18 @@ export default function Satellites() {
 
             // Solo si está por encima del horizonte
             if (look.elevation > 0) {
-                // Remapear ejes ECI a nuestro sistema 3D:
-                // ECI X (Aries) -> Nuestro -X
-                // ECI Y (90°)   -> Nuestro -Z
-                // ECI Z (North) -> Nuestro +Y
-                const mag = Math.sqrt(posEci.x * posEci.x + posEci.y * posEci.y + posEci.z * posEci.z);
-                const scale = RADIUS / mag;
-
-                posAttr.setXYZ(count, -posEci.x * scale, posEci.z * scale, -posEci.y * scale);
+                // Convertir Alt/Az a coordenadas 3D en el espacio horizontal local.
+                // Sistema de la escena (sin CelestialGroup):
+                //   +Y = cénit, +X = Este, -Z = Norte (frente del observador)
+                // Acimut: 0=Norte, 90=Este, 180=Sur, 270=Oeste (en radianes)
+                const el = look.elevation; // radianes
+                const az = look.azimuth;   // radianes, 0=N, π/2=E
+                const cosEl = Math.cos(el);
+                // X = Este, Y = Cénit, Z = Norte (negativo porque -Z es Norte en R3F)
+                const x3 = cosEl * Math.sin(az) * RADIUS; // Este
+                const y3 = Math.sin(el) * RADIUS; // Cénit
+                const z3 = -cosEl * Math.cos(az) * RADIUS; // Norte → -Z
+                posAttr.setXYZ(count, x3, y3, z3);
 
                 const color = new THREE.Color(nightMode ? '#ff0000' : sat.color);
                 colAttr.setXYZ(count, color.r, color.g, color.b);
