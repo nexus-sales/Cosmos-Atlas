@@ -17,7 +17,9 @@ interface FOVOverlayContentProps {
  * Componente HTML puro que renderiza el overlay.
  * Recibe los datos calculados como props.
  */
-function FOVOverlayContent({ rectWidth, rectHeight, fovX, fovY, focalLength }: FOVOverlayContentProps) {
+function FOVOverlayContent({ rectWidth = 0, rectHeight = 0, fovX = 0, fovY = 0, focalLength = 50 }: FOVOverlayContentProps) {
+    // Guard: don't render if values are not valid yet
+    if (rectWidth <= 0 || rectHeight <= 0) return null;
     return (
         <div
             className="absolute inset-0 pointer-events-none flex items-center justify-center z-20"

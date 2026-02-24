@@ -1,6 +1,6 @@
 'use client';
 
-import { DoubleSide } from 'three';
+import { BackSide } from 'three';
 
 export default function CelestialSphere() {
     return (
@@ -8,9 +8,7 @@ export default function CelestialSphere() {
             <sphereGeometry args={[1, 64, 64]} />
             <meshBasicMaterial
                 color="#040d1e"
-                side={DoubleSide}
-                transparent
-                opacity={0.8}
+                side={BackSide}
             />
         </mesh>
     );

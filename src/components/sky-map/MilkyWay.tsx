@@ -221,7 +221,7 @@ function MilkyWayParticles() {
     }, []);
 
     return (
-        <points ref={pointsRef}>
+        <points ref={pointsRef} renderOrder={-1}>
             <bufferGeometry>
                 <bufferAttribute
                     attach="attributes-position"
@@ -246,8 +246,10 @@ function MilkyWayParticles() {
                 transparent={true}
                 opacity={0.45}             // ajustado para mejor visibilidad
                 alphaTest={0.01}           // descarta píxeles casi transparentes
-                blending={THREE.AdditiveBlending}
+                blending={THREE.NormalBlending}
                 depthWrite={false}
+                depthTest={false}
+                toneMapped={false}
             />
         </points>
     );
@@ -268,16 +270,18 @@ export default function MilkyWay() {
     });
 
     return (
-        <group rotation={galacticRotation}>
+        <group rotation={galacticRotation} renderOrder={-2}>
             {/* 1. Fondo Nebuloso (Shader GLSL Pro) */}
-            <mesh ref={meshRef}>
+            <mesh ref={meshRef} renderOrder={-2}>
                 <sphereGeometry args={[99, 96, 96]} />
                 <shaderMaterial
                     key="milkyway-pro-v3"
                     transparent
                     side={THREE.BackSide}
                     depthWrite={false}
-                    blending={THREE.AdditiveBlending}
+                    depthTest={false}
+                    blending={THREE.NormalBlending}
+                    toneMapped={false}
                     uniforms={uniforms}
                     vertexShader={vertexShader}
                     fragmentShader={fragmentShader}
