@@ -125,8 +125,8 @@ void main() {
     bright -= rift * 0.4;
     bright = max(bright, 0.0);
 
-    // Alpha cinemático – más sutil para no aplastar el cielo de estrellas
-    float alpha = clamp(bright * 0.12, 0.0, 0.32);
+    // Alpha cinemático – ajustado para mejor visibilidad
+    float alpha = clamp(bright * 0.18, 0.0, 0.48);
     if (alpha < 0.005) discard;
 
     gl_FragColor = vec4(finalColor, alpha);
@@ -244,7 +244,7 @@ function MilkyWayParticles() {
                 sizeAttenuation={true}     // se hace menor con la distancia
                 vertexColors               // usa el array de colores personalizados
                 transparent={true}
-                opacity={0.35}             // más transparente para no dominar la escena
+                opacity={0.45}             // ajustado para mejor visibilidad
                 alphaTest={0.01}           // descarta píxeles casi transparentes
                 blending={THREE.AdditiveBlending}
                 depthWrite={false}

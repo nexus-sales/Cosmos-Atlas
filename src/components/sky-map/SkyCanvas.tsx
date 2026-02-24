@@ -1,7 +1,7 @@
 'use client';
 
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { OrbitControls, Html } from '@react-three/drei';
+import { OrbitControls } from '@react-three/drei';
 import { Suspense, useEffect, useRef } from 'react';
 import CelestialSphere from '@/components/sky-map/CelestialSphere';
 import Stars from '@/components/sky-map/Stars';
@@ -248,11 +248,8 @@ export default function SkyCanvas() {
                         <Noise opacity={0.02} />
                         <Vignette eskil={false} offset={0.08} darkness={1.35} />
                     </EffectComposer>
-                    {/* El FOVOverlay necesita estar dentro del canvas para usar useThree 
-                        pero no es un objeto 3D, así que lo manejamos con cuidado o via Hud */}
-                    <Html fullscreen style={{ pointerEvents: 'none' }}>
-                        <FOVOverlay />
-                    </Html>
+                    {/* FOVOverlay maneja su propio Html wrapper internamente */}
+                    <FOVOverlay />
                 </Suspense>
             </Canvas>
         </div>

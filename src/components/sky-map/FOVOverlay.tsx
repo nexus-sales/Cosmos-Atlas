@@ -1,33 +1,23 @@
 'use client';
 
 import { useThree } from '@react-three/fiber';
+import { Html } from '@react-three/drei';
 import { useAppStore } from '@/stores/useAppStore';
 import * as THREE from 'three';
 
-export default function FOVOverlay() {
-    const { camera, size } = useThree();
-    const settings = useAppStore((state) => state.settings);
-    const { showFOV, focalLength, sensorWidth, sensorHeight } = settings;
+interface FOVOverlayContentProps {
+    rectWidth: number;
+    rectHeight: number;
+    fovX: number;
+    fovY: number;
+    focalLength: number;
+}
 
-    if (!showFOV) return null;
-
-    // Calcular FOV del sensor en grados
-    const fovX = 2 * Math.atan(sensorWidth / (2 * focalLength)) * (180 / Math.PI);
-    const fovY = 2 * Math.atan(sensorHeight / (2 * focalLength)) * (180 / Math.PI);
-
-    // Obtener FOV actual de la cámara (vertical)
-    const cam = camera as THREE.PerspectiveCamera;
-    const camFovY = cam.fov;
-
-    // El aspecto de la cámara suele ser size.width / size.height
-    // La cámara de Three.js define su FOV verticalmente.
-    // camFovX = 2 * atan(tan(camFovY/2) * aspect)
-    const camFovX = 2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(camFovY) / 2) * cam.aspect) * (180 / Math.PI);
-
-    // Tamaño del rectángulo en píxeles
-    const rectWidth = (fovX / camFovX) * size.width;
-    const rectHeight = (fovY / camFovY) * size.height;
-
+/**
+ * Componente HTML puro que renderiza el overlay.
+ * Recibe los datos calculados como props.
+ */
+function FOVOverlayContent({ rectWidth, rectHeight, fovX, fovY, focalLength }: FOVOverlayContentProps) {
     return (
         <div
             className="absolute inset-0 pointer-events-none flex items-center justify-center z-20"
@@ -56,5 +46,44 @@ export default function FOVOverlay() {
                 </div>
             </div>
         </div>
+    );
+}
+
+/**
+ * Componente principal que usa useThree() en el contexto de R3F
+ * y pasa los datos calculados al Html portal.
+ */
+export default function FOVOverlay() {
+    const { camera, size } = useThree();
+    const settings = useAppStore((state) => state.settings);
+    const { showFOV, focalLength, sensorWidth, sensorHeight } = settings;
+
+    if (!showFOV) return null;
+
+    // Calcular FOV del sensor en grados
+    const fovX = 2 * Math.atan(sensorWidth / (2 * focalLength)) * (180 / Math.PI);
+    const fovY = 2 * Math.atan(sensorHeight / (2 * focalLength)) * (180 / Math.PI);
+
+    // Obtener FOV actual de la cámara (vertical)
+    const cam = camera as THREE.PerspectiveCamera;
+    const camFovY = cam.fov;
+
+    // camFovX = 2 * atan(tan(camFovY/2) * aspect)
+    const camFovX = 2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(camFovY) / 2) * cam.aspect) * (180 / Math.PI);
+
+    // Tamaño del rectángulo en píxeles
+    const rectWidth = (fovX / camFovX) * size.width;
+    const rectHeight = (fovY / camFovY) * size.height;
+
+    return (
+        <Html fullscreen style={{ pointerEvents: 'none' }}>
+            <FOVOverlayContent
+                rectWidth={rectWidth}
+                rectHeight={rectHeight}
+                fovX={fovX}
+                fovY={fovY}
+                focalLength={focalLength}
+            />
+        </Html>
     );
 }

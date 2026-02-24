@@ -107,8 +107,8 @@ src/
 │       └── TargetPointer.tsx    # Crosshair animado sobre el objeto objetivo
 │
 ├── data/
-│   ├── stars.ts                 # Catálogo de 290+ estrellas nombradas
-│   ├── constellations.ts        # Definición de líneas de 30+ constelaciones
+│   ├── stars.ts                 # Catálogo de 340+ estrellas nombradas (88 constelaciones IAU)
+│   ├── constellations.ts        # Definición de líneas de 85 constelaciones (de las 88 IAU)
 │   └── dsos.ts                  # 42 objetos de cielo profundo
 │
 ├── hooks/
@@ -135,7 +135,7 @@ src/
 
 ### Estrellas (`stars.ts`)
 
-290+ estrellas con nombre propio ordenadas por magnitud. Cada estrella incluye:
+340+ estrellas con nombre propio ordenadas por magnitud, cubriendo las 88 constelaciones oficiales de la IAU. Cada estrella incluye:
 
 - Coordenadas J2000 (RA en grados, Dec en grados)
 - Magnitud aparente, color espectral, radio de renderizado
@@ -143,9 +143,9 @@ src/
 
 ### Constelaciones (`constellations.ts`)
 
-30+ constelaciones definidas como secuencias de pares de estrellas (líneas).
-Incluye: Orion, Cassiopeia, Ursa Major, Ursa Minor, Cygnus, Lyra, Aquila,
-Serpens, Hercules, Perseus, Auriga, Gemini, Cepheus, Corvus, Crux, Centaurus y más.
+85 de las 88 constelaciones oficiales de la IAU, definidas como secuencias de pares de estrellas (líneas).
+Incluye todas las constelaciones clásicas (Orion, Ursa Major, Scorpius, etc.) más las constelaciones australes
+(Crux, Carina, Centaurus, Phoenix, Tucana, Hydrus, etc.) y las modernas (Canes Venatici, Coma Berenices, etc.).
 
 ### Objetos de cielo profundo (`dsos.ts`)
 
@@ -307,12 +307,12 @@ La Guía tiene 7 filtros y muestra todos los objetos con indicador de visibilida
 | Filtro | Contenido |
 |---|---|
 | TODOS | Todos los objetos visibles según la búsqueda |
-| ESTRELLAS | 290+ estrellas ordenadas por magnitud |
+| ESTRELLAS | 340+ estrellas ordenadas por magnitud |
 | PLANETAS | 8 cuerpos: Luna + 7 planetas con efemérides reales |
 | GALAXIAS | DSOs tipo galaxia |
 | NEBULOSAS | DSOs tipo nebulosa |
 | CÚMULOS | DSOs tipo cúmulo |
-| CONSTEL. | 30+ constelaciones con centroide calculado |
+| CONSTEL. | 85 constelaciones (IAU) con centroide calculado |
 
 Clic en cualquier entrada → la cámara vuela hacia el objeto y aparece el crosshair de objetivo.
 
@@ -377,6 +377,27 @@ Clic de nuevo en el mismo objeto lo deselecciona.
 ---
 
 ## Changelog
+
+### v2.2 — 2026-02-24 (Constelaciones Completas + Vía Láctea Mejorada)
+
+#### ⭐ Constelaciones IAU Completas
+- **85 de 88 constelaciones oficiales** de la IAU ahora definidas con líneas
+- **+150 estrellas nuevas** añadidas al catálogo (de 187 a 340+)
+- Cobertura completa del hemisferio sur: Carina, Vela, Puppis, Crux, Centaurus, etc.
+- Constelaciones modernas: Canes Venatici, Coma Berenices, Leo Minor, etc.
+- Constelaciones del zodíaco completas: Pisces, Cancer (parcial), etc.
+
+#### 🌌 Vía Láctea Mejorada
+- **Shader alpha aumentado**: multiplicador 0.12 → 0.18 (+50% brillo)
+- **Máximo alpha**: 0.32 → 0.48 (+50% opacidad máxima)
+- **Partículas estelares**: opacidad 0.35 → 0.45 (+28%)
+- Resultado: Vía Láctea significativamente más visible
+
+#### 🔧 Corrección de FOVOverlay
+- Reestructurado para evitar error de hooks de R3F fuera del Canvas
+- `useThree()` ahora se llama en el contexto correcto antes del portal `Html`
+
+---
 
 ### v2.1 — 2026-02-24 (Estilo Sky Map)
 
