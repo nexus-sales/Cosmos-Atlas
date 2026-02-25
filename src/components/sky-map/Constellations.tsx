@@ -57,6 +57,21 @@ export default function Constellations() {
 
                 return (
                     <group key={name}>
+                        {/* Glow line (sólo para la enfocada) */}
+                        {isFocused && pointsList.map((points, i) => (
+                            <Line
+                                key={`glow-${i}`}
+                                points={points}
+                                color={color}
+                                lineWidth={lineWidth * 6}
+                                transparent
+                                opacity={0.15}
+                                depthTest={false}
+                                depthWrite={false}
+                            />
+                        ))}
+
+                        {/* Main line */}
                         {pointsList.map((points, i) => (
                             <Line
                                 key={i}

@@ -22,6 +22,14 @@ export const CONSTELLATIONS: Record<string, [string, string][]> = {
         ["Alioth", "Mizar"],
         ["Mizar", "Alkaid"],
         ["Megrez", "Dubhe"],
+        ["Megrez", "Muscida"],
+        ["Muscida", "Sarir"],
+        ["Sarir", "Dubhe"],
+        ["Phecda", "Tania Borealis"],
+        ["Tania Borealis", "Talitha"],
+        ["Phecda", "Tania Australis"],
+        ["Merak", "Alula Borealis"],
+        ["Alula Borealis", "Alula Australis"],
     ],
     "Cassiopeia": [
         ["Caph", "Schedar"],
@@ -68,7 +76,13 @@ export const CONSTELLATIONS: Record<string, [string, string][]> = {
         ["Algol", "Atik"],
     ],
     "Taurus": [
-        ["Aldebaran", "Elnath"],
+        ["Alcyone", "Ain"],
+        ["Ain", "Aldebaran"],
+        ["Aldebaran", "Gamma Tau"],
+        ["Gamma Tau", "Theta2 Tau"],
+        ["Theta2 Tau", "Ain"],
+        ["Aldebaran", "Zeta Tau"],
+        ["Ain", "Elnath"],
     ],
     "Virgo": [
         ["Spica", "Porrima"],
@@ -125,8 +139,13 @@ export const CONSTELLATIONS: Record<string, [string, string][]> = {
     ],
 
     "Ursa Minor": [
-        ["Polaris", "Kochab"],
+        ["Polaris", "Yildun"],
+        ["Yildun", "Epsilon UMi"],
+        ["Epsilon UMi", "Zeta UMi"],
+        ["Zeta UMi", "Kochab"],
         ["Kochab", "Pherkad"],
+        ["Pherkad", "Eta UMi"],
+        ["Eta UMi", "Zeta UMi"],
     ],
 
     "Ophiuchus": [
@@ -184,7 +203,16 @@ export const CONSTELLATIONS: Record<string, [string, string][]> = {
 
     "Capricornus": [
         ["Algedi", "Dabih"],
-        ["Dabih", "Deneb Algedi"],
+        ["Dabih", "Theta Cap"],
+        ["Theta Cap", "Deneb Algedi"],
+        ["Deneb Algedi", "Zeta Cap"],
+        ["Zeta Cap", "Omega Cap"],
+        ["Omega Cap", "Dabih"],
+    ],
+    "Cancer": [
+        ["Al Tarf", "Asellus Australis"],
+        ["Asellus Australis", "Asellus Borealis"],
+        ["Asellus Australis", "Acubens"],
     ],
 
     // ══════════════════════════════════════════════════════════════════════════════
