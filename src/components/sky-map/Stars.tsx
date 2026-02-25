@@ -50,7 +50,7 @@ const starVertexShader = `
     vOpacity = varFactor * depthFactor * ( (1.0 - twinkleAmp) + twinkleAmp * noise );
 
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-    gl_PointSize = size * varFactor * depthFactor * (480.0 / -mvPosition.z);
+    gl_PointSize = size * varFactor * depthFactor * (580.0 / -mvPosition.z);
     gl_Position = projectionMatrix * mvPosition;
   }
 `;
@@ -59,25 +59,30 @@ const starFragmentShader = `
   varying vec3 vColor;
   varying float vOpacity;
   uniform bool uNightMode;
-  
+
   void main() {
     float r = distance(gl_PointCoord, vec2(0.5));
     if (r > 0.5) discard;
-    
+
     vec3 outColor = vColor;
     if (uNightMode) {
         float luminance = dot(vColor, vec3(0.299, 0.587, 0.114));
         outColor = vec3(luminance * 1.8, 0.0, 0.0);
+    } else {
+        // Boost color saturation — cold blue stars bluer, warm orange stars redder
+        float lum = dot(vColor, vec3(0.299, 0.587, 0.114));
+        outColor = mix(vec3(lum), vColor, 1.6);
+        outColor = clamp(outColor, 0.0, 1.0);
     }
 
-    // Núcleo compacto y brillante (Pogson real: mayor brillo = pico más agudo)
-    float core   = pow(max(0.0, 1.0 - r * 2.0), 1.8);
-    // Halo difuso para estrellas brillantes
-    float halo   = pow(max(0.0, 0.5 - r), 3.0) * 0.6;
-    // Cruz de difracción suave (sugiere telescopio/ojo real)
+    // Núcleo compacto: pico brillante (Airy disc)
+    float core   = pow(max(0.0, 1.0 - r * 2.0), 1.4);
+    // Halo gaseoso amplio — caída exponencial suave como halo atmosférico real
+    float halo   = exp(-r * 10.0) * 0.85;
+    // Cruz de difracción visible (sugiere ojo/telescopio real, como Star Walk 2)
     float dx     = abs(gl_PointCoord.x - 0.5);
     float dy     = abs(gl_PointCoord.y - 0.5);
-    float spikes = (exp(-dx * 40.0) + exp(-dy * 40.0)) * 0.08;
+    float spikes = (exp(-dx * 22.0) + exp(-dy * 22.0)) * 0.22;
     float alpha  = clamp((core + halo + spikes) * vOpacity, 0.0, 1.0);
     gl_FragColor = vec4(outColor, alpha);
   }
@@ -185,7 +190,7 @@ export default function Stars() {
             const normB = Math.min(1.0, brightness); // sirius = 1.0, mag 5 ≈ 0.017
             // Curva cóncava: magnitudes intermedias siguen siendo muy pequeñas
             // Brillantes (mag <2): 3.5–6.0 px, medias (mag 3-4): 0.8–1.5, tenues (mag 5+): <0.5
-            sz[i] = 0.15 + Math.pow(normB, 0.55) * 5.85;
+            sz[i] = 0.18 + Math.pow(normB, 0.50) * 7.2;
 
             // Profundidad de campo: estrellas más tenues = más lejanas
             // Magnitud 0 = muy cerca (factor 0), magnitud 6+ = muy lejos (factor 1)

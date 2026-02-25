@@ -9,6 +9,7 @@ import { useAppStore } from '@/stores/useAppStore';
 import { Html } from '@react-three/drei';
 
 const cometVertexShader = `
+    attribute vec3 color;
     varying vec3 vWorldPosition;
     varying vec3 vColor;
     varying float vAlpha;

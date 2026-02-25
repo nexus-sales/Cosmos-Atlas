@@ -46,10 +46,10 @@ export default function ConstellationLabels() {
     // En modo noche las letras son rojizas tenues
     const textColor = nightMode
         ? 'rgba(200,80,80,0.5)'
-        : 'rgba(130,190,255,0.55)';
+        : 'rgba(190,215,255,0.65)';
     const glowColor = nightMode
         ? 'rgba(160,40,40,0.35)'
-        : 'rgba(80,150,255,0.4)';
+        : 'rgba(100,160,255,0.30)';
 
     return (
         <>
@@ -64,10 +64,10 @@ export default function ConstellationLabels() {
                 >
                     <span style={{
                         color: textColor,
-                        fontFamily: "'Courier New', Courier, monospace",
-                        fontSize: '12px',
-                        fontWeight: 700,
-                        letterSpacing: '0.22em',
+                        fontFamily: "system-ui, -apple-system, 'Helvetica Neue', sans-serif",
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        letterSpacing: '0.20em',
                         textTransform: 'uppercase',
                         whiteSpace: 'nowrap',
                         textShadow: `0 0 12px ${glowColor}, 0 0 4px ${glowColor}`,

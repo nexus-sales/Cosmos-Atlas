@@ -14,7 +14,7 @@ const vertexShader = `
   void main() {
     vColor = color;
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-    gl_PointSize = size * (400.0 / -mvPosition.z);
+    gl_PointSize = size * (500.0 / -mvPosition.z);
     gl_Position = projectionMatrix * mvPosition;
   }
 `;
@@ -27,17 +27,17 @@ const fragmentShader = `
     vec2 uv = gl_PointCoord - 0.5;
     float r = length(uv) * 2.0;
     if (r > 1.0) discard;
-    
+
     vec3 outColor = vColor;
     if (uNightMode) {
         float luminance = dot(vColor, vec3(0.299, 0.587, 0.114));
         outColor = vec3(luminance * 1.5, 0.0, 0.0);
     }
 
-    // Perfil de brillo: núcleo brillante + caída suave
-    float core  = pow(max(0.0, 1.0 - r), 2.2);    // Núcleo compacto
-    float halo  = pow(max(0.0, 1.0 - r * 0.7), 5.0) * 0.25; // Halo suave
-    float alpha = core + halo;
+    // Perfil exponencial: núcleo puntual + halo atmosférico suave
+    float core  = exp(-r * 6.0);          // Caída exponencial rápida (Airy disc)
+    float halo  = exp(-r * 2.2) * 0.45;  // Halo ancho y muy suave
+    float alpha = clamp(core + halo, 0.0, 1.0);
     gl_FragColor = vec4(outColor, alpha);
   }
 `;

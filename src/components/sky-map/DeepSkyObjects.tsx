@@ -9,59 +9,65 @@ import { Html } from '@react-three/drei';
 import { DSOType, DSO } from '@/types/celestial';
 import { getDSOImage, preloadDSOImage } from '@/data/dsoImages';
 
+function hexToRgb(hex: string): [number, number, number] {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return [r, g, b];
+}
+
 function createDSOTexture(type: DSOType, color: string): THREE.CanvasTexture {
     const size = 128;
     const canvas = document.createElement('canvas');
     canvas.width = canvas.height = size;
     const ctx = canvas.getContext('2d')!;
     const c = size / 2;
-
     ctx.clearRect(0, 0, size, size);
 
-    if (type === 'galaxy') {
-        // Spiral galaxy look
-        const g = ctx.createRadialGradient(c, c, 0, c, c, size / 2);
-        g.addColorStop(0, color);
-        g.addColorStop(0.2, color + 'aa');
-        g.addColorStop(0.5, color + '22');
-        g.addColorStop(1, 'transparent');
-        ctx.fillStyle = g;
+    // Parse color for rgba stops
+    let rgb: [number, number, number] = [200, 200, 255];
+    try { rgb = hexToRgb(color.length === 7 ? color : '#aaaaff'); } catch { /* ignore */ }
+    const [r, g, b] = rgb;
 
+    if (type === 'galaxy') {
+        // Soft elliptical glow — core bright, edges completely transparent
         ctx.save();
         ctx.translate(c, c);
-        ctx.rotate(Math.PI / 4);
-        ctx.scale(1.8, 0.6); // Elliptical inclination
+        ctx.rotate(Math.PI / 5);
+        ctx.scale(1.6, 0.55);
+        const gx = ctx.createRadialGradient(0, 0, 0, 0, 0, c * 0.85);
+        gx.addColorStop(0.0,  `rgba(${r},${g},${b},0.90)`);
+        gx.addColorStop(0.15, `rgba(${r},${g},${b},0.55)`);
+        gx.addColorStop(0.45, `rgba(${r},${g},${b},0.18)`);
+        gx.addColorStop(0.75, `rgba(${r},${g},${b},0.04)`);
+        gx.addColorStop(1.0,  `rgba(${r},${g},${b},0.00)`);
+        ctx.fillStyle = gx;
         ctx.beginPath();
-        ctx.arc(0, 0, size / 4, 0, Math.PI * 2);
+        ctx.arc(0, 0, c * 0.85, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
     } else if (type === 'nebula') {
-        // Cloud-like amorphous look
-        for (let i = 0; i < 6; i++) {
-            const r = (Math.random() * 0.2 + 0.2) * size;
-            const ox = (Math.random() - 0.5) * size * 0.4;
-            const oy = (Math.random() - 0.5) * size * 0.4;
-            const g = ctx.createRadialGradient(c + ox, c + oy, 0, c + ox, c + oy, r);
-            g.addColorStop(0, color + '88');
-            g.addColorStop(1, 'transparent');
-            ctx.fillStyle = g;
-            ctx.beginPath();
-            ctx.arc(c + ox, c + oy, r, 0, Math.PI * 2);
-            ctx.fill();
-        }
+        // Diffuse amorphous cloud — never opaque, always soft
+        const gn = ctx.createRadialGradient(c, c, 0, c, c, c * 0.9);
+        gn.addColorStop(0.0,  `rgba(${r},${g},${b},0.55)`);
+        gn.addColorStop(0.35, `rgba(${r},${g},${b},0.22)`);
+        gn.addColorStop(0.70, `rgba(${r},${g},${b},0.06)`);
+        gn.addColorStop(1.0,  `rgba(${r},${g},${b},0.00)`);
+        ctx.fillStyle = gn;
+        ctx.beginPath();
+        ctx.arc(c, c, c * 0.9, 0, Math.PI * 2);
+        ctx.fill();
     } else {
-        // Cluster: group of dots
-        for (let i = 0; i < 40; i++) {
-            const r = Math.sqrt(Math.random()) * size * 0.4;
-            const angle = Math.random() * Math.PI * 2;
-            const px = c + Math.cos(angle) * r;
-            const py = c + Math.sin(angle) * r;
-            const s = Math.random() * 2 + 1;
-            ctx.fillStyle = color;
-            ctx.beginPath();
-            ctx.arc(px, py, s, 0, Math.PI * 2);
-            ctx.fill();
-        }
+        // Open/globular cluster — tight central glow with very faint haze
+        const gc = ctx.createRadialGradient(c, c, 0, c, c, c * 0.7);
+        gc.addColorStop(0.0,  `rgba(${r},${g},${b},0.80)`);
+        gc.addColorStop(0.20, `rgba(${r},${g},${b},0.40)`);
+        gc.addColorStop(0.55, `rgba(${r},${g},${b},0.10)`);
+        gc.addColorStop(1.0,  `rgba(${r},${g},${b},0.00)`);
+        ctx.fillStyle = gc;
+        ctx.beginPath();
+        ctx.arc(c, c, c * 0.7, 0, Math.PI * 2);
+        ctx.fill();
     }
 
     const tex = new THREE.CanvasTexture(canvas);
@@ -146,30 +152,17 @@ function DSOItem({ dso }: { dso: DSOData }) {
                 onPointerOver={() => { setHovered(true); document.body.style.cursor = 'pointer'; }}
                 onPointerOut={() => { setHovered(false); document.body.style.cursor = 'default'; }}
             >
-                <sphereGeometry args={[Math.max(1.5, dso.visualSize), 8, 8]} />
+                <sphereGeometry args={[Math.max(1.0, dso.visualSize * 0.7), 6, 6]} />
                 <meshBasicMaterial transparent opacity={0} depthWrite={false} />
             </mesh>
 
-            {/* Halo de profundidad (glow exterior) */}
-            <mesh>
-                <sphereGeometry args={[dso.visualSize * 1.8, 16, 16]} />
-                <meshBasicMaterial
-                    color={dso.color}
-                    transparent
-                    opacity={0.08}
-                    depthWrite={false}
-                    blending={THREE.AdditiveBlending}
-                    side={THREE.DoubleSide}
-                />
-            </mesh>
-
-            {/* Textura visual del DSO */}
+            {/* Textura visual del DSO — faint, soft, purely additive */}
             <mesh>
                 <planeGeometry args={[dso.visualSize, dso.visualSize]} />
                 <meshBasicMaterial
                     map={texture}
                     transparent
-                    opacity={0.75}
+                    opacity={0.28}
                     depthWrite={false}
                     blending={THREE.AdditiveBlending}
                 />
@@ -209,8 +202,8 @@ export default function DeepSkyObjects() {
     const dsoData = useMemo(() => {
         return DSOS.map((dso) => {
             const pos = equatorialTo3D(dso.ra, dso.dec, DSO_RADIUS) as [number, number, number];
-            // visualSize = chord length at R=94: sizeArcmin * (2*94*π/10800) ≈ sizeArcmin * 0.0274
-            const visualSize = Math.max(0.10, (dso.sizeArcmin || 5) * 0.027);
+            // visualSize: representative size, capped so even M31/LMC don't flood the screen
+            const visualSize = Math.max(0.12, Math.min(2.2, (dso.sizeArcmin || 5) * 0.027));
             return { ...dso, pos, visualSize };
         });
     }, []);

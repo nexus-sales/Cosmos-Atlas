@@ -43,8 +43,8 @@ export default function Constellations() {
     if (!showLines) return null;
 
     // En modo noche las líneas son rojo oscuro para preservar la visión
-    const lineColor = nightMode ? '#882222' : '#4bcffa';
-    const lineOpacity = nightMode ? 0.45 : 0.65;
+    const lineColor = nightMode ? '#882222' : '#a8c4e8';
+    const lineOpacity = nightMode ? 0.45 : 0.42;
 
     return (
         <group renderOrder={3}>
@@ -53,7 +53,7 @@ export default function Constellations() {
                     key={i}
                     points={points}
                     color={lineColor}
-                    lineWidth={1.2}
+                    lineWidth={0.9}
                     transparent
                     opacity={lineOpacity}
                     depthTest={false}   // ← Siempre visible, encima de estrellas

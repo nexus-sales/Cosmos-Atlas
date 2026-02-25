@@ -2,94 +2,94 @@
 
 import { useThree, useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
-import { useState, useRef, useCallback } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
 import { useDeviceOrientation, deviceOrientationRef } from '@/hooks/useDeviceOrientation';
 
+// Cardinal from azimuth degrees
+function cardinalFromAz(az: number): string {
+    if (az >= 337.5 || az < 22.5) return 'N';
+    if (az < 67.5) return 'NE';
+    if (az < 112.5) return 'E';
+    if (az < 157.5) return 'SE';
+    if (az < 202.5) return 'S';
+    if (az < 247.5) return 'SO';
+    if (az < 292.5) return 'O';
+    return 'NO';
+}
+
 /**
- * Brújula interactiva que muestra la dirección cardinal hacia donde mira la cámara.
- * - Clic simple: centra la vista en el cenit (mirando hacia arriba)
- * - Doble clic: centra la vista mirando al norte (horizonte)
- *
- * En dispositivos con giroscopio aparece un botón AR:
- * - Activa el modo orientación: mover el dispositivo mueve la bóveda celeste.
- * - La aguja pasa a mostrar el heading real del sensor en lugar del heading de cámara.
+ * Brújula interactiva. Actualiza la aguja SVG directamente via DOM ref (sin
+ * setState en useFrame) para evitar re-renders React a 60fps en móvil.
  */
 export default function Compass() {
     const { camera } = useThree();
-    const [azimuth, setAzimuth] = useState(0);
     const lastClickRef = useRef(0);
     const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // DOM refs for direct updates — no React state in the render loop
+    const needleGroupRef = useRef<SVGGElement>(null);
+    const labelRef = useRef<HTMLDivElement>(null);
+    const northTextRef = useRef<SVGTextElement>(null);
 
     const followOrientation = useAppStore((s) => s.followOrientation);
     const setFollowOrientation = useAppStore((s) => s.setFollowOrientation);
     const { isSupported, permission, requestAndStart, stop } = useDeviceOrientation();
 
-    // Calcular acimut cada frame
+    // Keep a ref so useFrame always sees current value without subscription
+    const followOrientationRef = useRef(followOrientation);
+    useEffect(() => { followOrientationRef.current = followOrientation; }, [followOrientation]);
+
+    // Update compass needle directly in DOM — zero React re-renders
     useFrame(() => {
-        if (followOrientation && deviceOrientationRef.active) {
-            // Show real device heading when in AR mode
-            setAzimuth(deviceOrientationRef.alpha);
+        let az: number;
+        if (followOrientationRef.current && deviceOrientationRef.active) {
+            az = deviceOrientationRef.alpha;
         } else {
-            // Dirección de vista = -camera.position normalizado
             const lookDir = camera.position.clone().negate().normalize();
-            // Norte=-Z, Este=+X → azimuth 0=N, 90=E
-            const az = Math.atan2(lookDir.x, -lookDir.z) * (180 / Math.PI);
-            setAzimuth((az + 360) % 360);
+            az = (Math.atan2(lookDir.x, -lookDir.z) * (180 / Math.PI) + 360) % 360;
+        }
+
+        if (needleGroupRef.current) {
+            needleGroupRef.current.setAttribute('transform', `rotate(${-az}, 50, 50)`);
+        }
+        if (labelRef.current) {
+            labelRef.current.textContent = `${cardinalFromAz(az)} ${Math.round(az)}°`;
         }
     });
 
     const handleCompassClick = useCallback(() => {
-        if (followOrientation) return; // Don't jump while in AR mode
+        if (followOrientationRef.current) return;
 
         const now = Date.now();
-        const timeSinceLastClick = now - lastClickRef.current;
+        if (clickTimeoutRef.current) { clearTimeout(clickTimeoutRef.current); clickTimeoutRef.current = null; }
 
-        if (clickTimeoutRef.current) {
-            clearTimeout(clickTimeoutRef.current);
-            clickTimeoutRef.current = null;
-        }
-
-        if (timeSinceLastClick < 300) {
-            // Doble clic → Mirar al Norte (horizonte)
-            camera.position.set(0, 0, 0.01);
+        if (now - lastClickRef.current < 300) {
+            camera.position.set(0, 0, 0.01); // Norte
         } else {
             clickTimeoutRef.current = setTimeout(() => {
-                // Clic simple → Mirar al Cenit (arriba)
-                camera.position.set(0, -0.01, 0.0001);
+                camera.position.set(0, -0.01, 0.0001); // Cénit
             }, 300);
         }
-
         lastClickRef.current = now;
-    }, [camera, followOrientation]);
+    }, [camera]);
 
     const handleARToggle = useCallback(async () => {
-        if (followOrientation) {
+        if (followOrientationRef.current) {
             stop();
             setFollowOrientation(false);
         } else {
             await requestAndStart();
-            // Wait briefly for the listener to attach and deviceOrientationRef.active to become true
-            setTimeout(() => {
-                if (deviceOrientationRef.active) {
-                    setFollowOrientation(true);
-                }
-            }, 250);
+            // Set followOrientation as soon as permission is granted,
+            // regardless of whether the first sensor event has fired yet
+            if (deviceOrientationRef.active) {
+                setFollowOrientation(true);
+            } else {
+                // Fallback: wait one tick for active flag to settle (Android)
+                setTimeout(() => setFollowOrientation(true), 100);
+            }
         }
-    }, [followOrientation, requestAndStart, stop, setFollowOrientation]);
-
-    const getCardinalDirection = () => {
-        if (azimuth >= 337.5 || azimuth < 22.5) return 'N';
-        if (azimuth >= 22.5 && azimuth < 67.5) return 'NE';
-        if (azimuth >= 67.5 && azimuth < 112.5) return 'E';
-        if (azimuth >= 112.5 && azimuth < 157.5) return 'SE';
-        if (azimuth >= 157.5 && azimuth < 202.5) return 'S';
-        if (azimuth >= 202.5 && azimuth < 247.5) return 'SO';
-        if (azimuth >= 247.5 && azimuth < 292.5) return 'O';
-        return 'NO';
-    };
-
-    const needleColor = followOrientation ? '#44aaff' : '#ff5555';
+    }, [requestAndStart, stop, setFollowOrientation]);
 
     return (
         <Html fullscreen style={{ pointerEvents: 'none' }}>
@@ -101,13 +101,12 @@ export default function Compass() {
                     className="relative w-16 h-16 rounded-full bg-black/60 backdrop-blur-md
                                border border-white/20 hover:border-blue-400/50
                                shadow-lg shadow-black/50 transition-all duration-200
-                               flex items-center justify-center group"
-                    title={followOrientation ? 'Orientación AR activa' : 'Clic: Cenit | Doble clic: Norte'}
+                               flex items-center justify-center"
+                    title={followOrientation ? 'Orientación AR activa' : 'Clic: Cénit | Doble clic: Norte'}
                     style={followOrientation ? { borderColor: 'rgba(68,170,255,0.4)', boxShadow: '0 0 12px rgba(68,170,255,0.25)' } : undefined}
                 >
                     <svg viewBox="0 0 100 100" className="w-14 h-14">
                         <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-
                         {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((deg) => (
                             <line
                                 key={deg}
@@ -117,23 +116,26 @@ export default function Compass() {
                                 transform={`rotate(${deg}, 50, 50)`}
                             />
                         ))}
-
-                        <text x="50" y="20" textAnchor="middle" fill={needleColor} fontSize="11" fontWeight="bold" fontFamily="monospace">N</text>
+                        <text ref={northTextRef} x="50" y="20" textAnchor="middle"
+                            fill={followOrientation ? '#44aaff' : '#ff5555'}
+                            fontSize="11" fontWeight="bold" fontFamily="monospace">N</text>
                         <text x="84" y="54" textAnchor="middle" fill="#99bbff" fontSize="9" fontFamily="monospace">E</text>
                         <text x="50" y="88" textAnchor="middle" fill="#8888ff" fontSize="9" fontFamily="monospace">S</text>
                         <text x="16" y="54" textAnchor="middle" fill="#99bbff" fontSize="9" fontFamily="monospace">O</text>
 
-                        <g transform={`rotate(${-azimuth}, 50, 50)`}>
-                            <polygon points="50,24 46,50 50,44 54,50" fill={needleColor} />
+                        {/* Needle group — rotated directly via DOM ref, no React re-render */}
+                        <g ref={needleGroupRef} transform="rotate(0, 50, 50)">
+                            <polygon points="50,24 46,50 50,44 54,50"
+                                fill={followOrientation ? '#44aaff' : '#ff5555'} />
                             <polygon points="50,76 46,50 50,56 54,50" fill="#666666" />
                         </g>
-
                         <circle cx="50" cy="50" r="4" fill="rgba(255,255,255,0.3)" />
                         <circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.6)" />
                     </svg>
 
-                    <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] font-mono text-white/60 tracking-wider whitespace-nowrap">
-                        {getCardinalDirection()} {Math.round(azimuth)}°
+                    <div ref={labelRef}
+                        className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] font-mono text-white/60 tracking-wider whitespace-nowrap">
+                        N 0°
                     </div>
                 </button>
 
@@ -149,7 +151,6 @@ export default function Compass() {
                                 : 'bg-black/60 border-white/15 text-white/40 hover:border-white/30 hover:text-white/60'
                             }`}
                     >
-                        {/* Gyroscope icon */}
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <circle cx="12" cy="12" r="10" />
                             <ellipse cx="12" cy="12" rx="10" ry="4" />

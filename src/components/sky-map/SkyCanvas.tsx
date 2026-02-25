@@ -261,7 +261,7 @@ export default function SkyCanvas() {
     const followOrientation = useAppStore((state) => state.followOrientation);
 
     return (
-        <div className="w-full h-full bg-[#02050a] relative">
+        <div className="w-full h-full bg-[#04091a] relative">
             <Canvas
                 gl={{ antialias: true, stencil: false, powerPreference: 'high-performance' }}
                 camera={{ position: [0, 0, 0.01], fov: 60, near: 0.001, far: 200 }}
@@ -325,7 +325,7 @@ export default function SkyCanvas() {
                     <EffectComposer>
                         {/* Bloom: umbral alto → solo estrellas brillantes (mag<2) tienen corona.
                             Las tenues quedan como puntos limpios. Estilo Sky Map. */}
-                        <Bloom luminanceThreshold={0.35} mipmapBlur intensity={1.0} radius={0.3} />
+                        <Bloom luminanceThreshold={0.22} mipmapBlur intensity={2.8} radius={0.65} />
                         <Noise opacity={0.02} />
                         <Vignette eskil={false} offset={0.08} darkness={1.35} />
                     </EffectComposer>
