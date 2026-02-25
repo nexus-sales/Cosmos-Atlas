@@ -265,9 +265,13 @@ function AccordionSection({ title, icon, isOpen, onToggle, children }: { title: 
                 </div>
                 <ChevronDown className={cn("w-4 h-4 text-white/20 transition-transform duration-300", isOpen ? "rotate-180 text-blue-400/50" : "")} />
             </button>
-            <motion.div initial={false} animate={{ opacity: isOpen ? 1 : 0, display: isOpen ? 'block' : 'none' }} transition={{ duration: 0.2 }} className="overflow-hidden">
+            {/* CSS max-height transition instead of framer-motion display animation — more reliable with lazy mount */}
+            <div
+                className="overflow-hidden transition-all duration-200"
+                style={{ maxHeight: isOpen ? '800px' : '0px', opacity: isOpen ? 1 : 0 }}
+            >
                 {hasOpenedRef.current && <div className="px-5 pb-5 pt-1">{children}</div>}
-            </motion.div>
+            </div>
         </div>
     );
 }
