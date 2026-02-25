@@ -45,6 +45,8 @@ interface AppState {
     setSatelliteInfo: (patch: Partial<AppState['satelliteInfo']>) => void;
     followOrientation: boolean;
     setFollowOrientation: (v: boolean) => void;
+    focusedConstellation: string | null;
+    setFocusedConstellation: (name: string | null) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -108,4 +110,6 @@ export const useAppStore = create<AppState>((set) => ({
         })),
     followOrientation: false,
     setFollowOrientation: (followOrientation) => set({ followOrientation }),
+    focusedConstellation: null,
+    setFocusedConstellation: (focusedConstellation) => set({ focusedConstellation }),
 }));

@@ -14,43 +14,38 @@ const starVertexShader = `
   attribute float varAmp;
   attribute float varPer;
   attribute float varPha;
-  attribute float distanceFactor; // Factor de profundidad (0 = cerca, 1 = lejos)
+  attribute float distanceFactor;
   varying vec3 vColor;
   varying float vOpacity;
+  varying float vSize;
   uniform float uTime;
   uniform float uTimeSec;
 
   void main() {
     vColor = color;
+    vSize = size;
 
-    // Transform position to world space to get altitude (approximate)
-    // In our scene, world Y is Zenith if the Horizon component is at Y=0.
     vec4 worldPosition = modelMatrix * vec4(position, 1.0);
     float altitude = worldPosition.y / length(worldPosition.xyz);
+    float airmass = 1.0 / max(0.08, altitude);
 
-    // Airmass (X = 1/sin(alt)). Limiting it to avoid infinity at horizon.
-    float airmass = 1.0 / max(0.05, altitude);
-
-    // Variabilidad estelar: modula brillo según período real
     float varFactor = 1.0;
     if (varAmp > 0.0 && varPer > 0.0) {
       float phase = 6.2832 * uTimeSec / varPer + varPha;
-      varFactor = 1.0 - varAmp * 0.5 * (1.0 - sin(phase));
+      varFactor = 1.0 - varAmp * 0.4 * (1.0 - sin(phase));
     }
 
-    // Profundidad de campo: estrellas más lejanas son más tenues
-    float depthFactor = 1.0 - distanceFactor * 0.35; // Hasta 35% menos brillo
+    float depthFactor = 1.0 - distanceFactor * 0.4;
 
-    // Centelleo Atmosférico (Twinkle): modulación de doble frecuencia
-    // Simula mejor la turbulencia pulsante de la atmósfera
-    float twinkleSpeed = 1.6 + airmass * 0.4;
-    float twinkleAmp = 0.12 + airmass * 0.08;
-    float t = uTime * twinkleSpeed;
-    float noise = sin(t + position.x * 12.0) * 0.7 + sin(t * 1.5 + position.y * 7.0) * 0.3;
-    vOpacity = varFactor * depthFactor * ( (1.0 - twinkleAmp) + twinkleAmp * noise );
+    // Twinkle más dinámico
+    float twinkleSpeed = 2.5 + airmass * 0.5;
+    float twinkleAmp = 0.15 + airmass * 0.12;
+    float noise = sin(uTime * twinkleSpeed + position.x * 100.0) * 0.6 + sin(uTime * twinkleSpeed * 0.8 + position.y * 100.0) * 0.4;
+    vOpacity = varFactor * depthFactor * ((1.0 - twinkleAmp) + twinkleAmp * noise);
 
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-    gl_PointSize = size * varFactor * depthFactor * (580.0 / -mvPosition.z);
+    // Ajuste de tamaño para que estrellas brillantes resalten más (efecto bloom simulado)
+    gl_PointSize = size * (vOpacity * 0.5 + 0.5) * (1000.0 / -mvPosition.z);
     gl_Position = projectionMatrix * mvPosition;
   }
 `;
@@ -58,33 +53,51 @@ const starVertexShader = `
 const starFragmentShader = `
   varying vec3 vColor;
   varying float vOpacity;
+  varying float vSize;
   uniform bool uNightMode;
 
   void main() {
     float r = distance(gl_PointCoord, vec2(0.5));
     if (r > 0.5) discard;
 
-    vec3 outColor = vColor;
+    vec3 baseColor = vColor;
     if (uNightMode) {
-        float luminance = dot(vColor, vec3(0.299, 0.587, 0.114));
-        outColor = vec3(luminance * 1.8, 0.0, 0.0);
-    } else {
-        // Boost color saturation — cold blue stars bluer, warm orange stars redder
         float lum = dot(vColor, vec3(0.299, 0.587, 0.114));
-        outColor = mix(vec3(lum), vColor, 1.6);
-        outColor = clamp(outColor, 0.0, 1.0);
+        baseColor = vec3(lum * 2.0, 0.0, 0.0);
+    } else {
+        float lum = dot(vColor, vec3(0.299, 0.587, 0.114));
+        baseColor = mix(vec3(lum), vColor, 1.8);
     }
 
-    // Núcleo compacto: pico brillante (Airy disc)
-    float core   = pow(max(0.0, 1.0 - r * 2.0), 1.4);
-    // Halo gaseoso amplio — caída exponencial suave como halo atmosférico real
-    float halo   = exp(-r * 10.0) * 0.85;
-    // Cruz de difracción visible (sugiere ojo/telescopio real, como Star Walk 2)
-    float dx     = abs(gl_PointCoord.x - 0.5);
-    float dy     = abs(gl_PointCoord.y - 0.5);
-    float spikes = (exp(-dx * 22.0) + exp(-dy * 22.0)) * 0.22;
-    float alpha  = clamp((core + halo + spikes) * vOpacity, 0.0, 1.0);
-    gl_FragColor = vec4(outColor, alpha);
+    // --- EFECTO ESTRELLA DIAMANTE (Star Walk 2 Style) ---
+    
+    // 1. Núcleo híper-brillante
+    float core = pow(max(0.0, 1.0 - r * 2.8), 2.5) * 2.0;
+    
+    // 2. Halo atmosférico suave
+    float halo = exp(-r * 8.0) * 0.6;
+    
+    // 3. Spikes de difracción (Cruz de cristal)
+    // Más rotación para que no sean solo + o x perfecta
+    vec2 centered = gl_PointCoord - vec2(0.5);
+    float angle = 0.3; // Rotación ligera
+    float co = cos(angle);
+    float si = sin(angle);
+    vec2 p = vec2(centered.x * co - centered.y * si, centered.x * si + centered.y * co);
+    
+    float spikeX = exp(-abs(p.x) * 45.0) * exp(-abs(p.y) * 2.5);
+    float spikeY = exp(-abs(p.y) * 45.0) * exp(-abs(p.x) * 2.5);
+    
+    // Spikes secundarios (forma de diamante) para estrellas muy brillantes
+    float spikeSize = smoothstep(3.0, 8.0, vSize); 
+    float spikes = (spikeX + spikeY) * (0.4 + spikeSize * 0.8);
+
+    float finalAlpha = (core + halo + spikes) * vOpacity;
+    
+    // Boost del color en el centro
+    vec3 finalColor = mix(baseColor, vec3(1.0), core * 0.7);
+    
+    gl_FragColor = vec4(finalColor, clamp(finalAlpha, 0.0, 1.0));
   }
 `;
 
@@ -138,6 +151,7 @@ function StarHitbox({ star, pos }: { star: typeof STARS[0]; pos: [number, number
                         pointerEvents: 'none',
                         textShadow: `0 0 10px ${displayColor}`,
                         transform: 'translateX(-50%) translateY(-28px)',
+                        zIndex: 1000,
                     }}>
                         {star.name}
                         <div style={{ fontSize: '9px', color: '#ffffff55', fontWeight: 'normal', letterSpacing: '0.5px' }}>
@@ -146,6 +160,61 @@ function StarHitbox({ star, pos }: { star: typeof STARS[0]; pos: [number, number
                     </div>
                 </Html>
             )}
+        </group>
+    );
+}
+
+/** 
+ * Etiquetas automáticas que aparecen al hacer zoom.
+ * Estilo Star Walk 2: nombre de estrella con glow sutil.
+ */
+function DynamicStarLabels({ visibleStars, starPositions }: { visibleStars: typeof STARS; starPositions: [number, number, number][] }) {
+    const camFov = useAppStore((state) => state.camFov);
+    const nightMode = useAppStore((state) => state.settings.nightMode);
+
+    // Comenzar a mostrar etiquetas mucho antes (FOV 75 es casi el inicio)
+    const overallOpacity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 80, 50, 0, 1), 0.1, 1);
+
+    return (
+        <group renderOrder={50}>
+            {visibleStars.map((star, i) => {
+                // Lógica de visibilidad por magnitud más generosa:
+                // A FOV 60 (inicio) ya muestra estrellas de mag < 1.5
+                // A FOV 30 ya muestra casi todas (mag < 4.5)
+                const magThreshold = THREE.MathUtils.mapLinear(camFov, 75, 20, 1.2, 5.0);
+                if (star.mag > magThreshold) return null;
+
+                const pos = starPositions[i];
+                const color = nightMode ? '#ff4444' : '#e0e8ff';
+                const opacity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(magThreshold - star.mag, 0, 1.0, 0, 1), 0, 1) * overallOpacity;
+
+                const scale = THREE.MathUtils.mapLinear(camFov, 90, 10, 0.8, 1.3);
+
+                return (
+                    <Html key={star.name} position={pos} center distanceFactor={15} zIndexRange={[150, 50]}>
+                        <div style={{
+                            color: color,
+                            opacity: opacity,
+                            fontSize: `${Math.round(10 * scale)}px`,
+                            fontFamily: "Inter, system-ui, sans-serif",
+                            fontWeight: 500,
+                            letterSpacing: '0.05em',
+                            textShadow: `0 0 8px ${nightMode ? 'rgba(255,0,0,0.6)' : 'rgba(59,130,246,0.4)'}`,
+                            pointerEvents: 'none',
+                            userSelect: 'none',
+                            transform: 'translateY(14px)',
+                            textAlign: 'center'
+                        }}>
+                            {star.name}
+                            {camFov < 35 && (
+                                <div style={{ fontSize: `${Math.round(8 * scale)}px`, opacity: 0.6 * opacity, fontWeight: 400 }}>
+                                    {star.constellation}
+                                </div>
+                            )}
+                        </div>
+                    </Html>
+                );
+            })}
         </group>
     );
 }
@@ -179,24 +248,13 @@ export default function Stars() {
             col[i * 3] = color.r; col[i * 3 + 1] = color.g; col[i * 3 + 2] = color.b;
 
             // ── Escala Logarítmica Agresiva (estilo Sky Map) ─────────────────
-            // La diferencia visual entre Sirius (-1.46) y una estrella de mag 5
-            // debe ser enorme. Usamos pow(10, -0.4*mag) = Pogson puro.
-            // Referencia: Sirius = -1.46 (la más brillante del catálogo)
-            // Rango: Sirius → límite ~8. El contraste visual debe ser ~10:1
-            const refMag = -1.5; // mag de referencia (Sirius)
-            // brightness cae un factor 2.512 por cada magnitud
-            const brightness = Math.pow(2.512, refMag - star.mag); // >1 para brillantes, <<1 para tenues
-            // Mapeamos brightness [0..1] a tamaño con curva de potencia para máximo contraste
-            const normB = Math.min(1.0, brightness); // sirius = 1.0, mag 5 ≈ 0.017
-            // Curva cóncava: magnitudes intermedias siguen siendo muy pequeñas
-            // Brillantes (mag <2): 3.5–6.0 px, medias (mag 3-4): 0.8–1.5, tenues (mag 5+): <0.5
+            const refMag = -1.5;
+            const brightness = Math.pow(2.512, refMag - star.mag);
+            const normB = Math.min(1.0, brightness);
             sz[i] = 0.18 + Math.pow(normB, 0.50) * 7.2;
 
-            // Profundidad de campo: estrellas más tenues = más lejanas
-            // Magnitud 0 = muy cerca (factor 0), magnitud 6+ = muy lejos (factor 1)
             distFactorArr[i] = Math.min(1.0, Math.max(0.0, (star.mag + 1.5) / 7.5));
 
-            // Atributos de variabilidad
             const varInfo = VARIABLE_STARS[star.name];
             if (varInfo) {
                 varAmpArr[i] = varInfo.amp;
@@ -233,17 +291,19 @@ export default function Stars() {
         const mat = material as THREE.ShaderMaterial;
         // eslint-disable-next-line react-hooks/immutability
         mat.uniforms.uTime.value = state.clock.elapsedTime;
-        // uTimeSec usa el tiempo del store para que las variables respondan al Time Travel
         mat.uniforms.uTimeSec.value = useAppStore.getState().time.getTime() / 1000;
         mat.uniforms.uNightMode.value = nightMode;
     });
 
     return (
         <group renderOrder={1}>
-            {/* Renderizado visual en shader — encima de BackgroundStars (order 0) */}
+            {/* Renderizado visual en shader */}
             <points ref={pointsRef} geometry={geometry} material={material} renderOrder={1} />
 
-            {/* Hitboxes invisibles para click y hover — solo estrellas visibles a simple vista */}
+            {/* Etiquetas dinámicas basadas en zoom */}
+            <DynamicStarLabels visibleStars={visibleStars} starPositions={starPositions} />
+
+            {/* Hitboxes invisibles para click y hover */}
             {visibleStars
                 .map((star, originalIdx) => ({ star, pos: starPositions[originalIdx] }))
                 .filter(({ star }) => star.mag <= 5.5)

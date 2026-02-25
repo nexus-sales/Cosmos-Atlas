@@ -16,50 +16,62 @@ import { useAppStore } from '@/stores/useAppStore';
 export default function Constellations() {
     const showLines = useAppStore((state) => state.settings.showConstellations);
     const nightMode = useAppStore((state) => state.settings.nightMode);
+    const focusedConstellation = useAppStore((state) => state.focusedConstellation);
     const RADIUS = 92;
 
-    const lines = useMemo(() => {
+    const constellationsData = useMemo(() => {
         const starMap = new Map();
         STARS.forEach((s) => starMap.set(s.name, s));
 
-        const result: [number, number, number][][] = [];
-
-        Object.values(CONSTELLATIONS).forEach((constLines) => {
+        return Object.entries(CONSTELLATIONS).map(([name, constLines]) => {
+            const pointsList: [number, number, number][][] = [];
             constLines.forEach(([startName, endName]) => {
                 const startStar = starMap.get(startName);
                 const endStar = starMap.get(endName);
-
                 if (startStar && endStar) {
-                    const p1 = equatorialTo3D(startStar.ra, startStar.dec, RADIUS);
-                    const p2 = equatorialTo3D(endStar.ra, endStar.dec, RADIUS);
-                    result.push([p1, p2]);
+                    pointsList.push([
+                        equatorialTo3D(startStar.ra, startStar.dec, RADIUS),
+                        equatorialTo3D(endStar.ra, endStar.dec, RADIUS)
+                    ]);
                 }
             });
+            return { name, pointsList };
         });
-
-        return result;
     }, []);
 
     if (!showLines) return null;
 
-    // En modo noche las líneas son rojo oscuro para preservar la visión
-    const lineColor = nightMode ? '#882222' : '#a8c4e8';
-    const lineOpacity = nightMode ? 0.45 : 0.42;
-
     return (
         <group renderOrder={3}>
-            {lines.map((points, i) => (
-                <Line
-                    key={i}
-                    points={points}
-                    color={lineColor}
-                    lineWidth={0.9}
-                    transparent
-                    opacity={lineOpacity}
-                    depthTest={false}   // ← Siempre visible, encima de estrellas
-                    depthWrite={false}
-                />
-            ))}
+            {constellationsData.map(({ name, pointsList }) => {
+                const isFocused = name === focusedConstellation;
+
+                // Estética dinámica: 
+                // La enfocada es brillante y nítida. El resto son "fantasmas" sutiles.
+                const color = nightMode
+                    ? (isFocused ? '#ff3333' : '#661111')
+                    : (isFocused ? '#ffffff' : '#a8c4e8');
+
+                const opacity = isFocused ? 0.9 : 0.15;
+                const lineWidth = isFocused ? 1.8 : 0.6;
+
+                return (
+                    <group key={name}>
+                        {pointsList.map((points, i) => (
+                            <Line
+                                key={i}
+                                points={points}
+                                color={color}
+                                lineWidth={lineWidth}
+                                transparent
+                                opacity={opacity}
+                                depthTest={false}
+                                depthWrite={false}
+                            />
+                        ))}
+                    </group>
+                );
+            })}
         </group>
     );
 }
