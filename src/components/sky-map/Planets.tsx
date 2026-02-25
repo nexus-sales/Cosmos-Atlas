@@ -1,7 +1,7 @@
 'use client';
 
-import { Html, useTexture, Float } from '@react-three/drei';
-import { useMemo, useRef, useEffect } from 'react';
+import { Html, Float } from '@react-three/drei';
+import { useMemo, useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
@@ -85,6 +85,23 @@ const TEXTURES = {
 const AU_KM = 149597870.7;
 const MOON_RADIUS_KM = 1737.4;
 const PLANET_RADIUS = 95;
+
+// ── Safe texture loader (no Suspense/crash on 404) ───────────────────────────
+function useSafeTexture(url: string): THREE.Texture | null {
+    const [tex, setTex] = useState<THREE.Texture | null>(null);
+    useEffect(() => {
+        if (!url) return;
+        let alive = true;
+        new THREE.TextureLoader().load(
+            url,
+            (t) => { if (alive) setTex(t); },
+            undefined,
+            () => { /* silently ignore load errors */ }
+        );
+        return () => { alive = false; };
+    }, [url]);
+    return tex;
+}
 
 // ── Shared glow texture (one canvas, reused for all sprites) ──────────────────
 function makeGlowTexture(): THREE.CanvasTexture {
@@ -245,7 +262,7 @@ function MoonMesh({ planet, phase, opacity }: {
     // angularSize in arcsec: ~1800 → 1800 * 0.00023 ≈ 0.414
     const SIZE = THREE.MathUtils.clamp(planet.angularSize * 0.00023, 0.35, 0.52);
 
-    const texture = useTexture(TEXTURES.moon);
+    const texture = useSafeTexture(TEXTURES.moon);
     const setTargetedObject = useAppStore((s) => s.setTargetedObject);
 
     // No longer need manual disposal with useTexture
@@ -259,7 +276,8 @@ function MoonMesh({ planet, phase, opacity }: {
             }}>
                 <sphereGeometry args={[SIZE, 32, 32]} />
                 <meshStandardMaterial
-                    map={texture}
+                    map={texture ?? undefined}
+                    color={texture ? undefined : '#d8d6c0'}
                     transparent
                     roughness={0.85}
                     metalness={0.0}
@@ -298,11 +316,14 @@ function Planet3D({
     planet: Planet & { pos: [number, number, number]; angularSize: number; textureKey: keyof typeof TEXTURES };
     opacity: number
 }) {
+    // Always call hook unconditionally (React rules), use empty string for sun
+    const textureUrl = planet.textureKey !== 'sun' ? TEXTURES[planet.textureKey] : '';
+    const texture = useSafeTexture(textureUrl);
+
     if (planet.textureKey === 'sun') {
         return <SunMesh planet={planet} opacity={opacity} />;
     }
 
-    const texture = useTexture(TEXTURES[planet.textureKey]);
     const isSaturn = planet.name === 'Saturno';
     const isGasGiant = planet.name === 'Júpiter' || planet.name === 'Saturno' || planet.name === 'Urano' || planet.name === 'Neptuno';
 
@@ -315,7 +336,8 @@ function Planet3D({
                 <mesh>
                     <sphereGeometry args={[scale, 64, 64]} />
                     <meshStandardMaterial
-                        map={texture}
+                        map={texture ?? undefined}
+                        color={texture ? undefined : planet.color}
                         transparent
                         opacity={opacity}
                         roughness={0.7}

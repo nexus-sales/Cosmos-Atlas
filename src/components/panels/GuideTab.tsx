@@ -339,7 +339,7 @@ export default function GuideTab() {
                                             <span className="text-[14px] shrink-0 leading-none" style={{ color: planet.color }}>{planet.symbol}</span>
                                             <span className="text-[13px] font-semibold flex-1 truncate">{planet.name}</span>
                                             <span className="text-[10px] text-white/40 shrink-0 font-mono">{planet.mag.toFixed(1)}</span>
-                                            <div title={planet.alt > 0 ? `Visible · Alt ${planet.alt.toFixed(0)}°` : 'Bajo el horizonte'}
+                                            <div suppressHydrationWarning title={planet.alt > 0 ? `Visible · Alt ${planet.alt.toFixed(0)}°` : 'Bajo el horizonte'}
                                                 className={cn('w-1.5 h-1.5 rounded-full shrink-0 ml-0.5', planet.alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15')} />
                                         </button>
                                         {active && <InfoCard obj={planet} />}
@@ -375,7 +375,7 @@ export default function GuideTab() {
                                             <span className="text-[10px] text-white/35 shrink-0 italic hidden sm:block truncate max-w-[64px]">
                                                 {getConstellationDisplayName(star.constellation)}
                                             </span>
-                                            <div title={star.alt > 0 ? `Visible · Alt ${star.alt.toFixed(0)}°` : 'Bajo el horizonte'}
+                                            <div suppressHydrationWarning title={star.alt > 0 ? `Visible · Alt ${star.alt.toFixed(0)}°` : 'Bajo el horizonte'}
                                                 className={cn('w-1.5 h-1.5 rounded-full shrink-0 ml-0.5', star.alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15')} />
                                         </button>
                                         {active && <InfoCard obj={star} />}
@@ -430,6 +430,7 @@ export default function GuideTab() {
                                             <span className="text-[11px] text-indigo-400/60 shrink-0">&#10038;</span>
                                             <span className="text-[13px] font-semibold flex-1 truncate">{getConstellationDisplayName(c.name)}</span>
                                             <div
+                                                suppressHydrationWarning
                                                 title={c.alt > 0 ? `Visible \u00b7 Alt ${c.alt.toFixed(0)}\u00b0` : 'Bajo el horizonte'}
                                                 className={cn(
                                                     'w-1.5 h-1.5 rounded-full shrink-0 ml-0.5',
@@ -499,6 +500,7 @@ function DSOSection({ title, items, total, isOpen, onToggle, isTargeted, onSelec
                                     </div>
                                     <span className="text-[10px] text-white/40 shrink-0 font-mono">{dso.mag.toFixed(1)}</span>
                                     <div
+                                        suppressHydrationWarning
                                         title={dso.alt > 0 ? `Visible \u00b7 Alt ${dso.alt.toFixed(0)}\u00b0` : 'Bajo el horizonte'}
                                         className={cn(
                                             'w-1.5 h-1.5 rounded-full shrink-0 ml-0.5',
