@@ -141,9 +141,21 @@ export default function BackgroundStars() {
     // ── 3. Loop de Culling & Rendering ──────────────────────────────────────
     const frustum = useMemo(() => new THREE.Frustum(), []);
     const projScreenMatrix = useMemo(() => new THREE.Matrix4(), []);
+    const prevCamDir = useRef(new THREE.Vector3());
+    const frameSkip = useRef(0);
 
     useFrame(() => {
         if (!pointsRef.current) return;
+
+        // Check if camera direction changed meaningfully (skip rebuild if static)
+        const camDir = camera.getWorldDirection(new THREE.Vector3());
+        const dot = camDir.dot(prevCamDir.current);
+        frameSkip.current++;
+        // Rebuild every 4 frames minimum, or when camera moves more than ~0.1°
+        const cameraMoved = dot < 0.9999985; // ~0.1° threshold
+        if (!cameraMoved && frameSkip.current % 4 !== 0) return;
+        frameSkip.current = 0;
+        prevCamDir.current.copy(camDir);
 
         // Actualizar frustum
         projScreenMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);

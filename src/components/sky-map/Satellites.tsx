@@ -48,9 +48,7 @@ export default function Satellites() {
     const pointsRef = useRef<THREE.Points>(null);
     const renderedSatsRef = useRef<SatellitePoint[]>([]);
     const prevVisibleRef = useRef({ special: -1, starlink: -1 });
-    const time = useAppStore((state) => state.time);
-    const observer = useAppStore((state) => state.observer);
-    const nightMode = useAppStore((state) => state.settings.nightMode);
+    // showSatellites/showStarlink drive JSX conditionals → subscribe normally
     const showSatellites = useAppStore((state) => state.settings.showSatellites);
     const showStarlink = useAppStore((state) => state.settings.showStarlink);
     const setSatelliteInfo = useAppStore((state) => state.setSatelliteInfo);
@@ -62,6 +60,11 @@ export default function Satellites() {
 
     const [specialSats, setSpecialSats] = useState<SatellitePoint[]>([]);
     const [starlinkSats, setStarlinkSats] = useState<SatellitePoint[]>([]);
+
+    // Pre-cached RGB values to avoid new THREE.Color() allocations every frame
+    const satColorsRef = useRef<{ r: number; g: number; b: number }[]>([]);
+    const nightColorsRef = useRef<{ r: number; g: number; b: number }[]>([]);
+    const colorCache = useRef(new THREE.Color());
 
     // ── 1. Carga de TLEs ────────────────────────────────────────────────────
     useEffect(() => {
@@ -100,6 +103,19 @@ export default function Satellites() {
     useEffect(() => {
         setSatelliteInfo({ loadedSpecial: specialSats.length });
     }, [setSatelliteInfo, specialSats.length]);
+
+    // Rebuild color cache whenever satellite lists change (avoid per-frame allocations)
+    useEffect(() => {
+        const allSats = [...specialSats, ...starlinkSats];
+        satColorsRef.current = allSats.map(sat => {
+            const c = colorCache.current.set(sat.color);
+            return { r: c.r, g: c.g, b: c.b };
+        });
+        nightColorsRef.current = allSats.map(() => {
+            const c = colorCache.current.set('#ff0000');
+            return { r: c.r, g: c.g, b: c.b };
+        });
+    }, [specialSats, starlinkSats]);
 
     useEffect(() => {
         if (!showStarlink) {
@@ -173,20 +189,24 @@ export default function Satellites() {
         let count = 0;
         let visibleSpecial = 0;
         let visibleStarlink = 0;
-        const gmst = satellite.gstime(time);
+        // Read time/observer/nightMode from store without subscribing to re-renders
+        const { time: currentTime, observer: currentObserver, settings } = useAppStore.getState();
+        const isNight = settings.nightMode;
+        const gmst = satellite.gstime(currentTime);
         const observerGd = {
-            longitude: satellite.degreesToRadians(observer.lon),
-            latitude: satellite.degreesToRadians(observer.lat),
+            longitude: satellite.degreesToRadians(currentObserver.lon),
+            latitude: satellite.degreesToRadians(currentObserver.lat),
             height: 0
         };
 
         const allSats = [...specialSats, ...starlinkSats];
+        const cachedColors = isNight ? nightColorsRef.current : satColorsRef.current;
         renderedSatsRef.current.length = 0;
 
-        allSats.forEach((sat) => {
+        allSats.forEach((sat, satIdx) => {
             if (count >= MAX_SATS) return;
 
-            const pv = satellite.propagate(sat.satrec, time);
+            const pv = satellite.propagate(sat.satrec, currentTime);
             if (!pv || !pv.position) return;
 
             const posEci = pv.position as satellite.EciVec3<number>;
@@ -208,8 +228,11 @@ export default function Satellites() {
                 const z3 = -cosEl * Math.cos(az) * RADIUS; // Norte → -Z
                 posAttr.setXYZ(count, x3, y3, z3);
 
-                const color = new THREE.Color(nightMode ? '#ff0000' : sat.color);
-                colAttr.setXYZ(count, color.r, color.g, color.b);
+                // Use pre-cached colors — no new THREE.Color() per frame
+                const cachedColor = cachedColors[satIdx];
+                if (cachedColor) {
+                    colAttr.setXYZ(count, cachedColor.r, cachedColor.g, cachedColor.b);
+                }
                 sizAttr.setX(count, sat.size);
                 renderedSatsRef.current[count] = sat;
                 if (sat.kind === 'special') visibleSpecial++;

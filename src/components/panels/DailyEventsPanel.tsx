@@ -8,28 +8,31 @@ import { Sun, Moon, Star, CloudRain, Eye, EyeOff, Clock, Calendar } from 'lucide
 import { cn } from '@/lib/utils';
 
 export default function DailyEventsPanel() {
-    const time = useAppStore((state) => state.time);
+    // Only re-render when the date (day) or hour changes, NOT every second
+    const dateKey = useAppStore((state) => state.time.toDateString());
+    const hour = useAppStore((state) => state.time.getHours());
+    const timeDisplay = useAppStore((state) => state.time);
     const observer = useAppStore((state) => state.observer);
     const [events, setEvents] = useState<CelestialEvent[]>([]);
     const [bestEvents, setBestEvents] = useState<CelestialEvent[]>([]);
 
     useEffect(() => {
-        const allEvents = getDailyEvents(time, observer);
-        const best = getBestViewingEvents(time, observer);
+        const currentTime = useAppStore.getState().time;
+        const allEvents = getDailyEvents(currentTime, observer);
+        const best = getBestViewingEvents(currentTime, observer);
         setEvents(allEvents);
         setBestEvents(best);
-    }, [time, observer]);
+    }, [dateKey, observer]);
 
     const todayStr = useMemo(() => {
-        return time.toLocaleDateString('es-ES', {
+        return timeDisplay.toLocaleDateString('es-ES', {
             weekday: 'long',
             day: 'numeric',
             month: 'long',
             year: 'numeric'
         });
-    }, [time]);
+    }, [dateKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const hour = time.getHours();
     const isNight = hour >= 20 || hour <= 6;
 
     return (
@@ -49,7 +52,7 @@ export default function DailyEventsPanel() {
                     )}>
                         {isNight ? '🌙 Noche' : '☀️ Día'}
                     </span>
-                    <span className="text-white/40 font-mono">{formatEventTime(time)}</span>
+                    <span className="text-white/40 font-mono">{formatEventTime(timeDisplay)}</span>
                 </div>
             </div>
 

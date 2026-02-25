@@ -19,11 +19,14 @@ import FOVOverlay from '@/components/sky-map/FOVOverlay';
 import Compass from '@/components/panels/Compass';
 import Satellites from '@/components/sky-map/Satellites';
 import MeteorShower from '@/components/effects/MeteorShower';
+import Comets from '@/components/sky-map/Comets';
+import AuroraBorealis from '@/components/sky-map/AuroraBorealis';
 import { useAppStore } from '@/stores/useAppStore';
 import { Bloom, EffectComposer, Noise, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { getLST } from '@/lib/astronomy/time';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
+import { deviceOrientationRef } from '@/hooks/useDeviceOrientation';
 
 /**
  * Zoom por FOV — rueda de ratón + pinch táctil.
@@ -139,11 +142,10 @@ function SetupRenderer() {
  */
 function CelestialGroup({ children }: { children: React.ReactNode }) {
     const groupRef = useRef<THREE.Group>(null);
-    const observer = useAppStore((state) => state.observer);
-    const time = useAppStore((state) => state.time);
 
     useFrame(() => {
         if (!groupRef.current) return;
+        const { time, observer } = useAppStore.getState();
         const lst = getLST(time, observer.lon);
         groupRef.current.rotation.x = THREE.MathUtils.degToRad(90 - observer.lat);
         groupRef.current.rotation.y = THREE.MathUtils.degToRad(-lst);
@@ -159,8 +161,6 @@ function CelestialGroup({ children }: { children: React.ReactNode }) {
 function CameraNavigator() {
     const { camera } = useThree();
     const targetedObject = useAppStore((s) => s.targetedObject);
-    const observer = useAppStore((s) => s.observer);
-    const time = useAppStore((s) => s.time);
 
     const isFlying = useRef(false);
     const prevTarget = useRef<typeof targetedObject>(null);
@@ -176,6 +176,7 @@ function CameraNavigator() {
         if (!isFlying.current || !targetedObject) return;
 
         // World-space direction: apply CelestialGroup's rotation to equatorial position
+        const { time, observer } = useAppStore.getState();
         const lst = getLST(time, observer.lon);
         const euler = new THREE.Euler(
             THREE.MathUtils.degToRad(90 - observer.lat),
@@ -207,11 +208,57 @@ function CameraNavigator() {
     return null;
 }
 
+/**
+ * When followOrientation is active, reads the module-level deviceOrientationRef
+ * (written by the DeviceOrientation event listener) and applies the device heading
+ * and elevation to the camera position each frame.
+ *
+ * Mapping (Three.js scene: North=-Z, East=+X, Zenith=+Y):
+ *   elevation = clamp(90 - beta, -10, 90)
+ *   azimuth   = alpha (0=North, clockwise)
+ *   cam_pos   = (-cos(el)*sin(az), -sin(el), cos(el)*cos(az)) * 0.01
+ *
+ * A lerp smoothing factor of 0.12 removes gyroscope jitter.
+ */
+function OrientationDriver() {
+    const { camera } = useThree();
+    const followOrientation = useAppStore((s) => s.followOrientation);
+    const azRef = useRef(0);
+    const elRef = useRef(45);
+
+    useFrame(() => {
+        if (!followOrientation) return;
+
+        const { alpha, beta } = deviceOrientationRef;
+
+        // elevation: 90° when phone flat face-up → looking at zenith
+        //            0° when phone vertical      → looking at horizon
+        const targetEl = Math.max(-10, Math.min(90, 90 - beta));
+
+        // Smooth angle lerp — handle 359→1 wrap-around for azimuth
+        const dAz = ((alpha - azRef.current) % 360 + 540) % 360 - 180;
+        azRef.current = (azRef.current + dAz * 0.12 + 360) % 360;
+        elRef.current += (targetEl - elRef.current) * 0.12;
+
+        const elRad = THREE.MathUtils.degToRad(elRef.current);
+        const azRad = THREE.MathUtils.degToRad(azRef.current);
+
+        camera.position.set(
+            -Math.cos(elRad) * Math.sin(azRad) * 0.01,
+            -Math.sin(elRad) * 0.01,
+            Math.cos(elRad) * Math.cos(azRad) * 0.01,
+        );
+    });
+
+    return null;
+}
+
 export default function SkyCanvas() {
     const showGrid = useAppStore((state) => state.settings.showGrid);
     const showMilkyWay = useAppStore((state) => state.settings.showMilkyWay);
     const showEcliptic = useAppStore((state) => state.settings.showEcliptic);
     const showConstellations = useAppStore((state) => state.settings.showConstellations);
+    const followOrientation = useAppStore((state) => state.followOrientation);
 
     return (
         <div className="w-full h-full bg-[#02050a] relative">
@@ -221,23 +268,26 @@ export default function SkyCanvas() {
             >
                 <Suspense fallback={null}>
                     <SetupRenderer />
-                    
+
                     {/* Iluminación para planetas y Luna (meshStandardMaterial) */}
                     {/* Luz ambiental suave para el lado oscuro */}
                     <ambientLight intensity={0.15} />
                     {/* Luz direccional que simula el Sol - viene desde +X (Este) */}
-                    <directionalLight 
-                        position={[100, 0, 0]} 
-                        intensity={3.5} 
+                    <directionalLight
+                        position={[100, 0, 0]}
+                        intensity={3.5}
                         color="#ffffff"
                     />
 
+                    {/* In AR/orientation mode, disable drag rotation so OrientationDriver owns the camera */}
                     <OrbitControls
                         enableZoom={false}
                         enablePan={false}
+                        enableRotate={!followOrientation}
                         rotateSpeed={-0.4}
                         target={[0, 0, 0]}
                     />
+                    <OrientationDriver />
                     <FovZoom />
 
                     {/* Esfera de fondo — no rotar, siempre envuelve la escena */}
@@ -255,6 +305,8 @@ export default function SkyCanvas() {
                         {showGrid && <CelestialGrid />}
                         {showEcliptic && <Ecliptic />}
                         <TargetPointer />
+                        {/* Cometas con colas dinámicas */}
+                        <Comets />
                     </CelestialGroup>
 
                     {/* Satélites en espacio mundo horizontal (Alt/Az), NO dentro del CelestialGroup */}
@@ -264,8 +316,14 @@ export default function SkyCanvas() {
                     {/* Horizonte en espacio mundo (plano horizontal fijo) */}
                     <Horizon />
 
-                    {/* Lluvia de meteoros real (IMO data) — componente R3F */}
-                    <MeteorShower />
+                    {/* Aurora Boreal/Austral — TEMPORALMENTE DESACTIVADO PARA DEBUG */}
+                    {/* <AuroraBorealis /> */}
+
+                    {/* Lluvia de meteoros real — TEMPORALMENTE DESACTIVADO PARA DEBUG */}
+                    {/* <MeteorShower /> */}
+
+                    {/* Cometas — TEMPORALMENTE DESACTIVADO PARA DEBUG */}
+                    {/* <Comets /> */}
 
                     <EffectComposer>
                         {/* Bloom: umbral alto → solo estrellas brillantes (mag<2) tienen corona.

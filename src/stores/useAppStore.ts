@@ -43,6 +43,8 @@ interface AppState {
         starlinkStatus: 'idle' | 'loading' | 'ok' | 'error';
     };
     setSatelliteInfo: (patch: Partial<AppState['satelliteInfo']>) => void;
+    followOrientation: boolean;
+    setFollowOrientation: (v: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -104,4 +106,6 @@ export const useAppStore = create<AppState>((set) => ({
         set((state) => ({
             satelliteInfo: { ...state.satelliteInfo, ...patch },
         })),
+    followOrientation: false,
+    setFollowOrientation: (followOrientation) => set({ followOrientation }),
 }));
