@@ -1,126 +1,37 @@
 import { DSO } from '../types/celestial';
 
 export const DSOS: DSO[] = [
-    { id: "M42", name: "Nebulosa de Orión", ra: 83.82, dec: -5.39, type: "nebula", mag: 4.0, desc: "Vivero estelar. 1,344 al. Visible a simple vista.", color: "#88ffaa", sizeArcmin: 65 },
-    { id: "M45", name: "Pléyades", ra: 56.75, dec: 24.11, type: "cluster", mag: 1.6, desc: "Las Siete Hermanas. 444 al. Mencionadas en la Biblia.", color: "#aaccff", sizeArcmin: 110 },
-    { id: "M31", name: "Galaxia de Andrómeda", ra: 10.68, dec: 41.27, type: "galaxy", mag: 3.4, desc: "2.5 millones al. Chocará con la Vía Láctea en 4,500M años.", color: "#ffcc88", sizeArcmin: 190 },
-    { id: "M13", name: "Cúmulo de Hércules", ra: 250.42, dec: 36.46, type: "cluster", mag: 5.8, desc: "300,000 estrellas. El Mensaje de Arecibo apunta aquí.", color: "#aaccff", sizeArcmin: 20 },
-    { id: "M57", name: "Nebulosa del Anillo", ra: 283.40, dec: 33.03, type: "nebula", mag: 8.8, desc: "Envuelta de estrella moribunda. Más fotografiada del cielo.", color: "#88ffcc", sizeArcmin: 1.5 },
-    { id: "M1", name: "Nebulosa del Cangrejo", ra: 83.63, dec: 22.01, type: "nebula", mag: 8.4, desc: "Resto de la supernova de 1054 d.C. vista de día.", color: "#88ffaa", sizeArcmin: 6 },
-    { id: "M51", name: "Galaxia del Remolino", ra: 202.47, dec: 47.20, type: "galaxy", mag: 8.4, desc: "Primera espiral observada (1845). 23M años luz.", color: "#ffbb88", sizeArcmin: 11 },
-    { id: "M104", name: "Galaxia Sombrero", ra: 189.99, dec: -11.62, type: "galaxy", mag: 8.0, desc: "Agujero negro de 1,000M masas solares.", color: "#ffcc88", sizeArcmin: 9 },
-    { id: "M8", name: "Nebulosa Laguna", ra: 271.07, dec: -24.38, type: "nebula", mag: 5.0, desc: "Visible a simple vista en Sagitario. 4,100 al.", color: "#88ffaa", sizeArcmin: 90 },
-    { id: "M81", name: "Galaxia de Bode", ra: 149.88, dec: 69.07, type: "galaxy", mag: 6.9, desc: "Espiral a 12M al. Visible con binoculares.", color: "#ffbb88", sizeArcmin: 27 },
-    { id: "M44", name: "Pesebre", ra: 130.05, dec: 19.99, type: "cluster", mag: 3.1, desc: "1,000 estrellas. Planetas con agua confirmados.", color: "#aaccff", sizeArcmin: 95 },
-    { id: "M27", name: "Nebulosa Mancuerna", ra: 299.90, dec: 22.72, type: "nebula", mag: 7.4, desc: "Primera nebulosa planetaria descubierta (1764).", color: "#88ffcc", sizeArcmin: 8 },
-    { id: "ωCen", name: "Omega Centauri", ra: 201.70, dec: -47.48, type: "cluster", mag: 3.7, desc: "10M estrellas. Núcleo de galaxia absorbida.", color: "#aaccff", sizeArcmin: 36 },
-    { id: "M33", name: "Galaxia del Triángulo", ra: 23.46, dec: 30.66, type: "galaxy", mag: 5.7, desc: "2.7M al. La más lejana visible a simple vista.", color: "#ffbb88", sizeArcmin: 70 },
-    { id: "M20", name: "Nebulosa Trífida", ra: 270.61, dec: -23.03, type: "nebula", mag: 6.3, desc: "Tres lóbulos separados por bandas de polvo oscuro.", color: "#88ffaa", sizeArcmin: 28 },
-
-    // ── Más galaxias ─────────────────────────────────────────────────────────────
-    { id: "LMC", name: "Nube de Magallanes Grande", ra: 80.893, dec: -69.756, type: "galaxy", mag: 0.9, desc: "Galaxia satélite de la Vía Láctea. 160.000 al. Visible a ojo desnudo en el hemisferio sur.", color: "#ffcc88", sizeArcmin: 645 },
-    { id: "SMC", name: "Nube de Magallanes Pequeña", ra: 13.158, dec: -72.800, type: "galaxy", mag: 2.7, desc: "Galaxia satélite irregular. 200.000 al. Fernand Magallanes la describió en 1519.", color: "#ffcc88", sizeArcmin: 320 },
-    { id: "M82", name: "Galaxia del Cigarro", ra: 148.968, dec: 69.681, type: "galaxy", mag: 8.4, desc: "Galaxia estarburst — forma estrellas 10× más rápido que la Vía Láctea. 12M al.", color: "#ff9966", sizeArcmin: 11 },
-    { id: "M101", name: "Galaxia del Molinete", ra: 210.802, dec: 54.349, type: "galaxy", mag: 7.9, desc: "Espiral de cara, 101× descubierta por Méchain (1781). 21M al.", color: "#ffbb88", sizeArcmin: 28 },
-    { id: "M87", name: "Virgo A", ra: 187.706, dec: 12.391, type: "galaxy", mag: 8.6, desc: "Primera foto de un agujero negro (2019). Chorro relativista de 5.000 al. 53M al.", color: "#ffcc88", sizeArcmin: 7 },
-    { id: "M64", name: "Galaxia Ojo Negro", ra: 194.183, dec: 21.683, type: "galaxy", mag: 8.5, desc: "Oscuro anillo de polvo en contraste con el núcleo brillante. 24M al.", color: "#ffbb88", sizeArcmin: 10 },
-    { id: "CenA", name: "Centauro A", ra: 201.363, dec: -43.019, type: "galaxy", mag: 7.0, desc: "Radiogalaxia más cercana. Emisora intensa de rayos X. Agujero negro de 55M masas solares. 13M al.", color: "#ffcc88", sizeArcmin: 25 },
-
-    // ── Más cúmulos ───────────────────────────────────────────────────────────────
-    { id: "M3", name: "Cúmulo M3", ra: 205.549, dec: 28.377, type: "cluster", mag: 6.2, desc: "500.000 estrellas. El cúmulo globular más rico del hemisferio norte. 33.900 al.", color: "#aaccff", sizeArcmin: 18 },
-    { id: "M4", name: "Cúmulo M4", ra: 245.897, dec: -26.526, type: "cluster", mag: 5.9, desc: "El más cercano al Sol de los globulares grandes (7.200 al). Junto a Antares.", color: "#aaccff", sizeArcmin: 36 },
-    { id: "M5", name: "Cúmulo M5", ra: 229.638, dec: 2.082, type: "cluster", mag: 5.7, desc: "100.000+ estrellas. Uno de los más antiguos conocidos: 13.000 Ma.", color: "#aaccff", sizeArcmin: 23 },
-    { id: "M11", name: "Cúmulo Pato Silvestre", ra: 282.767, dec: -6.272, type: "cluster", mag: 5.8, desc: "2.900 estrellas en solo 25 al. luz de diámetro. El cúmulo abierto más rico. 6.200 al.", color: "#aaccff", sizeArcmin: 14 },
-    { id: "M92", name: "Cúmulo M92", ra: 259.281, dec: 43.136, type: "cluster", mag: 6.4, desc: "250.000 estrellas en Hércules. A menudo ignorado por estar cerca del famoso M13.", color: "#aaccff", sizeArcmin: 14 },
-    { id: "NGC869", name: "Cúmulo Doble de Perseo", ra: 34.750, dec: 57.128, type: "cluster", mag: 4.3, desc: "h+χ Persei. Dos cúmulos jóvenes separados (200-500 a.l.). Espectaculares en binoculares.", color: "#aaccff", sizeArcmin: 30 },
-    { id: "M6", name: "Cúmulo Mariposa", ra: 265.081, dec: -32.250, type: "cluster", mag: 4.2, desc: "Forma de mariposa. 80 estrellas visible a ojo desnudo en Escorpio. 1.600 al.", color: "#aaccff", sizeArcmin: 25 },
-    { id: "M7", name: "Cúmulo de Ptolomeo", ra: 268.462, dec: -34.783, type: "cluster", mag: 3.3, desc: "Descrito por Ptolomeo en 130 d.C. Uno de los cúmulos más brillantes del cielo. 1.000 al.", color: "#aaccff", sizeArcmin: 80 },
-    { id: "M41", name: "Cúmulo M41", ra: 101.508, dec: -20.750, type: "cluster", mag: 4.5, desc: "¡Bajo Sirio! 100 estrellas con gigante naranja central. Mencionado por Aristóteles. 2.300 al.", color: "#aaccff", sizeArcmin: 38 },
-    { id: "M35", name: "Cúmulo M35", ra: 92.225, dec: 24.350, type: "cluster", mag: 5.1, desc: "200 estrellas en Géminis. El vecino NGC 2158 parece polvillo de fondo a 15.000 al.", color: "#aaccff", sizeArcmin: 28 },
-    { id: "M36", name: "Cúmulo M36 (Auriga)", ra: 84.075, dec: 34.133, type: "cluster", mag: 6.0, desc: "Joven y compacto en Auriga. 60 estrellas. 4.100 al.", color: "#aaccff", sizeArcmin: 12 },
-    { id: "M37", name: "Cúmulo M37 (Auriga)", ra: 88.075, dec: 32.550, type: "cluster", mag: 5.6, desc: "El más rico de los tres Messier de Auriga. 500 estrellas. 4.500 al.", color: "#aaccff", sizeArcmin: 24 },
-    { id: "M38", name: "Cúmulo M38 (Auriga)", ra: 82.179, dec: 35.850, type: "cluster", mag: 6.4, desc: "Aspecto de cruz o pi griega visto con telescopio. 4.200 al.", color: "#aaccff", sizeArcmin: 21 },
-
-    // ── Más nebulosas ─────────────────────────────────────────────────────────────
-    { id: "M16", name: "Nebulosa del Águila", ra: 274.700, dec: -13.816, type: "nebula", mag: 6.0, desc: "Los «Pilares de la Creación» (Hubble 1995). Vivero estelar activo. 7.000 al.", color: "#88ffaa", sizeArcmin: 7 },
-    { id: "M17", name: "Nebulosa del Cisne", ra: 275.108, dec: -16.167, type: "nebula", mag: 6.0, desc: "También llamada Omega o Herradura. Región de formación estelar intensa. 5.500 al.", color: "#88ffcc", sizeArcmin: 11 },
-    { id: "N7293", name: "Nebulosa de la Hélice", ra: 337.408, dec: -20.833, type: "nebula", mag: 7.3, desc: "La «hélice de Dios». Nebulosa planetaria más cercana a la Tierra (650 al). 2.5 al de diámetro.", color: "#88ffcc", sizeArcmin: 15 },
-    { id: "N7000", name: "Nebulosa América del Norte", ra: 314.821, dec: 44.529, type: "nebula", mag: 4.0, desc: "Su forma recuerda el continente. A 2.200 al en la región de Deneb. Visible con binoculares.", color: "#ff8888", sizeArcmin: 120 },
-    { id: "N3372", name: "Nebulosa Eta Carinae", ra: 160.958, dec: -59.867, type: "nebula", mag: 1.0, desc: "La mayor nebulosa brillante de la Vía Láctea. 7.500 al. Eta Car podría explotar pronto.", color: "#ffcc44", sizeArcmin: 120 },
-    { id: "IC1805", name: "Nebulosa del Corazón", ra: 38.175, dec: 61.450, type: "nebula", mag: 6.5, desc: "Región de ionización de hidrógeno en Cassiopeia. 7.500 al. Nido de estrellas masivas.", color: "#ff6688", sizeArcmin: 150 },
-    { id: "N6992", name: "Nebulosa del Velo (Este)", ra: 314.092, dec: 31.717, type: "nebula", mag: 7.0, desc: "Remanente de supernova del Cisne — explosion hace ~10.000 años. 2.100 al.", color: "#88ddff", sizeArcmin: 60 },
-
-    // ── GALAXIAS HEMISFERIO NORTE ──────────────────────────────────────────────
-    { id: "M65", name: "Galaxia M65", ra: 165.875, dec: 13.083, type: "galaxy", mag: 9.3, desc: "Triplete de Leo. Espiral a 35M al. Descubierta por Méchain en 1780.", color: "#ffbb88", sizeArcmin: 9 },
-    { id: "M66", name: "Galaxia M66", ra: 166.417, dec: 12.993, type: "galaxy", mag: 8.9, desc: "La más brillante del Triplete de Leo. Brazos espirales distorsionados. 35M al.", color: "#ffbb88", sizeArcmin: 9 },
-    { id: "M95", name: "Galaxia M95", ra: 159.629, dec: 11.716, type: "galaxy", mag: 9.7, desc: "Espiral barrada en Leo. Anillo de formación estelar alrededor del núcleo. 32M al.", color: "#ffbb88", sizeArcmin: 5 },
-    { id: "M96", name: "Galaxia M96", ra: 160.688, dec: 11.927, type: "galaxy", mag: 9.2, desc: "La más brillante del grupo Leo I. Asimétrica por influencia gravitatoria. 31M al.", color: "#ffbb88", sizeArcmin: 8 },
-    { id: "M105", name: "Galaxia M105", ra: 160.817, dec: 12.925, type: "galaxy", mag: 9.3, desc: "Elíptica en Leo. Contiene un agujero negro de 50M masas solares. 32M al.", color: "#ffcc88", sizeArcmin: 5 },
-    { id: "M106", name: "Galaxia M106", ra: 186.713, dec: 47.300, type: "galaxy", mag: 8.4, desc: "Espiral en Canes Venatici. Núcleo activo con chorros de materia. 24M al.", color: "#ffbb88", sizeArcmin: 19 },
-    { id: "M108", name: "Galaxia M108", ra: 169.463, dec: 55.675, type: "galaxy", mag: 10.0, desc: "Espiral de canto en la Osa Mayor. Polvo interestelar la oscurece. 46M al.", color: "#ffbb88", sizeArcmin: 8 },
-    { id: "M109", name: "Galaxia M109", ra: 170.063, dec: 53.675, type: "galaxy", mag: 9.8, desc: "Espiral barrada cerca de Merak (Osa Mayor). Grupo de 50 galaxias. 83M al.", color: "#ffbb88", sizeArcmin: 7 },
-    { id: "NGC2403", name: "Galaxia NGC 2403", ra: 114.150, dec: 65.600, type: "galaxy", mag: 8.4, desc: "Espiral en Camelopardalis. Similar a M33 pero más cercana. 8M al.", color: "#ffbb88", sizeArcmin: 21 },
-    { id: "NGC55", name: "Galaxia NGC 55", ra: 21.517, dec: -39.200, type: "galaxy", mag: 7.9, desc: "Irregular barrada en Sculptor. Vista de canto desde la Tierra. 6M al.", color: "#ffcc88", sizeArcmin: 32 },
-    { id: "M60", name: "Galaxia M60", ra: 187.925, dec: 11.567, type: "galaxy", mag: 8.8, desc: "Elíptica gigante en Virgo. Tercera más brillante del cúmulo. 55M al.", color: "#ffcc88", sizeArcmin: 7 },
-    { id: "M49", name: "Galaxia M49", ra: 187.725, dec: 8.000, type: "galaxy", mag: 8.4, desc: "La más brillante del cúmulo Virgo. Elíptica con agujero negro de 565M masas. 56M al.", color: "#ffcc88", sizeArcmin: 10 },
-    { id: "M84", name: "Galaxia M84", ra: 187.296, dec: 12.667, type: "galaxy", mag: 9.1, desc: "Lenticular en Virgo. Chorro de materia del núcleo activo. 60M al.", color: "#ffcc88", sizeArcmin: 5 },
-    { id: "M86", name: "Galaxia M86", ra: 187.613, dec: 12.950, type: "galaxy", mag: 8.9, desc: "Elíptica/lenticular en Virgo. Acercándose a 419 km/s. 52M al.", color: "#ffcc88", sizeArcmin: 9 },
-    { id: "NGC1275", name: "Galaxia NGC 1275", ra: 49.843, dec: 41.508, type: "galaxy", mag: 11.6, desc: "Perseus A. Galaxia activa central del cúmulo Perseo. 230M al.", color: "#ffcc88", sizeArcmin: 3 },
-    { id: "M32", name: "Galaxia M32", ra: 10.680, dec: 40.867, type: "galaxy", mag: 8.1, desc: "Satélite de Andrómeda. Elíptica compacta. Primera elíptica descubierta. 2.5M al.", color: "#ffcc88", sizeArcmin: 8 },
-    { id: "M110", name: "Galaxia M110", ra: 10.150, dec: 41.683, type: "galaxy", mag: 8.5, desc: "Satélite de Andrómeda. Elíptica enana con formación estelar reciente. 2.7M al.", color: "#ffcc88", sizeArcmin: 17 },
-    { id: "NGC891", name: "Galaxia NGC 891", ra: 32.250, dec: 42.350, type: "galaxy", mag: 9.9, desc: "Espiral de canto en Andrómeda. Banda de polvo prominente. 30M al.", color: "#ffbb88", sizeArcmin: 14 },
-    { id: "M74", name: "Galaxia M74", ra: 23.983, dec: 15.783, type: "galaxy", mag: 9.4, desc: "Espiral de cara en Piscis. Brazos bien definidos. 32M al.", color: "#ffbb88", sizeArcmin: 10 },
-    { id: "M77", name: "Galaxia M77", ra: 41.056, dec: -0.017, type: "galaxy", mag: 8.9, desc: "Espiral Seyfert en Cetus. Núcleo activo muy luminoso. 47M al.", color: "#ffbb88", sizeArcmin: 7 },
-
-    // ── NEBULOSAS HEMISFERIO NORTE ──────────────────────────────────────────────
-    { id: "N1499", name: "Nebulosa California", ra: 66.000, dec: 36.400, type: "nebula", mag: 6.0, desc: "Emisión en Perseo. Forma similar al estado de California. 1.000 al.", color: "#ff8888", sizeArcmin: 160 },
-    { id: "N1514", name: "Nebulosa de la Cabeza de Bruja", ra: 65.750, dec: 34.750, type: "nebula", mag: 7.0, desc: "Reflexión en Tauro. Iluminada por las Pléyades. 440 al.", color: "#88ccff", sizeArcmin: 30 },
-    { id: "N2237", name: "Nebulosa de la Roseta", ra: 97.992, dec: 4.950, type: "nebula", mag: 9.0, desc: "Región HII en Monoceros. Cúmulo NGC 2244 en el centro. 5.200 al.", color: "#ff88aa", sizeArcmin: 80 },
-    { id: "N2261", name: "Nebulosa de Hubble", ra: 100.167, dec: 61.483, type: "nebula", mag: 9.0, desc: "Reflexión en Camelopardalis. Iluminada por estrella variable. 2.500 al.", color: "#88ccff", sizeArcmin: 4 },
-    { id: "N6543", name: "Nebulosa Ojo de Gato", ra: 269.639, dec: 66.633, type: "nebula", mag: 8.1, desc: "Planetaria en Draco. Estructuras concéntricas complejas. 3.300 al.", color: "#88ffcc", sizeArcmin: 0.3 },
-    { id: "N6572", name: "Nebulosa de la Pequeña Mancuerna", ra: 270.967, dec: 20.917, type: "nebula", mag: 9.2, desc: "Planetaria en Vulpecula. Similar a M27 pero más pequeña. 3.400 al.", color: "#88ffcc", sizeArcmin: 1 },
-    { id: "N6888", name: "Nebulosa de la Media Luna", ra: 303.625, dec: 30.717, type: "nebula", mag: 7.0, desc: "Emisión en Cygnus. Creciente de materia expulsada por WR 136. 5.000 al.", color: "#88ffaa", sizeArcmin: 18 },
-    { id: "IC1396", name: "Nebulosa del Trompa de Elefante", ra: 320.250, dec: 57.500, type: "nebula", mag: 3.5, desc: "Emisión en Cepheus. Glóbulos de Bok formando estrellas. 2.400 al.", color: "#ff8888", sizeArcmin: 180 },
-    { id: "N7331", name: "Nebulosa de la Estrella Explosiva", ra: 338.583, dec: 48.867, type: "nebula", mag: 9.0, desc: "Reflexión en Lacerta. Asociada con nova de 1910. 1.600 al.", color: "#88ccff", sizeArcmin: 8 },
-    { id: "N2024", name: "Nebulosa de la Flama", ra: 85.250, dec: -1.417, type: "nebula", mag: 9.0, desc: "Emisión en Orión. Banda de polvo oscuro la divide. 1.400 al.", color: "#ff8888", sizeArcmin: 30 },
-    { id: "NGC1333", name: "Nebulosa NGC 1333", ra: 52.375, dec: 31.233, type: "nebula", mag: 9.0, desc: "Reflexión en Perseo. Vivero estelar con cientos de protoestrellas. 1.000 al.", color: "#88ccff", sizeArcmin: 15 },
-    { id: "Sh2_106", name: "Nebulosa Sh2-106", ra: 302.625, dec: 37.200, type: "nebula", mag: 9.5, desc: "Emisión en Cygnus. Forma de reloj de arena. 2.000 al.", color: "#88ffaa", sizeArcmin: 6 },
-    { id: "IC5146", name: "Nebulosa del Saco de Carbón", ra: 321.958, dec: 47.267, type: "nebula", mag: 7.2, desc: "Reflexión/emisión en Cygnus. Cúmulo abierto en el centro. 3.300 al.", color: "#88ccff", sizeArcmin: 12 },
-    { id: "N1931", name: "Nebulosa N1931", ra: 81.208, dec: 34.233, type: "nebula", mag: 10.0, desc: "Emisión/reflexión en Auriga. Miniatura de Orión. 7.000 al.", color: "#ff88aa", sizeArcmin: 3 },
-    { id: "Ou4", name: "Nebulosa del Calamar", ra: 312.500, dec: 33.500, type: "nebula", mag: 11.0, desc: "Emisión en Cygnus. Descubierta en 2011. Forma de calamar gigante. 2.300 al.", color: "#ff8888", sizeArcmin: 60 },
-
-    // ── CÚMULOS HEMISFERIO NORTE ────────────────────────────────────────────────
-    { id: "M52", name: "Cúmulo M52", ra: 351.200, dec: 61.583, type: "cluster", mag: 6.9, desc: "Abierto en Cassiopeia. 100+ estrellas. Borde de la Vía Láctea. 5.000 al.", color: "#aaccff", sizeArcmin: 13 },
-    { id: "M103", name: "Cúmulo M103", ra: 23.567, dec: 60.700, type: "cluster", mag: 7.4, desc: "Abierto en Cassiopeia. El más lejano de Messier: 10.000 al.", color: "#aaccff", sizeArcmin: 6 },
-    { id: "NGC457", name: "Cúmulo del Búho", ra: 33.583, dec: 58.067, type: "cluster", mag: 6.4, desc: "Abierto en Cassiopeia. Forma de búho con estrellas como ojos. 9.000 al.", color: "#aaccff", sizeArcmin: 20 },
-    { id: "M50", name: "Cúmulo M50", ra: 105.683, dec: -8.167, type: "cluster", mag: 5.9, desc: "Abierto en Monoceros. 100 estrellas. Visible con binoculares. 3.200 al.", color: "#aaccff", sizeArcmin: 16 },
-    { id: "M46", name: "Cúmulo M46", ra: 113.667, dec: -14.800, type: "cluster", mag: 6.0, desc: "Abierto en Puppis. 500 estrellas. Nebulosa planetaria NGC 2438 dentro. 5.500 al.", color: "#aaccff", sizeArcmin: 27 },
-    { id: "M47", name: "Cúmulo M47", ra: 113.917, dec: -14.833, type: "cluster", mag: 4.2, desc: "Abierto en Puppis. Muy brillante y disperso. 1.600 al.", color: "#aaccff", sizeArcmin: 30 },
-    { id: "M48", name: "Cúmulo M48", ra: 126.750, dec: -5.783, type: "cluster", mag: 5.8, desc: "Abierto en Hydra. 80 estrellas. Visible a simple vista. 1.500 al.", color: "#aaccff", sizeArcmin: 54 },
-    { id: "M67", name: "Cúmulo M67", ra: 132.750, dec: 11.817, type: "cluster", mag: 6.9, desc: "Abierto en Cáncer. Uno de los más antiguos: 4.000 Ma. 2.800 al.", color: "#aaccff", sizeArcmin: 30 },
-    { id: "M34", name: "Cúmulo M34", ra: 52.417, dec: 42.783, type: "cluster", mag: 5.2, desc: "Abierto en Perseo. 100 estrellas. Visible con binoculares. 1.500 al.", color: "#aaccff", sizeArcmin: 35 },
-    { id: "M39", name: "Cúmulo M39", ra: 321.667, dec: 48.433, type: "cluster", mag: 4.6, desc: "Abierto en Cygnus. 30 estrellas. Muy disperso. 825 al.", color: "#aaccff", sizeArcmin: 32 },
-    { id: "M29", name: "Cúmulo M29", ra: 310.267, dec: 38.533, type: "cluster", mag: 7.1, desc: "Abierto en Cygnus. 160 estrellas. Forma de rectángulo. 7.200 al.", color: "#aaccff", sizeArcmin: 7 },
-    { id: "M23", name: "Cúmulo M23", ra: 270.917, dec: -19.017, type: "cluster", mag: 5.5, desc: "Abierto en Sagitario. 100+ estrellas. Espectacular en telescopio. 2.150 al.", color: "#aaccff", sizeArcmin: 27 },
-    { id: "M25", name: "Cúmulo M25", ra: 276.750, dec: -19.250, type: "cluster", mag: 4.6, desc: "Abierto en Sagitario. Visible a simple vista. Cefeida variable U Sagittarii. 2.000 al.", color: "#aaccff", sizeArcmin: 32 },
-    { id: "M26", name: "Cúmulo M26", ra: 279.150, dec: -9.517, type: "cluster", mag: 8.0, desc: "Abierto en Scutum. 100 estrellas. Región oscura lo oculta parcialmente. 5.000 al.", color: "#aaccff", sizeArcmin: 15 },
-    { id: "M28", name: "Cúmulo M28", ra: 279.083, dec: -24.867, type: "cluster", mag: 6.8, desc: "Globular en Sagitario. Cerca de la eclíptica. 18.000 al.", color: "#aaccff", sizeArcmin: 11 },
-    { id: "M21", name: "Cúmulo M21", ra: 270.617, dec: -22.500, type: "cluster", mag: 5.9, desc: "Abierto en Sagitario. Joven: 6.6 Ma. 4.250 al.", color: "#aaccff", sizeArcmin: 13 },
-    { id: "M24", name: "Nube Estelar de Sagitario", ra: 274.500, dec: -18.500, type: "cluster", mag: 4.6, desc: "No es cúmulo sino ventana en la Vía Láctea. Miles de estrellas. 10.000 al.", color: "#aaccff", sizeArcmin: 90 },
-    { id: "M53", name: "Cúmulo M53", ra: 201.000, dec: 18.167, type: "cluster", mag: 7.6, desc: "Globular en Coma Berenices. 60.000 al. Cerca de NGC 5053.", color: "#aaccff", sizeArcmin: 13 },
-    { id: "M85", name: "Cúmulo M85", ra: 186.750, dec: 18.183, type: "cluster", mag: 9.1, desc: "Globular en Hércules. 36.000 al. Menos conocido que M13.", color: "#aaccff", sizeArcmin: 5 },
-    { id: "M91", name: "Cúmulo M91", ra: 187.833, dec: 14.900, type: "cluster", mag: 9.5, desc: "Globular en Hércules. 47.000 al. Descubierto por Méchain.", color: "#aaccff", sizeArcmin: 4 },
-    { id: "M12", name: "Cúmulo M12", ra: 251.550, dec: -1.933, type: "cluster", mag: 6.7, desc: "Globular en Ophiuchus. 15.700 al. Menos concentrado que otros.", color: "#aaccff", sizeArcmin: 16 },
-    { id: "M10", name: "Cúmulo M10", ra: 254.283, dec: -4.050, type: "cluster", mag: 6.4, desc: "Globular en Ophiuchus. 14.300 al. Cruzando el centro galáctico.", color: "#aaccff", sizeArcmin: 20 },
-    { id: "M14", name: "Cúmulo M14", ra: 262.117, dec: -3.067, type: "cluster", mag: 7.6, desc: "Globular en Ophiuchus. 30.400 al. Nova de 1938.", color: "#aaccff", sizeArcmin: 12 },
-    { id: "M19", name: "Cúmulo M19", ra: 257.583, dec: -26.567, type: "cluster", mag: 6.8, desc: "Globular en Ophiuchus. El más achatado: 11.700 al.", color: "#aaccff", sizeArcmin: 17 },
-    { id: "M62", name: "Cúmulo M62", ra: 260.617, dec: -30.550, type: "cluster", mag: 6.5, desc: "Globular en Ophiuchus. 22.500 al. Núcleo desplazado.", color: "#aaccff", sizeArcmin: 15 },
-    { id: "M98", name: "Cúmulo M98", ra: 185.200, dec: 14.500, type: "cluster", mag: 10.0, desc: "Globular en Hércules. 58.000 al. Descubierto por William Herschel.", color: "#aaccff", sizeArcmin: 4 },
-    { id: "M99", name: "Cúmulo M99", ra: 187.617, dec: 16.183, type: "cluster", mag: 9.8, desc: "Globular en Hércules. 56.000 al. Pobre en metales.", color: "#aaccff", sizeArcmin: 4 },
-    { id: "M107", name: "Cúmulo M107", ra: 249.750, dec: -13.050, type: "cluster", mag: 7.9, desc: "Globular en Ophiuchus. El último Messier descubierto. 20.900 al.", color: "#aaccff", sizeArcmin: 13 },
-    { id: "NGC188", name: "Cúmulo NGC 188", ra: 12.117, dec: 85.250, type: "cluster", mag: 8.1, desc: "Abierto en Cepheus. Cerca del polo norte celeste. 7.000 al. Muy antiguo: 7.000 Ma.", color: "#aaccff", sizeArcmin: 15 },
-    { id: "NGC2264", name: "Cúmulo del Árbol de Navidad", ra: 99.583, dec: 9.933, type: "cluster", mag: 3.9, desc: "Abierto en Monoceros. Con nebulosa del Cono. 2.600 al.", color: "#aaccff", sizeArcmin: 30 },
-    { id: "NGC2392", name: "Nebulosa del Esquimal", ra: 113.667, dec: 20.900, type: "nebula", mag: 9.2, desc: "Planetaria en Gemini. Anillo exterior como capucha. 2.870 al.", color: "#88ffcc", sizeArcmin: 0.5 },
-    { id: "NGC2359", name: "Nebulosa del Casco de Thor", ra: 108.167, dec: 29.567, type: "nebula", mag: 9.0, desc: "Emisión en Canis Major. Burbuja de estrella Wolf-Rayet. 15.000 al.", color: "#88ffaa", sizeArcmin: 20 },
-    { id: "N2244", name: "Cúmulo de la Roseta", ra: 97.992, dec: 4.950, type: "cluster", mag: 4.8, desc: "Abierto en Monoceros. En el centro de la nebulosa Roseta. 5.200 al.", color: "#aaccff", sizeArcmin: 24 },
+    {
+        id: "M42", name: "Nebulosa de Orión", ra: 83.82, dec: -5.39, type: "nebula", mag: 4.0, desc: "Vivero estelar. 1,344 al. Visible a simple vista.", color: "#88ffaa", sizeArcmin: 60, kind: "dso"
+    },
+    {
+        id: "M45", name: "Pléyades", ra: 56.75, dec: 24.11, type: "cluster", mag: 1.6, desc: "Las Siete Hermanas. 444 al. Mencionadas en la Biblia.", color: "#aaccff", sizeArcmin: 110, kind: "dso"
+    },
+    {
+        id: "M31", name: "Galaxia de Andrómeda", ra: 10.68, dec: 41.27, type: "galaxy", mag: 3.4, desc: "2.5 millones al. Chocará con la Vía Láctea en 4,500M años.", color: "#ffcc88", sizeArcmin: 190, kind: "dso"
+    },
+    {
+        id: "M13", name: "Cúmulo de Hércules", ra: 250.42, dec: 36.46, type: "cluster", mag: 5.8, desc: "300,000 estrellas. El Mensaje de Arecibo apunta aquí.", color: "#aaccff", sizeArcmin: 20, kind: "dso"
+    },
+    {
+        id: "M57", name: "Nebulosa del Anillo", ra: 283.40, dec: 33.03, type: "nebula", mag: 8.8, desc: "Envuelta de estrella moribunda. Más fotografiada del cielo.", color: "#88ffcc", sizeArcmin: 1.5, kind: "dso"
+    },
+    {
+        id: "M1", name: "Nebulosa del Cangrejo", ra: 83.63, dec: 22.01, type: "nebula", mag: 8.4, desc: "Resto de la supernova de 1054 d.C. vista de día.", color: "#88ffaa", sizeArcmin: 6, kind: "dso"
+    },
+    {
+        id: "M51", name: "Galaxia del Remolino", ra: 202.47, dec: 47.20, type: "galaxy", mag: 8.4, desc: "Primera espiral observada (1845). 23M años luz.", color: "#ffbb88", sizeArcmin: 11, kind: "dso"
+    },
+    {
+        id: "M104", name: "Galaxia Sombrero", ra: 189.99, dec: -11.62, type: "galaxy", mag: 8.0, desc: "Agujero negro de 1,000M masas solares.", color: "#ffcc88", sizeArcmin: 9, kind: "dso"
+    },
+    {
+        id: "M8", name: "Nebulosa de la Laguna", ra: 270.9, dec: -24.4, type: "nebula", mag: 6.0, desc: "Nube interestelar gigante en Sagitario.", color: "#ff88aa", sizeArcmin: 90, kind: "dso"
+    },
+    {
+        id: "M20", name: "Nebulosa Trífida", ra: 270.5, dec: -23.0, type: "nebula", mag: 6.3, desc: "Nebulosa de emisión, reflexión y oscura.", color: "#ff88ff", sizeArcmin: 28, kind: "dso"
+    },
+    {
+        id: "M16", name: "Nebulosa del Águila", ra: 274.7, dec: -13.8, type: "nebula", mag: 6.0, desc: "Hogar de los Pilares de la Creación.", color: "#88ffcc", sizeArcmin: 7, kind: "dso"
+    }
 ];

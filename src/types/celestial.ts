@@ -21,6 +21,7 @@ export interface Star {
     desc: string;
     color: string;
     baseSize: number;
+    kind?: 'star';
 }
 
 export interface DSO {
@@ -33,6 +34,7 @@ export interface DSO {
     desc: string;
     color: string;
     sizeArcmin?: number;
+    kind?: 'dso';
 }
 
 export interface Challenge {

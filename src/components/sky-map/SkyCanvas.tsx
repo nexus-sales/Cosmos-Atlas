@@ -161,13 +161,19 @@ function CelestialGroup({ children }: { children: React.ReactNode }) {
 function CameraNavigator() {
     const { camera } = useThree();
     const targetedObject = useAppStore((s) => s.targetedObject);
+    const setCamFov = useAppStore((state) => state.setCamFov);
 
     const isFlying = useRef(false);
     const prevTarget = useRef<typeof targetedObject>(null);
+    const targetFov = useRef(60);
 
     useEffect(() => {
         if (targetedObject && targetedObject !== prevTarget.current) {
             isFlying.current = true;
+            // Si es planeta o DSO, zoom in automático para ver el modelo 3D
+            const isPlanet = targetedObject.kind === 'planet' || ('symbol' in targetedObject);
+            const isDSO = targetedObject.kind === 'dso' || ('type' in targetedObject);
+            targetFov.current = (isPlanet || isDSO) ? 22 : 60;
         }
         prevTarget.current = targetedObject;
     }, [targetedObject]);
@@ -175,7 +181,6 @@ function CameraNavigator() {
     useFrame(() => {
         if (!isFlying.current || !targetedObject) return;
 
-        // World-space direction: apply CelestialGroup's rotation to equatorial position
         const { time, observer } = useAppStore.getState();
         const lst = getLST(time, observer.lon);
         const euler = new THREE.Euler(
@@ -188,19 +193,25 @@ function CameraNavigator() {
         const [ex, ey, ez] = equatorialTo3D(targetedObject.ra, targetedObject.dec, 1);
         const targetWorldDir = new THREE.Vector3(ex, ey, ez).applyMatrix4(rotMatrix).normalize();
 
-        // Camera must be positioned OPPOSITE to the star to look at it
         const targetCamPos = targetWorldDir.clone().negate().multiplyScalar(0.01);
         const currentPos = camera.position.clone();
 
-        // Check arrival (dot product close to 1 = same direction)
         const dot = currentPos.normalize().dot(targetCamPos.clone().normalize());
-        if (dot > 0.9998) {
+
+        // FOV Transition
+        const cam = camera as THREE.PerspectiveCamera;
+        if (Math.abs(cam.fov - targetFov.current) > 0.1) {
+            cam.fov = THREE.MathUtils.lerp(cam.fov, targetFov.current, 0.05);
+            cam.updateProjectionMatrix();
+            setCamFov(cam.fov);
+        }
+
+        if (dot > 0.9999 && Math.abs(cam.fov - targetFov.current) < 0.5) {
             isFlying.current = false;
             return;
         }
 
-        // Lerp + normalize to stay on unit sphere × 0.01 (ease-out feel)
-        const speed = THREE.MathUtils.clamp(0.05 + (1 - dot) * 0.05, 0.04, 0.12);
+        const speed = THREE.MathUtils.clamp(0.06 + (1 - dot) * 0.08, 0.05, 0.15);
         const newPos = camera.position.clone().lerp(targetCamPos, speed).normalize().multiplyScalar(0.01);
         camera.position.copy(newPos);
     });

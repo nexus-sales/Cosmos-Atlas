@@ -5,6 +5,7 @@ import Header from '@/components/panels/Header';
 import SidePanel from '@/components/panels/SidePanel';
 import CosmicParticles from '@/components/effects/CosmicParticles';
 import Meteors from '@/components/effects/Meteors';
+import AIAstronoma from '@/components/panels/AIAstronoma';
 import TimeTravelControls from '@/components/panels/TimeTravelControls';
 import { useEffect } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
@@ -40,6 +41,7 @@ export default function Home() {
           <div className="flex-1 relative min-w-0">
             <SkyCanvas />
             <TimeTravelControls />
+            <AIAstronoma />
           </div>
 
           {/* Mobile backdrop — closes sidebar on tap outside */}

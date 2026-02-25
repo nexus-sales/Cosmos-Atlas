@@ -1,10 +1,10 @@
 'use client';
 
+import { Html, useTexture, Float } from '@react-three/drei';
 import { useMemo, useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
-import { Html } from '@react-three/drei';
 import { useAppStore } from '@/stores/useAppStore';
 import { Planet } from '@/types/celestial';
 import * as Astronomy from 'astronomy-engine';
@@ -16,45 +16,71 @@ interface PlanetConfig {
     symbol: string;
     color: string;
     description: (mag: number) => string;
+    textureKey: keyof typeof TEXTURES;
 }
 
 const PLANET_CONFIGS: PlanetConfig[] = [
     {
+        body: Astronomy.Body.Sun,
+        name: 'Sol', symbol: '☀', color: '#fff5e6',
+        description: () => 'Nuestra estrella. El centro del Sistema Solar.',
+        textureKey: 'sun'
+    },
+    {
         body: Astronomy.Body.Venus,
         name: 'Venus', symbol: '♀', color: '#fff8d4',
         description: (mag) => `Planeta más brillante del cielo. Mag ${mag.toFixed(1)}. Fases visibles con binoculares.`,
+        textureKey: 'venus'
     },
     {
         body: Astronomy.Body.Jupiter,
         name: 'Júpiter', symbol: '♃', color: '#ffe4b0',
         description: (mag) => `El gigante gaseoso del sistema solar. Mag ${mag.toFixed(1)}. Sus cuatro lunas son visibles con prismáticos.`,
+        textureKey: 'jupiter'
     },
     {
         body: Astronomy.Body.Mars,
         name: 'Marte', symbol: '♂', color: '#ff7744',
         description: (mag) => `El Planeta Rojo. Mag ${mag.toFixed(1)}. Su color naranja es inconfundible.`,
+        textureKey: 'mars'
     },
     {
         body: Astronomy.Body.Saturn,
         name: 'Saturno', symbol: '♄', color: '#f5d97a',
         description: (mag) => `Sus anillos son visibles en telescopio pequeño. Mag ${mag.toFixed(1)}.`,
+        textureKey: 'saturn'
     },
     {
         body: Astronomy.Body.Mercury,
         name: 'Mercurio', symbol: '☿', color: '#b8c8d8',
         description: (mag) => `El planeta más esquivo. Mag ${mag.toFixed(1)}. Siempre cerca del horizonte.`,
+        textureKey: 'mercury'
     },
     {
         body: Astronomy.Body.Uranus,
         name: 'Urano', symbol: '⛢', color: '#a8dff0',
         description: (mag) => `Gigante de hielo. Mag ${mag.toFixed(1)}. Visible a ojo desnudo en cielo muy oscuro.`,
+        textureKey: 'uranus'
     },
     {
         body: Astronomy.Body.Neptune,
         name: 'Neptuno', symbol: '♆', color: '#4060ff',
         description: (mag) => `El gigante azul más lejano. Mag ${mag.toFixed(1)}. Requiere binoculares.`,
+        textureKey: 'neptune'
     },
 ];
+
+const TEXTURES = {
+    mercury: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/mercury.jpg',
+    venus: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/venus_surface.jpg',
+    mars: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/mars_1k_color.jpg',
+    jupiter: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/jupiter_1k_color.jpg',
+    saturn: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/saturn_1k_color.jpg',
+    uranus: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/uranus.jpg',
+    neptune: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/neptune.jpg',
+    moon: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/moon_1024.jpg',
+    sun: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/sun.jpg',
+};
 
 const AU_KM = 149597870.7;
 const MOON_RADIUS_KM = 1737.4;
@@ -113,11 +139,11 @@ function drawMoonSurface(canvas: HTMLCanvasElement, phase: number) {
 
     // Maria
     ctx.fillStyle = 'rgba(90,90,100,0.5)';
-    [ [cx - r * 0.35, cy - r * 0.1, r * 0.25],
-      [cx - r * 0.15, cy - r * 0.35, r * 0.18],
-      [cx + r * 0.15, cy - r * 0.25, r * 0.14],
-      [cx + r * 0.25, cy - r * 0.1, r * 0.12],
-      [cx - r * 0.2,  cy + r * 0.2,  r * 0.15],
+    [[cx - r * 0.35, cy - r * 0.1, r * 0.25],
+    [cx - r * 0.15, cy - r * 0.35, r * 0.18],
+    [cx + r * 0.15, cy - r * 0.25, r * 0.14],
+    [cx + r * 0.25, cy - r * 0.1, r * 0.12],
+    [cx - r * 0.2, cy + r * 0.2, r * 0.15],
     ].forEach(([mx, my, mr]) => {
         ctx.beginPath(); ctx.arc(mx, my, mr, 0, Math.PI * 2); ctx.fill();
     });
@@ -134,41 +160,107 @@ function drawMoonSurface(canvas: HTMLCanvasElement, phase: number) {
 }
 
 // ── MoonMesh ──────────────────────────────────────────────────────────────────
-function MoonMesh({ planet, phase }: {
+const SUN_VERTEX_SHADER = `
+varying vec2 vUv;
+varying vec3 vNormal;
+void main() {
+    vUv = uv;
+    vNormal = normalize(normalMatrix * normal);
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`;
+
+const SUN_FRAGMENT_SHADER = `
+varying vec2 vUv;
+varying vec3 vNormal;
+uniform float uTime;
+void main() {
+    // Boiling effect simulation
+    float noise = sin(vUv.x * 20.0 + uTime) * cos(vUv.y * 20.0 + uTime * 1.2);
+    vec3 color = mix(vec3(1.0, 0.5, 0.1), vec3(1.0, 0.9, 0.3), noise * 0.5 + 0.5);
+    
+    // Fresnel glow
+    float intensity = pow(1.0 - dot(vNormal, vec3(0,0,1)), 3.0);
+    color += vec3(1.0, 0.8, 0.4) * intensity;
+    
+    gl_FragColor = vec4(color, 1.0);
+}
+`;
+
+function SunMesh({ planet, opacity }: { planet: any, opacity: number }) {
+    const meshRef = useRef<THREE.Mesh>(null);
+    const glowRef = useRef<THREE.Mesh>(null);
+
+    useFrame((state) => {
+        if (meshRef.current) {
+            (meshRef.current.material as THREE.ShaderMaterial).uniforms.uTime.value = state.clock.elapsedTime;
+            meshRef.current.rotation.y += 0.002;
+        }
+        if (glowRef.current) {
+            glowRef.current.scale.setScalar(1.2 + Math.sin(state.clock.elapsedTime * 2.0) * 0.05);
+        }
+    });
+
+    const uniforms = useMemo(() => ({
+        uTime: { value: 0 }
+    }), []);
+
+    return (
+        <group position={planet.pos}>
+            <mesh ref={meshRef}>
+                <sphereGeometry args={[0.5, 64, 64]} />
+                <shaderMaterial
+                    vertexShader={SUN_VERTEX_SHADER}
+                    fragmentShader={SUN_FRAGMENT_SHADER}
+                    uniforms={uniforms}
+                    transparent
+                    opacity={opacity}
+                />
+            </mesh>
+
+            {/* Corona / Glow */}
+            <mesh ref={glowRef}>
+                <sphereGeometry args={[0.5, 32, 32]} />
+                <meshBasicMaterial
+                    color="#ffaa44"
+                    transparent
+                    opacity={opacity * 0.4}
+                    blending={THREE.AdditiveBlending}
+                    side={THREE.BackSide}
+                />
+            </mesh>
+
+            <pointLight intensity={5} color="#fff4d0" distance={10} decay={2} />
+        </group>
+    );
+}
+
+function MoonMesh({ planet, phase, opacity }: {
     planet: Planet & { pos: [number, number, number]; angularSize: number };
     phase: number;
+    opacity: number;
 }) {
     const setSelectedObj = useAppStore((s) => s.setSelectedObject);
     // Real apparent radius of Moon: ~0.25° → at R=95: 95*tan(0.25°*π/180) ≈ 0.414 units
     // angularSize in arcsec: ~1800 → 1800 * 0.00023 ≈ 0.414
     const SIZE = THREE.MathUtils.clamp(planet.angularSize * 0.00023, 0.35, 0.52);
 
-    const texture = useMemo(() => {
-        const canvas = document.createElement('canvas');
-        drawMoonSurface(canvas, phase);
-        const tex = new THREE.CanvasTexture(canvas);
-        tex.needsUpdate = true;
-        return tex;
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    const texture = useTexture(TEXTURES.moon);
+    const setTargetedObject = useAppStore((s) => s.setTargetedObject);
 
-    const roundedPhase = Math.round(phase / 2) * 2;
-    useEffect(() => {
-        const canvas = texture.image as HTMLCanvasElement;
-        drawMoonSurface(canvas, roundedPhase);
-        texture.needsUpdate = true;
-    }, [roundedPhase, texture]);
-
-    useEffect(() => () => texture.dispose(), [texture]);
+    // No longer need manual disposal with useTexture
 
     return (
         <group position={planet.pos}>
-            <mesh onClick={(e) => { e.stopPropagation(); setSelectedObj(planet); }}>
+            <mesh onClick={(e) => {
+                e.stopPropagation();
+                setSelectedObj(planet);
+                setTargetedObject(planet);
+            }}>
                 <sphereGeometry args={[SIZE, 32, 32]} />
                 <meshStandardMaterial
                     map={texture}
                     transparent
-                    depthWrite={false}
-                    toneMapped={false}
                     roughness={0.85}
                     metalness={0.0}
                     emissive="#111111"
@@ -194,80 +286,149 @@ function MoonMesh({ planet, phase }: {
     );
 }
 
-// ── PlanetMesh ────────────────────────────────────────────────────────────────
-// Planets are rendered as bright glowing sprites — like stars but larger and
-// distinctly colored. This matches what planets actually look like to the naked eye.
-function PlanetMesh({ planet, glowTex }: {
-    planet: Planet & { pos: [number, number, number]; angularSize: number; phase: number; ringTilt?: number };
-    glowTex: THREE.CanvasTexture;
+
+/**
+ * Planet3D: Renderiza el modelo 3D real del planeta cuando el usuario se acerca.
+ * Incluye texturas, iluminación reactiva y rotación sutil.
+ */
+function Planet3D({
+    planet,
+    opacity
+}: {
+    planet: Planet & { pos: [number, number, number]; angularSize: number; textureKey: keyof typeof TEXTURES };
+    opacity: number
 }) {
-    const setSelectedObject = useAppStore((state) => state.setSelectedObject);
+    if (planet.textureKey === 'sun') {
+        return <SunMesh planet={planet} opacity={opacity} />;
+    }
 
-    // Visual size based on apparent magnitude (same scale as Stars.tsx)
-    // Reference: mag -4.5 (Venus) → large; mag +8 (Neptune) → tiny point
-    const brightness = Math.pow(2.512, -1.5 - planet.mag); // normalised at mag -1.5
-    const normB = Math.min(1.0, brightness);
-    const baseSize = 0.08 + Math.pow(normB, 0.45) * 0.30; // range: ~0.08 (Neptune) to ~0.38 (Venus)
+    const texture = useTexture(TEXTURES[planet.textureKey]);
+    const isSaturn = planet.name === 'Saturno';
+    const isGasGiant = planet.name === 'Júpiter' || planet.name === 'Saturno' || planet.name === 'Urano' || planet.name === 'Neptuno';
 
-    const hasSaturnRings = planet.name === 'Saturno';
+    // Tamaño visual en modo 3D (ligeramente exagerado para impacto visual)
+    const scale = isGasGiant ? 0.9 : 0.5;
 
     return (
-        <group position={planet.pos}>
-            {/* Outer soft glow — larger, more transparent */}
-            <sprite
-                scale={[baseSize * 3.5, baseSize * 3.5, 1]}
-                onClick={(e) => { e.stopPropagation(); setSelectedObject(planet); }}
-            >
-                <spriteMaterial
-                    map={glowTex}
-                    color={planet.color}
-                    depthWrite={false}
-                    blending={THREE.AdditiveBlending}
-                    toneMapped={false}
-                    opacity={0.5}
-                    transparent
-                />
-            </sprite>
-
-            {/* Core bright disc */}
-            <sprite
-                scale={[baseSize, baseSize, 1]}
-                onClick={(e) => { e.stopPropagation(); setSelectedObject(planet); }}
-            >
-                <spriteMaterial
-                    map={glowTex}
-                    color={planet.color}
-                    depthWrite={false}
-                    blending={THREE.AdditiveBlending}
-                    toneMapped={false}
-                />
-            </sprite>
-
-            {/* Saturn ring indicator — symbolic but helps identification */}
-            {hasSaturnRings && planet.ringTilt !== undefined && (
-                <mesh rotation={[planet.ringTilt + Math.PI / 2, 0, 0]}>
-                    <ringGeometry args={[baseSize * 1.5, baseSize * 2.6, 48]} />
-                    <meshBasicMaterial
-                        color="#d4c080"
+        <group position={planet.pos} visible={opacity > 0.01}>
+            <Float speed={1.5} rotationIntensity={0.2} floatIntensity={0.2}>
+                <mesh>
+                    <sphereGeometry args={[scale, 64, 64]} />
+                    <meshStandardMaterial
+                        map={texture}
                         transparent
-                        opacity={0.55}
-                        side={THREE.DoubleSide}
-                        depthWrite={false}
-                        blending={THREE.AdditiveBlending}
+                        opacity={opacity}
+                        roughness={0.7}
+                        metalness={0.1}
+                    />
+                </mesh>
+
+                {isSaturn && (
+                    <mesh rotation={[Math.PI / 2.5, 0, 0]}>
+                        <ringGeometry args={[scale * 1.4, scale * 2.4, 64]} />
+                        <meshStandardMaterial
+                            map={texture} // Reutilizamos pero idealmente sería textura de anillos
+                            color="#d4c080"
+                            transparent
+                            opacity={opacity * 0.8}
+                            side={THREE.DoubleSide}
+                        />
+                    </mesh>
+                )}
+            </Float>
+
+            {/* Atmósfera/Brillo sutil para gigantes y Venus */}
+            {(isGasGiant || planet.name === 'Venus') && (
+                <mesh>
+                    <sphereGeometry args={[scale * 1.05, 32, 32]} />
+                    <meshBasicMaterial
+                        color={planet.color}
+                        transparent
+                        opacity={opacity * 0.2}
+                        side={THREE.BackSide}
                     />
                 </mesh>
             )}
+        </group>
+    );
+}
 
-            <Html distanceFactor={90}>
-                <div style={{
-                    color: planet.color, fontSize: '11px',
-                    fontFamily: "'Courier New', monospace",
-                    whiteSpace: 'nowrap', pointerEvents: 'none', userSelect: 'none',
-                    textShadow: `0 0 6px ${planet.color}`, paddingLeft: '8px',
-                    fontWeight: 'bold',
-                }}>
-                    {planet.symbol} {planet.name}{' '}
-                    <span style={{ fontSize: '9px', opacity: 0.65 }}>{planet.mag.toFixed(1)}</span>
+// ── PlanetMesh ────────────────────────────────────────────────────────────────
+function PlanetMesh({ planet, glowTex }: {
+    planet: Planet & { pos: [number, number, number]; angularSize: number; phase: number; ringTilt?: number; textureKey: keyof typeof TEXTURES };
+    glowTex: THREE.CanvasTexture;
+}) {
+    const setSelectedObject = useAppStore((state) => state.setSelectedObject);
+    const setTargetedObject = useAppStore((state) => state.setTargetedObject);
+    const camFov = useAppStore((state) => state.camFov);
+
+    // Zoom Cross-fade:
+    // fov=90 (lejos) -> sprite 1.0, 3D 0.0
+    // fov=30 (cerca) -> sprite 0.0, 3D 1.0
+    const spriteOpacity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 50, 30, 1, 0), 0, 1);
+    const model3DOpacity = 1 - spriteOpacity;
+
+    const brightness = Math.pow(2.512, -1.5 - planet.mag);
+    const normB = Math.min(1.0, brightness);
+    const baseSize = 0.08 + Math.pow(normB, 0.45) * 0.30;
+
+    return (
+        <group>
+            {/* Modo Sprite (Cielo General) */}
+            <group position={planet.pos} visible={spriteOpacity > 0.01}>
+                <sprite
+                    scale={[baseSize * 4.0, baseSize * 4.0, 1]}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedObject(planet);
+                        setTargetedObject(planet);
+                    }}
+                >
+                    <spriteMaterial
+                        map={glowTex}
+                        color={planet.color}
+                        depthWrite={false}
+                        blending={THREE.AdditiveBlending}
+                        toneMapped={false}
+                        opacity={spriteOpacity * 0.6}
+                        transparent
+                    />
+                </sprite>
+                <sprite
+                    scale={[baseSize * 1.2, baseSize * 1.2, 1]}
+                >
+                    <spriteMaterial
+                        map={glowTex}
+                        color="#ffffff"
+                        depthWrite={false}
+                        blending={THREE.AdditiveBlending}
+                        toneMapped={false}
+                        opacity={spriteOpacity}
+                        transparent
+                    />
+                </sprite>
+            </group>
+
+            {/* Modo 3D (Zoom Detallado) */}
+            <Planet3D planet={planet} opacity={model3DOpacity} />
+
+            <Html position={planet.pos} distanceFactor={90}>
+                <div
+                    onClick={() => {
+                        setSelectedObject(planet);
+                        setTargetedObject(planet);
+                    }}
+                    style={{
+                        color: planet.color, fontSize: camFov < 35 ? '14px' : '11px',
+                        fontFamily: "'Inter', sans-serif",
+                        whiteSpace: 'nowrap', cursor: 'pointer', userSelect: 'none',
+                        textShadow: `0 0 10px ${planet.color}`, paddingLeft: '12px',
+                        fontWeight: 800, textTransform: 'uppercase',
+                        opacity: THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 90, 80, 0.4, 1.0), 0.4, 1),
+                        transition: 'all 0.3s ease'
+                    }}
+                >
+                    {planet.name}
                 </div>
             </Html>
         </group>
@@ -289,6 +450,7 @@ function computeMoon(date: Date, obs: Astronomy.Observer) {
                 mag: illum.mag, color: '#d8d6c0',
                 desc: `${getMoonPhaseName(phase)} — ${pct}% iluminada. Satélite natural de la Tierra.`,
                 kind: 'planet' as const, angularSize: angSizeArcsec,
+                textureKey: 'moon' as const,
             },
             phase,
         };
@@ -312,6 +474,7 @@ function computePlanetPosition(cfg: PlanetConfig, date: Date, obs: Astronomy.Obs
             angularSize: illum.geo_dist * 0, // not used for size anymore
             phase: elongation.elongation,
             ringTilt,
+            textureKey: cfg.textureKey,
         };
     } catch { return null; }
 }
@@ -320,6 +483,7 @@ function computePlanetPosition(cfg: PlanetConfig, date: Date, obs: Astronomy.Obs
 export default function Planets() {
     const time = useAppStore((state) => state.time);
     const observer = useAppStore((state) => state.observer);
+    const camFov = useAppStore((state) => state.camFov);
 
     // Shared glow texture for all planet sprites
     const glowTex = useMemo(() => makeGlowTexture(), []);
@@ -350,6 +514,7 @@ export default function Planets() {
                         pos: equatorialTo3D(data.moon.planet.ra, data.moon.planet.dec, PLANET_RADIUS) as [number, number, number],
                     }}
                     phase={data.moon.phase}
+                    opacity={useAppStore.getState().camFov < 45 ? 1.0 : 0.0}
                 />
             )}
         </group>

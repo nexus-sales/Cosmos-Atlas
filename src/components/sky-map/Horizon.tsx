@@ -15,6 +15,31 @@ import { Html } from '@react-three/drei';
 export default function Horizon() {
     return (
         <group>
+            {/* ── Brillo Atmosférico (Atmospheric Scattering Simulation) ── */}
+            {/* Un gran domo invertido que simula la neblina densa cerca del horizonte */}
+            <mesh scale={[1, 1, 1]}>
+                <sphereGeometry args={[91, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2]} />
+                <meshBasicMaterial
+                    color="#1a3a5a"
+                    transparent
+                    opacity={0.3}
+                    side={THREE.BackSide}
+                    depthWrite={false}
+                />
+            </mesh>
+
+            {/* Segundo halo de neblina más bajo y denso */}
+            <mesh position={[0, -2, 0]}>
+                <cylinderGeometry args={[110, 110, 8, 64, 1, true]} />
+                <meshBasicMaterial
+                    color="#0a1f35"
+                    transparent
+                    opacity={0.6}
+                    side={THREE.DoubleSide}
+                    depthWrite={false}
+                />
+            </mesh>
+
             {/* ── Suelo opaco — oculta estrellas bajo el horizonte ─── */}
             <mesh
                 position={[0, -0.3, 0]}
@@ -23,25 +48,9 @@ export default function Horizon() {
             >
                 <circleGeometry args={[110, 72]} />
                 <meshBasicMaterial
-                    color="#04101d"
+                    color="#04091a"
                     side={THREE.FrontSide}
                     depthWrite={true}
-                />
-            </mesh>
-
-            {/* ── Franja de niebla en el horizonte ─────────────────── */}
-            <mesh
-                position={[0, -0.28, 0]}
-                rotation={[-Math.PI / 2, 0, 0]}
-                renderOrder={2}
-            >
-                <ringGeometry args={[82, 110, 72]} />
-                <meshBasicMaterial
-                    color="#0a1f35"
-                    transparent
-                    opacity={0.72}
-                    side={THREE.FrontSide}
-                    depthWrite={false}
                 />
             </mesh>
 
@@ -56,13 +65,13 @@ export default function Horizon() {
             </mesh>
 
             {/* ── Puntos cardinales (espacio mundo: N = −Z) ────────── */}
-            <CardinalPoint label="N"  az={0}   color="#ff5555" />
-            <CardinalPoint label="NE" az={45}  color="#7799cc" />
-            <CardinalPoint label="E"  az={90}  color="#99bbff" />
+            <CardinalPoint label="N" az={0} color="#ff5555" />
+            <CardinalPoint label="NE" az={45} color="#7799cc" />
+            <CardinalPoint label="E" az={90} color="#99bbff" />
             <CardinalPoint label="SE" az={135} color="#7799cc" />
-            <CardinalPoint label="S"  az={180} color="#8888ff" />
+            <CardinalPoint label="S" az={180} color="#8888ff" />
             <CardinalPoint label="SO" az={225} color="#7799cc" />
-            <CardinalPoint label="O"  az={270} color="#99bbff" />
+            <CardinalPoint label="O" az={270} color="#99bbff" />
             <CardinalPoint label="NO" az={315} color="#7799cc" />
         </group>
     );
