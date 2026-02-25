@@ -209,7 +209,8 @@ export default function DeepSkyObjects() {
     const dsoData = useMemo(() => {
         return DSOS.map((dso) => {
             const pos = equatorialTo3D(dso.ra, dso.dec, DSO_RADIUS) as [number, number, number];
-            const visualSize = Math.max(0.4, (dso.sizeArcmin || 10) * 0.027 * 1.5);
+            // visualSize = chord length at R=94: sizeArcmin * (2*94*π/10800) ≈ sizeArcmin * 0.0274
+            const visualSize = Math.max(0.10, (dso.sizeArcmin || 5) * 0.027);
             return { ...dso, pos, visualSize };
         });
     }, []);
