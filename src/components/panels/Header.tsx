@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
-import { Stars } from 'lucide-react';
+import { Stars, MapPin } from 'lucide-react';
 import CelestialSearch from './CelestialSearch';
 
 export default function Header() {
@@ -40,7 +40,7 @@ export default function Header() {
                 </div>
                 <div>
                     <h1 className="text-base md:text-xl font-bold tracking-[0.25em] md:tracking-[0.3em] text-blue-400 glow-text uppercase leading-none">
-                        Cosmos <span className="text-white/30">\u00b7</span> Atlas
+                        Cosmos <span className="text-white/30">·</span> Atlas
                     </h1>
                     <p className="hidden md:block text-[10px] text-white/40 tracking-[0.2em] font-mono mt-1">
                         OBSERVATORIO VIRTUAL 3D
@@ -53,15 +53,21 @@ export default function Header() {
                 <CelestialSearch />
             </div>
 
+            {/* Right Group: Location & Time */}
             <div className="flex items-center gap-4 md:gap-8 font-mono">
-                <div className="hidden md:flex flex-col items-end">
-                    <div className="text-[10px] text-white/30 tracking-widest uppercase">Ubicaci\u00f3n</div>
+                {/* Location Overlay */}
+                <div className="hidden lg:flex flex-col items-end text-right">
+                    <div className="flex items-center gap-2 text-[10px] text-white/40 tracking-[0.2em] uppercase mb-0.5">
+                        <MapPin className="w-3 h-3" />
+                        Ubicación
+                    </div>
                     <div className="text-sm text-blue-200/70">
-                        {observer.lat.toFixed(2)}\u00b0N {Math.abs(observer.lon).toFixed(2)}\u00b0{observer.lon < 0 ? 'O' : 'E'}
+                        {observer.lat.toFixed(2)}°N {Math.abs(observer.lon).toFixed(2)}°{observer.lon < 0 ? 'O' : 'E'}
                     </div>
                 </div>
 
-                <div className="flex flex-col items-end">
+                {/* Time Display */}
+                <div className="flex flex-col items-end text-right">
                     <div className="text-base md:text-[18px] text-blue-400 tabular-nums leading-none font-bold glow-text">
                         {mounted ? formatTime(time) : '--:--:--'}
                     </div>

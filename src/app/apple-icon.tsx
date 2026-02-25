@@ -27,7 +27,14 @@ export default function AppleIcon() {
             justifyContent: "center",
           }}
         >
-          <div style={{ fontSize: 68, color: "#60a5fa", lineHeight: 1 }}>✦</div>
+          <svg
+            width="70"
+            height="70"
+            viewBox="0 0 24 24"
+            fill="#60a5fa"
+          >
+            <path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2L12L9.6 9.6L12 2Z" />
+          </svg>
         </div>
       </div>
     ),
