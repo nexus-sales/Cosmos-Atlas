@@ -9,6 +9,44 @@ import { useAppStore } from '@/stores/useAppStore';
 import { Planet } from '@/types/celestial';
 import * as Astronomy from 'astronomy-engine';
 
+// ── Rayleigh Scattering Shader para atmósferas planetarias ───────────────────
+const atmosphereVertexShader = `
+    varying vec3 vNormal;
+    varying vec3 vPosition;
+    void main() {
+        vNormal = normalize(normalMatrix * normal);
+        vPosition = position;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+`;
+
+const atmosphereFragmentShader = `
+    uniform vec3 uColor;
+    uniform float uIntensity;
+    uniform vec3 uLightDir; // Dirección hacia la luz (Sol)
+    varying vec3 vNormal;
+    
+    void main() {
+        // Producto punto para el lado iluminado
+        float lightDot = dot(vNormal, uLightDir);
+        
+        // Fresnel: más intenso en los bordes (limb)
+        vec3 viewDir = normalize(-vPosition);
+        float fresnel = pow(1.0 - abs(dot(vNormal, viewDir)), 3.0);
+        
+        // Scattering: azul en el lado iluminado, más tenue en sombra
+        float scatter = max(0.0, lightDot) * 0.7 + 0.3;
+        
+        vec3 atmColor = uColor * scatter * uIntensity;
+        float alpha = fresnel * 0.4 * uIntensity;
+        
+        // Color más azul en los bordes (efecto Rayleigh puro)
+        atmColor = mix(atmColor, vec3(0.4, 0.6, 1.0), fresnel * 0.5);
+        
+        gl_FragColor = vec4(atmColor, alpha);
+    }
+`;
+
 // ── Configuración estática de cada planeta ────────────────────────────────
 interface PlanetConfig {
     body: Astronomy.Body;
@@ -350,26 +388,57 @@ function PlanetMesh({ planet }: { planet: Planet & { pos: [number, number, numbe
 
     useEffect(() => { return () => texture.dispose(); }, [texture]);
 
+    // Planetas con atmósfera significativa (Tierra, Venus, Marte, gigantes)
+    const hasAtmosphere = ['Venus', 'Marte', 'Júpiter', 'Saturno', 'Urano', 'Neptuno'].includes(planet.name);
+    
+    // Color de atmósfera según el planeta
+    const atmosphereColor = useMemo(() => {
+        switch (planet.name) {
+            case 'Tierra': return new THREE.Color(0x4488ff); // Azul terrestre
+            case 'Venus': return new THREE.Color(0xffdd88); // Amarillo denso
+            case 'Marte': return new THREE.Color(0xff8866); // Rojo tenue
+            case 'Júpiter': return new THREE.Color(0x88aadd); // Azul tenue
+            case 'Saturno': return new THREE.Color(0xaaccff); // Azul pálido
+            case 'Urano': return new THREE.Color(0x88ddff); // Cian
+            case 'Neptuno': return new THREE.Color(0x4466ff); // Azul intenso
+            default: return new THREE.Color(planet.color);
+        }
+    }, [planet.name, planet.color]);
+
     return (
         <group position={planet.pos}>
             {/* Planeta como esfera 3D real con iluminación */}
             <mesh ref={sphereRef} onClick={(e) => { e.stopPropagation(); setSelectedObject(planet); }}>
                 <sphereGeometry args={[size, 32, 32]} />
-                <meshStandardMaterial 
-                    map={texture} 
-                    transparent 
-                    depthWrite={false} 
+                <meshStandardMaterial
+                    map={texture}
+                    transparent
+                    depthWrite={false}
                     toneMapped={false}
                     roughness={0.7}
                     metalness={0.1}
                 />
             </mesh>
 
-            {/* Atmosphere halo - esfera ligeramente más grande */}
-            <mesh>
-                <sphereGeometry args={[size * 1.12, 32, 32]} />
-                <meshBasicMaterial color={planet.color} transparent opacity={0.06} depthWrite={false} side={THREE.BackSide} />
-            </mesh>
+            {/* Atmósfera con Rayleigh Scattering (shader personalizado) */}
+            {hasAtmosphere && (
+                <mesh>
+                    <sphereGeometry args={[size * 1.15, 32, 32]} />
+                    <shaderMaterial
+                        vertexShader={atmosphereVertexShader}
+                        fragmentShader={atmosphereFragmentShader}
+                        transparent
+                        depthWrite={false}
+                        blending={THREE.AdditiveBlending}
+                        side={THREE.BackSide}
+                        uniforms={{
+                            uColor: { value: atmosphereColor },
+                            uIntensity: { value: planet.name === 'Tierra' ? 0.8 : 0.5 },
+                            uLightDir: { value: new THREE.Vector3(1, 0, 0) }, // Sol desde +X
+                        }}
+                    />
+                </mesh>
+            )}
 
             {/* Saturn Rings - usando inclinación real */}
             {hasSaturnRings && planet.ringTilt !== undefined && (

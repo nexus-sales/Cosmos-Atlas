@@ -22,6 +22,18 @@ const galacticRotation = new THREE.Euler().setFromQuaternion(
     new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), GALACTIC_NORTH)
 );
 
+// Direcciones de los brazos espirales en coordenadas galácticas locales
+const SPIRAL_ARMS = {
+    perseus: new THREE.Vector3(-0.65, 0.02, -0.76).normalize(),
+    sagittarius: new THREE.Vector3(0.55, -0.03, 0.83).normalize(),
+    scutumCentaurus: new THREE.Vector3(0.72, 0.01, -0.69).normalize(),
+    norma: new THREE.Vector3(-0.88, 0.0, 0.47).normalize(),
+};
+
+// Nubes de Magallanes (coordenadas ecuatoriales → galácticas aproximadas)
+const LMC_DIR = new THREE.Vector3(-0.52, -0.18, 0.83).normalize(); // Gran Nube de Magallanes
+const SMC_DIR = new THREE.Vector3(-0.58, -0.22, 0.78).normalize(); // Pequeña Nube de Magallanes
+
 const vertexShader = `
 varying vec3 vLocalPos;
 void main() {
@@ -34,6 +46,12 @@ const fragmentShader = `
 precision highp float;
 uniform float uTime;
 uniform vec3  uGCDir;
+uniform vec3  uLMCDir;
+uniform vec3  uSMCDir;
+uniform vec3  uPerseusDir;
+uniform vec3  uSagittariusDir;
+uniform vec3  uScutumDir;
+uniform vec3  uNormaDir;
 
 varying vec3 vLocalPos;
 
@@ -89,36 +107,62 @@ void main() {
     float mainBand  = exp(-bDeg*bDeg / 36.0); // Banda central más nítida
     float thickHalo = exp(-bDeg*bDeg / 260.0) * 0.08;
 
-    // 3. Bulbo Galáctico (Sagitario A*)
+    // 3. Bulbo Galáctico (Sagitario A*) - Gran Atractor brillante
     float gcDot   = dot(dir, uGCDir);
     float bulgeMask = smoothstep(0.4, 0.98, gcDot);
-    // Bulbo nítido y bulbo difuso
+    
+    // Núcleo galáctico hiper-brillante (Sagitario A*)
+    float coreBright = smoothstep(0.92, 1.0, gcDot) * 2.5;
     float bulge = (smoothstep(0.85, 1.0, gcDot) * 1.35 + smoothstep(0.5, 0.9, gcDot) * 0.55) * mainBand;
 
-    // 4. Polvo Estelar (Dust Lanes / Great Rift)
-    // Usamos FBM para crear el surco irregular y fracturado
+    // 4. Brazos Espirales Nombrados
+    float armPerseus = smoothstep(0.85, 0.98, dot(dir, uPerseusDir)) * 0.35;
+    float armSagittarius = smoothstep(0.85, 0.98, dot(dir, uSagittariusDir)) * 0.4;
+    float armScutum = smoothstep(0.85, 0.98, dot(dir, uScutumDir)) * 0.38;
+    float armNorma = smoothstep(0.85, 0.98, dot(dir, uNormaDir)) * 0.3;
+    float spiralArms = armPerseus + armSagittarius + armScutum + armNorma;
+
+    // 5. Nubes de Magallanes (hemisferio sur)
+    float lmcDot = dot(dir, uLMCDir);
+    float smcDot = dot(dir, uSMCDir);
+    float lmc = smoothstep(0.95, 1.0, lmcDot) * 0.6;
+    float smc = smoothstep(0.95, 1.0, smcDot) * 0.4;
+    
+    // Halo difuso alrededor de las Nubes
+    float lmcHalo = smoothstep(0.85, 0.98, lmcDot) * 0.25;
+    float smcHalo = smoothstep(0.85, 0.98, smcDot) * 0.18;
+
+    // 6. Polvo Estelar (Dust Lanes / Great Rift)
     vec2 dustUV = vec2(lRad * 1.8, bDeg * 0.08);
     float dustNoise = fbm(dustUV + vec2(uTime * 0.005, 0.0));
-    float dustMask = smoothstep(0.1, 0.5, dustNoise * bulgeMask + 0.1); 
-    
+    float dustMask = smoothstep(0.1, 0.5, dustNoise * bulgeMask + 0.1);
+
     // Grieta central (Great Rift)
     float rift = smoothstep(0.0, 0.5, gcDot) * exp(-abs(bDeg + dustNoise * 2.0) / 4.0);
 
-    // 5. Nubes de Gas y Variaciones Regionales
+    // 7. Variaciones Regionales
     float cygnus = smoothstep(0.75, 0.95, dot(dir, normalize(vec3(-0.35, 0.05, -0.92)))) * 0.8;
     float carina = smoothstep(0.75, 0.95, dot(dir, normalize(vec3(0.5, -0.05, 0.4)))) * 0.6;
 
-    // 6. Cromatismo (Colores NatGeo)
-    vec3 colorCore   = vec3(1.0, 0.8, 0.55); // Bulbo amarillento/naranja
-    vec3 colorArms   = vec3(0.8, 0.9, 1.0);  // Brazos blanco-azulados
-    vec3 colorGas    = vec3(1.0, 0.6, 0.7);  // Nebulosidad H-Alpha rosada
-    
-    vec3 finalColor = mix(colorArms, colorCore, bulgeMask);
-    finalColor = mix(finalColor, colorGas, cygnus * 0.3 + carina * 0.2);
+    // 8. Cromatismo (Colores NatGeo)
+    vec3 colorCore   = vec3(1.0, 0.85, 0.6);  // Bulbo amarillento/naranja brillante
+    vec3 colorArms   = vec3(0.75, 0.88, 1.0); // Brazos blanco-azulados
+    vec3 colorGas    = vec3(1.0, 0.55, 0.65); // Nebulosidad H-Alpha rosada
+    vec3 colorLMC    = vec3(0.6, 0.75, 1.0);  // Nubes de Magallanes azuladas
+    vec3 colorCoreBright = vec3(1.0, 0.95, 0.8); // Núcleo casi blanco
 
-    // 7. Brillo Final
-    float bright = (mainBand * 0.55 + thickHalo + bulge * 0.75 + cygnus * 0.35 + carina * 0.25);
-    
+    // Mezcla de colores base
+    vec3 finalColor = mix(colorArms, colorCore, bulgeMask);
+    finalColor = mix(finalColor, colorCoreBright, coreBright * 0.4);
+    finalColor = mix(finalColor, colorGas, cygnus * 0.3 + carina * 0.2);
+    finalColor = mix(finalColor, colorLMC, lmc + smc);
+
+    // 9. Brillo Final
+    float bright = (mainBand * 0.55 + thickHalo + bulge * 0.75 + coreBright * 0.8);
+    bright += spiralArms * 0.4; // Añadir brillo de brazos espirales
+    bright += (lmc + lmcHalo + smc + smcHalo) * 0.5; // Añadir Nubes de Magallanes
+    bright += cygnus * 0.35 + carina * 0.25;
+
     // Aplicar máscara de polvo oscuro
     float shadow = smoothstep(0.2, 0.8, dustNoise) * 0.85 * (bulgeMask * 0.5 + 0.5);
     bright *= (1.0 - shadow * 1.1);
@@ -126,7 +170,7 @@ void main() {
     bright = max(bright, 0.0);
 
     // Alpha cinemático – ajustado para mejor visibilidad
-    float alpha = clamp(bright * 0.075, 0.0, 0.22);
+    float alpha = clamp(bright * 0.085, 0.0, 0.28);
     if (alpha < 0.005) discard;
 
     gl_FragColor = vec4(finalColor, alpha);
@@ -268,6 +312,12 @@ export default function MilkyWay() {
     const uniforms = useMemo(() => ({
         uTime: { value: 0 },
         uGCDir: { value: GC_DIR },
+        uLMCDir: { value: LMC_DIR },
+        uSMCDir: { value: SMC_DIR },
+        uPerseusDir: { value: SPIRAL_ARMS.perseus },
+        uSagittariusDir: { value: SPIRAL_ARMS.sagittarius },
+        uScutumDir: { value: SPIRAL_ARMS.scutumCentaurus },
+        uNormaDir: { value: SPIRAL_ARMS.norma },
     }), []);
 
     useFrame((state) => {
@@ -282,7 +332,7 @@ export default function MilkyWay() {
             <mesh ref={meshRef} renderOrder={-2}>
                 <sphereGeometry args={[99, 96, 96]} />
                 <shaderMaterial
-                    key="milkyway-pro-v3"
+                    key="milkyway-pro-v4"
                     transparent
                     side={THREE.BackSide}
                     depthWrite={false}

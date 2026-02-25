@@ -150,13 +150,26 @@ function DSOItem({ dso }: { dso: DSOData }) {
                 <meshBasicMaterial transparent opacity={0} depthWrite={false} />
             </mesh>
 
+            {/* Halo de profundidad (glow exterior) */}
+            <mesh>
+                <sphereGeometry args={[dso.visualSize * 1.8, 16, 16]} />
+                <meshBasicMaterial
+                    color={dso.color}
+                    transparent
+                    opacity={0.08}
+                    depthWrite={false}
+                    blending={THREE.AdditiveBlending}
+                    side={THREE.DoubleSide}
+                />
+            </mesh>
+
             {/* Textura visual del DSO */}
             <mesh>
                 <planeGeometry args={[dso.visualSize, dso.visualSize]} />
                 <meshBasicMaterial
                     map={texture}
                     transparent
-                    opacity={0.7}
+                    opacity={0.75}
                     depthWrite={false}
                     blending={THREE.AdditiveBlending}
                 />

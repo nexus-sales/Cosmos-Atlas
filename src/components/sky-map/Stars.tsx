@@ -14,19 +14,20 @@ const starVertexShader = `
   attribute float varAmp;
   attribute float varPer;
   attribute float varPha;
+  attribute float distanceFactor; // Factor de profundidad (0 = cerca, 1 = lejos)
   varying vec3 vColor;
   varying float vOpacity;
   uniform float uTime;
   uniform float uTimeSec;
-  
+
   void main() {
     vColor = color;
 
     // Transform position to world space to get altitude (approximate)
     // In our scene, world Y is Zenith if the Horizon component is at Y=0.
     vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-    float altitude = worldPosition.y / length(worldPosition.xyz); 
-    
+    float altitude = worldPosition.y / length(worldPosition.xyz);
+
     // Airmass (X = 1/sin(alt)). Limiting it to avoid infinity at horizon.
     float airmass = 1.0 / max(0.05, altitude);
 
@@ -37,16 +38,19 @@ const starVertexShader = `
       varFactor = 1.0 - varAmp * 0.5 * (1.0 - sin(phase));
     }
 
+    // Profundidad de campo: estrellas más lejanas son más tenues
+    float depthFactor = 1.0 - distanceFactor * 0.35; // Hasta 35% menos brillo
+
     // Centelleo Atmosférico (Twinkle): modulación de doble frecuencia
     // Simula mejor la turbulencia pulsante de la atmósfera
     float twinkleSpeed = 1.6 + airmass * 0.4;
     float twinkleAmp = 0.12 + airmass * 0.08;
     float t = uTime * twinkleSpeed;
     float noise = sin(t + position.x * 12.0) * 0.7 + sin(t * 1.5 + position.y * 7.0) * 0.3;
-    vOpacity = varFactor * ( (1.0 - twinkleAmp) + twinkleAmp * noise );
-    
+    vOpacity = varFactor * depthFactor * ( (1.0 - twinkleAmp) + twinkleAmp * noise );
+
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-    gl_PointSize = size * varFactor * (480.0 / -mvPosition.z);
+    gl_PointSize = size * varFactor * depthFactor * (480.0 / -mvPosition.z);
     gl_Position = projectionMatrix * mvPosition;
   }
 `;
@@ -158,6 +162,7 @@ export default function Stars() {
         const varAmpArr = new Float32Array(filteredStars.length);
         const varPerArr = new Float32Array(filteredStars.length);
         const varPhaArr = new Float32Array(filteredStars.length);
+        const distFactorArr = new Float32Array(filteredStars.length); // Profundidad de campo
         const positions3D: [number, number, number][] = [];
 
         filteredStars.forEach((star, i) => {
@@ -182,6 +187,10 @@ export default function Stars() {
             // Brillantes (mag <2): 3.5–6.0 px, medias (mag 3-4): 0.8–1.5, tenues (mag 5+): <0.5
             sz[i] = 0.15 + Math.pow(normB, 0.55) * 5.85;
 
+            // Profundidad de campo: estrellas más tenues = más lejanas
+            // Magnitud 0 = muy cerca (factor 0), magnitud 6+ = muy lejos (factor 1)
+            distFactorArr[i] = Math.min(1.0, Math.max(0.0, (star.mag + 1.5) / 7.5));
+
             // Atributos de variabilidad
             const varInfo = VARIABLE_STARS[star.name];
             if (varInfo) {
@@ -198,6 +207,7 @@ export default function Stars() {
         geom.setAttribute('varAmp', new THREE.BufferAttribute(varAmpArr, 1));
         geom.setAttribute('varPer', new THREE.BufferAttribute(varPerArr, 1));
         geom.setAttribute('varPha', new THREE.BufferAttribute(varPhaArr, 1));
+        geom.setAttribute('distanceFactor', new THREE.BufferAttribute(distFactorArr, 1));
 
         const mat = new THREE.ShaderMaterial({
             vertexShader: starVertexShader,
