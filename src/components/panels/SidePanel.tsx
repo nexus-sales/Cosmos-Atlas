@@ -81,12 +81,12 @@ export default function SidePanel() {
                 initial={{ width: 340 }}
                 animate={{ width: 52 }}
                 transition={{ type: 'spring', stiffness: 350, damping: 35 }}
-                className="z-20 flex flex-col overflow-hidden relative shadow-2xl border-l border-white/5 shrink-0"
+                className="z-50 flex flex-col overflow-hidden relative shadow-2xl border-l border-white/5 shrink-0"
                 style={{ background: 'linear-gradient(180deg, rgba(4,12,28,0.98) 0%, rgba(2,6,18,1) 100%)' }}
             >
                 <button
                     onClick={() => setSidebarOpen(true)}
-                    className="flex items-center justify-center h-12 w-full text-white/30 hover:text-blue-400 transition-colors border-b border-white/8"
+                    className="flex items-center justify-center h-12 w-full text-white/30 hover:text-blue-400 hover:bg-white/5 transition-colors border-b border-white/8 cursor-pointer"
                     title="Abrir panel"
                 >
                     <ChevronLeft className="w-4 h-4" />
@@ -99,8 +99,8 @@ export default function SidePanel() {
                             onClick={() => { setActiveTab(tab.id); setSidebarOpen(true); }}
                             title={tab.label}
                             className={cn(
-                                'flex items-center justify-center w-9 h-9 rounded-lg transition-all',
-                                activeTab === tab.id ? 'text-blue-400 bg-blue-500/10' : 'text-white/25 hover:text-white/50'
+                                'flex items-center justify-center w-9 h-9 rounded-lg transition-all cursor-pointer',
+                                activeTab === tab.id ? 'text-blue-400 bg-blue-500/10' : 'text-white/25 hover:text-white/50 hover:bg-white/5'
                             )}
                         >
                             <tab.icon className="w-4 h-4" />
