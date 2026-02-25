@@ -67,14 +67,13 @@ export function useDeviceOrientation() {
 
         // iOS 13+ requires explicit user-gesture permission
         const needsPermission =
-            typeof (DeviceOrientationEvent as { requestPermission?: () => Promise<string> })
+            typeof (DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> })
                 .requestPermission === 'function';
 
         if (needsPermission) {
             try {
-                const result = await (
-                    DeviceOrientationEvent as { requestPermission: () => Promise<string> }
-                ).requestPermission();
+                const result = await (DeviceOrientationEvent as unknown as { requestPermission: () => Promise<string> })
+                    .requestPermission();
                 if (result === 'granted') {
                     setPermission('granted');
                     startListening();

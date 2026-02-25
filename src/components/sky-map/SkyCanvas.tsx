@@ -305,7 +305,7 @@ export default function SkyCanvas() {
                         {showGrid && <CelestialGrid />}
                         {showEcliptic && <Ecliptic />}
                         <TargetPointer />
-                        {/* Cometas con colas dinámicas */}
+                        {/* Cometas con colas dinámicas (usan coordenadas ecuatoriales) */}
                         <Comets />
                     </CelestialGroup>
 
@@ -316,14 +316,11 @@ export default function SkyCanvas() {
                     {/* Horizonte en espacio mundo (plano horizontal fijo) */}
                     <Horizon />
 
-                    {/* Aurora Boreal/Austral — TEMPORALMENTE DESACTIVADO PARA DEBUG */}
-                    {/* <AuroraBorealis /> */}
+                    {/* Aurora Boreal/Austral */}
+                    <AuroraBorealis />
 
-                    {/* Lluvia de meteoros real — TEMPORALMENTE DESACTIVADO PARA DEBUG */}
-                    {/* <MeteorShower /> */}
-
-                    {/* Cometas — TEMPORALMENTE DESACTIVADO PARA DEBUG */}
-                    {/* <Comets /> */}
+                    {/* Lluvia de meteoros real */}
+                    <MeteorShower />
 
                     <EffectComposer>
                         {/* Bloom: umbral alto → solo estrellas brillantes (mag<2) tienen corona.
