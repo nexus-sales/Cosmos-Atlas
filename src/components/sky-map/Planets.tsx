@@ -71,15 +71,15 @@ const PLANET_CONFIGS: PlanetConfig[] = [
 ];
 
 const TEXTURES = {
-    mercury: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/mercury.jpg',
-    venus: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/venus_surface.jpg',
-    mars: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/mars_1k_color.jpg',
-    jupiter: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/jupiter_1k_color.jpg',
-    saturn: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/saturn_1k_color.jpg',
-    uranus: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/uranus.jpg',
-    neptune: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/neptune.jpg',
-    moon: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/moon_1024.jpg',
-    sun: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/sun.jpg',
+    mercury: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/mercury.jpg',
+    venus: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/venus_surface.jpg',
+    mars: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/mars_1k_color.jpg',
+    jupiter: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/jupiter_1k_color.jpg',
+    saturn: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/saturn_1k_color.jpg',
+    uranus: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/uranus.jpg',
+    neptune: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/neptune.jpg',
+    moon: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/moon_1024.jpg',
+    sun: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/sun.jpg',
 };
 
 const AU_KM = 149597870.7;
@@ -247,7 +247,17 @@ function SunMesh({ planet, opacity }: { planet: any, opacity: number }) {
                 />
             </mesh>
 
-            <pointLight intensity={5} color="#fff4d0" distance={10} decay={2} />
+            <pointLight
+                intensity={5}
+                color="#fff4d0"
+                distance={15}
+                decay={2}
+                castShadow
+                shadow-mapSize-width={1024}
+                shadow-mapSize-height={1024}
+                shadow-camera-near={0.1}
+                shadow-camera-far={20}
+            />
         </group>
     );
 }
@@ -273,7 +283,10 @@ function MoonMesh({ planet, phase, opacity }: {
                 e.stopPropagation();
                 setSelectedObj(planet);
                 setTargetedObject(planet);
-            }}>
+            }}
+                castShadow
+                receiveShadow
+            >
                 <sphereGeometry args={[SIZE, 32, 32]} />
                 <meshStandardMaterial
                     map={texture ?? undefined}
@@ -333,7 +346,7 @@ function Planet3D({
     return (
         <group position={planet.pos} visible={opacity > 0.01}>
             <Float speed={1.5} rotationIntensity={0.2} floatIntensity={0.2}>
-                <mesh>
+                <mesh castShadow receiveShadow>
                     <sphereGeometry args={[scale, 64, 64]} />
                     <meshStandardMaterial
                         map={texture ?? undefined}
@@ -346,7 +359,7 @@ function Planet3D({
                 </mesh>
 
                 {isSaturn && (
-                    <mesh rotation={[Math.PI / 2.5, 0, 0]}>
+                    <mesh rotation={[Math.PI / 2.5, 0, 0]} castShadow receiveShadow>
                         <ringGeometry args={[scale * 1.4, scale * 2.4, 64]} />
                         <meshStandardMaterial
                             map={texture} // Reutilizamos pero idealmente sería textura de anillos

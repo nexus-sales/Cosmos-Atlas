@@ -21,8 +21,11 @@ import Satellites from '@/components/sky-map/Satellites';
 import MeteorShower from '@/components/effects/MeteorShower';
 import Comets from '@/components/sky-map/Comets';
 import AuroraBorealis from '@/components/sky-map/AuroraBorealis';
+import AdaptiveSoundscape from '@/components/audio/AdaptiveSoundscape';
+import TelescopeEffect from '@/components/sky-map/TelescopeEffect';
+import AtmosphericSky from '@/components/sky-map/AtmosphericSky';
+import SunFlare from '@/components/sky-map/SunFlare';
 import { useAppStore } from '@/stores/useAppStore';
-import { Bloom, EffectComposer, Noise, Vignette } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { getLST } from '@/lib/astronomy/time';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
@@ -264,6 +267,24 @@ function OrientationDriver() {
     return null;
 }
 
+function SeeingJitter() {
+    const { camera } = useThree();
+    const camFov = useAppStore((s) => s.camFov);
+    const telescopeMode = useAppStore((s) => s.settings.telescopeMode);
+
+    useFrame((state) => {
+        if (!telescopeMode || camFov > 25) return;
+        const time = state.clock.getElapsedTime();
+        const zoomFactor = 1.0 - (camFov / 25.0);
+        const intensity = 0.00004 * (1.0 + zoomFactor * 3.0);
+        const jitterX = Math.sin(time * 15.0) * intensity;
+        const jitterY = Math.cos(time * 18.0) * intensity;
+        camera.translateX(jitterX);
+        camera.translateY(jitterY);
+    });
+    return null;
+}
+
 export default function SkyCanvas() {
     const showGrid = useAppStore((state) => state.settings.showGrid);
     const showMilkyWay = useAppStore((state) => state.settings.showMilkyWay);
@@ -274,6 +295,7 @@ export default function SkyCanvas() {
     return (
         <div className="w-full h-full bg-[#04091a] relative">
             <Canvas
+                shadows
                 gl={{ antialias: true, stencil: false, powerPreference: 'high-performance' }}
                 camera={{ position: [0, 0, 0.01], fov: 60, near: 0.001, far: 200 }}
             >
@@ -301,8 +323,8 @@ export default function SkyCanvas() {
                     <OrientationDriver />
                     <FovZoom />
 
-                    {/* Esfera de fondo — no rotar, siempre envuelve la escena */}
-                    <CelestialSphere />
+                    {/* Esfera Atmosférica Pro — reemplaza a CelestialSphere */}
+                    <AtmosphericSky />
 
                     {/* Grupo rotado al sistema horizontal del observador */}
                     <CelestialGroup>
@@ -333,15 +355,13 @@ export default function SkyCanvas() {
                     {/* Lluvia de meteoros real */}
                     <MeteorShower />
 
-                    <EffectComposer>
-                        {/* Bloom: umbral alto → solo estrellas brillantes (mag<2) tienen corona.
-                            Las tenues quedan como puntos limpios. Estilo Sky Map. */}
-                        <Bloom luminanceThreshold={0.22} mipmapBlur intensity={2.8} radius={0.65} />
-                        <Noise opacity={0.02} />
-                        <Vignette eskil={false} offset={0.08} darkness={1.35} />
-                    </EffectComposer>
+                    <SeeingJitter />
+                    <TelescopeEffect />
+
                     {/* FOVOverlay maneja su propio Html wrapper internamente */}
                     <FOVOverlay />
+                    <AdaptiveSoundscape />
+                    <SunFlare />
                     {/* Brújula con reset de orientación */}
                     <Compass />
                 </Suspense>

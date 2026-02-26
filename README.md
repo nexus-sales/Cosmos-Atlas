@@ -7,19 +7,17 @@ Totalmente responsive e instalable como PWA.
 
 ---
 
-- **Bóveda Celeste 3D Pro** — Esfera celestial completa renderizada con React Three Fiber y motor de partículas optimizado.
-- **Precisión Científica Real** — Corrección por **Precesión de los Equinoccios** (J2000 a Época Actual) y **Refracción Atmosférica** dinámica.
-- **Motor Octree para 40k+ Estrellas de Fondo** — Particionamiento espacial para renderizado eficiente con *frustum culling*.
-- **Vía Láctea "National Geographic"** — Shader GLSL fractal (FBM) combinado con nubes de partículas estilo Gaia (espiral logarítmica).
-- **Seguimiento de Satélites (TLE)** — Órbitas en tiempo real de la **ISS**, **Hubble** y mega-constelaciones como **Starlink** (vía satellite.js). Posiciones calculadas en coordenadas Alt/Az reales para el observador.
-- **Buscador Universal SIMBAD** — Resolución remota de objetos profesionales a través de los servidores **CDS Sesame** de Estrasburgo.
-- **Simulador de Campo de Visión (FOV)** — Herramienta para astrofotografía; ajusta distancia focal y tamaño del sensor (Full Frame, APS-C).
+- **IA Astrónoma (Voice-Over)** — Asistente virtual con síntesis de voz real (Web Speech API) que narra los secretos de los astros seleccionados. UI glassmorphic con visualización de audio dinámica.
+- **Inmersión Planetaria 3D (V3.0)** — Transición fluida de sprites 2D a modelos 3D detallados mediante **Cinematic Zoom** (FOV dinámico). 
+- **Sol Procedural de Alta Fidelidad** — Shader de superficie solar con efecto de ebullición, cromoesfera y corona pulsante.
+- **Atmospheric Scattering** — Simulación realista de la dispersión de Rayleigh en el horizonte; el "glow" atmosférico oculta la línea de tierra y reacciona a la luz ambiente.
+- **Constelaciones Dinámicas con Glow** — Las figuras estelares ahora emiten un aura de neón al ser enfocadas, mejorando la legibilidad y la estética "Premium".
+- **Motor de Partículas Gaia para la Vía Láctea** — Polvo estelar hiper-denso integrado con el shader nebuloso principal para una profundidad visual sin precedentes.
+- **Sistema de Buscador Universal SIMBAD** — Resolución remota de objetos profesionales a través de los servidores **CDS Sesame** de Estrasburgo.
+- **Seguimiento de Satélites (TLE)** — Órbitas en tiempo real de la **ISS**, **Hubble** y mega-constelaciones como **Starlink** (vía satellite.js).
 - **Escala de Bortle Automática** — Simulación de contaminación lumínica real que filtra la visibilidad estelar de 1 a 9.
-- **Modo Nocturno (Red Mode)** — Interfaz y shaders adaptados en rojo puro para preservar la visión nocturna del observador.
-- **Estilo Sky Map & Realismo Crítico** — Jerarquía logarítmica de magnitudes, constelaciones siempre visibles y Bloom calibrado. Objetos representados con su **tamaño angular real** (arcsec/arcmin).
-- **Planetas y Luna con Fases Reales** — Efemérides de alta precisión; Mercurio, Venus y la Luna muestran fases; Júpiter incluye sus lunas Galileanas.
-- **Objetos de Cielo Profundo (DSOs)** — Galaxias, nebulosas y cúmulos representados con texturas procedimentales únicas y dimensiones físicas auténticas.
-- **PWA Instalable** — Manifest, iconos auto-generados y metadatos; instalable en iOS, Android y escritorio.
+- **Modo Nocturno (Red Mode)** — Interfaz y shaders adaptados en rojo puro para preservar la visión nocturna.
+- **PWA Instalable** — Manifest, iconos auto-generados y metadatos; compatible con iOS, Android y escritorio.
 
 ---
 
@@ -88,7 +86,8 @@ src/
 │   │   ├── ObjectInfoTab.tsx    # Detalle del objeto seleccionado
 │   │   ├── ChallengeTab.tsx     # Retos de observación
 │   │   ├── TimeTravelControls.tsx # Slider de viaje temporal
-│   │   └── Compass.tsx          # Brújula interactiva (clic: cenit, doble clic: norte)
+│   │   ├── Compass.tsx          # Brújula interactiva (clic: cenit, doble clic: norte)
+│   │   └── AIAstronoma.tsx      # Narración por voz del guía estelar
 │   │
 │   └── sky-map/
 │       ├── SkyCanvas.tsx        # Canvas 3D principal + CameraNavigator
@@ -392,7 +391,30 @@ Clic de nuevo en el mismo objeto lo deselecciona.
 
 ## Changelog
 
-### v2.5 - 2026-02-24 (Calibracion visual y trazabilidad)
+### v3.0 — 2026-02-26 (Inmersión Planetaria & IA Astrónoma)
+#### 🎙️ IA Astrónoma (Voice-Over)
+- Implementación del componente de **narración interactiva**.
+- Integración con **Web Speech API** para guiado por voz en español.
+- Interfaz flotante con animaciones de espectro de audio y glow reactivo.
+
+#### 🔭 Cinematic Landing & 3D Models
+- **Cinematic Zoom**: La cámara ahora realiza un acercamiento orbital automatizado con ajuste de FOV al seleccionar astros.
+- **Efecto de Cross-fade**: Mezcla suave entre sprites 2D lejanos y modelos 3D detallados al acercarse.
+- **Sol "Bestial"**: Nuevo shader de superficie solar con distorsión por calor, corona exterior y luz volumétrica simulada.
+- **Texturizado HD**: Venus, Marte, Júpiter y Saturno actualizados con mapas de superficie realistas de alta resolución.
+
+#### 🌅 Atmósfera y Horizonte
+- **Atmospheric Scattering**: Implementación de una esfera de Scattering para simular el brillo del cielo cerca del horizonte.
+- Mejor ocultación de la esfera celeste bajo el horizonte, creando una transición tierra-cielo natural.
+
+#### ✨ Mejoras en Constelaciones y DSOs
+- **Foco Estelar**: Glow neón dinámico en las líneas de la constelación centrada por el usuario.
+- **Corrección Geométrica**: Ajuste manual de los patrones de dibujo para Ursa Minor, Taurus, Capricornus y Leo. Añadida la constelación de Cancer.
+- **DSO Landing**: Los objetos de cielo profundo ahora soportan zoom cinemático, aterrizando en su magnitud de observación ideal.
+
+---
+
+### v2.5 - 2026-02-24 (Calibración visual y trazabilidad)
 
 #### Via Lactea: correcciones de rendering y exposicion
 - Reorden de capas para evitar conflictos visuales (`renderOrder` negativo en Via Lactea).

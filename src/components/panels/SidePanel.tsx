@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/stores/useAppStore';
-import { Target, Info, BookOpen, Layers, Grid3X3, ChevronRight, ChevronLeft, ChevronDown, X, Moon, Mountain, Camera, Satellite, Globe, CloudRain, Settings2 } from 'lucide-react';
+import { Target, Info, BookOpen, Layers, Grid3X3, ChevronRight, ChevronLeft, ChevronDown, X, Moon, Mountain, Camera, Satellite, Globe, CloudRain, Settings2, Volume2, VolumeX } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChallengeTab from '@/components/panels/ChallengeTab';
 import ObjectInfoTab from '@/components/panels/ObjectInfoTab';
@@ -66,6 +66,8 @@ export default function SidePanel() {
         { key: 'showFOV' as const, label: 'SIM. FOV', icon: Camera, active: showFOV },
         { key: 'showSatellites' as const, label: 'SATÉLITES', icon: Satellite, active: showSatellites },
         { key: 'showStarlink' as const, label: 'STARLINK', icon: Globe, active: showStarlink },
+        { key: 'audioEnabled' as const, label: 'AUDIO', icon: useAppStore.getState().settings.audioEnabled ? Volume2 : VolumeX, active: useAppStore.getState().settings.audioEnabled },
+        { key: 'telescopeMode' as const, label: 'TELESCOPIO', icon: Camera, active: useAppStore.getState().settings.telescopeMode },
     ];
 
     const [layersOpen, setLayersOpen] = useState(true);
@@ -179,6 +181,21 @@ export default function SidePanel() {
                                             </button>
                                         ))}
                                     </div>
+
+                                    {useAppStore.getState().settings.audioEnabled && (
+                                        <div className="mt-4 px-1 space-y-2">
+                                            <div className="flex justify-between text-[9px] font-bold text-white/40 tracking-widest uppercase">
+                                                <span>Volumen Ambiente</span>
+                                                <span className="text-blue-400">{Math.round(useAppStore.getState().settings.audioVolume * 100)}%</span>
+                                            </div>
+                                            <input
+                                                type="range" min="0" max="1" step="0.01"
+                                                value={useAppStore.getState().settings.audioVolume}
+                                                onChange={(e) => useAppStore.setState(s => ({ settings: { ...s.settings, audioVolume: parseFloat(e.target.value) } }))}
+                                                className="w-full h-1 bg-white/10 rounded-full appearance-none accent-blue-500 cursor-pointer"
+                                            />
+                                        </div>
+                                    )}
                                 </AccordionSection>
 
                                 <AccordionSection title={`Contaminación: Bortle ${bortleScale}`} icon={<Mountain className="w-4 h-4" />} isOpen={bortleOpen} onToggle={() => setBortleOpen(!bortleOpen)}>

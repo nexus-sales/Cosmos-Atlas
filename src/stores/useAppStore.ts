@@ -25,6 +25,9 @@ interface AppState {
         focalLength: number;
         sensorWidth: number;
         sensorHeight: number;
+        audioEnabled: boolean;
+        audioVolume: number;
+        telescopeMode: boolean;
     };
     toggleSetting: (key: keyof AppState['settings']) => void;
     setBortleScale: (scale: number) => void;
@@ -73,6 +76,9 @@ export const useAppStore = create<AppState>((set) => ({
         focalLength: 1000,
         sensorWidth: 36, // Full Frame
         sensorHeight: 24,
+        audioEnabled: false,
+        audioVolume: 0.5,
+        telescopeMode: false,
     },
     toggleSetting: (key) =>
         set((state) => ({

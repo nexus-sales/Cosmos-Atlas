@@ -8,6 +8,7 @@ import { useAppStore } from '@/stores/useAppStore';
 import { Html } from '@react-three/drei';
 import { DSOType, DSO } from '@/types/celestial';
 import { getDSOImage, preloadDSOImage } from '@/data/dsoImages';
+import NebulaVolume from '@/components/sky-map/NebulaVolume';
 
 function hexToRgb(hex: string): [number, number, number] {
     const r = parseInt(hex.slice(1, 3), 16);
@@ -36,11 +37,11 @@ function createDSOTexture(type: DSOType, color: string): THREE.CanvasTexture {
         ctx.rotate(Math.PI / 5);
         ctx.scale(1.6, 0.55);
         const gx = ctx.createRadialGradient(0, 0, 0, 0, 0, c * 0.85);
-        gx.addColorStop(0.0,  `rgba(${r},${g},${b},0.90)`);
+        gx.addColorStop(0.0, `rgba(${r},${g},${b},0.90)`);
         gx.addColorStop(0.15, `rgba(${r},${g},${b},0.55)`);
         gx.addColorStop(0.45, `rgba(${r},${g},${b},0.18)`);
         gx.addColorStop(0.75, `rgba(${r},${g},${b},0.04)`);
-        gx.addColorStop(1.0,  `rgba(${r},${g},${b},0.00)`);
+        gx.addColorStop(1.0, `rgba(${r},${g},${b},0.00)`);
         ctx.fillStyle = gx;
         ctx.beginPath();
         ctx.arc(0, 0, c * 0.85, 0, Math.PI * 2);
@@ -49,10 +50,10 @@ function createDSOTexture(type: DSOType, color: string): THREE.CanvasTexture {
     } else if (type === 'nebula') {
         // Diffuse amorphous cloud — never opaque, always soft
         const gn = ctx.createRadialGradient(c, c, 0, c, c, c * 0.9);
-        gn.addColorStop(0.0,  `rgba(${r},${g},${b},0.55)`);
+        gn.addColorStop(0.0, `rgba(${r},${g},${b},0.55)`);
         gn.addColorStop(0.35, `rgba(${r},${g},${b},0.22)`);
         gn.addColorStop(0.70, `rgba(${r},${g},${b},0.06)`);
-        gn.addColorStop(1.0,  `rgba(${r},${g},${b},0.00)`);
+        gn.addColorStop(1.0, `rgba(${r},${g},${b},0.00)`);
         ctx.fillStyle = gn;
         ctx.beginPath();
         ctx.arc(c, c, c * 0.9, 0, Math.PI * 2);
@@ -60,10 +61,10 @@ function createDSOTexture(type: DSOType, color: string): THREE.CanvasTexture {
     } else {
         // Open/globular cluster — tight central glow with very faint haze
         const gc = ctx.createRadialGradient(c, c, 0, c, c, c * 0.7);
-        gc.addColorStop(0.0,  `rgba(${r},${g},${b},0.80)`);
+        gc.addColorStop(0.0, `rgba(${r},${g},${b},0.80)`);
         gc.addColorStop(0.20, `rgba(${r},${g},${b},0.40)`);
         gc.addColorStop(0.55, `rgba(${r},${g},${b},0.10)`);
-        gc.addColorStop(1.0,  `rgba(${r},${g},${b},0.00)`);
+        gc.addColorStop(1.0, `rgba(${r},${g},${b},0.00)`);
         ctx.fillStyle = gc;
         ctx.beginPath();
         ctx.arc(c, c, c * 0.7, 0, Math.PI * 2);
@@ -98,20 +99,20 @@ function useDSOTexture(dso: DSO): THREE.Texture {
                 const canvas = document.createElement('canvas');
                 canvas.width = canvas.height = 512;
                 const ctx = canvas.getContext('2d')!;
-                
+
                 // Dibujar imagen centrada
                 ctx.fillStyle = '#000';
                 ctx.fillRect(0, 0, 512, 512);
-                
+
                 // Escalar y centrar imagen
                 const scale = Math.min(512 / img.width, 512 / img.height) * 0.9;
                 const w = img.width * scale;
                 const h = img.height * scale;
                 const x = (512 - w) / 2;
                 const y = (512 - h) / 2;
-                
+
                 ctx.drawImage(img, x, y, w, h);
-                
+
                 const tex = new THREE.CanvasTexture(canvas);
                 tex.needsUpdate = true;
                 setTexture(tex);
@@ -140,9 +141,14 @@ function DSOItem({ dso }: { dso: DSOData }) {
     const [hovered, setHovered] = useState(false);
     const setSelectedObject = useAppStore((state) => state.setSelectedObject);
     const nightMode = useAppStore((state) => state.settings.nightMode);
+    const camFov = useAppStore((state) => state.camFov);
     const texture = useDSOTexture(dso);
 
     const displayColor = nightMode ? '#ff4444' : dso.color;
+
+    // Transición suave: a medida que bajamos el FOV (< 35), aparece el volumen.
+    const volumeIntensity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 45, 20, 0, 1), 0, 1);
+    const spriteIntensity = 1.0 - volumeIntensity * 0.7; // El sprite no desaparece del todo, sirve de centro brillante.
 
     return (
         <group position={dso.pos}>
@@ -156,19 +162,28 @@ function DSOItem({ dso }: { dso: DSOData }) {
                 <meshBasicMaterial transparent opacity={0} depthWrite={false} />
             </mesh>
 
-            {/* Textura visual del DSO — faint, soft, purely additive */}
+            {/* VOLUMEN PROCEDURAL (Solo para Nebulosas y Galaxias enfocadas) */}
+            {(dso.type === 'nebula' || dso.type === 'galaxy') && (
+                <NebulaVolume
+                    color={displayColor}
+                    size={dso.visualSize * 1.5}
+                    opacity={volumeIntensity * 0.45}
+                />
+            )}
+
+            {/* Textura visual del DSO (Sprite clásico) */}
             <mesh>
                 <planeGeometry args={[dso.visualSize, dso.visualSize]} />
                 <meshBasicMaterial
                     map={texture}
                     transparent
-                    opacity={0.28}
+                    opacity={0.35 * spriteIntensity}
                     depthWrite={false}
                     blending={THREE.AdditiveBlending}
                 />
             </mesh>
 
-            {/* Label solo en hover */}
+            {/* Label solo en hover o foco (opcional) */}
             {hovered && (
                 <Html distanceFactor={15} zIndexRange={[100, 0]}>
                     <div style={{
