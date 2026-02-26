@@ -147,13 +147,15 @@ export default function BackgroundStars() {
     useFrame(() => {
         if (!pointsRef.current) return;
 
-        // Check if camera direction changed meaningfully (skip rebuild if static)
         const camDir = camera.getWorldDirection(new THREE.Vector3());
         const dot = camDir.dot(prevCamDir.current);
         frameSkip.current++;
-        // Rebuild every 4 frames minimum, or when camera moves more than ~0.1°
-        const cameraMoved = dot < 0.9999985; // ~0.1° threshold
-        if (!cameraMoved && frameSkip.current % 4 !== 0) return;
+
+        // 1° threshold — jitter / slow pan no disparan rebuild por frame
+        const cameraMoved = dot < 0.9998;
+        // Móvil: durante movimiento máx 30fps (cada 2); en reposo 10fps (cada 6)
+        const minSkip = cameraMoved ? 2 : 6;
+        if (frameSkip.current < minSkip) return;
         frameSkip.current = 0;
         prevCamDir.current.copy(camDir);
 
