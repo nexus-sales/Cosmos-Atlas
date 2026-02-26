@@ -1,5 +1,7 @@
 import { Observer } from '../types/celestial';
 import * as Astronomy from 'astronomy-engine';
+import { getActiveShowers, getShowerInfo } from '../data/meteorShowers';
+import type { MeteorShower } from '../data/meteorShowers';
 
 export interface CelestialEvent {
     id: string;
@@ -161,7 +163,24 @@ function getPlanetaryEvents(date: Date, observer: Observer): CelestialEvent[] {
 
 function getMeteorShowerEvents(date: Date): CelestialEvent[] {
     const events: CelestialEvent[] = [];
-    return events; // Se llena dinámicamente en el componente
+    const active = getActiveShowers(date);
+
+    active.forEach((shower: MeteorShower) => {
+        const info = getShowerInfo(shower, date);
+        if (info.status !== 'inactive') {
+            events.push({
+                id: `shower-${shower.id}`,
+                type: 'shower',
+                object: `Lluvia ${shower.name}`,
+                time: date,
+                description: `${info.status === 'peaking' ? '¡MÁXIMO! ' : ''}${shower.shortName}: ${info.thz} meteoros/hora. ${shower.parentBody}.`,
+                visible: true,
+                icon: '☄️'
+            });
+        }
+    });
+
+    return events;
 }
 
 function calculateAltitude(body: Astronomy.Body, date: Date, observer: Observer): number {

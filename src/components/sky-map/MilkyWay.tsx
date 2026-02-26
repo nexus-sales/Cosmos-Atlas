@@ -210,14 +210,17 @@ function MilkyWayParticles() {
     // Crear textura de glow una sola vez
     const glowTexture = useMemo(() => createGlowTexture(), []);
 
-    const [positions, colors] = useMemo(() => {
-        const count = 14000;
+    const [positions, colors, sizes] = useMemo(() => {
+        const count = 22000;
         const pos = new Float32Array(count * 3);
         const col = new Float32Array(count * 3);
+        const siz = new Float32Array(count);
 
-        const coreColor = new THREE.Color('#ffdd99');  // Bulbo dorado cálido
-        const armColor = new THREE.Color('#aaccff');  // Brazos azul-blanco
-        const rimColor = new THREE.Color('#ffffff');  // Estrellas lejanas blancas
+        const coreColor = new THREE.Color('#ffcc77');  // Bulbo dorado intenso
+        const armColor = new THREE.Color('#99ccff');   // Brazos blanco-azulados frío
+        const halphaColor = new THREE.Color('#ff99bb'); // H-Alpha (regiones rosadas)
+        const dustExtColor = new THREE.Color('#aa7755'); // Extinción por polvo (rojizo/ocre)
+        const rimColor = new THREE.Color('#ffffff');
 
         const SPHERE_R = 97; // Radio ligeramente menor que la esfera de fondo (99)
 
@@ -258,17 +261,33 @@ function MilkyWayParticles() {
             pos[i3 + 2] = dz * r;
 
             // Color: más cálido en el centro, más azul/blanco en los brazos
-            const coreFrac = Math.pow(1.0 - dist, 3.0);
-            const rimFrac = dist * 0.4;
+            const coreFrac = Math.pow(1.0 - dist, 4.0);
+            const rimFrac = dist * 0.3;
+
+            // Variedad espectral:
+            // 1. Regiones H-Alpha (HII) aleatorias en los brazos
+            const isHAlpha = rng() < 0.08 && dist > 0.3;
+            // 2. Extinción local (estrellas que se ven a través de polvo)
+            const isDusty = rng() < 0.12 && dist > 0.2;
+            // 3. Estrellas jóvenes muy azules
+            const isHotBlue = rng() < 0.05 && dist > 0.4;
+
             const c = new THREE.Color()
                 .lerpColors(armColor, coreColor, coreFrac)
                 .lerp(rimColor, rimFrac);
 
+            if (isHAlpha) c.lerp(halphaColor, 0.7);
+            if (isDusty) c.lerp(dustExtColor, 0.6);
+            if (isHotBlue) c.lerp(new THREE.Color('#4488ff'), 0.8);
+
             col[i3] = c.r;
             col[i3 + 1] = c.g;
             col[i3 + 2] = c.b;
+
+            // Tamaño variado
+            siz[i] = (0.15 + rng() * 0.4) * (1.0 + coreFrac * 0.5);
         }
-        return [pos, col];
+        return [pos, col, siz];
     }, []);
 
     return (
@@ -288,16 +307,23 @@ function MilkyWayParticles() {
                     itemSize={3}
                     args={[colors, 3]}
                 />
+                <bufferAttribute
+                    attach="attributes-size"
+                    count={sizes.length}
+                    array={sizes}
+                    itemSize={1}
+                    args={[sizes, 1]}
+                />
             </bufferGeometry>
             <pointsMaterial
-                map={glowTexture}          // ← textura difusa: elimina los cuadrados
-                size={0.32}                 // tamaño sutil
-                sizeAttenuation={true}     // se hace menor con la distancia
-                vertexColors               // usa el array de colores personalizados
+                map={glowTexture}
+                size={0.28}
+                sizeAttenuation={true}
+                vertexColors
                 transparent={true}
-                opacity={0.22}             // ajustado para mejor visibilidad
-                alphaTest={0.01}           // descarta píxeles casi transparentes
-                blending={THREE.NormalBlending}
+                opacity={0.3}
+                alphaTest={0.001}
+                blending={THREE.AdditiveBlending}
                 depthWrite={false}
                 depthTest={false}
                 toneMapped={false}

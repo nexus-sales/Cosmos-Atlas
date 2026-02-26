@@ -295,7 +295,7 @@ export default function SkyCanvas() {
     return (
         <div className="w-full h-full bg-[#04091a] relative">
             <Canvas
-                shadows
+                shadows={{ type: THREE.PCFShadowMap }}
                 gl={{ antialias: true, stencil: false, powerPreference: 'high-performance' }}
                 camera={{ position: [0, 0, 0.01], fov: 60, near: 0.001, far: 200 }}
             >

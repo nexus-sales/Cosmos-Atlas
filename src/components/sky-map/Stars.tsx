@@ -18,6 +18,7 @@ const starVertexShader = `
   varying vec3 vColor;
   varying float vOpacity;
   varying float vSize;
+  varying float vAirmass;
   uniform float uTime;
   uniform float uTimeSec;
 
@@ -42,6 +43,7 @@ const starVertexShader = `
     float twinkleAmp = 0.15 + airmass * 0.12;
     float noise = sin(uTime * twinkleSpeed + position.x * 100.0) * 0.6 + sin(uTime * twinkleSpeed * 0.8 + position.y * 100.0) * 0.4;
     vOpacity = varFactor * depthFactor * ((1.0 - twinkleAmp) + twinkleAmp * noise);
+    vAirmass = airmass;
 
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
     // Ajuste de tamaño para que estrellas brillantes resalten más (efecto bloom simulado)
@@ -54,6 +56,7 @@ const starFragmentShader = `
   varying vec3 vColor;
   varying float vOpacity;
   varying float vSize;
+  varying float vAirmass;
   uniform bool uNightMode;
 
   void main() {
@@ -67,6 +70,12 @@ const starFragmentShader = `
     } else {
         float lum = dot(vColor, vec3(0.299, 0.587, 0.114));
         baseColor = mix(vec3(lum), vColor, 1.8);
+        
+        // --- EXTINCIÓN ATMOSFÉRICA ---
+        // A mayor airmass, la luz se dispersa más (especialmente la azul)
+        // Coeficientes de extinción: B=0.35, G=0.20, R=0.12 (aprox. cielos medios)
+        vec3 extinction = exp(-vAirmass * vec3(0.08, 0.15, 0.28) * 0.15);
+        baseColor *= extinction;
     }
 
     // --- EFECTO ESTRELLA DIAMANTE (Star Walk 2 Style) ---

@@ -3,6 +3,7 @@ import * as THREE from 'three';
 export interface OctreeNode {
     center: THREE.Vector3;
     size: number;
+    box: THREE.Box3; // Cache the box for fast frustum intersection
     indices: number[]; // Indices of stars in the main data array
     children: OctreeNode[] | null;
 }
@@ -17,12 +18,15 @@ export class StarOctree {
         const size = 200;
         const center = new THREE.Vector3(0, 0, 0);
 
-        const initialIndices = Array.from({ length: count }, (_, i) => i);
+        const initialIndices: number[] = [];
+        for (let i = 0; i < count; i++) initialIndices.push(i);
+
         this.root = this.buildNode(center, size, initialIndices, positions, 0);
     }
 
     private buildNode(center: THREE.Vector3, size: number, indices: number[], positions: Float32Array, depth: number): OctreeNode {
-        const node: OctreeNode = { center, size, indices, children: null };
+        const box = new THREE.Box3().setFromCenterAndSize(center, new THREE.Vector3(size, size, size));
+        const node: OctreeNode = { center, size, box, indices, children: null };
 
         if (indices.length <= this.maxStarsPerNode || depth >= this.maxDepth) {
             return node;
@@ -34,27 +38,30 @@ export class StarOctree {
         const half = size / 2;
         const quarter = size / 4;
 
+        // Bucket assignment (O(N) instead of O(8*N))
+        const buckets: number[][] = Array.from({ length: 8 }, () => []);
+
+        for (const idx of indices) {
+            const px = positions[idx * 3];
+            const py = positions[idx * 3 + 1];
+            const pz = positions[idx * 3 + 2];
+
+            const ix = px >= center.x ? 1 : 0;
+            const iy = py >= center.y ? 2 : 0;
+            const iz = pz >= center.z ? 4 : 0;
+            buckets[ix + iy + iz].push(idx);
+        }
+
         for (let i = 0; i < 8; i++) {
+            if (buckets[i].length === 0) continue;
+
             const childCenter = new THREE.Vector3(
                 center.x + (i & 1 ? quarter : -quarter),
                 center.y + (i & 2 ? quarter : -quarter),
                 center.z + (i & 4 ? quarter : -quarter)
             );
 
-            const childIndices = indices.filter(idx => {
-                const px = positions[idx * 3];
-                const py = positions[idx * 3 + 1];
-                const pz = positions[idx * 3 + 2];
-                return (
-                    Math.abs(px - childCenter.x) <= quarter &&
-                    Math.abs(py - childCenter.y) <= quarter &&
-                    Math.abs(pz - childCenter.z) <= quarter
-                );
-            });
-
-            if (childIndices.length > 0) {
-                node.children.push(this.buildNode(childCenter, half, childIndices, positions, depth + 1));
-            }
+            node.children.push(this.buildNode(childCenter, half, buckets[i], positions, depth + 1));
         }
 
         return node;
@@ -65,10 +72,8 @@ export class StarOctree {
     }
 
     private recursiveSearch(node: OctreeNode, frustum: THREE.Frustum, result: number[]) {
-        // Test de caja (AABB) contra frustum
-        const box = new THREE.Box3().setFromCenterAndSize(node.center, new THREE.Vector3(node.size, node.size, node.size));
-
-        if (!frustum.intersectsBox(box)) return;
+        // Reuse cached box - NO ALLOCATIONS here!
+        if (!frustum.intersectsBox(node.box)) return;
 
         if (node.children) {
             for (const child of node.children) {

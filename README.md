@@ -12,11 +12,11 @@ Totalmente responsive e instalable como PWA.
 - **Sol Procedural de Alta Fidelidad** — Shader de superficie solar con efecto de ebullición, cromoesfera y corona pulsante.
 - **Atmospheric Scattering** — Simulación realista de la dispersión de Rayleigh en el horizonte; el "glow" atmosférico oculta la línea de tierra y reacciona a la luz ambiente.
 - **Constelaciones Dinámicas con Glow** — Las figuras estelares ahora emiten un aura de neón al ser enfocadas, mejorando la legibilidad y la estética "Premium".
-- **Motor de Partículas Gaia para la Vía Láctea** — Polvo estelar hiper-denso integrado con el shader nebuloso principal para una profundidad visual sin precedentes.
-- **Sistema de Buscador Universal SIMBAD** — Resolución remota de objetos profesionales a través de los servidores **CDS Sesame** de Estrasburgo.
-- **Seguimiento de Satélites (TLE)** — Órbitas en tiempo real de la **ISS**, **Hubble** y mega-constelaciones como **Starlink** (vía satellite.js).
-- **Escala de Bortle Automática** — Simulación de contaminación lumínica real que filtra la visibilidad estelar de 1 a 9.
-- **Modo Nocturno (Red Mode)** — Interfaz y shaders adaptados en rojo puro para preservar la visión nocturna.
+- **Busqueda Universal SIMBAD** — Resolución remota de objetos profesionales a través de los servidores **CDS Sesame** de Estrasburgo; encuentra millones de objetos no catalogados localmente.
+- **Extinción Atmosférica Física** — Las estrellas se atenúan y enrojecen al acercarse al horizonte según la masa de aire (airmass), simulando la dispersión real de la atmósfera.
+- **Pronóstico de Lluvias de Meteoros** — Calendario dinámico de actividad (Cuadrántidas, Perseidas, etc.) con cálculo de tasa horaria (THZ) y visibilidad en tiempo real.
+- **Vía Láctea Fase 2** — Variación espectral, regiones H-Alpha (naceiros estelares) y líneas de polvo interestelar para un realismo fotográfico.
+- **Octree de Alto Rendimiento** — Motor de culling espacial optimizado con búsqueda por cubetas y caché AABB para un rendimiento fluido con miles de objetos.
 - **PWA Instalable** — Manifest, iconos auto-generados y metadatos; compatible con iOS, Android y escritorio.
 
 ---
@@ -408,9 +408,38 @@ Clic de nuevo en el mismo objeto lo deselecciona.
 - Mejor ocultación de la esfera celeste bajo el horizonte, creando una transición tierra-cielo natural.
 
 #### ✨ Mejoras en Constelaciones y DSOs
-- **Foco Estelar**: Glow neón dinámico en las líneas de la constelación centrada por el usuario.
-- **Corrección Geométrica**: Ajuste manual de los patrones de dibujo para Ursa Minor, Taurus, Capricornus y Leo. Añadida la constelación de Cancer.
-- **DSO Landing**: Los objetos de cielo profundo ahora soportan zoom cinemático, aterrizando en su magnitud de observación ideal.
+#### \u2728 Mejoras en Constelaciones y DSOs
+- **Foco Estelar**: Glow ne\u00f3n din\u00e1mico en las l\u00edneas de la constelaci\u00f3n centrada por el usuario.
+- **Correcci\u00f3n Geom\u00e9trica**: Ajuste manual de los patrones de dibujo para Ursa Minor, Taurus, Capricornus y Leo. A\u00f1adida la constelaci\u00f3n de Cancer.
+- **DSO Landing**: Los objetos de cielo profundo ahora soportan zoom cinem\u00e1tico, aterrizando en su magnitud de observaci\u00f3n ideal.
+
+---
+
+### v3.1 \u2014 2026-02-26 (Buscador Universal & Realismo Atmosf\u00e9rico)
+
+#### \ud83d\udd0d Buscador Universal SIMBAD (Sesame)
+- Integraci\u00f3n del servicio **CDS Sesame** para resolver cualquier objeto astron\u00f3mico por nombre.
+- Si un objeto no est\u00e1 en el cat\u00e1logo local, la aplicaci\u00f3n consulta en vivo las bases de datos profesionales (SIMBAD/NED).
+- Resultados remotos con coordenadas precisas, tipo de objeto y magnitud.
+
+#### \ud83c\udf04 Extinci\u00f3n Atmosf\u00e9rica & Shaders
+- **Atmospheric Extinction**: Nuevo m\u00f3dulo en el shader de estrellas que simula la p\u00e9rdida de luz y el desplazamiento al rojo cerca del horizonte.
+- **Twinkle Din\u00e1mico**: El parpadeo de las estrellas aumenta proporcionalmente a su masa de aire (airmass).
+- **V\u00eda L\u00e1ctea HD (Fase 2)**: Introducci\u00f3n de variedad espectral en 22,000 part\u00edculas, con regiones H-Alpha rosadas y ocre de polvo interestelar.
+
+#### \ud83d\udcc5 Eventos & Lluvias de Meteoros
+- Implementaci\u00f3n de datos reales para lluvias de meteoros (Cuadr\u00e1ntidas, L\u00edridas, Perseidas, etc.).
+- C\u00e1lculo de actividad din\u00e1mica (THZ) seg\u00fan la cercan\u00eda al pico de la lluvia.
+- Integraci\u00f3n en el panel **DailyEvents** con iconos y estados de visibilidad.
+
+#### \u26a1 Optimizaci\u00f3n de Motor
+- **Octree V2**: Refactorizaci\u00f3n del sistema de particionamiento espacial para b\u00fasquedas O(log N) ultra-r\u00e1pidas.
+- Eliminaci\u00f3n de asignaciones de memoria temporales en el bucle de renderizado mediante cach\u00e9 AABB.
+- Carga de texturas de planetas corregida (eliminados 404s y errores de carga CORS).
+
+#### \ud83e\udd16 IA Astr\u00f3noma Proactiva
+- **Smart Suggestions**: La IA ahora analiza el cielo visible y sugiere objetos fascinantes para observar en ese momento exacto.
+- **Memoria de Di\u00e1logo**: Historial de mensajes y narrativas enriquecidas con mitolog\u00eda y datos curiosos.
 
 ---
 

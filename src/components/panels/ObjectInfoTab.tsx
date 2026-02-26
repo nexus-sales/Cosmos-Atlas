@@ -80,15 +80,15 @@ export default function ObjectInfoTab() {
             <div className="grid grid-cols-2 gap-2">
                 <MetricCard
                     label="Magnitud"
-                    value={selected.mag.toFixed(2)}
-                    sub={selected.mag < 0 ? 'Superbrill.' : selected.mag < 2 ? 'Muy brillante' : 'Brillante'}
+                    value={selected.mag?.toFixed(2) ?? '?'}
+                    sub={selected.mag === undefined ? 'N/A' : (selected.mag < 0 ? 'Superbrill.' : selected.mag < 2 ? 'Muy brillante' : 'Brillante')}
                     color={accentColor}
                     icon={<Zap className="w-3 h-3" />}
                 />
                 <MetricCard
                     label="Posición"
-                    value={`${(selected.ra / 15).toFixed(1)}h`}
-                    sub={`Dec ${selected.dec > 0 ? '+' : ''}${selected.dec.toFixed(1)}°`}
+                    value={`${((selected.ra || 0) / 15).toFixed(1)}h`}
+                    sub={`Dec ${selected.dec > 0 ? '+' : ''}${(selected.dec || 0).toFixed(1)}°`}
                     color={accentColor}
                     icon={<Navigation className="w-3 h-3" />}
                 />

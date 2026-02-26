@@ -6,12 +6,13 @@ import { CONSTELLATIONS } from '@/data/constellations';
 import { getConstellationDisplayName } from '@/data/constellationNames';
 import { useAppStore } from '@/stores/useAppStore';
 import { Search, Star as StarIcon, Orbit, CloudFog, Sparkles, X, Globe2, Share2, ChevronDown } from 'lucide-react';
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import type { Star, DSO, Planet } from '@/types/celestial';
 import { equToHor, equatorialTo3D } from '@/lib/astronomy/transforms';
 import * as THREE from 'three';
 import * as Astronomy from 'astronomy-engine';
+import { resolveObjectName, SesameResolution } from '@/lib/astronomy/sesame';
 
 type Filter = 'all' | 'stars' | 'planets' | 'galaxies' | 'nebulae' | 'clusters' | 'constellations';
 
@@ -191,6 +192,11 @@ export default function GuideTab() {
     const observer = useAppStore((s) => s.observer);
     const time = useAppStore((s) => s.time);
 
+    // --- Remote Search State ---
+    const [remoteResult, setRemoteResult] = useState<SesameResolution | null>(null);
+    const [isSearchingRemote, setIsSearchingRemote] = useState(false);
+    const lastSearchRef = useRef('');
+
     const q = search.trim().toLowerCase();
     // When no search, limit items; when searching show all matches
     const limit = q ? Infinity : MAX_PER_SECTION;
@@ -250,6 +256,30 @@ export default function GuideTab() {
         };
     }, [q, filter, observer, time, limit]);
 
+    // --- Debounced Remote Search ---
+    useEffect(() => {
+        if (!q || q.length < 3) {
+            setRemoteResult(null);
+            setIsSearchingRemote(false);
+            return;
+        }
+
+        // Only search remote if local results are scarce (e.g. fewer than 5)
+        const totalLocal = starTotal + dsoTotal + planetList.length + constellationTotal;
+
+        const timeoutId = setTimeout(async () => {
+            if (lastSearchRef.current === q) return;
+            lastSearchRef.current = q;
+
+            setIsSearchingRemote(true);
+            const result = await resolveObjectName(q);
+            setRemoteResult(result);
+            setIsSearchingRemote(false);
+        }, 800);
+
+        return () => clearTimeout(timeoutId);
+    }, [q]);
+
     const [openSections, setOpenSections] = useState<Record<string, boolean>>({
         planets: true, stars: true, galaxies: true, nebulae: true, clusters: true, constellations: true,
     });
@@ -277,12 +307,19 @@ export default function GuideTab() {
                     style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)', color: 'rgba(255,255,255,0.85)' }}
                 />
                 {search && (
-                    <button title="Limpiar" onClick={() => setSearch('')}
+                    <button title="Limpiar" onClick={() => { setSearch(''); setRemoteResult(null); }}
                         className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 transition-colors">
                         <X className="w-3.5 h-3.5" />
                     </button>
                 )}
             </div>
+
+            {isSearchingRemote && (
+                <div className="flex items-center gap-2 px-3 py-1.5 text-[10px] text-blue-400 font-mono animate-pulse">
+                    <Sparkles className="w-3 h-3" />
+                    Consultando bases de datos SIMBAD/CDS...
+                </div>
+            )}
 
             {/* Filtros */}
             <div className="flex flex-wrap gap-1.5">
@@ -447,9 +484,50 @@ export default function GuideTab() {
                 </section>
             )}
 
-            {starList.length === 0 && dsoList.length === 0 && planetList.length === 0 && constellationList.length === 0 && (
+            {/* RESULTADOS REMOTOS (SIMBAD) */}
+            {remoteResult && (
+                <section className="animate-in slide-in-from-bottom-2 duration-500">
+                    <div className="flex items-center gap-2 px-1 mb-2">
+                        <Globe2 className="w-3.5 h-3.5 text-blue-400" />
+                        <span className="text-[10px] font-bold tracking-widest text-blue-300 uppercase">Resultado SIMBAD</span>
+                    </div>
+                    {(() => {
+                        const obj = {
+                            name: remoteResult.name,
+                            ra: remoteResult.ra,
+                            dec: remoteResult.dec,
+                            mag: remoteResult.mag || 0,
+                            desc: `Objeto resuelto v\u00eda ${remoteResult.source}. Tipo: ${remoteResult.type || 'Desconocido'}.`,
+                            kind: 'planet' as const, // We use planet kind for generic targetable things
+                            symbol: '\u2727',
+                            color: '#60a5fa'
+                        };
+                        const { alt } = equToHor(obj.ra, obj.dec, observer.lat, observer.lon, time);
+                        const active = isTargeted(obj);
+                        return (
+                            <div key="remote-result">
+                                <button onClick={() => handleSelect(obj as any)}
+                                    className={cn('w-full flex items-center gap-2.5 px-2.5 py-3 rounded-lg text-left transition-all border',
+                                        active ? 'border-blue-400/50 bg-blue-500/10 text-blue-200 shadow-[0_0_15px_rgba(59,130,246,0.1)]'
+                                            : 'border-blue-400/20 bg-blue-500/5 text-white/75 hover:text-white hover:border-blue-400/40')}>
+                                    <span className="text-[14px] shrink-0 leading-none text-blue-400">&#x2727;</span>
+                                    <div className="flex flex-col flex-1 min-w-0">
+                                        <span className="text-[13px] font-bold truncate">{obj.name}</span>
+                                        <span className="text-[9px] text-blue-400/60 font-mono tracking-tighter uppercase">{remoteResult.type || 'Object'}</span>
+                                    </div>
+                                    <div suppressHydrationWarning title={alt > 0 ? `Visible \u00b7 Alt ${alt.toFixed(0)}\u00b0` : 'Bajo el horizonte'}
+                                        className={cn('w-1.5 h-1.5 rounded-full shrink-0 ml-0.5', alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15')} />
+                                </button>
+                                {active && <InfoCard obj={obj as any} />}
+                            </div>
+                        );
+                    })()}
+                </section>
+            )}
+
+            {starList.length === 0 && dsoList.length === 0 && planetList.length === 0 && constellationList.length === 0 && !remoteResult && !isSearchingRemote && (
                 <p className="text-center text-[12px] text-white/35 italic py-10">
-                    Sin resultados para &laquo;{search}&raquo;
+                    Sin resultados locales para &laquo;{search}&raquo;
                 </p>
             )}
         </div>

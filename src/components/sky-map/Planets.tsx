@@ -29,57 +29,57 @@ const PLANET_CONFIGS: PlanetConfig[] = [
     {
         body: Astronomy.Body.Venus,
         name: 'Venus', symbol: '♀', color: '#fff8d4',
-        description: (mag) => `Planeta más brillante del cielo. Mag ${mag.toFixed(1)}. Fases visibles con binoculares.`,
+        description: (mag) => `Planeta más brillante del cielo. Mag ${mag?.toFixed(1) ?? '?'}. Fases visibles con binoculares.`,
         textureKey: 'venus'
     },
     {
         body: Astronomy.Body.Jupiter,
         name: 'Júpiter', symbol: '♃', color: '#ffe4b0',
-        description: (mag) => `El gigante gaseoso del sistema solar. Mag ${mag.toFixed(1)}. Sus cuatro lunas son visibles con prismáticos.`,
+        description: (mag) => `El gigante gaseoso del sistema solar. Mag ${mag?.toFixed(1) ?? '?'}. Sus cuatro lunas son visibles con prismáticos.`,
         textureKey: 'jupiter'
     },
     {
         body: Astronomy.Body.Mars,
         name: 'Marte', symbol: '♂', color: '#ff7744',
-        description: (mag) => `El Planeta Rojo. Mag ${mag.toFixed(1)}. Su color naranja es inconfundible.`,
+        description: (mag) => `El Planeta Rojo. Mag ${mag?.toFixed(1) ?? '?'}. Su color naranja es inconfundible.`,
         textureKey: 'mars'
     },
     {
         body: Astronomy.Body.Saturn,
         name: 'Saturno', symbol: '♄', color: '#f5d97a',
-        description: (mag) => `Sus anillos son visibles en telescopio pequeño. Mag ${mag.toFixed(1)}.`,
+        description: (mag) => `Sus anillos son visibles en telescopio pequeño. Mag ${mag?.toFixed(1) ?? '?'}.`,
         textureKey: 'saturn'
     },
     {
         body: Astronomy.Body.Mercury,
         name: 'Mercurio', symbol: '☿', color: '#b8c8d8',
-        description: (mag) => `El planeta más esquivo. Mag ${mag.toFixed(1)}. Siempre cerca del horizonte.`,
+        description: (mag) => `El planeta más esquivo. Mag ${mag?.toFixed(1) ?? '?'}. Siempre cerca del horizonte.`,
         textureKey: 'mercury'
     },
     {
         body: Astronomy.Body.Uranus,
         name: 'Urano', symbol: '⛢', color: '#a8dff0',
-        description: (mag) => `Gigante de hielo. Mag ${mag.toFixed(1)}. Visible a ojo desnudo en cielo muy oscuro.`,
+        description: (mag) => `Gigante de hielo. Mag ${mag?.toFixed(1) ?? '?'}. Visible a ojo desnudo en cielo muy oscuro.`,
         textureKey: 'uranus'
     },
     {
         body: Astronomy.Body.Neptune,
         name: 'Neptuno', symbol: '♆', color: '#4060ff',
-        description: (mag) => `El gigante azul más lejano. Mag ${mag.toFixed(1)}. Requiere binoculares.`,
+        description: (mag) => `El gigante azul más lejano. Mag ${mag?.toFixed(1) ?? '?'}. Requiere binoculares.`,
         textureKey: 'neptune'
     },
 ];
 
 const TEXTURES = {
-    mercury: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/mercury.jpg',
-    venus: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/venus_surface.jpg',
-    mars: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/mars_1k_color.jpg',
-    jupiter: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/jupiter_1k_color.jpg',
-    saturn: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/saturn_1k_color.jpg',
-    uranus: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/uranus.jpg',
-    neptune: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/neptune.jpg',
-    moon: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/moon_1024.jpg',
-    sun: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/sun.jpg',
+    mercury: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/mercurymap.jpg',
+    venus: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/venusmap.jpg',
+    mars: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/marsmap1k.jpg',
+    jupiter: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/jupitermap.jpg',
+    saturn: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/saturnmap.jpg',
+    uranus: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/uranusmap.jpg',
+    neptune: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/neptunemap.jpg',
+    moon: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/moon_1024.jpg',
+    sun: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/sun.jpg',
 };
 
 const AU_KM = 149597870.7;
