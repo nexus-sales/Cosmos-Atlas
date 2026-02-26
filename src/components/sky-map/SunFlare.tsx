@@ -33,9 +33,9 @@ export default function SunFlare() {
         };
 
         return [
-            createFlare(128, 'rgba(255, 230, 180, 0.4)', true),
-            createFlare(64, 'rgba(200, 220, 255, 0.1)', false),
-            createFlare(32, 'rgba(255, 200, 200, 0.08)', true),
+            createFlare(128, 'rgba(255, 230, 180, 0.25)', true), // Centro suave
+            createFlare(64, 'rgba(200, 220, 255, 0.08)', false), // Anillo sutil
+            createFlare(32, 'rgba(255, 200, 200, 0.05)', true), // Secundario tenue
         ];
     }, []);
 
@@ -75,7 +75,7 @@ export default function SunFlare() {
             // Dim flare drastically when zooming in (Space mode)
             const cam = camera as THREE.PerspectiveCamera;
             const zoomSuppression = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(cam.fov, 45, 20, 1.0, 0.05), 0.05, 1.0);
-            const globalOpacity = THREE.MathUtils.clamp(1.0 - distFromCenter * 0.9, 0, 1) * 0.65 * zoomSuppression;
+            const globalOpacity = THREE.MathUtils.clamp(1.0 - distFromCenter * 0.9, 0, 1) * 0.35 * zoomSuppression;
 
             const elements = groupRef.current.children as THREE.Sprite[];
             elements.forEach((sprite, i) => {
@@ -87,8 +87,8 @@ export default function SunFlare() {
                 pos.unproject(camera);
                 sprite.position.copy(pos);
 
-                sprite.material.opacity = globalOpacity * (1.0 - i * 0.25);
-                sprite.scale.setScalar(0.04 + i * 0.03);
+                sprite.material.opacity = globalOpacity * (0.8 - i * 0.2);
+                sprite.scale.setScalar(0.02 + i * 0.02);
             });
 
         } catch { if (groupRef.current) groupRef.current.visible = false; }
