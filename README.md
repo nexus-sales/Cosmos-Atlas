@@ -10,6 +10,9 @@ Totalmente responsive e instalable como PWA.
 - **IA Astrónoma (Voice-Over)** — Asistente virtual con síntesis de voz real (Web Speech API) que narra los secretos de los astros seleccionados. UI glassmorphic con visualización de audio dinámica.
 - **Inmersión Planetaria 3D (V3.0)** — Transición fluida de sprites 2D a modelos 3D detallados mediante **Cinematic Zoom** (FOV dinámico). 
 - **Sol Procedural de Alta Fidelidad** — Shader de superficie solar con efecto de ebullición, cromoesfera y corona pulsante.
+- **Atmospheric/Sun Suppression (Space Mode)** — Supresión dinámica de la atmósfera y el resplandor solar al hacer zoom en DSOs o planetas, proporcionando claridad de "Telescopio Espacial" inclusdo de día.
+- **Renderizado de DSOs de Próxima Generación** — Galaxias procedimentales con bulbos, discos y bandas de polvo; nebulosas gaseosas con filamentos realistas.
+- **Sistema Galileano Completo** — Simulación de Ío, Europa, Ganímedes y Calisto con órbitas precisas y calibración visual para planetas a escala exagerada.
 - **Atmospheric Scattering** — Simulación realista de la dispersión de Rayleigh en el horizonte; el "glow" atmosférico oculta la línea de tierra y reacciona a la luz ambiente.
 - **Constelaciones Dinámicas con Glow** — Las figuras estelares ahora emiten un aura de neón al ser enfocadas, mejorando la legibilidad y la estética "Premium".
 - **Busqueda Universal SIMBAD** — Resolución remota de objetos profesionales a través de los servidores **CDS Sesame** de Estrasburgo; encuentra millones de objetos no catalogados localmente.
@@ -149,7 +152,7 @@ Incluye todas las constelaciones clásicas (Orion, Ursa Major, Scorpius, etc.) m
 
 ### Objetos de cielo profundo (`dsos.ts`)
 
-42 objetos clasificados en 3 tipos:
+Catálogo expandido con más de 45 objetos clave, incluyendo el Grupo Local y objetos icónicos del espacio profundo:
 
 | Tipo | Ejemplos |
 |---|---|
@@ -437,9 +440,29 @@ Clic de nuevo en el mismo objeto lo deselecciona.
 - Eliminaci\u00f3n de asignaciones de memoria temporales en el bucle de renderizado mediante cach\u00e9 AABB.
 - Carga de texturas de planetas corregida (eliminados 404s y errores de carga CORS).
 
-#### \ud83e\udd16 IA Astr\u00f3noma Proactiva
-- **Smart Suggestions**: La IA ahora analiza el cielo visible y sugiere objetos fascinantes para observar en ese momento exacto.
-- **Memoria de Di\u00e1logo**: Historial de mensajes y narrativas enriquecidas con mitolog\u00eda y datos curiosos.
+#### 🤖 IA Astrónoma Proactiva
+- **Smart Suggestions**: La IA ahora analiza el cielo visible y sugiere objetos fascinantes (incluyendo DSOs como Andrómeda u Orión) para observar en ese momento exacto.
+- **Memoria de Diálogo**: Historial de mensajes y narrativas enriquecidas con mitología y datos curiosos.
+- **Explicit Naming**: La IA ahora anuncia vocalmente el nombre del objeto antes de su descripción (ej: "Destino: Marte...").
+
+---
+
+### v3.2 — 2026-02-26 (Deep Space Overhaul & Stellar Tours)
+
+#### 🌌 Deep Sky Object Overhaul
+- **Catálogo Expandido**: Añadidas galaxias M31, M33, M81, M82, M87 y las Nubes de Magallanes (LMC/SMC).
+- **Procedural Fidelity**: Nuevas texturas fractales para galaxias (núcleos densos, espirales, carriles de polvo) y nebulosas gaseosas.
+- **Space Mode**: Al hacer zoom (FOV < 45), la atmósfera y el SunFlare se atenúan automáticamente para una visibilidad perfecta.
+
+#### 🪐 Júpiter: Sistema de Lunas Completo
+- **Efemérides Galileanas**: Simulación orbital precisa de Ío, Europa, Ganímedes y Calisto.
+- **Escala Visual Corregida**: Las lunas ahora orbitan fuera del disco planetario visual de Júpiter, compensando la escala exagerada de los modelos 3D.
+- **Labels Dinámicos**: Identificación automática de las lunas al alcanzar zoom de observación telescópica.
+
+#### 🛰️ Stellar Tours Express
+- **Tour del Sistema Solar y Más Allá**: Viaje narrado que ahora incluye el Sol, planetas, Andrómeda, Orión, las Pléyades, Alpha Centauri y el Centro Galáctico (Sagitario A*).
+- **Control de Usuario**: Añadido botón "Siguiente" para saltar entre explicaciones sin esperar el temporizador.
+- **Prevención de Conflictos**: La IA ya no interrumpe sus propias narraciones durante el tour al seleccionar objetos manualmente.
 
 ---
 

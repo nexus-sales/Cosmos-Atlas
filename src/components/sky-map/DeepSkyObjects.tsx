@@ -18,57 +18,79 @@ function hexToRgb(hex: string): [number, number, number] {
 }
 
 function createDSOTexture(type: DSOType, color: string): THREE.CanvasTexture {
-    const size = 128;
+    const size = 256; // Increased resolution for better noise
     const canvas = document.createElement('canvas');
     canvas.width = canvas.height = size;
     const ctx = canvas.getContext('2d')!;
     const c = size / 2;
     ctx.clearRect(0, 0, size, size);
 
-    // Parse color for rgba stops
     let rgb: [number, number, number] = [200, 200, 255];
     try { rgb = hexToRgb(color.length === 7 ? color : '#aaaaff'); } catch { /* ignore */ }
     const [r, g, b] = rgb;
 
     if (type === 'galaxy') {
-        // Soft elliptical glow — core bright, edges completely transparent
+        // High-fidelity procedural galaxy: Bulge + Disk + Spiral Dust
         ctx.save();
         ctx.translate(c, c);
-        ctx.rotate(Math.PI / 5);
-        ctx.scale(1.6, 0.55);
-        const gx = ctx.createRadialGradient(0, 0, 0, 0, 0, c * 0.85);
-        gx.addColorStop(0.0, `rgba(${r},${g},${b},0.90)`);
-        gx.addColorStop(0.15, `rgba(${r},${g},${b},0.55)`);
-        gx.addColorStop(0.45, `rgba(${r},${g},${b},0.18)`);
-        gx.addColorStop(0.75, `rgba(${r},${g},${b},0.04)`);
-        gx.addColorStop(1.0, `rgba(${r},${g},${b},0.00)`);
-        ctx.fillStyle = gx;
+        ctx.rotate(Math.PI / 6);
+        ctx.scale(1.8, 0.7);
+
+        // 1. Halo/Disk
+        const gDisk = ctx.createRadialGradient(0, 0, 0, 0, 0, c * 0.9);
+        gDisk.addColorStop(0.0, `rgba(${r},${g},${b},0.3)`);
+        gDisk.addColorStop(1.0, `rgba(${r},${g},${b},0.0)`);
+        ctx.fillStyle = gDisk;
+        ctx.fillRect(-c, -c, size, size);
+
+        // 2. Central Bulge (Hot & Dense)
+        const gBulge = ctx.createRadialGradient(0, 0, 0, 0, 0, c * 0.3);
+        gBulge.addColorStop(0.0, `rgba(255, 255, 240, 0.9)`);
+        gBulge.addColorStop(0.4, `rgba(${r},${g},${b},0.6)`);
+        gBulge.addColorStop(1.0, `rgba(${r},${g},${b},0.0)`);
+        ctx.fillStyle = gBulge;
         ctx.beginPath();
-        ctx.arc(0, 0, c * 0.85, 0, Math.PI * 2);
+        ctx.arc(0, 0, c * 0.3, 0, Math.PI * 2);
         ctx.fill();
+
+        // 3. Simulated Spiral Dust (Noise)
+        ctx.globalCompositeOperation = 'destination-out';
+        for (let i = 0; i < 400; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = Math.random() * c * 0.8;
+            const x = Math.cos(angle) * dist;
+            const y = Math.sin(angle) * dist * 0.4;
+            ctx.beginPath();
+            ctx.arc(x, y, 1 + Math.random() * 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
         ctx.restore();
     } else if (type === 'nebula') {
-        // Diffuse amorphous cloud — never opaque, always soft
-        const gn = ctx.createRadialGradient(c, c, 0, c, c, c * 0.9);
-        gn.addColorStop(0.0, `rgba(${r},${g},${b},0.55)`);
-        gn.addColorStop(0.35, `rgba(${r},${g},${b},0.22)`);
-        gn.addColorStop(0.70, `rgba(${r},${g},${b},0.06)`);
-        gn.addColorStop(1.0, `rgba(${r},${g},${b},0.00)`);
-        ctx.fillStyle = gn;
-        ctx.beginPath();
-        ctx.arc(c, c, c * 0.9, 0, Math.PI * 2);
-        ctx.fill();
+        // Complex Gaseous Nebula
+        for (let i = 0; i < 15; i++) {
+            const ox = (Math.random() - 0.5) * c * 0.4;
+            const oy = (Math.random() - 0.5) * c * 0.4;
+            const rPart = c * (0.3 + Math.random() * 0.4);
+            const gn = ctx.createRadialGradient(c + ox, c + oy, 0, c + ox, c + oy, rPart);
+            const alpha = 0.1 + Math.random() * 0.2;
+            gn.addColorStop(0.0, `rgba(${r},${g},${b},${alpha})`);
+            gn.addColorStop(1.0, `rgba(${r},${g},${b},0.0)`);
+            ctx.fillStyle = gn;
+            ctx.beginPath();
+            ctx.arc(c + ox, c + oy, rPart, 0, Math.PI * 2);
+            ctx.fill();
+        }
     } else {
-        // Open/globular cluster — tight central glow with very faint haze
-        const gc = ctx.createRadialGradient(c, c, 0, c, c, c * 0.7);
-        gc.addColorStop(0.0, `rgba(${r},${g},${b},0.80)`);
-        gc.addColorStop(0.20, `rgba(${r},${g},${b},0.40)`);
-        gc.addColorStop(0.55, `rgba(${r},${g},${b},0.10)`);
-        gc.addColorStop(1.0, `rgba(${r},${g},${b},0.00)`);
-        ctx.fillStyle = gc;
-        ctx.beginPath();
-        ctx.arc(c, c, c * 0.7, 0, Math.PI * 2);
-        ctx.fill();
+        // Globular/Open Cluster (Point cloud look)
+        for (let i = 0; i < 200; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = Math.pow(Math.random(), 1.5) * c * 0.7;
+            const x = c + Math.cos(angle) * dist;
+            const y = c + Math.sin(angle) * dist;
+            const s = 0.5 + Math.random() * 1.5;
+            ctx.fillStyle = `rgba(${r + 20},${g + 20},${b + 30},${0.4 + Math.random() * 0.6})`;
+            ctx.fillRect(x, y, s, s);
+        }
     }
 
     const tex = new THREE.CanvasTexture(canvas);

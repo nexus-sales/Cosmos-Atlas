@@ -7,11 +7,16 @@ import { Play, Pause, FastForward, Sparkles } from 'lucide-react';
 import * as Astronomy from 'astronomy-engine';
 
 const TOUR_STOPS = [
-    { id: 'sun', name: 'Sol', body: Astronomy.Body.Sun, intro: 'Comencemos nuestro viaje por el centro de todo: El Sol.' },
+    { id: 'sun', name: 'Sol', body: Astronomy.Body.Sun, intro: 'Comencemos nuestro viaje por el centro de todo: El Sol, la estrella que nos da la vida.' },
     { id: 'venus', name: 'Venus', body: Astronomy.Body.Venus, intro: 'Nuestro vecino más brillante. En la antigüedad era conocido como el Lucero del Alba, portador de la luz.' },
     { id: 'mars', name: 'Marte', body: Astronomy.Body.Mars, intro: 'El planeta rojo. Los antiguos romanos lo veían como su dios de la guerra por su color similar a la sangre.' },
-    { id: 'jupiter', name: 'Júpiter', body: Astronomy.Body.Jupiter, intro: 'El gigante que protege a la Tierra. Su inmensa gravedad desvía cometas que de otro modo podrían impactar con nosotros.' },
+    { id: 'jupiter', name: 'Júpiter', body: Astronomy.Body.Jupiter, intro: 'El gigante que protege a la Tierra. Su inmensa gravedad desvía cometas y asteroides.' },
     { id: 'saturn', name: 'Saturno', body: Astronomy.Body.Saturn, intro: 'El señor de los anillos. Si encontraras un océano lo suficientemente grande, ¡Saturno flotaría en él!' },
+    { id: 'm31', name: 'Galaxia de Andrómeda', ra: 10.68, dec: 41.27, intro: 'Nuestra gran vecina galáctica. Contiene un billón de estrellas y se acerca a nosotros a 110 kilómetros por segundo.' },
+    { id: 'm42', name: 'Nebulosa de Orión', ra: 83.82, dec: -5.39, intro: 'Una guardería estelar masiva. Aquí están naciendo soles en este mismo instante dentro de nubes de gas y polvo.' },
+    { id: 'm45', name: 'Las Pléyades', ra: 56.75, dec: 24.11, intro: 'Un cúmulo de estrellas jóvenes y azules. Conocidas en casi todas las culturas antiguas como las Siete Hermanas.' },
+    { id: 'alpha_centauri', name: 'Alpha Centauri', ra: 219.9, dec: -60.83, intro: 'El sistema estelar más cercano a nuestro Sol. Está a "solo" 4.3 años luz de distancia; un viaje de miles de años con nuestra tecnología actual.' },
+    { id: 'sagittarius_a', name: 'Centro Galáctico', ra: 266.41, dec: -29.00, intro: 'El corazón de nuestra Vía Láctea. Aquí habita un agujero negro supermasivo cuatro millones de veces más pesado que el Sol.' },
 ];
 
 const MYTH_DATA: Record<string, string> = {
@@ -44,6 +49,9 @@ export default function AIAstronoma() {
             return;
         }
 
+        // IMPORTANT: If a tour is running, DON'T interrupt with the standard selection message
+        if (tourIndex !== -1) return;
+
         let detail = selectedObject.desc || 'Es un objeto fascinante en la inmensidad del cosmos.';
 
         // Enrich with myths if available
@@ -60,7 +68,7 @@ export default function AIAstronoma() {
         return () => {
             if (synth) synth.cancel();
         };
-    }, [selectedObject]);
+    }, [selectedObject, tourIndex]);
 
     const speak = (text: string, onEnd?: () => void) => {
         if (!synth) return;
@@ -99,23 +107,36 @@ export default function AIAstronoma() {
         const obs = new Astronomy.Observer(observer.lat, observer.lon, 0);
 
         // Find a visible planet or prominent object
+        // Find a visible planet or prominent DSO
         const candidates = [
-            { body: Astronomy.Body.Jupiter, name: 'Júpiter' },
-            { body: Astronomy.Body.Mars, name: 'Marte' },
-            { body: Astronomy.Body.Venus, name: 'Venus' },
-            { body: Astronomy.Body.Saturn, name: 'Saturno' },
-            { body: Astronomy.Body.Moon, name: 'Luna' }
+            { body: Astronomy.Body.Jupiter, name: 'Júpiter', type: 'planet' },
+            { body: Astronomy.Body.Mars, name: 'Marte', type: 'planet' },
+            { body: Astronomy.Body.Venus, name: 'Venus', type: 'planet' },
+            { body: Astronomy.Body.Saturn, name: 'Saturno', type: 'planet' },
+            { body: Astronomy.Body.Moon, name: 'Luna', type: 'planet' },
+            // Famous DSOs
+            { ra: 10.68, dec: 41.27, name: 'Andrómeda (M31)', type: 'dso' },
+            { ra: 83.82, dec: -5.39, name: 'Orión (M42)', type: 'dso' },
+            { ra: 56.75, dec: 24.11, name: 'Pléyades (M45)', type: 'cluster' }
         ];
 
         let best = null;
         let maxAlt = -1;
 
         for (const c of candidates) {
-            const eq = Astronomy.Equator(c.body, time, obs, true, true);
-            const hor = Astronomy.Horizon(time, obs, eq.ra, eq.dec, 'normal');
+            let cra = 0, cdec = 0;
+            if ('body' in c && c.body !== undefined) {
+                const eq = Astronomy.Equator(c.body, time, obs, true, true);
+                cra = eq.ra; cdec = eq.dec;
+            } else if ('ra' in c && 'dec' in c) {
+                cra = c.ra as number;
+                cdec = c.dec as number;
+            }
+
+            const hor = Astronomy.Horizon(time, obs, cra, cdec, 'normal');
             if (hor.altitude > 15 && hor.altitude > maxAlt) {
                 maxAlt = hor.altitude;
-                best = { ...c, ra: eq.ra, dec: eq.dec };
+                best = { ...c, ra: cra, dec: cdec };
             }
         }
 
@@ -145,9 +166,13 @@ export default function AIAstronoma() {
     useEffect(() => {
         if (tourIndex >= 0) {
             const stop = TOUR_STOPS[tourIndex] as any;
-            const fullIntro = `Paso ${tourIndex + 1}: ${stop.intro}`;
-            setMsg(fullIntro);
-            setHistory(prev => [fullIntro, ...prev].slice(0, 10));
+
+            // Explicitly mention the name in the message and speech
+            const formattedMsg = `DESTINO: ${stop.name.toUpperCase()}\n\n${stop.intro}`;
+            const speechText = `${stop.name}. ${stop.intro}`;
+
+            setMsg(formattedMsg);
+            setHistory(prev => [formattedMsg, ...prev].slice(0, 10));
 
             let ra = stop.ra || 0;
             let dec = stop.dec || 0;
@@ -173,7 +198,7 @@ export default function AIAstronoma() {
             setTargetedObject(virtualObj as any);
             setSelectedObject(virtualObj as any);
 
-            speak(stop.intro, () => {
+            speak(speechText, () => {
                 setTimeout(nextTourStop, 5000);
             });
         }
@@ -223,7 +248,10 @@ export default function AIAstronoma() {
 
                         {/* Speech Bubble text */}
                         <div className="relative mb-4">
-                            <p className="text-white/90 text-sm leading-relaxed font-secondary italic line-clamp-4 group-hover:line-clamp-none transition-all">
+                            <p
+                                className="text-white/90 text-sm leading-relaxed font-secondary italic line-clamp-4 group-hover:line-clamp-none transition-all"
+                                style={{ whiteSpace: 'pre-line' }}
+                            >
                                 "{msg}"
                             </p>
                         </div>
@@ -277,10 +305,18 @@ export default function AIAstronoma() {
                                         <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" />
                                         MISION {tourIndex + 1}/{TOUR_STOPS.length}
                                     </span>
-                                    <button
-                                        onClick={() => setTourIndex(-1)}
-                                        className="hover:text-red-400 transition-colors uppercase border-b border-red-500/20"
-                                    >Abortar</button>
+                                    <div className="flex gap-4">
+                                        <button
+                                            onClick={nextTourStop}
+                                            className="hover:text-cyan-400 text-cyan-500/80 transition-colors uppercase flex items-center gap-1 border-b border-cyan-500/20"
+                                        >
+                                            <FastForward className="w-3 h-3" /> Siguiente
+                                        </button>
+                                        <button
+                                            onClick={() => setTourIndex(-1)}
+                                            className="hover:text-red-400 transition-colors uppercase border-b border-red-500/20"
+                                        >Abortar</button>
+                                    </div>
                                 </div>
                             )}
                         </div>

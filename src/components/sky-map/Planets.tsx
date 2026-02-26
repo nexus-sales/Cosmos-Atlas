@@ -9,6 +9,13 @@ import { useAppStore } from '@/stores/useAppStore';
 import { Planet } from '@/types/celestial';
 import * as Astronomy from 'astronomy-engine';
 
+const JUPITER_MOON_DATA = [
+    { key: 'io', name: 'Ío', color: '#ffffaa', mag: 5.0 },
+    { key: 'europa', name: 'Europa', color: '#eeeeff', mag: 5.3 },
+    { key: 'ganymede', name: 'Ganímedes', color: '#dddddd', mag: 4.6 },
+    { key: 'callisto', name: 'Calisto', color: '#aaaaaa', mag: 5.6 },
+];
+
 // ── Configuración estática de cada planeta ────────────────────────────────────
 interface PlanetConfig {
     body: Astronomy.Body;
@@ -120,6 +127,58 @@ function makeGlowTexture(): THREE.CanvasTexture {
     const tex = new THREE.CanvasTexture(canvas);
     tex.needsUpdate = true;
     return tex;
+}
+
+function JupiterMoonMesh({ moon, glowTex }: { moon: any, glowTex: THREE.CanvasTexture }) {
+    const setSelectedObject = useAppStore((state) => state.setSelectedObject);
+    const setTargetedObject = useAppStore((state) => state.setTargetedObject);
+    const camFov = useAppStore((state) => state.camFov);
+
+    // Visible as distinct points of light, labels only when close
+    const opacity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 60, 20, 0.6, 1.0), 0.6, 1.0);
+    // Base size increased so they are visible against background
+    const size = (0.12 + (6 - moon.mag) * 0.04) * (camFov < 15 ? 0.5 : 1.0);
+
+    return (
+        <group position={moon.pos}>
+            <sprite
+                scale={[size, size, 1]}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedObject(moon);
+                    setTargetedObject(moon);
+                }}
+            >
+                <spriteMaterial
+                    map={glowTex}
+                    color={moon.color}
+                    transparent
+                    opacity={opacity}
+                    blending={THREE.AdditiveBlending}
+                    depthWrite={false}
+                />
+            </sprite>
+            {camFov < 12 && (
+                <Html distanceFactor={1.5}>
+                    <div style={{
+                        color: moon.color,
+                        fontSize: '9px',
+                        fontFamily: "'Courier New', monospace",
+                        whiteSpace: 'nowrap',
+                        pointerEvents: 'none',
+                        textShadow: '0 0 4px black',
+                        background: 'rgba(0,0,0,0.4)',
+                        padding: '1px 4px',
+                        borderRadius: '2px',
+                        transform: 'translate(8px, -8px)',
+                        fontWeight: 'bold'
+                    }}>
+                        {moon.name}
+                    </div>
+                </Html>
+            )}
+        </group>
+    );
 }
 
 // ── Moon phase helpers ─────────────────────────────────────────────────────────
@@ -411,8 +470,9 @@ function PlanetMesh({ planet, glowTex }: {
         <group>
             {/* Modo Sprite (Cielo General) */}
             <group position={planet.pos} visible={spriteOpacity > 0.01}>
+                {/* Sol conserva su halo masivo, planetas son más precisos (punto brillante) */}
                 <sprite
-                    scale={[baseSize * 4.0, baseSize * 4.0, 1]}
+                    scale={[baseSize * (planet.name === 'Sol' ? 4.0 : 1.8), baseSize * (planet.name === 'Sol' ? 4.0 : 1.8), 1]}
                     onClick={(e) => {
                         e.stopPropagation();
                         setSelectedObject(planet);
@@ -425,12 +485,13 @@ function PlanetMesh({ planet, glowTex }: {
                         depthWrite={false}
                         blending={THREE.AdditiveBlending}
                         toneMapped={false}
-                        opacity={spriteOpacity * 0.6}
+                        opacity={spriteOpacity * 0.7}
                         transparent
                     />
                 </sprite>
+                {/* Centro brillante del planeta */}
                 <sprite
-                    scale={[baseSize * 1.2, baseSize * 1.2, 1]}
+                    scale={[baseSize * 0.6, baseSize * 0.6, 1]}
                 >
                     <spriteMaterial
                         map={glowTex}
@@ -514,6 +575,55 @@ function computePlanetPosition(cfg: PlanetConfig, date: Date, obs: Astronomy.Obs
     } catch { return null; }
 }
 
+function computeJupiterMoons(date: Date, obs: Astronomy.Observer) {
+    try {
+        const jupEq = Astronomy.Equator(Astronomy.Body.Jupiter, date, obs, true, true);
+        // We need the geocentric vector of Jupiter in AU
+        const jupIllum = Astronomy.Illumination(Astronomy.Body.Jupiter, date);
+        const dist = jupIllum.geo_dist;
+        const raRad = jupEq.ra * 15 * Math.PI / 180;
+        const decRad = jupEq.dec * Math.PI / 180;
+
+        const jVec = {
+            x: dist * Math.cos(decRad) * Math.cos(raRad),
+            y: dist * Math.cos(decRad) * Math.sin(raRad),
+            z: dist * Math.sin(decRad)
+        };
+
+        const moons = Astronomy.JupiterMoons(date);
+        return JUPITER_MOON_DATA.map((m) => {
+            const relV = (moons as any)[m.key];
+
+            // Proportional scaling for the "Exaggerated" view
+            // Jupiter's model is ~0.9 units. Real angular size is ~0.0001 rad.
+            // We need to scale the relative distance by ~100 to match the visual disk.
+            const visualScale = 110.0;
+
+            const v = {
+                x: jVec.x + relV.x * visualScale,
+                y: jVec.y + relV.y * visualScale,
+                z: jVec.z + relV.z * visualScale
+            };
+
+            const ra = Math.atan2(v.y, v.x) * (180 / Math.PI) / 15;
+            const dec = Math.atan2(v.z, Math.sqrt(v.x * v.x + v.y * v.y)) * (180 / Math.PI);
+            const correctedRA = ra < 0 ? ra + 24 : ra;
+
+            return {
+                id: `jup_moon_${m.key}`,
+                name: m.name,
+                ra: correctedRA * 15,
+                dec: dec,
+                mag: m.mag,
+                color: m.color,
+                kind: 'planet' as const,
+                desc: `Una de las lunas galileanas de Júpiter. Descubierta por Galileo Galilei en 1610.`,
+                pos: equatorialTo3D(correctedRA * 15, dec, PLANET_RADIUS) as [number, number, number],
+            };
+        });
+    } catch { return []; }
+}
+
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function Planets() {
     const time = useAppStore((state) => state.time);
@@ -534,13 +644,17 @@ export default function Planets() {
             .map(cfg => computePlanetPosition(cfg, t, obs))
             .filter(Boolean) as ReturnType<typeof computePlanetPosition>[];
         const moon = computeMoon(t, obs);
-        return { planets, moon };
+        const jupiterMoons = computeJupiterMoons(t, obs);
+        return { planets, moon, jupiterMoons };
     }, [minuteKey, observer]); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
         <group>
             {data.planets.map(p => (
                 <PlanetMesh key={p!.name} planet={p!} glowTex={glowTex} />
+            ))}
+            {data.jupiterMoons.map(m => (
+                <JupiterMoonMesh key={m.id} moon={m} glowTex={glowTex} />
             ))}
             {data.moon && (
                 <MoonMesh

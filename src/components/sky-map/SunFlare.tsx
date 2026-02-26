@@ -71,7 +71,11 @@ export default function SunFlare() {
             groupRef.current.visible = true;
 
             const distFromCenter = Math.sqrt(screenPos.x * screenPos.x + screenPos.y * screenPos.y);
-            const globalOpacity = THREE.MathUtils.clamp(1.0 - distFromCenter * 0.9, 0, 1) * 0.65;
+
+            // Dim flare drastically when zooming in (Space mode)
+            const cam = camera as THREE.PerspectiveCamera;
+            const zoomSuppression = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(cam.fov, 45, 20, 1.0, 0.05), 0.05, 1.0);
+            const globalOpacity = THREE.MathUtils.clamp(1.0 - distFromCenter * 0.9, 0, 1) * 0.65 * zoomSuppression;
 
             const elements = groupRef.current.children as THREE.Sprite[];
             elements.forEach((sprite, i) => {

@@ -18,6 +18,7 @@ const SKY_FRAGMENT_SHADER = `
     uniform vec3 uSunPos;
     uniform float uTime;
     uniform float uBortle;
+    uniform float uSuppression; // 1.0 = normal, 0.0 = dark (space mode)
     varying vec3 vWorldPosition;
 
     const vec3 EarthBlue = vec3(0.05, 0.21, 0.55); 
@@ -39,15 +40,17 @@ const SKY_FRAGMENT_SHADER = `
         float sunAltitude = sunDir.y;
         float dayFactor = smoothstep(-0.2, 0.2, sunAltitude);
         
-        // Gradiente de horizonte (calina atmosférica)
-        // A mayor Escala de Bortle, más contaminación lumínica (skyglow) en el horizonte
+        // Gradiente de horizonte
         float horizonGlow = exp(-max(0.0, zenithAngle) * 5.0);
         vec3 nightColor = mix(SpaceBlack, vec3(0.03, 0.08, 0.18), horizonGlow * (uBortle / 4.0));
         
         vec3 sunsetColor = vec3(1.0, 0.3, 0.1) * pow(max(0.0, cosTheta), 3.0) * (1.0 - dayFactor);
         
-        vec3 finalColor = mix(nightColor, rayleighColor + mieColor, dayFactor);
-        finalColor += sunsetColor * smoothstep(-0.3, 0.0, sunAltitude);
+        // Aplicar supresión atmosférica (Space Mode)
+        vec3 dayColor = mix(nightColor, rayleighColor + mieColor, dayFactor);
+        vec3 finalColor = mix(nightColor, dayColor, uSuppression);
+        
+        finalColor += sunsetColor * smoothstep(-0.3, 0.0, sunAltitude) * uSuppression;
 
         finalColor = 1.0 - exp(-2.0 * finalColor);
         
@@ -58,16 +61,25 @@ const SKY_FRAGMENT_SHADER = `
 export default function AtmosphericSky() {
     const meshRef = useRef<THREE.Mesh>(null);
     const bortleScale = useAppStore((s) => s.settings.bortleScale);
+    const camFov = useAppStore((s) => s.camFov);
     const sunPos = useMemo(() => new THREE.Vector3(100, 0, 0), []);
 
     const uniforms = useMemo(() => ({
         uSunPos: { value: sunPos },
         uTime: { value: 0 },
-        uBortle: { value: bortleScale }
+        uBortle: { value: bortleScale },
+        uSuppression: { value: 1.0 }
     }), [bortleScale, sunPos]);
 
     useFrame((state) => {
         if (!meshRef.current) return;
+
+        // Suprimir atmósfera si estamos haciendo zoom (FOV < 45)
+        const suppression = THREE.MathUtils.clamp(
+            THREE.MathUtils.mapLinear(camFov, 45, 20, 1.0, 0.0),
+            0.0, 1.0
+        );
+        uniforms.uSuppression.value = suppression;
 
         const { time, observer } = useAppStore.getState();
         try {
@@ -98,7 +110,7 @@ export default function AtmosphericSky() {
                 uniforms={uniforms}
                 side={THREE.BackSide}
                 depthWrite={false}
-                transparent={false}
+                transparent={true} // Cambiado a true para permitir fade a negro/espacio
             />
         </mesh>
     );
