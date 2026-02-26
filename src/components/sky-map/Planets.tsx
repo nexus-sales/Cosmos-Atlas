@@ -78,15 +78,15 @@ const PLANET_CONFIGS: PlanetConfig[] = [
 ];
 
 const TEXTURES = {
-    mercury: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/mercurymap.jpg',
-    venus: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/venusmap.jpg',
-    mars: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/marsmap1k.jpg',
-    jupiter: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/jupitermap.jpg',
-    saturn: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/saturnmap.jpg',
-    uranus: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/uranusmap.jpg',
-    neptune: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/neptunemap.jpg',
-    moon: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/moon_1024.jpg',
-    sun: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/sun.jpg',
+    mercury: 'https://upload.wikimedia.org/wikipedia/commons/3/3d/Mercury_in_color_-_Prockter07_centered.jpg',
+    venus: 'https://upload.wikimedia.org/wikipedia/commons/e/e5/Venus-real_color.jpg',
+    mars: 'https://upload.wikimedia.org/wikipedia/commons/0/02/OSIRIS_Mars_true_color.jpg',
+    jupiter: 'https://upload.wikimedia.org/wikipedia/commons/e/e2/Jupiter.jpg',
+    saturn: 'https://upload.wikimedia.org/wikipedia/commons/c/c7/Saturn_during_Equinox.jpg',
+    uranus: 'https://upload.wikimedia.org/wikipedia/commons/3/3d/Uranus2.jpg',
+    neptune: 'https://upload.wikimedia.org/wikipedia/commons/5/56/Neptune_Full.jpg',
+    moon: 'https://upload.wikimedia.org/wikipedia/commons/e/e1/FullMoon2010.jpg',
+    sun: 'https://upload.wikimedia.org/wikipedia/commons/b/b4/The_Sun_by_the_Atmospheric_Imaging_Assembly_of_NASA%27s_Solar_Dynamics_Observatory_-_20100819.jpg',
 };
 
 const AU_KM = 149597870.7;
@@ -160,19 +160,13 @@ function JupiterMoonMesh({ moon, glowTex }: { moon: any, glowTex: THREE.CanvasTe
             </sprite>
             {camFov < 12 && (
                 <Html distanceFactor={1.5}>
-                    <div style={{
-                        color: moon.color,
-                        fontSize: '9px',
-                        fontFamily: "'Courier New', monospace",
-                        whiteSpace: 'nowrap',
-                        pointerEvents: 'none',
-                        textShadow: '0 0 4px black',
-                        background: 'rgba(0,0,0,0.4)',
-                        padding: '1px 4px',
-                        borderRadius: '2px',
-                        transform: 'translate(8px, -8px)',
-                        fontWeight: 'bold'
-                    }}>
+                    <div 
+                        className="text-[9px] font-mono whitespace-nowrap pointer-events-none bg-black/40 px-1 py-0.5 rounded-[2px] translate-x-2 -translate-y-2 font-bold"
+                        style={{
+                            color: moon.color,
+                            textShadow: '0 0 4px black',
+                        }}
+                    >
                         {moon.name}
                     </div>
                 </Html>
@@ -363,13 +357,11 @@ function MoonMesh({ planet, phase, opacity }: {
                 <meshBasicMaterial color="#c0d0e8" transparent opacity={0.07} depthWrite={false} side={THREE.BackSide} />
             </mesh>
             <Html distanceFactor={90}>
-                <div style={{
-                    color: '#d8d6c0', fontSize: '11px', fontFamily: "'Courier New', monospace",
-                    whiteSpace: 'nowrap', pointerEvents: 'none', userSelect: 'none',
-                    textShadow: '0 0 8px rgba(216,214,192,0.8)', paddingLeft: '10px',
-                    fontWeight: 'bold', letterSpacing: '0.3px',
-                }}>
-                    ☽ Luna <span style={{ fontSize: '9px', opacity: 0.7 }}>{getMoonPhaseName(phase)}</span>
+                <div 
+                    className="text-[#d8d6c0] text-[11px] font-mono whitespace-nowrap pointer-events-none select-none pl-2.5 font-bold tracking-[0.3px]"
+                    style={{ textShadow: '0 0 8px rgba(216,214,192,0.8)' }}
+                >
+                    ☽ Luna <span className="text-[9px] opacity-70">{getMoonPhaseName(phase)}</span>
                 </div>
             </Html>
         </group>
@@ -455,12 +447,18 @@ function PlanetMesh({ planet, glowTex }: {
     const setSelectedObject = useAppStore((state) => state.setSelectedObject);
     const setTargetedObject = useAppStore((state) => state.setTargetedObject);
     const camFov = useAppStore((state) => state.camFov);
+    const viewMode = useAppStore((state) => state.viewMode);
+    const flightTarget = useAppStore((state) => state.flightTarget);
+
+    const isOrbitalTarget = viewMode === 'orbital' && flightTarget === planet.name;
 
     // Zoom Cross-fade:
     // fov=90 (lejos) -> sprite 1.0, 3D 0.0
     // fov=30 (cerca) -> sprite 0.0, 3D 1.0
-    const spriteOpacity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 50, 30, 1, 0), 0, 1);
-    const model3DOpacity = 1 - spriteOpacity;
+    // If in orbital mode, force 3D model for the target
+    const baseSpriteOpacity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 50, 30, 1, 0), 0, 1);
+    const spriteOpacity = isOrbitalTarget ? 0.0 : baseSpriteOpacity;
+    const model3DOpacity = isOrbitalTarget ? 1.0 : (1 - baseSpriteOpacity);
 
     const brightness = Math.pow(2.512, -1.5 - planet.mag);
     const normB = Math.min(1.0, brightness);

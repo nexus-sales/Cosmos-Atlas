@@ -130,24 +130,17 @@ export default function TargetPointer() {
             {/* Etiqueta HTML — no rota con el grupo */}
             <Html
                 distanceFactor={9}
-                style={{ pointerEvents: 'none', userSelect: 'none' }}
+                className="pointer-events-none select-none"
                 center
             >
-                <div style={{
-                    marginTop: '28px',
-                    color: accentColor,
-                    fontFamily: 'monospace',
-                    fontSize: '10px',
-                    fontWeight: 'bold',
-                    letterSpacing: '0.15em',
-                    textTransform: 'uppercase',
-                    whiteSpace: 'nowrap',
-                    textShadow: `0 0 12px ${accentColor}cc, 0 0 24px ${accentColor}66`,
-                    background: 'rgba(2,6,18,0.75)',
-                    padding: '2px 7px',
-                    borderRadius: '3px',
-                    border: `1px solid ${accentColor}44`,
-                }}>
+                <div 
+                    className="mt-7 font-mono text-[10px] font-bold tracking-[0.15em] uppercase whitespace-nowrap bg-[#020612]/75 px-1.5 py-0.5 rounded border"
+                    style={{
+                        color: accentColor,
+                        textShadow: `0 0 12px ${accentColor}cc, 0 0 24px ${accentColor}66`,
+                        borderColor: `${accentColor}44`,
+                    }}
+                >
                     ◎ {targetedObject.name}
                 </div>
             </Html>

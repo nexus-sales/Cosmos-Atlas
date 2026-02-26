@@ -208,22 +208,16 @@ function DSOItem({ dso }: { dso: DSOData }) {
             {/* Label solo en hover o foco (opcional) */}
             {hovered && (
                 <Html distanceFactor={15} zIndexRange={[100, 0]}>
-                    <div style={{
-                        color: displayColor,
-                        fontSize: '11px',
-                        fontFamily: "'Courier New', monospace",
-                        textShadow: `0 0 8px ${displayColor}, 0 0 3px black`,
-                        pointerEvents: 'none',
-                        whiteSpace: 'nowrap',
-                        transform: 'translateY(-20px)',
-                        background: 'rgba(0,0,0,0.6)',
-                        padding: '3px 8px',
-                        borderRadius: '4px',
-                        border: `1px solid ${displayColor}66`,
-                        fontWeight: 'bold',
-                    }}>
+                    <div 
+                        className="text-[11px] font-mono pointer-events-none whitespace-nowrap bg-black/60 px-2 py-0.5 rounded border -translate-y-5 font-bold"
+                        style={{
+                            color: displayColor,
+                            textShadow: `0 0 8px ${displayColor}, 0 0 3px black`,
+                            borderColor: `${displayColor}66`,
+                        }}
+                    >
                         {dso.id}
-                        <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px' }}>
+                        <div className="text-[9px] opacity-70 mt-0.5">
                             {dso.name} · mag {dso.mag.toFixed(1)}
                         </div>
                     </div>

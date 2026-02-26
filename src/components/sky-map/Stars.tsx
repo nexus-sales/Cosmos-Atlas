@@ -146,24 +146,16 @@ function StarHitbox({ star, pos }: { star: typeof STARS[0]; pos: [number, number
 
             {hovered && (
                 <Html distanceFactor={120} zIndexRange={[100, 0]}>
-                    <div style={{
-                        background: 'rgba(2,8,20,0.88)',
-                        border: `1px solid ${displayColor}55`,
-                        borderRadius: '4px',
-                        padding: '4px 10px',
-                        color: displayColor,
-                        fontSize: '11px',
-                        fontFamily: "'Courier New', monospace",
-                        fontWeight: 'bold',
-                        whiteSpace: 'nowrap',
-                        letterSpacing: '1px',
-                        pointerEvents: 'none',
-                        textShadow: `0 0 10px ${displayColor}`,
-                        transform: 'translateX(-50%) translateY(-28px)',
-                        zIndex: 1000,
-                    }}>
+                    <div 
+                        className="bg-[#020814]/88 rounded px-2.5 py-1 text-[11px] font-mono font-bold whitespace-nowrap tracking-wide pointer-events-none -translate-x-1/2 -translate-y-7 z-[1000] border"
+                        style={{
+                            borderColor: `${displayColor}55`,
+                            color: displayColor,
+                            textShadow: `0 0 10px ${displayColor}`,
+                        }}
+                    >
                         {star.name}
-                        <div style={{ fontSize: '9px', color: '#ffffff55', fontWeight: 'normal', letterSpacing: '0.5px' }}>
+                        <div className="text-[9px] text-white/30 font-normal tracking-[0.5px]">
                             Mag {star.mag.toFixed(2)} · {star.constellation}
                         </div>
                     </div>
@@ -201,22 +193,18 @@ function DynamicStarLabels({ visibleStars, starPositions }: { visibleStars: type
 
                 return (
                     <Html key={star.name} position={pos} center distanceFactor={15} zIndexRange={[150, 50]}>
-                        <div style={{
-                            color: color,
-                            opacity: opacity,
-                            fontSize: `${Math.round(10 * scale)}px`,
-                            fontFamily: "Inter, system-ui, sans-serif",
-                            fontWeight: 500,
-                            letterSpacing: '0.05em',
-                            textShadow: `0 0 8px ${nightMode ? 'rgba(255,0,0,0.6)' : 'rgba(59,130,246,0.4)'}`,
-                            pointerEvents: 'none',
-                            userSelect: 'none',
-                            transform: 'translateY(14px)',
-                            textAlign: 'center'
-                        }}>
+                        <div 
+                            className="font-sans font-medium tracking-[0.05em] pointer-events-none select-none translate-y-3.5 text-center"
+                            style={{
+                                color: color,
+                                opacity: opacity,
+                                fontSize: `${Math.round(10 * scale)}px`,
+                                textShadow: `0 0 8px ${nightMode ? 'rgba(255,0,0,0.6)' : 'rgba(59,130,246,0.4)'}`,
+                            }}
+                        >
                             {star.name}
                             {camFov < 35 && (
-                                <div style={{ fontSize: `${Math.round(8 * scale)}px`, opacity: 0.6 * opacity, fontWeight: 400 }}>
+                                <div className="font-normal" style={{ fontSize: `${Math.round(8 * scale)}px`, opacity: 0.6 * opacity }}>
                                     {star.constellation}
                                 </div>
                             )}

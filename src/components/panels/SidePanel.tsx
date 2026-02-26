@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/stores/useAppStore';
 import { Target, Info, BookOpen, Layers, Grid3X3, ChevronRight, ChevronLeft, ChevronDown, X, Moon, Mountain, Camera, Satellite, Globe, CloudRain, Settings2, Volume2, VolumeX } from 'lucide-react';
@@ -17,8 +17,13 @@ function useIsMobile() {
     const [isMobile, setIsMobile] = useState(false);
     useEffect(() => {
         const mq = window.matchMedia('(max-width: 767px)');
+        
         const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+        
+        // Set initial value only if different to avoid redundant updates?
+        // Actually, just setting it is fine, but to avoid the lint error:
         setIsMobile(mq.matches);
+
         mq.addEventListener('change', handler);
         return () => mq.removeEventListener('change', handler);
     }, []);
@@ -190,6 +195,8 @@ export default function SidePanel() {
                                             </div>
                                             <input
                                                 type="range" min="0" max="1" step="0.01"
+                                                aria-label="Volumen ambiente"
+                                                title="Ajustar volumen"
                                                 value={useAppStore.getState().settings.audioVolume}
                                                 onChange={(e) => useAppStore.setState(s => ({ settings: { ...s.settings, audioVolume: parseFloat(e.target.value) } }))}
                                                 className="w-full h-1 bg-white/10 rounded-full appearance-none accent-blue-500 cursor-pointer"
@@ -238,7 +245,17 @@ export default function SidePanel() {
                                                     <span>Distancia Focal</span>
                                                     <span className="text-blue-400 font-bold">{focalLength}mm</span>
                                                 </div>
-                                                <input type="range" min="10" max="3000" step="10" value={focalLength} onChange={(e) => setFOVParams({ focalLength: Number(e.target.value) })} className="w-full h-1.5 bg-white/5 rounded-full appearance-none accent-blue-500 cursor-pointer" />
+                                                <input 
+                                                    type="range" 
+                                                    min="10" 
+                                                    max="3000" 
+                                                    step="10" 
+                                                    aria-label="Distancia focal"
+                                                    title="Distancia focal"
+                                                    value={focalLength} 
+                                                    onChange={(e) => setFOVParams({ focalLength: Number(e.target.value) })} 
+                                                    className="w-full h-1.5 bg-white/5 rounded-full appearance-none accent-blue-500 cursor-pointer" 
+                                                />
                                             </div>
                                             <div className="flex gap-2">
                                                 <button onClick={() => setFOVParams({ sensorWidth: 36, sensorHeight: 24 })} className="flex-1 py-1.5 rounded-lg text-[9px] font-bold bg-white/5 border border-white/10 text-white/40 hover:text-white shadow-sm transition-all cursor-pointer">Full Frame</button>
@@ -300,12 +317,18 @@ export default function SidePanel() {
 }
 
 function AccordionSection({ title, icon, isOpen, onToggle, children }: { title: string; icon: React.ReactNode; isOpen: boolean; onToggle: () => void; children: React.ReactNode }) {
-    const hasOpenedRef = useRef(isOpen);
-    if (isOpen) hasOpenedRef.current = true;
+    const [hasOpened, setHasOpened] = useState(isOpen);
+
+    useEffect(() => {
+        if (isOpen) setHasOpened(true);
+    }, [isOpen]);
 
     return (
         <div className="flex flex-col">
-            <button onClick={onToggle} className={cn("flex items-center justify-between p-4 text-left transition-colors outline-none cursor-pointer", isOpen ? "bg-white/[0.03]" : "hover:bg-white/[0.02]")}>
+            <button 
+                onClick={onToggle} 
+                className={cn("flex items-center justify-between w-full p-4 text-left transition-colors outline-none cursor-pointer", isOpen ? "bg-white/[0.03]" : "hover:bg-white/[0.02]")}
+            >
                 <div className="flex items-center gap-3">
                     <span className={cn("transition-colors", isOpen ? "text-blue-400" : "text-white/30")}>{icon}</span>
                     <span className={cn("text-[10px] font-bold tracking-widest uppercase transition-colors", isOpen ? "text-white" : "text-white/40")}>{title}</span>
@@ -313,10 +336,9 @@ function AccordionSection({ title, icon, isOpen, onToggle, children }: { title: 
                 <ChevronDown className={cn("w-4 h-4 text-white/20 transition-transform duration-300", isOpen ? "rotate-180 text-blue-400/50" : "")} />
             </button>
             <div
-                className="overflow-hidden transition-all duration-200"
-                style={{ maxHeight: isOpen ? '1200px' : '0px', opacity: isOpen ? 1 : 0 }}
+                className={cn("overflow-hidden transition-all duration-200", isOpen ? "max-h-[1200px] opacity-100" : "max-h-0 opacity-0")}
             >
-                {hasOpenedRef.current && <div className="px-5 pb-5 pt-1">{children}</div>}
+                {hasOpened && <div className="px-5 pb-5 pt-1">{children}</div>}
             </div>
         </div>
     );

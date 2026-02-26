@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, FastForward, Sparkles } from 'lucide-react';
+import { Play, Pause, FastForward, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import * as Astronomy from 'astronomy-engine';
 
 const TOUR_STOPS = [
@@ -37,6 +37,7 @@ export default function AIAstronoma() {
     const [isTalking, setIsTalking] = useState(false);
     const [tourIndex, setTourIndex] = useState(-1);
     const [showHistory, setShowHistory] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(false);
 
     const synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
     const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
@@ -216,7 +217,10 @@ export default function AIAstronoma() {
                     <div className="relative p-4 rounded-2xl bg-black/40 backdrop-blur-xl border border-blue-500/30 shadow-2xl overflow-hidden group">
                         {/* Avatar Pulsing */}
                         <div className="flex items-center gap-4 mb-3">
-                            <div className="relative w-12 h-12 flex-shrink-0">
+                            <div 
+                                className="relative w-12 h-12 flex-shrink-0 cursor-pointer"
+                                onClick={() => setIsCollapsed(!isCollapsed)}
+                            >
                                 <div className={`absolute inset-0 bg-blue-500/20 rounded-full ${isTalking ? 'animate-ping' : ''}`} />
                                 <div className="absolute inset-0 bg-gradient-to-tr from-blue-600 to-cyan-400 rounded-full flex items-center justify-center shadow-lg border border-white/20">
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
@@ -231,7 +235,7 @@ export default function AIAstronoma() {
                                     </svg>
                                 </div>
                             </div>
-                            <div>
+                            <div className="flex-1 cursor-pointer" onClick={() => setIsCollapsed(!isCollapsed)}>
                                 <h3 className="text-blue-400 text-xs font-bold uppercase tracking-widest">IA Astrónoma</h3>
                                 <div className="flex gap-1">
                                     {[1, 2, 3].map(i => (
@@ -244,82 +248,100 @@ export default function AIAstronoma() {
                                     ))}
                                 </div>
                             </div>
-                        </div>
-
-                        {/* Speech Bubble text */}
-                        <div className="relative mb-4">
-                            <p
-                                className="text-white/90 text-sm leading-relaxed font-secondary italic line-clamp-4 group-hover:line-clamp-none transition-all"
-                                style={{ whiteSpace: 'pre-line' }}
+                            <button 
+                                onClick={() => setIsCollapsed(!isCollapsed)}
+                                className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-white/50"
+                                title={isCollapsed ? "Expandir" : "Contraer"}
                             >
-                                "{msg}"
-                            </p>
-                        </div>
-
-                        {/* Smart Suggestion & History Button */}
-                        <div className="flex gap-2 mb-4">
-                            <button
-                                onClick={getSmartSuggestion}
-                                className="flex-1 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded-lg text-[9px] font-bold text-cyan-300 transition-all flex items-center justify-center gap-2"
-                            >
-                                <Sparkles className="w-3 h-3" /> ¿QUÉ VER HOY?
-                            </button>
-                            <button
-                                onClick={() => setShowHistory(!showHistory)}
-                                className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-[9px] font-bold text-white/50 transition-all"
-                            >
-                                HISTORIAL
+                                {isCollapsed ? <ChevronUp className="w-5 h-5 text-blue-400" /> : <ChevronDown className="w-5 h-5" />}
                             </button>
                         </div>
 
-                        {/* History Overlay */}
                         <AnimatePresence>
-                            {showHistory && (
+                            {!isCollapsed && (
                                 <motion.div
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: 'auto' }}
-                                    exit={{ opacity: 0, height: 0 }}
-                                    className="mb-4 space-y-2 max-h-32 overflow-y-auto pr-2 custom-scrollbar"
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                                    className="overflow-hidden"
                                 >
-                                    {history.slice(1).map((h, i) => (
-                                        <div key={i} className="p-2 bg-white/5 rounded-lg text-[10px] text-white/40 italic border-l-2 border-blue-500/30">
-                                            {h}
-                                        </div>
-                                    ))}
+                                    {/* Speech Bubble text */}
+                                    <div className="relative mb-4">
+                                        <p
+                                            className="text-white/90 text-sm leading-relaxed font-secondary italic line-clamp-4 group-hover:line-clamp-none transition-all whitespace-pre-line"
+                                        >
+                                            "{msg}"
+                                        </p>
+                                    </div>
+
+                                    {/* Smart Suggestion & History Button */}
+                                    <div className="flex gap-2 mb-4">
+                                        <button
+                                            onClick={getSmartSuggestion}
+                                            className="flex-1 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded-lg text-[9px] font-bold text-cyan-300 transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <Sparkles className="w-3 h-3" /> ¿QUÉ VER HOY?
+                                        </button>
+                                        <button
+                                            onClick={() => setShowHistory(!showHistory)}
+                                            className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-[9px] font-bold text-white/50 transition-all"
+                                        >
+                                            HISTORIAL
+                                        </button>
+                                    </div>
+
+                                    {/* History Overlay */}
+                                    <AnimatePresence>
+                                        {showHistory && (
+                                            <motion.div
+                                                initial={{ opacity: 0, height: 0 }}
+                                                animate={{ opacity: 1, height: 'auto' }}
+                                                exit={{ opacity: 0, height: 0 }}
+                                                className="mb-4 space-y-2 max-h-32 overflow-y-auto pr-2 custom-scrollbar"
+                                            >
+                                                {history.slice(1).map((h, i) => (
+                                                    <div key={i} className="p-2 bg-white/5 rounded-lg text-[10px] text-white/40 italic border-l-2 border-blue-500/30">
+                                                        {h}
+                                                    </div>
+                                                ))}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+
+                                    {/* Tour Controls */}
+                                    <div className="flex justify-center pt-2 border-t border-white/5">
+                                        {tourIndex === -1 ? (
+                                            <button
+                                                onClick={startTour}
+                                                className="w-full py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-[10px] font-bold tracking-[0.2em] transition-all flex items-center justify-center gap-2 border border-blue-500/10 shadow-inner"
+                                            >
+                                                <Play className="w-3 h-3 fill-current" /> INICIAR TOUR ESTELAR
+                                            </button>
+                                        ) : (
+                                            <div className="flex items-center justify-between w-full text-white/40 text-[9px] font-bold tracking-widest px-2">
+                                                <span className="text-blue-400 flex items-center gap-2">
+                                                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" />
+                                                    MISION {tourIndex + 1}/{TOUR_STOPS.length}
+                                                </span>
+                                                <div className="flex gap-4">
+                                                    <button
+                                                        onClick={nextTourStop}
+                                                        className="hover:text-cyan-400 text-cyan-500/80 transition-colors uppercase flex items-center gap-1 border-b border-cyan-500/20"
+                                                    >
+                                                        <FastForward className="w-3 h-3" /> Siguiente
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setTourIndex(-1)}
+                                                        className="hover:text-red-400 transition-colors uppercase border-b border-red-500/20"
+                                                    >Abortar</button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </motion.div>
                             )}
                         </AnimatePresence>
-
-                        {/* Tour Controls */}
-                        <div className="flex justify-center pt-2 border-t border-white/5">
-                            {tourIndex === -1 ? (
-                                <button
-                                    onClick={startTour}
-                                    className="w-full py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-[10px] font-bold tracking-[0.2em] transition-all flex items-center justify-center gap-2 border border-blue-500/10 shadow-inner"
-                                >
-                                    <Play className="w-3 h-3 fill-current" /> INICIAR TOUR ESTELAR
-                                </button>
-                            ) : (
-                                <div className="flex items-center justify-between w-full text-white/40 text-[9px] font-bold tracking-widest px-2">
-                                    <span className="text-blue-400 flex items-center gap-2">
-                                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" />
-                                        MISION {tourIndex + 1}/{TOUR_STOPS.length}
-                                    </span>
-                                    <div className="flex gap-4">
-                                        <button
-                                            onClick={nextTourStop}
-                                            className="hover:text-cyan-400 text-cyan-500/80 transition-colors uppercase flex items-center gap-1 border-b border-cyan-500/20"
-                                        >
-                                            <FastForward className="w-3 h-3" /> Siguiente
-                                        </button>
-                                        <button
-                                            onClick={() => setTourIndex(-1)}
-                                            className="hover:text-red-400 transition-colors uppercase border-b border-red-500/20"
-                                        >Abortar</button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
 
                         {/* Decoration */}
                         <div className="absolute -top-10 -right-10 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl" />
