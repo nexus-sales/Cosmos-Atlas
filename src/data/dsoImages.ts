@@ -191,8 +191,8 @@ export const DSO_IMAGES: Record<string, DSOImage> = {
     },
     'M82': {
         id: 'M82',
-        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/2/22/M82_HST_ACS_2006-14-a-large_web.jpg',
-        credit: 'NASA, ESA, Hubble',
+        imageUrl: 'https://esahubble.org/media/archives/images/screen/heic0604a.jpg',
+        credit: 'NASA, ESA, Hubble Heritage Team',
         telescope: 'Hubble'
     },
     'M101': {
@@ -251,8 +251,8 @@ export const DSO_IMAGES: Record<string, DSOImage> = {
     },
     'M106': {
         id: 'M106',
-        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/2/27/Messier_106_visible_and_infrared_composite.jpg',
-        credit: 'NASA/Hubble',
+        imageUrl: 'https://esahubble.org/media/archives/images/screen/heic1302a.jpg',
+        credit: 'NASA, ESA, Hubble, R. Gendler, J. GaBany',
         telescope: 'Hubble'
     },
     'M60': {
@@ -323,15 +323,15 @@ export const DSO_IMAGES: Record<string, DSOImage> = {
     },
     'LMC': {
         id: 'LMC',
-        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/1/18/Large_Magellanic_Cloud.jpg',
-        credit: 'ESO/VISTA',
-        telescope: 'ESO'
+        imageUrl: 'https://esahubble.org/media/archives/images/screen/heic1301a.jpg',
+        credit: 'NASA, ESA, ESO',
+        telescope: 'Hubble'
     },
     'SMC': {
         id: 'SMC',
-        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/0/07/Small_Magellanic_Cloud.jpg',
-        credit: 'ESO/VISTA',
-        telescope: 'ESO'
+        imageUrl: 'https://esahubble.org/media/archives/images/screen/heic2211a.jpg',
+        credit: 'NASA, ESA, STScI',
+        telescope: 'Hubble'
     },
     'CenA': {
         id: 'CenA',
@@ -355,20 +355,14 @@ export const DSO_IMAGES: Record<string, DSOImage> = {
     },
     'M13': {
         id: 'M13',
-        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/a/a2/Messier_13_HST.jpg',
+        imageUrl: 'https://esahubble.org/media/archives/images/screen/potw1011a.jpg',
         credit: 'NASA, ESA, Hubble',
         telescope: 'Hubble'
     },
-    'M44': {
-        id: 'M44',
-        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Messier_44_2018.jpg',
-        credit: 'M. Jager',
-        telescope: 'Amateur'
-    },
     'M3': {
         id: 'M3',
-        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/5/52/M3_v2_600h.png',
-        credit: 'ESA/Hubble',
+        imageUrl: 'https://esahubble.org/media/archives/images/screen/heic2108a.jpg',
+        credit: 'NASA, ESA, Hubble',
         telescope: 'Hubble'
     },
     'M4': {

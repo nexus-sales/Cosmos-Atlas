@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useMemo, useEffect } from 'react';
+import type { CSSProperties } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
@@ -134,12 +135,11 @@ export default function TargetPointer() {
                 center
             >
                 <div 
-                    className="mt-7 font-mono text-[10px] font-bold tracking-[0.15em] uppercase whitespace-nowrap bg-[#020612]/75 px-1.5 py-0.5 rounded border"
+                    className="accent-label-strong mt-7 font-mono text-[10px] font-bold tracking-[0.15em] uppercase whitespace-nowrap bg-[#020612]/75 px-1.5 py-0.5 rounded border"
                     style={{
-                        color: accentColor,
-                        textShadow: `0 0 12px ${accentColor}cc, 0 0 24px ${accentColor}66`,
-                        borderColor: `${accentColor}44`,
-                    }}
+                        '--accent-color': accentColor,
+                        '--accent-border': `${accentColor}44`,
+                    } as CSSProperties}
                 >
                     ◎ {targetedObject.name}
                 </div>

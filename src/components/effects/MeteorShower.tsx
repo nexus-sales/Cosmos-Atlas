@@ -4,7 +4,8 @@ import { useMemo, useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useAppStore } from '@/stores/useAppStore';
-import { METEOR_SHOWERS, getActiveShowers, getShowerActivity } from '@/data/meteorShowers';
+import { METEOR_SHOWERS, getActiveShowers } from '@/data/meteorShowers';
+import type { MeteorShower } from '@/data/meteorShowers';
 
 interface MeteorParticle {
     position: THREE.Vector3;
@@ -62,8 +63,12 @@ export default function MeteorShower() {
     const [isMounted, setIsMounted] = useState(false);
 
     const time = useAppStore((state) => state.time);
-    const observer = useAppStore((state) => state.observer);
     const nightMode = useAppStore((state) => state.settings.nightMode);
+
+    const activeShowersRef = useRef<MeteorShower[]>([]);
+    const lastCheckRef = useRef(0);
+    const lastDayRef = useRef(-1);
+    const hasActiveShowersRef = useRef(false);
 
     useEffect(() => {
         setIsMounted(true);
@@ -132,11 +137,37 @@ export default function MeteorShower() {
         if (!pointsRef.current || !isMounted) return;
 
         timeRef.current += delta;
+
         const now = new Date(time);
-        const activeShowers = getActiveShowers(now);
+        const nowMs = now.getTime();
+        const dayKey = now.getDate();
+
+        if (dayKey !== lastDayRef.current || nowMs - lastCheckRef.current > 5 * 60 * 1000) {
+            const active = getActiveShowers(now);
+            activeShowersRef.current = active;
+            hasActiveShowersRef.current = active.length > 0;
+            lastCheckRef.current = nowMs;
+            lastDayRef.current = dayKey;
+        }
+
+        const activeShowers = activeShowersRef.current;
+
+        // If no active showers and no active particles, skip all updates
+        if (!hasActiveShowersRef.current) {
+            let anyActive = false;
+            for (let i = 0; i < METEOR_COUNT; i++) {
+                if (activeRef.current[i] === 1) { anyActive = true; break; }
+            }
+            if (!anyActive) {
+                pointsRef.current.visible = false;
+                return;
+            }
+        }
+
+        pointsRef.current.visible = true;
 
         // Si no hay lluvias activas, reducir actividad
-        const baseRate = activeShowers.length > 0 ? 0.02 : 0.002;
+        const baseRate = activeShowers.length > 0 ? 0.02 : 0.0;
 
         const positionsAttr = pointsRef.current.geometry.getAttribute('position') as THREE.BufferAttribute;
         const alphasAttr = pointsRef.current.geometry.getAttribute('alpha') as THREE.BufferAttribute;

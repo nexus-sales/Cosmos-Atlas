@@ -7,6 +7,7 @@ import { getConstellationDisplayName } from '@/data/constellationNames';
 import { useAppStore } from '@/stores/useAppStore';
 import { Search, Star as StarIcon, Orbit, CloudFog, Sparkles, X, Globe2, Share2, ChevronDown } from 'lucide-react';
 import { useState, useMemo, useRef, useEffect } from 'react';
+import type { CSSProperties } from 'react';
 import { cn } from '@/lib/utils';
 import type { Star, DSO, Planet } from '@/types/celestial';
 import { equToHor, equatorialTo3D } from '@/lib/astronomy/transforms';
@@ -151,8 +152,7 @@ function InfoCard({ obj }: { obj: Star | DSO | Planet }) {
     const isPlanet = !isDSO && 'kind' in obj && (obj as Planet).kind === 'planet';
     const isConstellation = isPlanet && (obj as Planet).symbol === '\u2736';
     return (
-        <div className="mx-1 mb-2 mt-0.5 p-3 rounded-md border border-white/12 space-y-1.5"
-            style={{ background: 'rgba(255,255,255,0.04)' }}>
+        <div className="mx-1 mb-2 mt-0.5 p-3 rounded-md border border-white/12 space-y-1.5 bg-white/[0.04]">
             {isDSO ? (
                 <p className="text-[10px] font-bold text-white/70 uppercase tracking-wider">
                     {(obj as DSO).type} &middot; mag {(obj as DSO).mag}
@@ -303,8 +303,7 @@ export default function GuideTab() {
                     placeholder="Buscar objeto o constelaci\u00f3n..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-full rounded-lg py-2.5 pl-10 pr-8 text-[12px] font-mono focus:outline-none transition-colors placeholder:text-white/25"
-                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)', color: 'rgba(255,255,255,0.85)' }}
+                    className="w-full rounded-lg border border-white/15 bg-white/[0.06] py-2.5 pl-10 pr-8 text-[12px] font-mono text-white/85 focus:outline-none transition-colors placeholder:text-white/25"
                 />
                 {search && (
                     <button title="Limpiar" onClick={() => { setSearch(''); setRemoteResult(null); }}
@@ -341,8 +340,7 @@ export default function GuideTab() {
 
             {/* Objetivo activo */}
             {targetedObject && (
-                <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-blue-400/35"
-                    style={{ background: 'rgba(59,130,246,0.12)' }}>
+                <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-blue-400/35 bg-blue-500/15">
                     <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse shrink-0" />
                     <span className="text-[12px] text-blue-300 font-bold font-mono truncate flex-1">
                         &#9678; {'kind' in targetedObject && targetedObject.kind === 'planet' && targetedObject.symbol === '\u2736'
@@ -373,7 +371,12 @@ export default function GuideTab() {
                                             className={cn('w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all border',
                                                 active ? 'border-orange-400/40 bg-orange-500/10 text-orange-200'
                                                     : 'border-transparent hover:border-white/12 hover:bg-white/4 text-white/75 hover:text-white')}>
-                                            <span className="text-[14px] shrink-0 leading-none" style={{ color: planet.color }}>{planet.symbol}</span>
+                                            <span
+                                                className="accent-color text-[14px] shrink-0 leading-none"
+                                                style={{ '--accent-color': planet.color } as CSSProperties}
+                                            >
+                                                {planet.symbol}
+                                            </span>
                                             <span className="text-[13px] font-semibold flex-1 truncate">{planet.name}</span>
                                             <span className="text-[10px] text-white/40 shrink-0 font-mono">{planet.mag.toFixed(1)}</span>
                                             <div suppressHydrationWarning title={planet.alt > 0 ? `Visible · Alt ${planet.alt.toFixed(0)}°` : 'Bajo el horizonte'}
@@ -405,8 +408,10 @@ export default function GuideTab() {
                                             className={cn('w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all border',
                                                 active ? 'border-yellow-400/40 bg-yellow-500/10 text-yellow-200'
                                                     : 'border-transparent hover:border-white/12 hover:bg-white/4 text-white/75 hover:text-white')}>
-                                            <div className="w-2.5 h-2.5 rounded-full shrink-0"
-                                                style={{ background: star.color, boxShadow: active ? `0 0 6px ${star.color}` : 'none' }} />
+                                            <div
+                                                className={cn('star-dot w-2.5 h-2.5 rounded-full shrink-0', active ? 'star-dot-active' : '')}
+                                                style={{ '--accent-color': star.color } as CSSProperties}
+                                            />
                                             <span className="text-[13px] font-semibold flex-1 truncate">{star.name}</span>
                                             <span className="text-[10px] text-white/40 shrink-0 font-mono">{star.mag.toFixed(1)}</span>
                                             <span className="text-[10px] text-white/35 shrink-0 italic hidden sm:block truncate max-w-[64px]">

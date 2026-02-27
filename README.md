@@ -343,11 +343,15 @@ Clic de nuevo en el mismo objeto lo deselecciona.
 
 ## Luna con Fases Realistas
 
-`Planets.tsx` incluye un componente `MoonMesh` separado que:
+`Planets.tsx` incluye un componente `MoonMesh` separado con renderizado físico mediante shader GLSL:
 
 - Calcula la posición con `Astronomy.Equator(Body.Moon, ...)` y la fase con `Astronomy.MoonPhase()`
-- Genera una textura `THREE.CanvasTexture` dibujando geométricamente el lado iluminado
-- La fase se redondea a 3° para evitar regenerar la textura cada frame
+- Renderiza una esfera 3D (`SphereGeometry`) con `ShaderMaterial` personalizado
+- **Textura real**: Fotografía de Luna llena de Wikimedia Commons (`FullMoon2010.jpg`)
+- **Iluminación física en GPU**: el `uPhase` uniform orienta el vector de luz (`vec3 lightDir`) según el ángulo de fase real; `step()` divide la esfera en lado iluminado / lado oscuro
+- **Earthshine**: luz ambiente mínima (0.01) en el lado oscuro, simulando la luz reflejada por la Tierra
+- **Corrección gamma**: leve `mix(tex, tex*tex, 0.2)` para aumentar el contraste de la superficie
+- **Fallback**: `DataTexture` gris (1×1 px) si la carga de la foto falla, sin crash
 
 | Fase (grados) | Nombre |
 |---|---|

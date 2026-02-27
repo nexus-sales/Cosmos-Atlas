@@ -30,8 +30,7 @@ export default function MeteorShowerInfo() {
 
             {/* Lluvia activa principal */}
             {bestShower ? (
-                <div className="p-3 rounded-lg border border-blue-500/30"
-                    style={{ background: 'rgba(59,130,246,0.08)' }}>
+                <div className="p-3 rounded-lg border border-blue-500/30 bg-blue-500/10">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-[11px] font-bold text-blue-300">
                             {bestShower.name}
@@ -65,8 +64,7 @@ export default function MeteorShowerInfo() {
                     </div>
                 </div>
             ) : (
-                <div className="p-3 rounded-lg border border-white/10 text-center"
-                    style={{ background: 'rgba(255,255,255,0.03)' }}>
+                <div className="p-3 rounded-lg border border-white/10 text-center bg-white/[0.03]">
                     <CloudRain className="w-6 h-6 text-white/20 mx-auto mb-2" />
                     <p className="text-[10px] text-white/40">
                         No hay lluvias activas hoy
@@ -88,8 +86,7 @@ export default function MeteorShowerInfo() {
                             return (
                                 <div
                                     key={shower.id}
-                                    className="flex items-center justify-between px-2 py-1.5 rounded border border-white/5"
-                                    style={{ background: 'rgba(255,255,255,0.02)' }}
+                                    className="flex items-center justify-between px-2 py-1.5 rounded border border-white/5 bg-white/[0.02]"
                                 >
                                     <div className="flex items-center gap-2">
                                         <div
@@ -143,8 +140,7 @@ export default function MeteorShowerInfo() {
                         return (
                             <div
                                 key={shower.id}
-                                className="flex items-center justify-between px-2 py-1.5 rounded border border-white/5"
-                                style={{ background: 'rgba(255,255,255,0.02)' }}
+                                className="flex items-center justify-between px-2 py-1.5 rounded border border-white/5 bg-white/[0.02]"
                             >
                                 <div className="flex items-center gap-2">
                                     <div

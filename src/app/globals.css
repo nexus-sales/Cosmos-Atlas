@@ -106,6 +106,87 @@ body {
   transition: filter 0.7s ease-in-out;
 }
 
+.text-shadow-soft {
+  text-shadow: 0 0 4px black;
+}
+
+.text-shadow-moon {
+  text-shadow: 0 0 8px rgba(216, 214, 192, 0.8);
+}
+
+.accent-color {
+  color: var(--accent-color);
+}
+
+.accent-border {
+  border-color: var(--accent-border);
+}
+
+.accent-label {
+  color: var(--accent-color);
+  border-color: var(--accent-border);
+  text-shadow: 0 0 8px var(--accent-color), 0 0 3px #000;
+}
+
+.accent-label-strong {
+  color: var(--accent-color);
+  border-color: var(--accent-border);
+  text-shadow: 0 0 12px var(--accent-color), 0 0 24px var(--accent-color);
+}
+
+.object-card {
+  background-image: linear-gradient(135deg, var(--accent-soft) 0%, transparent 60%);
+  border-color: var(--accent-border);
+}
+
+.object-orb {
+  background: var(--accent-orb);
+}
+
+.object-chip {
+  background: var(--accent-chip);
+  color: var(--accent-color);
+}
+
+.object-title {
+  text-shadow: 0 0 20px var(--accent-glow);
+}
+
+.object-accent {
+  color: var(--accent-color);
+}
+
+.object-accent-90 {
+  color: var(--accent-90);
+}
+
+.orbit-button {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
+.orbit-button-active {
+  background: var(--accent-btn-bg);
+  color: #ffaaee;
+}
+
+.metric-label {
+  color: var(--metric-color);
+}
+
+.planet-label {
+  color: var(--accent-color);
+  text-shadow: 0 0 10px var(--accent-color);
+}
+
+.star-dot {
+  background: var(--accent-color);
+}
+
+.star-dot-active {
+  box-shadow: 0 0 6px var(--accent-color);
+}
+
 .night-mode-active img,
 .night-mode-active video {
   /* Prevent double filtering on media if needed, 

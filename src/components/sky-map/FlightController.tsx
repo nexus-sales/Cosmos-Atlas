@@ -35,6 +35,8 @@ export default function FlightController() {
     const targetPos = useRef(new THREE.Vector3());
     const startLook = useRef(new THREE.Vector3());
     const targetLook = useRef(new THREE.Vector3());
+    const prevMode = useRef<typeof viewMode | null>(null);
+    const prevTarget = useRef<string | null>(null);
 
     // Pending controls mutations — applied in useFrame via state.controls
     // to avoid mutating the value returned from useThree()
@@ -43,7 +45,22 @@ export default function FlightController() {
 
     // Sync camera state when flight starts
     useEffect(() => {
+        if (viewMode === 'observatory') {
+            if (prevMode.current !== 'observatory') {
+                camera.position.set(0, 0, 0.01);
+                camera.lookAt(new THREE.Vector3(1, 0, 0));
+                pendingControlsEnabled.current = true;
+                pendingControlsTarget.current = new THREE.Vector3(0, 0, 0);
+            }
+            prevMode.current = viewMode;
+            prevTarget.current = flightTarget;
+            return;
+        }
+
         if (viewMode === 'orbital' && flightTarget) {
+            if (prevMode.current === 'orbital' && prevTarget.current === flightTarget) {
+                return;
+            }
             // Find target position in 3D space
             // Identify body from name string
             let body: Astronomy.Body | null = null;
@@ -110,24 +127,10 @@ export default function FlightController() {
                 console.warn(`Flight target body '${flightTarget}' not found`);
                 endFlight();
             }
-        } else if (viewMode === 'observatory') {
-             // Return to Earth (Observatory)
-             // We animate back to origin
-             if (isFlying.current && flightTarget) {
-                 // If we were flying TO a planet and cancelled, we reverse?
-                 // Simpler: Just snap back or ease back?
-                 // Let's ease back to startPos (which was Earth)
-             } else {
-                 // If we were already there or just switching modes
-                 // Snap back for safety so the sky map looks correct
-                 camera.position.set(0, 0, 0.01);
-                 camera.lookAt(new THREE.Vector3(1, 0, 0)); // Look East?
-
-                 // Enable controls and reset target (applied next frame)
-                 pendingControlsEnabled.current = true;
-                 pendingControlsTarget.current = new THREE.Vector3(0, 0, 0);
-             }
         }
+
+        prevMode.current = viewMode;
+        prevTarget.current = flightTarget;
     }, [viewMode, flightTarget, camera, observer, time, endFlight]);
 
     useFrame((state, delta) => {

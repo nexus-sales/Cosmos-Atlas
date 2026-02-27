@@ -98,12 +98,11 @@ export default function Compass() {
                 {/* Brújula principal */}
                 <button
                     onClick={handleCompassClick}
-                    className="relative w-16 h-16 rounded-full bg-black/60 backdrop-blur-md
-                               border border-white/20 hover:border-blue-400/50
-                               shadow-lg shadow-black/50 transition-all duration-200
-                               flex items-center justify-center"
+                    className={followOrientation
+                        ? "relative w-16 h-16 rounded-full bg-black/60 backdrop-blur-md border border-[#44aaff66] hover:border-blue-400/50 shadow-[0_0_12px_rgba(68,170,255,0.25)] transition-all duration-200 flex items-center justify-center"
+                        : "relative w-16 h-16 rounded-full bg-black/60 backdrop-blur-md border border-white/20 hover:border-blue-400/50 shadow-lg shadow-black/50 transition-all duration-200 flex items-center justify-center"
+                    }
                     title={followOrientation ? 'Orientación AR activa' : 'Clic: Cénit | Doble clic: Norte'}
-                    style={followOrientation ? { borderColor: 'rgba(68,170,255,0.4)', boxShadow: '0 0 12px rgba(68,170,255,0.25)' } : undefined}
                 >
                     <svg viewBox="0 0 100 100" className="w-14 h-14">
                         <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />

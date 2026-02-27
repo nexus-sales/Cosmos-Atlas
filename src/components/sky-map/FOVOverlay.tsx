@@ -21,16 +21,12 @@ function FOVOverlayContent({ rectWidth = 0, rectHeight = 0, fovX = 0, fovY = 0, 
     // Guard: don't render if values are not valid yet
     if (rectWidth <= 0 || rectHeight <= 0) return null;
     return (
-        <div
-            className="absolute inset-0 pointer-events-none flex items-center justify-center z-20"
-            style={{ mixBlendMode: 'screen' }}
-        >
+        <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-20 mix-blend-screen">
             <div
-                className="border border-blue-400/50 relative"
+                className="border border-blue-400/50 relative shadow-[0_0_20px_rgba(59,130,246,0.1)]"
                 style={{
                     width: `${rectWidth}px`,
                     height: `${rectHeight}px`,
-                    boxShadow: '0 0 20px rgba(59, 130, 246, 0.1)',
                 }}
             >
                 {/* Esquinas (Retículo) */}
@@ -78,7 +74,7 @@ export default function FOVOverlay() {
     const rectHeight = (fovY / camFovY) * size.height;
 
     return (
-        <Html fullscreen style={{ pointerEvents: 'none' }}>
+        <Html fullscreen className="pointer-events-none">
             <FOVOverlayContent
                 rectWidth={rectWidth}
                 rectHeight={rectHeight}

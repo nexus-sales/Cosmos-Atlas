@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/stores/useAppStore';
-import { Target, Info, BookOpen, Layers, Grid3X3, ChevronRight, ChevronLeft, ChevronDown, X, Moon, Mountain, Camera, Satellite, Globe, CloudRain, Settings2, Volume2, VolumeX } from 'lucide-react';
+import { Target, Info, BookOpen, Layers, Grid3X3, ChevronRight, ChevronLeft, ChevronDown, X, Moon, Mountain, Camera, Satellite, Globe, CloudRain, Settings2, Crosshair } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChallengeTab from '@/components/panels/ChallengeTab';
 import ObjectInfoTab from '@/components/panels/ObjectInfoTab';
@@ -14,19 +14,19 @@ import DailyEventsPanel from '@/components/panels/DailyEventsPanel';
 type TabType = 'challenge' | 'info' | 'guide';
 
 function useIsMobile() {
-    const [isMobile, setIsMobile] = useState(false);
+    const [isMobile, setIsMobile] = useState(() => {
+        if (typeof window === 'undefined') return false;
+        return window.matchMedia('(max-width: 767px)').matches;
+    });
+
     useEffect(() => {
         const mq = window.matchMedia('(max-width: 767px)');
-        
         const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-        
-        // Set initial value only if different to avoid redundant updates?
-        // Actually, just setting it is fine, but to avoid the lint error:
-        setIsMobile(mq.matches);
 
         mq.addEventListener('change', handler);
         return () => mq.removeEventListener('change', handler);
     }, []);
+
     return isMobile;
 }
 
@@ -40,10 +40,12 @@ export default function SidePanel() {
     const showSatellites = useAppStore((state) => state.settings.showSatellites);
     const showStarlink = useAppStore((state) => state.settings.showStarlink);
     const nightMode = useAppStore((state) => state.settings.nightMode);
+    const followTarget = useAppStore((state) => state.settings.followTarget);
     const bortleScale = useAppStore((state) => state.settings.bortleScale);
     const setBortleScale = useAppStore((state) => state.setBortleScale);
     const showFOV = useAppStore((state) => state.settings.showFOV);
     const focalLength = useAppStore((state) => state.settings.focalLength);
+    const telescopeMode = useAppStore((state) => state.settings.telescopeMode);
     const setFOVParams = useAppStore((state) => state.setFOVParams);
     const toggleSetting = useAppStore((state) => state.toggleSetting);
     const sidebarOpen = useAppStore((state) => state.sidebarOpen);
@@ -71,8 +73,8 @@ export default function SidePanel() {
         { key: 'showFOV' as const, label: 'SIM. FOV', icon: Camera, active: showFOV },
         { key: 'showSatellites' as const, label: 'SATÉLITES', icon: Satellite, active: showSatellites },
         { key: 'showStarlink' as const, label: 'STARLINK', icon: Globe, active: showStarlink },
-        { key: 'audioEnabled' as const, label: 'AUDIO', icon: useAppStore.getState().settings.audioEnabled ? Volume2 : VolumeX, active: useAppStore.getState().settings.audioEnabled },
-        { key: 'telescopeMode' as const, label: 'TELESCOPIO', icon: Camera, active: useAppStore.getState().settings.telescopeMode },
+        { key: 'telescopeMode' as const, label: 'TELESCOPIO', icon: Camera, active: telescopeMode },
+        { key: 'followTarget' as const, label: 'SEGUIR', icon: Crosshair, active: followTarget },
     ];
 
     const [layersOpen, setLayersOpen] = useState(true);
@@ -187,22 +189,6 @@ export default function SidePanel() {
                                         ))}
                                     </div>
 
-                                    {useAppStore.getState().settings.audioEnabled && (
-                                        <div className="mt-4 px-1 space-y-2">
-                                            <div className="flex justify-between text-[9px] font-bold text-white/40 tracking-widest uppercase">
-                                                <span>Volumen Ambiente</span>
-                                                <span className="text-blue-400">{Math.round(useAppStore.getState().settings.audioVolume * 100)}%</span>
-                                            </div>
-                                            <input
-                                                type="range" min="0" max="1" step="0.01"
-                                                aria-label="Volumen ambiente"
-                                                title="Ajustar volumen"
-                                                value={useAppStore.getState().settings.audioVolume}
-                                                onChange={(e) => useAppStore.setState(s => ({ settings: { ...s.settings, audioVolume: parseFloat(e.target.value) } }))}
-                                                className="w-full h-1 bg-white/10 rounded-full appearance-none accent-blue-500 cursor-pointer"
-                                            />
-                                        </div>
-                                    )}
                                 </AccordionSection>
 
                                 <AccordionSection title={`Contaminación: Bortle ${bortleScale}`} icon={<Mountain className="w-4 h-4" />} isOpen={bortleOpen} onToggle={() => setBortleOpen(!bortleOpen)}>
@@ -317,16 +303,15 @@ export default function SidePanel() {
 }
 
 function AccordionSection({ title, icon, isOpen, onToggle, children }: { title: string; icon: React.ReactNode; isOpen: boolean; onToggle: () => void; children: React.ReactNode }) {
-    const [hasOpened, setHasOpened] = useState(isOpen);
-
-    useEffect(() => {
-        if (isOpen) setHasOpened(true);
-    }, [isOpen]);
+    const [hasOpened, setHasOpened] = useState(() => isOpen);
 
     return (
         <div className="flex flex-col">
             <button 
-                onClick={onToggle} 
+                onClick={() => {
+                    if (!isOpen) setHasOpened(true);
+                    onToggle();
+                }} 
                 className={cn("flex items-center justify-between w-full p-4 text-left transition-colors outline-none cursor-pointer", isOpen ? "bg-white/[0.03]" : "hover:bg-white/[0.02]")}
             >
                 <div className="flex items-center gap-3">

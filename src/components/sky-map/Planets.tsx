@@ -2,6 +2,7 @@
 
 import { Html, Float } from '@react-three/drei';
 import { useMemo, useRef, useEffect, useState } from 'react';
+import type { CSSProperties } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
@@ -78,7 +79,7 @@ const PLANET_CONFIGS: PlanetConfig[] = [
 ];
 
 const TEXTURES = {
-    mercury: 'https://upload.wikimedia.org/wikipedia/commons/3/3d/Mercury_in_color_-_Prockter07_centered.jpg',
+    mercury: 'https://www.solarsystemscope.com/textures/download/2k_mercury.jpg',
     venus: 'https://upload.wikimedia.org/wikipedia/commons/e/e5/Venus-real_color.jpg',
     mars: 'https://upload.wikimedia.org/wikipedia/commons/0/02/OSIRIS_Mars_true_color.jpg',
     jupiter: 'https://upload.wikimedia.org/wikipedia/commons/e/e2/Jupiter.jpg',
@@ -161,11 +162,8 @@ function JupiterMoonMesh({ moon, glowTex }: { moon: any, glowTex: THREE.CanvasTe
             {camFov < 12 && (
                 <Html distanceFactor={1.5}>
                     <div 
-                        className="text-[9px] font-mono whitespace-nowrap pointer-events-none bg-black/40 px-1 py-0.5 rounded-[2px] translate-x-2 -translate-y-2 font-bold"
-                        style={{
-                            color: moon.color,
-                            textShadow: '0 0 4px black',
-                        }}
+                        className="text-shadow-soft accent-color text-[9px] font-mono whitespace-nowrap pointer-events-none bg-black/40 px-1 py-0.5 rounded-[2px] translate-x-2 -translate-y-2 font-bold"
+                        style={{ '--accent-color': moon.color } as CSSProperties}
                     >
                         {moon.name}
                     </div>
@@ -257,6 +255,36 @@ void main() {
 }
 `;
 
+    const MOON_VERTEX_SHADER = `
+    varying vec2 vUv;
+    varying vec3 vNormal;
+    void main() {
+        vUv = uv;
+        vNormal = normalize(normalMatrix * normal);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+    `;
+
+    const MOON_FRAGMENT_SHADER = `
+    varying vec2 vUv;
+    varying vec3 vNormal;
+    uniform sampler2D uMap;
+    uniform float uPhase;
+    uniform float uOpacity;
+    void main() {
+        vec3 normal = normalize(vNormal);
+        float phaseAdj = radians(uPhase + 180.0);
+        vec3 lightDir = normalize(vec3(cos(phaseAdj), 0.0, sin(phaseAdj)));
+        float lit = step(0.0, dot(normal, lightDir));
+        float earthshine = 0.01;
+        float shade = mix(earthshine, 1.0, lit);
+        vec3 tex = texture2D(uMap, vUv).rgb;
+        tex = mix(tex, tex * tex, 0.2);
+        vec3 color = tex * shade;
+        gl_FragColor = vec4(color, uOpacity);
+    }
+    `;
+
 function SunMesh({ planet, opacity }: { planet: any, opacity: number }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const glowRef = useRef<THREE.Mesh>(null);
@@ -321,12 +349,32 @@ function MoonMesh({ planet, phase, opacity }: {
     opacity: number;
 }) {
     const setSelectedObj = useAppStore((s) => s.setSelectedObject);
+    const materialRef = useRef<THREE.ShaderMaterial>(null);
     // Real apparent radius of Moon: ~0.25° → at R=95: 95*tan(0.25°*π/180) ≈ 0.414 units
     // angularSize in arcsec: ~1800 → 1800 * 0.00023 ≈ 0.414
     const SIZE = THREE.MathUtils.clamp(planet.angularSize * 0.00023, 0.35, 0.52);
 
     const texture = useSafeTexture(TEXTURES.moon);
+    const fallbackTex = useMemo(() => {
+        const data = new Uint8Array([216, 214, 192, 255]);
+        const tex = new THREE.DataTexture(data, 1, 1);
+        tex.needsUpdate = true;
+        return tex;
+    }, []);
     const setTargetedObject = useAppStore((s) => s.setTargetedObject);
+
+    const uniforms = useMemo(() => ({
+        uMap: { value: texture ?? fallbackTex },
+        uPhase: { value: phase },
+        uOpacity: { value: opacity },
+    }), [texture, fallbackTex, phase, opacity]);
+
+    useEffect(() => {
+        if (!materialRef.current) return;
+        materialRef.current.uniforms.uMap.value = texture ?? fallbackTex;
+        materialRef.current.uniforms.uPhase.value = phase;
+        materialRef.current.uniforms.uOpacity.value = opacity;
+    }, [texture, fallbackTex, phase, opacity]);
 
     // No longer need manual disposal with useTexture
 
@@ -340,26 +388,19 @@ function MoonMesh({ planet, phase, opacity }: {
                 castShadow
                 receiveShadow
             >
-                <sphereGeometry args={[SIZE, 32, 32]} />
-                <meshStandardMaterial
-                    map={texture ?? undefined}
-                    color={texture ? undefined : '#d8d6c0'}
+                <sphereGeometry args={[SIZE, 64, 64]} />
+                <shaderMaterial
+                    ref={materialRef}
+                    uniforms={uniforms}
+                    vertexShader={MOON_VERTEX_SHADER}
+                    fragmentShader={MOON_FRAGMENT_SHADER}
                     transparent
-                    roughness={0.85}
-                    metalness={0.0}
-                    emissive="#111111"
-                    emissiveIntensity={0.1}
+                    opacity={opacity}
                 />
-            </mesh>
-            {/* Soft glow around Moon */}
-            <mesh>
-                <sphereGeometry args={[SIZE * 1.2, 16, 16]} />
-                <meshBasicMaterial color="#c0d0e8" transparent opacity={0.07} depthWrite={false} side={THREE.BackSide} />
             </mesh>
             <Html distanceFactor={90}>
                 <div 
-                    className="text-[#d8d6c0] text-[11px] font-mono whitespace-nowrap pointer-events-none select-none pl-2.5 font-bold tracking-[0.3px]"
-                    style={{ textShadow: '0 0 8px rgba(216,214,192,0.8)' }}
+                    className="text-shadow-moon text-[#d8d6c0] text-[11px] font-mono whitespace-nowrap pointer-events-none select-none pl-2.5 font-bold tracking-[0.3px]"
                 >
                     ☽ Luna <span className="text-[9px] opacity-70">{getMoonPhaseName(phase)}</span>
                 </div>
@@ -375,10 +416,14 @@ function MoonMesh({ planet, phase, opacity }: {
  */
 function Planet3D({
     planet,
-    opacity
+    opacity,
+    camFov,
+    isTargeted,
 }: {
     planet: Planet & { pos: [number, number, number]; angularSize: number; textureKey: keyof typeof TEXTURES };
-    opacity: number
+    opacity: number;
+    camFov: number;
+    isTargeted: boolean;
 }) {
     // Always call hook unconditionally (React rules), use empty string for sun
     const textureUrl = planet.textureKey !== 'sun' ? TEXTURES[planet.textureKey] : '';
@@ -392,7 +437,14 @@ function Planet3D({
     const isGasGiant = planet.name === 'Júpiter' || planet.name === 'Saturno' || planet.name === 'Urano' || planet.name === 'Neptuno';
 
     // Tamaño visual en modo 3D (ligeramente exagerado para impacto visual)
-    const scale = isGasGiant ? 0.9 : 0.5;
+    const baseScale = isGasGiant ? 0.9 : 0.5;
+    const zoomBoost = THREE.MathUtils.clamp(
+        THREE.MathUtils.mapLinear(camFov, 50, 15, 1.0, 4.0),
+        1.0,
+        4.0,
+    );
+    const targetBoost = isTargeted ? 1.5 : 1.0;
+    const scale = baseScale * zoomBoost * targetBoost;
 
     return (
         <group position={planet.pos} visible={opacity > 0.01}>
@@ -449,8 +501,10 @@ function PlanetMesh({ planet, glowTex }: {
     const camFov = useAppStore((state) => state.camFov);
     const viewMode = useAppStore((state) => state.viewMode);
     const flightTarget = useAppStore((state) => state.flightTarget);
+    const targetedObject = useAppStore((state) => state.targetedObject);
 
     const isOrbitalTarget = viewMode === 'orbital' && flightTarget === planet.name;
+    const isTargeted = targetedObject?.name === planet.name;
 
     // Zoom Cross-fade:
     // fov=90 (lejos) -> sprite 1.0, 3D 0.0
@@ -504,7 +558,7 @@ function PlanetMesh({ planet, glowTex }: {
             </group>
 
             {/* Modo 3D (Zoom Detallado) */}
-            <Planet3D planet={planet} opacity={model3DOpacity} />
+            <Planet3D planet={planet} opacity={model3DOpacity} camFov={camFov} isTargeted={isTargeted} />
 
             <Html position={planet.pos} distanceFactor={90}>
                 <div
@@ -512,15 +566,12 @@ function PlanetMesh({ planet, glowTex }: {
                         setSelectedObject(planet);
                         setTargetedObject(planet);
                     }}
+                    className="planet-label font-semibold uppercase whitespace-nowrap cursor-pointer select-none pl-3 transition-all font-sans"
                     style={{
-                        color: planet.color, fontSize: camFov < 35 ? '14px' : '11px',
-                        fontFamily: "'Inter', sans-serif",
-                        whiteSpace: 'nowrap', cursor: 'pointer', userSelect: 'none',
-                        textShadow: `0 0 10px ${planet.color}`, paddingLeft: '12px',
-                        fontWeight: 800, textTransform: 'uppercase',
+                        '--accent-color': planet.color,
+                        fontSize: camFov < 35 ? '14px' : '11px',
                         opacity: THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 90, 80, 0.4, 1.0), 0.4, 1),
-                        transition: 'all 0.3s ease'
-                    }}
+                    } as CSSProperties}
                 >
                     {planet.name}
                 </div>

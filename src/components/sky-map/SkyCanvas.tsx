@@ -1,7 +1,7 @@
 'use client';
 
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import { OrbitControls, Html } from '@react-three/drei';
 import { Suspense, useEffect, useRef } from 'react';
 import CelestialSphere from '@/components/sky-map/CelestialSphere';
 import Stars from '@/components/sky-map/Stars';
@@ -20,11 +20,8 @@ import Compass from '@/components/panels/Compass';
 import Satellites from '@/components/sky-map/Satellites';
 import MeteorShower from '@/components/effects/MeteorShower';
 import Comets from '@/components/sky-map/Comets';
-import AuroraBorealis from '@/components/sky-map/AuroraBorealis';
-import AdaptiveSoundscape from '@/components/audio/AdaptiveSoundscape';
 import TelescopeEffect from '@/components/sky-map/TelescopeEffect';
 import AtmosphericSky from '@/components/sky-map/AtmosphericSky';
-import SunFlare from '@/components/sky-map/SunFlare';
 import FlightController from '@/components/sky-map/FlightController';
 import { useAppStore } from '@/stores/useAppStore';
 import * as THREE from 'three';
@@ -42,10 +39,26 @@ import { deviceOrientationRef } from '@/hooks/useDeviceOrientation';
  * OrbitControls ignora el gesto de 2 dedos cuando enableZoom+enablePan=false
  * y nuestro handler calcula el delta de distancia entre ambos punteros.
  */
-function FovZoom() {
+function FovZoom({
+    trackingRef,
+    manualFovRef,
+    manualFovHoldRef,
+}: {
+    trackingRef: React.MutableRefObject<boolean>;
+    manualFovRef: React.MutableRefObject<number | null>;
+    manualFovHoldRef: React.MutableRefObject<number>;
+}) {
     const { camera, gl } = useThree();
     const fovRef = useRef(60);
+    const camFov = useAppStore((state) => state.camFov);
     const setCamFov = useAppStore((state) => state.setCamFov);
+
+    useEffect(() => {
+        const cam = camera as THREE.PerspectiveCamera;
+        fovRef.current = camFov;
+        cam.fov = camFov;
+        cam.updateProjectionMatrix();
+    }, [camera, camFov]);
 
     useEffect(() => {
         const canvas = gl.domElement;
@@ -55,6 +68,16 @@ function FovZoom() {
         const onWheel = (e: WheelEvent) => {
             e.preventDefault();
             const delta = e.deltaY > 0 ? 3 : -3;
+            if (trackingRef.current) {
+                const current = manualFovRef.current ?? cam.fov;
+                const next = THREE.MathUtils.clamp(current + delta, 10, 90);
+                manualFovRef.current = next;
+                manualFovHoldRef.current = 1.0;
+                cam.fov = next;
+                cam.updateProjectionMatrix();
+                setCamFov(next);
+                return;
+            }
             fovRef.current = THREE.MathUtils.clamp(fovRef.current + delta, 10, 90);
             cam.fov = fovRef.current;
             cam.updateProjectionMatrix();
@@ -85,6 +108,16 @@ function FovZoom() {
             // Separar dedos (dist crece) → zoom in (FOV baja)
             const delta = (lastDist - dist) * 0.15;
             lastDist = dist;
+            if (trackingRef.current) {
+                const current = manualFovRef.current ?? cam.fov;
+                const next = THREE.MathUtils.clamp(current + delta, 10, 90);
+                manualFovRef.current = next;
+                manualFovHoldRef.current = 1.0;
+                cam.fov = next;
+                cam.updateProjectionMatrix();
+                setCamFov(next);
+                return;
+            }
             fovRef.current = THREE.MathUtils.clamp(fovRef.current + delta, 10, 90);
             cam.fov = fovRef.current;
             cam.updateProjectionMatrix();
@@ -163,25 +196,62 @@ function CelestialGroup({ children }: { children: React.ReactNode }) {
  * Runs after OrbitControls (priority 0 > -1) so our position sticks each frame.
  */
 // Add controlsRef prop type to CameraNavigator
-function CameraNavigator({ controlsRef }: { controlsRef?: React.MutableRefObject<any> }) {
+function CameraNavigator({
+    controlsRef,
+    trackingRef,
+    manualFovRef,
+    manualFovHoldRef,
+}: {
+    controlsRef?: React.MutableRefObject<any>;
+    trackingRef: React.MutableRefObject<boolean>;
+    manualFovRef: React.MutableRefObject<number | null>;
+    manualFovHoldRef: React.MutableRefObject<number>;
+}) {
     const { camera } = useThree();
     const targetedObject = useAppStore((s) => s.targetedObject);
     const viewMode = useAppStore((s) => s.viewMode);
+    const followTarget = useAppStore((s) => s.settings.followTarget);
     const setCamFov = useAppStore((state) => state.setCamFov);
 
     const isFlying = useRef(false);
     const prevTarget = useRef<typeof targetedObject>(null);
     const targetFov = useRef(60);
+    const targetWorldDirRef = useRef<THREE.Vector3 | null>(null);
+    const targetCamPosRef = useRef<THREE.Vector3 | null>(null);
 
     useEffect(() => {
+        if (!followTarget) {
+            isFlying.current = false;
+            trackingRef.current = false;
+            prevTarget.current = targetedObject;
+            return;
+        }
+
         if (targetedObject && targetedObject !== prevTarget.current) {
             isFlying.current = true;
+            trackingRef.current = true;
+            const { time, observer } = useAppStore.getState();
+            const lst = getLST(time, observer.lon);
+            const euler = new THREE.Euler(
+                THREE.MathUtils.degToRad(90 - observer.lat),
+                THREE.MathUtils.degToRad(-lst),
+                0,
+                'XYZ',
+            );
+            const rotMatrix = new THREE.Matrix4().makeRotationFromEuler(euler);
+            const [ex, ey, ez] = equatorialTo3D(targetedObject.ra, targetedObject.dec, 1);
+            const targetWorldDir = new THREE.Vector3(ex, ey, ez).applyMatrix4(rotMatrix).normalize();
+            targetWorldDirRef.current = targetWorldDir;
+            targetCamPosRef.current = targetWorldDir.clone().negate().multiplyScalar(0.01);
             // Si es planeta o DSO, zoom in automático para ver el modelo 3D
             const isPlanet = 'kind' in targetedObject && targetedObject.kind === 'planet';
             const isDSO = 'type' in targetedObject; // DSO check
             targetFov.current = (isPlanet || isDSO) ? 22 : 60;
         } else if (!targetedObject) {
              isFlying.current = false;
+             trackingRef.current = false;
+             targetWorldDirRef.current = null;
+             targetCamPosRef.current = null;
              
              // AL DETENERSE (por cancelar target): Sincronizar OrbitControls
              if (controlsRef?.current) {
@@ -269,9 +339,18 @@ function CameraNavigator({ controlsRef }: { controlsRef?: React.MutableRefObject
         prevTarget.current = targetedObject;
     }, [targetedObject, controlsRef]); // Añadido controlsRef
 
-    useFrame(() => {
+    useFrame((_, delta) => {
         // Disable navigation if not in observatory mode
         if (viewMode !== 'observatory') return;
+        if (!followTarget) {
+            trackingRef.current = false;
+            isFlying.current = false;
+            return;
+        }
+        if (!trackingRef.current) {
+            isFlying.current = false;
+            return;
+        }
 
         if (targetedObject && isFlying.current) {
             // ...existing logic helper...
@@ -280,46 +359,33 @@ function CameraNavigator({ controlsRef }: { controlsRef?: React.MutableRefObject
             // Y si OrbitControls está activo...
         }
         
-        if (!targetedObject) return;
-        
-        // Calcular SIEMPRE la posición objetivo del objeto en el cielo
-        const { time, observer } = useAppStore.getState();
-        const lst = getLST(time, observer.lon);
-        const euler = new THREE.Euler(
-            THREE.MathUtils.degToRad(90 - observer.lat),
-            THREE.MathUtils.degToRad(-lst),
-            0,
-            'XYZ',
-        );
-        const rotMatrix = new THREE.Matrix4().makeRotationFromEuler(euler);
-        const [ex, ey, ez] = equatorialTo3D(targetedObject.ra, targetedObject.dec, 1);
-        const targetWorldDir = new THREE.Vector3(ex, ey, ez).applyMatrix4(rotMatrix).normalize();
+        if (!targetedObject || !targetCamPosRef.current) return;
 
-        const targetCamPos = targetWorldDir.clone().negate().multiplyScalar(0.01);
+        const targetCamPos = targetCamPosRef.current;
         const currentPos = camera.position.clone();
 
         const dot = currentPos.normalize().dot(targetCamPos.clone().normalize());
 
         // FOV Transition
         const cam = camera as THREE.PerspectiveCamera;
-        if (Math.abs(cam.fov - targetFov.current) > 0.1) {
-            cam.fov = THREE.MathUtils.lerp(cam.fov, targetFov.current, 0.05);
+        let desiredFov = targetFov.current;
+        if (manualFovRef.current !== null) {
+            desiredFov = manualFovRef.current;
+            manualFovHoldRef.current = Math.max(0, manualFovHoldRef.current - delta);
+            if (manualFovHoldRef.current === 0) {
+                manualFovRef.current = null;
+            }
+        }
+
+        if (Math.abs(cam.fov - desiredFov) > 0.1) {
+            cam.fov = THREE.MathUtils.lerp(cam.fov, desiredFov, 0.05);
             cam.updateProjectionMatrix();
             setCamFov(cam.fov);
         }
 
         // Tracking logic
         // Si no estamos volando (ya llegamos), verificamos si debemos mantener el tracking
-        if (!isFlying.current) {
-             // Si el usuario intenta mover la cámara manualmente (el dot product baja),
-             // rompemos el tracking para dejarle control.
-             // Solo hacemos tracking si estamos alineados (o casi).
-             if (dot > 0.999) {
-                 camera.position.copy(targetCamPos);
-                 camera.lookAt(0, 0, 0);
-             }
-             return;
-        }
+        if (!isFlying.current) return;
 
         // Flight logic
         const speed = THREE.MathUtils.clamp(0.06 + (1 - dot) * 0.08, 0.05, 0.15);
@@ -402,6 +468,7 @@ function CameraNavigator({ controlsRef }: { controlsRef?: React.MutableRefObject
 
         if (dot > 0.999 && Math.abs(cam.fov - targetFov.current) < 0.5) {
             isFlying.current = false;
+            trackingRef.current = false;
             camera.position.copy(targetCamPos);
             camera.lookAt(0, 0, 0);
             
@@ -460,6 +527,27 @@ function OrientationDriver() {
     return null;
 }
 
+function DebugHud() {
+    const { camera } = useThree();
+    const camFov = useAppStore((s) => s.camFov);
+    const viewMode = useAppStore((s) => s.viewMode);
+    const flightTarget = useAppStore((s) => s.flightTarget);
+    const targetedObject = useAppStore((s) => s.targetedObject);
+    const is3DThreshold = camFov <= 30;
+
+    return (
+        <Html fullscreen className="pointer-events-none">
+            <div className="fixed bottom-5 left-5 z-50 rounded-md border border-white/10 bg-black/60 px-2 py-1 text-[10px] font-mono text-white/70">
+                <div>FOV(store): {camFov.toFixed(1)} {is3DThreshold ? '(3D on)' : '(3D off)'}</div>
+                <div>FOV(cam): {(camera as THREE.PerspectiveCamera).fov.toFixed(1)}</div>
+                <div>Mode: {viewMode}</div>
+                <div>Flight: {flightTarget ?? 'none'}</div>
+                <div>Target: {targetedObject?.name ?? 'none'}</div>
+            </div>
+        </Html>
+    );
+}
+
 function SeeingJitter() {
     const { camera } = useThree();
     const camFov = useAppStore((s) => s.camFov);
@@ -491,6 +579,9 @@ export default function SkyCanvas() {
     
     // Create a ref for OrbitControls to sync it
     const controlsRef = useRef<any>(null);
+    const trackingRef = useRef(false);
+    const manualFovRef = useRef<number | null>(null);
+    const manualFovHoldRef = useRef(0);
 
     return (
         <div className="w-full h-full bg-[#04091a] relative">
@@ -523,11 +614,16 @@ export default function SkyCanvas() {
                         rotateSpeed={-0.4}
                         target={[0, 0, 0]}
                         onStart={() => {
+                            trackingRef.current = false;
                             setTargetedObject(null);
                         }}
                     />
                     <OrientationDriver />
-                    <FovZoom />
+                    <FovZoom
+                        trackingRef={trackingRef}
+                        manualFovRef={manualFovRef}
+                        manualFovHoldRef={manualFovHoldRef}
+                    />
                     <FlightController />
 
                     {/* Esfera Atmosférica Pro — reemplaza a CelestialSphere */}
@@ -564,14 +660,17 @@ export default function SkyCanvas() {
                         
                         Let's pass the ref to CameraNavigator. We need to modify the component signature.
                      */}
-                    <CameraNavigator controlsRef={controlsRef} />
+                    <CameraNavigator
+                        controlsRef={controlsRef}
+                        trackingRef={trackingRef}
+                        manualFovRef={manualFovRef}
+                        manualFovHoldRef={manualFovHoldRef}
+                    />
 
                     {/* Horizonte en espacio mundo (plano horizontal fijo) */}
 
                     <Horizon />
 
-                    {/* Aurora Boreal/Austral */}
-                    <AuroraBorealis />
 
                     {/* Lluvia de meteoros real */}
                     <MeteorShower />
@@ -581,9 +680,8 @@ export default function SkyCanvas() {
 
                     {/* FOVOverlay maneja su propio Html wrapper internamente */}
                     <FOVOverlay />
-                    <AdaptiveSoundscape />
-                    <SunFlare />
                     {/* Brújula con reset de orientación */}
+                    <DebugHud />
                     <Compass />
                 </Suspense>
             </Canvas>

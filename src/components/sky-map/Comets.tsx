@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { COMETS, getCometPosition, getCometInfo } from '@/data/comets';
@@ -175,22 +176,15 @@ function CometItem({ comet }: { comet: CometData }) {
             {/* Label en hover */}
             {hovered && (
                 <Html distanceFactor={15} zIndexRange={[100, 0]}>
-                    <div style={{
-                        color: displayColor,
-                        fontSize: '11px',
-                        fontFamily: "'Courier New', monospace",
-                        textShadow: `0 0 8px ${displayColor}, 0 0 3px black`,
-                        pointerEvents: 'none',
-                        whiteSpace: 'nowrap',
-                        transform: 'translateY(-20px)',
-                        background: 'rgba(0,0,0,0.6)',
-                        padding: '3px 8px',
-                        borderRadius: '4px',
-                        border: `1px solid ${displayColor}66`,
-                        fontWeight: 'bold',
-                    }}>
+                    <div
+                        className="accent-label pointer-events-none whitespace-nowrap -translate-y-5 rounded border bg-black/60 px-2 py-[3px] text-[11px] font-bold font-mono"
+                        style={{
+                            '--accent-color': displayColor,
+                            '--accent-border': `${displayColor}66`,
+                        } as CSSProperties}
+                    >
                         ☄️ {comet.name}
-                        <div style={{ fontSize: '9px', opacity: 0.7, marginTop: '2px' }}>
+                        <div className="mt-0.5 text-[9px] opacity-70">
                             Mag {comet.magnitude.toFixed(1)} · {comet.visible ? '✓ Visible' : '⚠ Débil'}
                         </div>
                     </div>

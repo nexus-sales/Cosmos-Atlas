@@ -43,7 +43,7 @@ export default function DailyEventsPanel() {
                 EVENTOS DEL DÍA
             </div>
 
-            <div className="p-3 rounded-lg border border-white/10" style={{ background: 'rgba(255,255,255,0.03)' }}>
+            <div className="p-3 rounded-lg border border-white/10 bg-white/[0.03]">
                 <div className="text-[11px] text-white/60 mb-1">{todayStr}</div>
                 <div className="flex items-center gap-2 text-[9px]">
                     <span className={cn(

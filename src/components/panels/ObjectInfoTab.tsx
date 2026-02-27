@@ -1,6 +1,7 @@
 'use client';
 
 import { useAppStore } from '@/stores/useAppStore';
+import type { CSSProperties } from 'react';
 import { MousePointer2, Star as StarIcon, Navigation, Zap, Eye, EyeOff, Globe } from 'lucide-react';
 import { useCelestialVisibility } from '@/hooks/useCelestialVisibility';
 import type { Star, DSO, Planet } from '@/types/celestial';
@@ -28,6 +29,17 @@ export default function ObjectInfoTab() {
     const typeLabel = isStar ? 'ESTRELLA' : isPlanet ? 'PLANETA' : ((selected as DSO).type?.toUpperCase?.() ?? 'OBJETO');
     const accentColor = isStar ? '#60a5fa' : isPlanet ? (selected as Planet).color : '#a78bfa';
     const isVisible = coords.alt > 0;
+
+    const accentVars = {
+        '--accent-color': accentColor,
+        '--accent-soft': `${accentColor}0a`,
+        '--accent-border': `${accentColor}22`,
+        '--accent-glow': `${accentColor}60`,
+        '--accent-chip': `${accentColor}18`,
+        '--accent-orb': `${accentColor}10`,
+        '--accent-btn-bg': `${accentColor}20`,
+        '--accent-90': `${accentColor}90`,
+    } as CSSProperties;
     
     const startFlight = useAppStore((state) => state.startFlight);
     const endFlight = useAppStore((state) => state.endFlight);
@@ -37,17 +49,14 @@ export default function ObjectInfoTab() {
     const isFlightActive = viewMode === 'orbital' && flightTarget === selected.name;
 
     return (
-        <div className="space-y-4 animate-in fade-in duration-300">
+        <div className="space-y-4 animate-in fade-in duration-300" style={accentVars}>
             {/* Header con nombre y tipo */}
-            <div className="relative rounded-xl overflow-hidden p-5 bg-white/[0.03] border border-white/[0.06]"
-                style={{ backgroundImage: `linear-gradient(135deg, ${accentColor}0a 0%, transparent 60%)`, borderColor: `${accentColor}22` }}>
+            <div className="object-card relative rounded-xl overflow-hidden p-5 bg-white/[0.03] border">
 
-                <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl -translate-y-8 translate-x-8"
-                    style={{ background: `${accentColor}10` }} />
+                <div className="object-orb absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl -translate-y-8 translate-x-8" />
 
                 <div className="flex items-start justify-between mb-3">
-                    <span className="text-[8px] font-bold tracking-[0.25em] px-2 py-1 rounded-sm"
-                        style={{ background: `${accentColor}18`, color: accentColor }}>
+                    <span className="object-chip text-[8px] font-bold tracking-[0.25em] px-2 py-1 rounded-sm">
                         {typeLabel}{isPlanet ? ` ${(selected as Planet).symbol}` : ''}
                     </span>
                     <span className={`text-[9px] font-mono ${isVisible ? 'text-green-400' : 'text-red-400'}`}>
@@ -55,15 +64,14 @@ export default function ObjectInfoTab() {
                     </span>
                 </div>
 
-                <h3 className="text-2xl font-bold mb-1 tracking-wide text-white"
-                    style={{ textShadow: `0 0 20px ${accentColor}60` }}>
+                <h3 className="object-title text-2xl font-bold mb-1 tracking-wide text-white">
                     {selected.name}
                 </h3>
 
                 {isStar && (
                     <div className="flex items-center gap-2 mb-3">
-                        <StarIcon className="w-2.5 h-2.5" style={{ color: accentColor }} />
-                        <span className="text-[9px] font-mono tracking-wider" style={{ color: `${accentColor}90` }}>
+                        <StarIcon className="object-accent w-2.5 h-2.5" />
+                        <span className="object-accent-90 text-[9px] font-mono tracking-wider">
                             {(selected as Star).constellation}
                         </span>
                     </div>
@@ -71,20 +79,15 @@ export default function ObjectInfoTab() {
                 {isPlanet && (
                     <div className="flex flex-col gap-2 mb-3">
                         <div className="flex items-center gap-2">
-                             <Globe className="w-2.5 h-2.5" style={{ color: accentColor }} />
-                             <span className="text-[9px] font-mono tracking-wider" style={{ color: `${accentColor}90` }}>
+                             <Globe className="object-accent w-2.5 h-2.5" />
+                             <span className="object-accent-90 text-[9px] font-mono tracking-wider">
                                  Sistema Solar · Feb 2026
                              </span>
                         </div>
                         
                         <button 
                             onClick={() => isFlightActive ? endFlight() : startFlight(selected.name)}
-                            className="text-[10px] font-bold tracking-widest px-3 py-2 rounded border transition-all hover:bg-white/10 flex items-center justify-center gap-2 mt-2"
-                            style={{ 
-                                borderColor: accentColor, 
-                                color: isFlightActive ? '#ffaaee' : accentColor,
-                                background: isFlightActive ? `${accentColor}20` : 'transparent'
-                            }}
+                            className={`text-[10px] font-bold tracking-widest px-3 py-2 rounded border transition-all hover:bg-white/10 flex items-center justify-center gap-2 mt-2 orbit-button ${isFlightActive ? 'orbit-button-active' : ''}`}
                         >
                             <Zap className="w-3 h-3" />
                             {isFlightActive ? 'ABORTAR ORBITA' : 'INICIAR VUELO ORBITAL'}
@@ -162,9 +165,10 @@ export default function ObjectInfoTab() {
 function MetricCard({ label, value, sub, color, icon }: {
     label: string; value: string; sub: string; color: string; icon: React.ReactNode
 }) {
+    const metricVars = { '--metric-color': `${color}60` } as CSSProperties;
     return (
         <div className="rounded-xl p-3.5 bg-white/3 border border-white/6">
-            <div className="flex items-center gap-1.5 mb-2" style={{ color: `${color}60` }}>
+            <div className="metric-label flex items-center gap-1.5 mb-2" style={metricVars}>
                 {icon}
                 <span className="text-[8px] font-bold tracking-wider uppercase">{label}</span>
             </div>

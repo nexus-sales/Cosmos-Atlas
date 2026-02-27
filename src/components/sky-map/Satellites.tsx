@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState, useEffect } from 'react';
+import type { CSSProperties } from 'react';
 import * as THREE from 'three';
 import { Html } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
@@ -281,21 +282,11 @@ export default function Satellites() {
             {hoveredSat && (
                 <Html position={hoveredSat.position} distanceFactor={120} zIndexRange={[90, 0]}>
                     <div
+                        className="accent-label pointer-events-none whitespace-nowrap rounded border bg-[#020814]/90 px-2 py-1 text-[10px] font-bold font-mono tracking-[0.6px] -translate-x-1/2 -translate-y-5"
                         style={{
-                            background: 'rgba(2,8,20,0.90)',
-                            border: `1px solid ${hoveredSat.color}66`,
-                            borderRadius: '4px',
-                            padding: '4px 8px',
-                            color: hoveredSat.color,
-                            fontSize: '10px',
-                            fontFamily: "'Courier New', monospace",
-                            fontWeight: 'bold',
-                            whiteSpace: 'nowrap',
-                            letterSpacing: '0.6px',
-                            pointerEvents: 'none',
-                            textShadow: `0 0 8px ${hoveredSat.color}`,
-                            transform: 'translateX(-50%) translateY(-20px)',
-                        }}
+                            '--accent-color': hoveredSat.color,
+                            '--accent-border': `${hoveredSat.color}66`,
+                        } as CSSProperties}
                     >
                         {hoveredSat.name}
                     </div>
