@@ -329,7 +329,11 @@ function JupiterMoonMesh({ moon }: { moon: MoonData }) {
                 <meshBasicMaterial color={moon.color} />
             </mesh>
             <Html distanceFactor={80}>
-                <div role="presentation" className="pointer-events-none whitespace-nowrap text-[8px] font-mono opacity-80" style={{ color: moon.color }}>
+                <div 
+                    role="presentation" 
+                    className="pointer-events-none whitespace-nowrap text-[8px] font-mono opacity-80" 
+                    style={{ color: moon.color as any }}
+                >
                     {moon.name}
                 </div>
             </Html>
