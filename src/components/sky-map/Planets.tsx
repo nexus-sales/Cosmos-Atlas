@@ -2,12 +2,10 @@
 
 import { Html, Float } from '@react-three/drei';
 import { useMemo, useRef, useEffect, useState } from 'react';
-import type { CSSProperties } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { useAppStore } from '@/stores/useAppStore';
-import { Planet } from '@/types/celestial';
 import * as Astronomy from 'astronomy-engine';
 
 const JUPITER_MOON_DATA = [
@@ -103,9 +101,7 @@ const PLANET_FRAGMENT_SHADER = `
     }
 `;
 
-const AU_KM = 149597870.7;
-const moon_Radius_KM = 1737.4;
-const PLANET_Radius = 95;
+const PLANET_RADIUS = 95;
 
 function useSafeTexture(url: string) {
     const [tex, setTex] = useState<THREE.Texture | null>(null);
@@ -167,9 +163,11 @@ function SunMesh() {
     });
 
     useEffect(() => {
-        if (texture) uniforms.uMap.value = texture;
+        if (texture) {
+            uniforms.uMap.value = texture;
+        }
         uniforms.uOpacity.value = opacity;
-    }, [texture, opacity, uniforms]);
+    }, [texture, opacity, uniforms.uMap, uniforms.uOpacity]);
 
     return (
         <group position={[0, 0, 0]} visible={opacity > 0.01}>
@@ -197,7 +195,7 @@ function SunMesh() {
     );
 }
 
-function MoonMesh({ planet, phase, opacity }: { planet: any, phase: number, opacity: number }) {
+function MoonMesh({ planet, phase, opacity }: { planet: { pos: [number, number, number] }, phase: number, opacity: number }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const time = useAppStore(state => state.time);
     const observer = useAppStore(state => state.observer);
@@ -210,9 +208,11 @@ function MoonMesh({ planet, phase, opacity }: { planet: any, phase: number, opac
     }), []);
 
     useEffect(() => {
-        if (texture) uniforms.uMap.value = texture;
+        if (texture) {
+            uniforms.uMap.value = texture;
+        }
         uniforms.uOpacity.value = opacity;
-    }, [texture, opacity, uniforms]);
+    }, [texture, opacity, uniforms.uMap, uniforms.uOpacity]);
 
     useFrame(() => {
         if (!meshRef.current) return;
@@ -252,7 +252,13 @@ function MoonMesh({ planet, phase, opacity }: { planet: any, phase: number, opac
     );
 }
 
-function PlanetMesh({ planet, glowTex }: { planet: any, glowTex: THREE.Texture }) {
+interface PlanetData {
+    name: string;
+    pos: [number, number, number];
+    textureKey: string;
+}
+
+function PlanetMesh({ planet }: { planet: PlanetData }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const camFov = useAppStore(state => state.camFov);
     const time = useAppStore(state => state.time);
@@ -276,9 +282,11 @@ function PlanetMesh({ planet, glowTex }: { planet: any, glowTex: THREE.Texture }
     }), []);
 
     useEffect(() => {
-        if (texture) uniforms.uMap.value = texture;
+        if (texture) {
+            uniforms.uMap.value = texture;
+        }
         uniforms.uOpacity.value = opacity;
-    }, [texture, opacity, uniforms]);
+    }, [texture, opacity, uniforms.uMap, uniforms.uOpacity]);
 
     useFrame(() => {
         if (!meshRef.current) return;
@@ -335,7 +343,14 @@ function PlanetMesh({ planet, glowTex }: { planet: any, glowTex: THREE.Texture }
     );
 }
 
-function JupiterMoonMesh({ moon }: { moon: any }) {
+interface MoonData {
+    id: string;
+    name: string;
+    color: string;
+    pos: [number, number, number];
+}
+
+function JupiterMoonMesh({ moon }: { moon: MoonData }) {
     const camFov = useAppStore(state => state.camFov);
     const opacity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 15, 5, 0, 1), 0, 1);
     
@@ -348,7 +363,7 @@ function JupiterMoonMesh({ moon }: { moon: any }) {
                 <meshBasicMaterial color={moon.color} />
             </mesh>
             <Html distanceFactor={80}>
-                <div className="pointer-events-none whitespace-nowrap text-[8px] font-mono text-white/80" style={{ color: moon.color }}>
+                <div role="presentation" className="pointer-events-none whitespace-nowrap text-[8px] font-mono" style={{ color: moon.color }}>
                     {moon.name}
                 </div>
             </Html>
@@ -360,7 +375,6 @@ export default function Planets() {
     const time = useAppStore(state => state.time);
     const observer = useAppStore(state => state.observer);
     const camFov = useAppStore(state => state.camFov);
-    const glowTex = useMemo(() => makeGlowTexture(), []);
 
     const data = useMemo(() => {
         const bs = new Astronomy.Observer(observer.lat, observer.lon, 0);
@@ -371,27 +385,29 @@ export default function Planets() {
                     ...cfg,
                     ra: eq.ra * 15,
                     dec: eq.dec,
-                    pos: equatorialTo3D(eq.ra * 15, eq.dec, PLANET_Radius) as [number, number, number],
-                };
+                    pos: equatorialTo3D(eq.ra * 15, eq.dec, PLANET_RADIUS) as [number, number, number],
+                } as PlanetData;
             } catch { return null; }
-        }).filter(Boolean);
+        }).filter((p): p is PlanetData => p !== null);
 
         let moon = null;
         try {
             const eq = Astronomy.Equator(Astronomy.Body.Moon, time, bs, true, true);
             const phase = Astronomy.MoonPhase(time);
             moon = {
-                planet: { name: 'Luna', ra: eq.ra * 15, dec: eq.dec, pos: equatorialTo3D(eq.ra * 15, eq.dec, PLANET_Radius) },
+                planet: { name: 'Luna', pos: equatorialTo3D(eq.ra * 15, eq.dec, PLANET_RADIUS) as [number, number, number] },
                 phase
             };
         } catch {}
 
         // Júpiter Vector para sus lunas
-        const jupiter = planets.find(p => p?.name === "Júpiter");
-        let jMoons: any[] = [];
+        const jupiter = planets.find(p => p.name === "Júpiter");
+        let jMoons: MoonData[] = [];
         if (jupiter) {
             jMoons = JUPITER_MOON_DATA.map(m => ({
-                ...m,
+                id: m.id,
+                name: m.name,
+                color: m.color,
                 pos: [
                     jupiter.pos[0] + Math.sin(time.getTime() * 0.001 + m.mag) * 2,
                     jupiter.pos[1] + Math.cos(time.getTime() * 0.002 + m.mag) * 1.5,
@@ -407,7 +423,7 @@ export default function Planets() {
         <group>
             <SunMesh />
             {data.planets.map(p => (
-                <PlanetMesh key={p!.name} planet={p} glowTex={glowTex} />
+                <PlanetMesh key={p.name} planet={p} />
             ))}
             {data.moon && (
                 <MoonMesh planet={data.moon.planet} phase={data.moon.phase} opacity={camFov < 30 ? 1 : 0} />
