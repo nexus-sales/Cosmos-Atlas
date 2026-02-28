@@ -45,6 +45,9 @@ interface AppState {
         starlinkStatus: 'idle' | 'loading' | 'ok' | 'error';
     };
     setSatelliteInfo: (patch: Partial<AppState['satelliteInfo']>) => void;
+    // View Management
+    viewMode: 'vault' | 'camera';
+    setViewMode: (mode: 'vault' | 'camera') => void;
     followOrientation: boolean;
     setFollowOrientation: (v: boolean) => void;
     focusedConstellation: string | null;
@@ -67,6 +70,23 @@ export const useAppStore = create<AppState>((set) => ({
     setTime: (time) => set({ time }),
     isLive: true,
     setIsLive: (isLive) => set({ isLive }),
+    viewMode: 'vault',
+    setViewMode: (viewMode) => set((state) => {
+        // Al cambiar de modo, ajustamos parámetros automáticamente
+        if (viewMode === 'camera') {
+            return {
+                viewMode,
+                camFov: 15, // Zoom inicial de cámara
+                settings: { ...state.settings, telescopeMode: true, showFOV: true }
+            };
+        } else {
+            return {
+                viewMode,
+                camFov: 60, // Vista amplia de mapa
+                settings: { ...state.settings, telescopeMode: false, showFOV: false }
+            };
+        }
+    }),
     settings: {
         showConstellations: true,
         showGrid: true,

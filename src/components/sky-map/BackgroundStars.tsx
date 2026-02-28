@@ -84,8 +84,8 @@ export default function BackgroundStars() {
             // Concentración galáctica más fuerte: 25× hacia el plano vs. polos
             const galWeight = Math.exp(-sinB * sinB * 25.0);
 
-            // Densidad galáctica: mínimo 8% isotrópico + 92% concentrado
-            if (rng() > (0.08 + 0.92 * galWeight)) {
+            // Densidad galáctica: mínimo 20% isotrópico + 80% concentrado
+            if (rng() > (0.22 + 0.78 * galWeight)) {
                 i--; continue; // Re-intentar para mantener TOTAL
             }
 
@@ -97,9 +97,9 @@ export default function BackgroundStars() {
             // El catálogo principal cubre mag < 8, este fondo llena el resto hasta mag 11
             const mag = 6.5 + rng() * 4.5;
             magnitudes[i] = mag;
-            
+
             // Tamaño basado en magnitud: más abundantes y pequeñas
-            const brightness = Math.pow(2.512, 6.5 - mag); 
+            const brightness = Math.pow(2.512, 6.5 - mag);
             sizes[i] = Math.max(0.06, brightness * 0.45);
 
             const t = rng();
@@ -147,23 +147,13 @@ export default function BackgroundStars() {
     useFrame(() => {
         if (!pointsRef.current) return;
 
-        const camDir = camera.getWorldDirection(new THREE.Vector3());
-        const dot = camDir.dot(prevCamDir.current);
-        frameSkip.current++;
-
-        // 1° threshold — jitter / slow pan no disparan rebuild por frame
-        const cameraMoved = dot < 0.9998;
-        // Móvil: durante movimiento máx 30fps (cada 2); en reposo 10fps (cada 6)
-        const minSkip = cameraMoved ? 2 : 6;
-        if (frameSkip.current < minSkip) return;
-        frameSkip.current = 0;
-        prevCamDir.current.copy(camDir);
-
-        // Actualizar frustum
+        // Actualizar frustum teniendo en cuenta la rotación del grupo (matrixWorld)
+        // Esto soluciona el problema de que las estrellas desaparezcan al rotar la esfera
         projScreenMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+        projScreenMatrix.multiply(pointsRef.current.matrixWorld);
         frustum.setFromProjectionMatrix(projScreenMatrix);
 
-        // Búsqueda en Octree
+        // Búsqueda en Octree sin esperas para respuesta instantánea
         const visibleIndices: number[] = [];
         octree.search(frustum, visibleIndices);
 
@@ -179,11 +169,16 @@ export default function BackgroundStars() {
         let count = 0;
         for (let i = 0; i < visibleIndices.length && count < MAX_VISIBLE_STARS; i++) {
             const idx = visibleIndices[i];
-            if (allMagnitudes[idx] > limitingMag) continue;
+
+            // Umbral de magnitud mucho más generoso para que el fondo siempre tenga "textura"
+            // Incluso en Bortle 9 permitimos hasta 7.0 para que se vea el granulado
+            if (allMagnitudes[idx] > limitingMag + 2.5) continue;
 
             posAttr.setXYZ(count, allPositions[idx * 3], allPositions[idx * 3 + 1], allPositions[idx * 3 + 2]);
             colAttr.setXYZ(count, allColors[idx * 3], allColors[idx * 3 + 1], allColors[idx * 3 + 2]);
-            sizAttr.setX(count, allSizes[idx]);
+
+            // Multiplicador de tamaño para visibilidad (mínimo 1.2px en pantalla)
+            sizAttr.setX(count, allSizes[idx] * 2.2);
             count++;
         }
 

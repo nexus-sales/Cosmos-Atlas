@@ -8,7 +8,27 @@ import type { Star, DSO, Planet } from '@/types/celestial';
 
 export default function ObjectInfoTab() {
     const selected = useAppStore((state) => state.selectedObject) as Star | DSO | Planet | null;
+    const setTargetedObject = useAppStore((state) => state.setTargetedObject);
+    const targetedObject = useAppStore((state) => state.targetedObject);
     const coords = useCelestialVisibility(selected?.ra || 0, selected?.dec || 0);
+
+    const isTargeted = targetedObject?.name === selected?.name;
+    const isStar = selected ? 'constellation' in selected : false;
+    const isPlanet = selected ? 'kind' in selected && (selected as Planet).kind === 'planet' : false;
+    const typeLabel = isStar ? 'ESTRELLA' : isPlanet ? 'PLANETA' : ((selected as DSO)?.type?.toUpperCase?.() ?? 'OBJETO');
+    const accentColor = isStar ? '#60a5fa' : isPlanet ? '#00f2ff' : '#a78bfa';
+    const isVisible = coords.alt > 0;
+
+    const accentVars = {
+        '--accent-color': accentColor,
+        '--accent-soft': `${accentColor}0a`,
+        '--accent-border': `${accentColor}22`,
+        '--accent-glow': `${accentColor}60`,
+        '--accent-chip': `${accentColor}18`,
+        '--accent-orb': `${accentColor}10`,
+        '--accent-btn-bg': `${accentColor}20`,
+        '--accent-90': `${accentColor}90`,
+    } as CSSProperties;
 
     if (!selected) {
         return (
@@ -24,28 +44,6 @@ export default function ObjectInfoTab() {
         );
     }
 
-    const isStar = 'constellation' in selected;
-    const isPlanet = 'kind' in selected && (selected as Planet).kind === 'planet';
-    const typeLabel = isStar ? 'ESTRELLA' : isPlanet ? 'PLANETA' : ((selected as DSO).type?.toUpperCase?.() ?? 'OBJETO');
-    const accentColor = isStar ? '#60a5fa' : isPlanet ? (selected as Planet).color : '#a78bfa';
-    const isVisible = coords.alt > 0;
-
-    const accentVars = {
-        '--accent-color': accentColor,
-        '--accent-soft': `${accentColor}0a`,
-        '--accent-border': `${accentColor}22`,
-        '--accent-glow': `${accentColor}60`,
-        '--accent-chip': `${accentColor}18`,
-        '--accent-orb': `${accentColor}10`,
-        '--accent-btn-bg': `${accentColor}20`,
-        '--accent-90': `${accentColor}90`,
-    } as CSSProperties;
-    
-    const setTargetedObject = useAppStore((state) => state.setTargetedObject);
-    const targetedObject = useAppStore((state) => state.targetedObject);
-    
-    const isTargeted = targetedObject?.name === selected.name;
-
     return (
         <div className="space-y-4 animate-in fade-in duration-300" style={accentVars}>
             {/* Header con nombre y tipo */}
@@ -54,11 +52,10 @@ export default function ObjectInfoTab() {
                 {/* Botón de fijar objetivo animado */}
                 <button
                     onClick={() => setTargetedObject(isTargeted ? null : selected)}
-                    className={`absolute bottom-3 right-3 w-8 h-8 rounded-full flex items-center justify-center border transition-all duration-500 z-10 ${
-                        isTargeted 
-                        ? 'bg-[#00f2ff] border-[#00f2ff] shadow-[0_0_15px_rgba(0,242,255,0.4)]' 
-                        : 'bg-white/5 border-white/10 hover:bg-white/10'
-                    }`}
+                    className={`absolute bottom-3 right-3 w-8 h-8 rounded-full flex items-center justify-center border transition-all duration-500 z-10 ${isTargeted
+                            ? 'bg-[#00f2ff] border-[#00f2ff] shadow-[0_0_15px_rgba(0,242,255,0.4)]'
+                            : 'bg-white/5 border-white/10 hover:bg-white/10'
+                        }`}
                     title={isTargeted ? "Dejar de seguir" : "Seguir con telescopio"}
                 >
                     <Navigation className={`w-3.5 h-3.5 ${isTargeted ? 'text-black fill-black' : 'text-white/40'}`} />
@@ -90,10 +87,10 @@ export default function ObjectInfoTab() {
                 {isPlanet && (
                     <div className="flex flex-col gap-2 mb-3">
                         <div className="flex items-center gap-2">
-                             <Globe className="object-accent w-2.5 h-2.5" />
-                             <span className="object-accent-90 text-[9px] font-mono tracking-wider">
-                                 Sistema Solar · Feb 2026
-                             </span>
+                            <Globe className="object-accent w-2.5 h-2.5" />
+                            <span className="object-accent-90 text-[9px] font-mono tracking-wider">
+                                Sistema Solar · Feb 2026
+                            </span>
                         </div>
                     </div>
                 )}
@@ -127,7 +124,7 @@ export default function ObjectInfoTab() {
                     {isVisible
                         ? <Eye className="w-3.5 h-3.5 text-emerald-400" />
                         : <EyeOff className="w-3.5 h-3.5 text-red-400" />}
-                    <span 
+                    <span
                         className={`text-[9px] font-bold tracking-[0.2em] uppercase ${isVisible ? 'text-green-400' : 'text-red-400'}`}
                     >
                         {isVisible ? 'Visible ahora' : 'Bajo el horizonte'}

@@ -14,10 +14,10 @@ const RADIUS = 88;
 export default function TargetPointer() {
     const targetedObject = useAppStore((s) => s.targetedObject);
 
-    const groupRef   = useRef<THREE.Group>(null);
-    const ring1Ref   = useRef<THREE.Mesh>(null);
-    const ring2Ref   = useRef<THREE.Mesh>(null);
-    const ring3Ref   = useRef<THREE.Mesh>(null);
+    const groupRef = useRef<THREE.Group>(null);
+    const ring1Ref = useRef<THREE.Mesh>(null);
+    const ring2Ref = useRef<THREE.Mesh>(null);
+    const ring3Ref = useRef<THREE.Mesh>(null);
 
     // Posición 3D del objetivo en el espacio equatorial (dentro de CelestialGroup)
     const position = useMemo<[number, number, number] | null>(() => {
@@ -54,15 +54,27 @@ export default function TargetPointer() {
 
     if (!targetedObject || !position) return null;
 
-    const isGalaxy        = 'type' in targetedObject && (targetedObject as { type: string }).type === 'galaxy';
-    const isNebula        = 'type' in targetedObject && (targetedObject as { type: string }).type === 'nebula';
-    const isPlanet        = 'kind' in targetedObject && (targetedObject as { kind: string }).kind === 'planet';
+    const isGalaxy = 'type' in targetedObject && (targetedObject as { type: string }).type === 'galaxy';
+    const isNebula = 'type' in targetedObject && (targetedObject as { type: string }).type === 'nebula';
+    const isPlanet = 'kind' in targetedObject && (targetedObject as { kind: string }).kind === 'planet';
     const isConstellation = isPlanet && (targetedObject as { symbol: string }).symbol === '\u2736';
-    const accentColor = isGalaxy        ? '#f59e0b'
-                      : isNebula        ? '#34d399'
-                      : isConstellation ? '#818cf8'
-                      : isPlanet        ? (targetedObject as { color: string }).color
-                      : '#60a5fa';
+
+    // Colores vibrantes para UI (foco/anillos) — mismos tonos que los planetas pero más saturados para claridad visual
+    const planetAccentColors: Record<string, string> = {
+        'Júpiter': '#f59e0b',  // ocre → ámbar vibrante
+        'Saturno': '#fbbf24',  // beige → amarillo dorado
+        'Marte': '#f87171',  // rojo óxido → rojo intenso
+        'Venus': '#fde047',  // crema → amarillo claro
+        'Urano': '#22d3ee',  // cian pálido → cyan brillante
+        'Neptuno': '#60a5fa',  // azul → azul brillante
+        'Mercurio': '#e5e7eb',  // gris → gris claro
+    };
+
+    const accentColor = isGalaxy ? '#f59e0b'
+        : isNebula ? '#34d399'
+            : isConstellation ? '#818cf8'
+                : isPlanet ? '#00f2ff' // Usar cyan tecnológico siempre para planetas
+                    : '#60a5fa';
 
     return (
         <group position={position}>
@@ -134,7 +146,7 @@ export default function TargetPointer() {
                 className="pointer-events-none select-none"
                 center
             >
-                <div 
+                <div
                     className="accent-label-strong mt-7 font-mono text-[10px] font-bold tracking-[0.15em] uppercase whitespace-nowrap bg-[#020612]/75 px-1.5 py-0.5 rounded border"
                     style={{
                         '--accent-color': accentColor,

@@ -146,7 +146,7 @@ function StarHitbox({ star, pos }: { star: typeof STARS[0]; pos: [number, number
 
             {hovered && (
                 <Html distanceFactor={120} zIndexRange={[100, 0]}>
-                    <div 
+                    <div
                         className="bg-[#020814]/88 rounded px-2.5 py-1 text-[11px] font-mono font-bold whitespace-nowrap tracking-wide pointer-events-none -translate-x-1/2 -translate-y-7 z-[1000] border"
                         style={{
                             borderColor: `${displayColor}55`,
@@ -193,7 +193,7 @@ function DynamicStarLabels({ visibleStars, starPositions }: { visibleStars: type
 
                 return (
                     <Html key={star.name} position={pos} center distanceFactor={15} zIndexRange={[150, 50]}>
-                        <div 
+                        <div
                             className="font-sans font-medium tracking-[0.05em] pointer-events-none select-none translate-y-3.5 text-center"
                             style={{
                                 color: color,
@@ -248,7 +248,7 @@ export default function Stars() {
             const refMag = -1.5;
             const brightness = Math.pow(2.512, refMag - star.mag);
             const normB = Math.min(1.0, brightness);
-            sz[i] = 0.18 + Math.pow(normB, 0.50) * 7.2;
+            sz[i] = 0.5 + Math.pow(normB, 0.45) * 8.5;
 
             distFactorArr[i] = Math.min(1.0, Math.max(0.0, (star.mag + 1.5) / 7.5));
 

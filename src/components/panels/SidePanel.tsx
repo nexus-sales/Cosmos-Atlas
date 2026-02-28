@@ -77,7 +77,7 @@ export default function SidePanel() {
         { key: 'followTarget' as const, label: 'SEGUIR', icon: Crosshair, active: followTarget },
     ];
 
-    const [layersOpen, setLayersOpen] = useState(true);
+    const [layersOpen, setLayersOpen] = useState(false);
     const [bortleOpen, setBortleOpen] = useState(false);
     const [satellitesOpen, setSatellitesOpen] = useState(false);
     const [fovOpen, setFovOpen] = useState(false);
@@ -172,6 +172,30 @@ export default function SidePanel() {
                             className="flex-1 flex flex-col"
                         >
                             <div className="p-5">
+                                {/* Selector de Modo de Vista */}
+                                <div className="mb-6 bg-white/5 p-1 rounded-xl flex gap-1 border border-white/5">
+                                    <button
+                                        onClick={() => useAppStore.getState().setViewMode('vault')}
+                                        className={cn(
+                                            "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-bold tracking-widest transition-all cursor-pointer",
+                                            useAppStore((s) => s.viewMode) === 'vault' ? "bg-white/10 text-white shadow-lg" : "text-white/30 hover:text-white/50"
+                                        )}
+                                    >
+                                        <Layers className="w-3.5 h-3.5" />
+                                        BÓVEDA
+                                    </button>
+                                    <button
+                                        onClick={() => useAppStore.getState().setViewMode('camera')}
+                                        className={cn(
+                                            "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-bold tracking-widest transition-all cursor-pointer",
+                                            useAppStore((s) => s.viewMode) === 'camera' ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "text-white/30 hover:text-white/50"
+                                        )}
+                                    >
+                                        <Camera className="w-3.5 h-3.5" />
+                                        CÁMARA
+                                    </button>
+                                </div>
+
                                 {activeTab === 'challenge' && <ChallengeTab />}
                                 {activeTab === 'info' && <ObjectInfoTab />}
                                 {activeTab === 'guide' && <GuideTab />}
@@ -231,16 +255,16 @@ export default function SidePanel() {
                                                     <span>Distancia Focal</span>
                                                     <span className="text-blue-400 font-bold">{focalLength}mm</span>
                                                 </div>
-                                                <input 
-                                                    type="range" 
-                                                    min="10" 
-                                                    max="3000" 
-                                                    step="10" 
+                                                <input
+                                                    type="range"
+                                                    min="10"
+                                                    max="3000"
+                                                    step="10"
                                                     aria-label="Distancia focal"
                                                     title="Distancia focal"
-                                                    value={focalLength} 
-                                                    onChange={(e) => setFOVParams({ focalLength: Number(e.target.value) })} 
-                                                    className="w-full h-1.5 bg-white/5 rounded-full appearance-none accent-blue-500 cursor-pointer" 
+                                                    value={focalLength}
+                                                    onChange={(e) => setFOVParams({ focalLength: Number(e.target.value) })}
+                                                    className="w-full h-1.5 bg-white/5 rounded-full appearance-none accent-blue-500 cursor-pointer"
                                                 />
                                             </div>
                                             <div className="flex gap-2">
@@ -307,11 +331,11 @@ function AccordionSection({ title, icon, isOpen, onToggle, children }: { title: 
 
     return (
         <div className="flex flex-col">
-            <button 
+            <button
                 onClick={() => {
                     if (!isOpen) setHasOpened(true);
                     onToggle();
-                }} 
+                }}
                 className={cn("flex items-center justify-between w-full p-4 text-left transition-colors outline-none cursor-pointer", isOpen ? "bg-white/[0.03]" : "hover:bg-white/[0.02]")}
             >
                 <div className="flex items-center gap-3">
