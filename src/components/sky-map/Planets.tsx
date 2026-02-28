@@ -73,30 +73,48 @@ const SUN_FRAGMENT_SHADER = `
     }
 `;
 
+// Vertex shader para planetas: emite normal en WORLD-space (para iluminación correcta)
+// y en VIEW-space (para Fresnel). El SUN_VERTEX_SHADER sólo emite view-space.
+const PLANET_VERTEX_SHADER = `
+    varying vec2 vUv;
+    varying vec3 vNormalWorld;
+    varying vec3 vNormalView;
+    varying vec3 vViewPosition;
+    void main() {
+        vUv = uv;
+        // World-space: uLightDirection también está en world-space
+        vNormalWorld = normalize(mat3(modelMatrix) * normal);
+        // View-space: para el efecto Fresnel (depende de la cámara)
+        vNormalView = normalize(normalMatrix * normal);
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        vViewPosition = -mvPosition.xyz;
+        gl_Position = projectionMatrix * mvPosition;
+    }
+`;
+
 const PLANET_FRAGMENT_SHADER = `
     varying vec2 vUv;
-    varying vec3 vNormal;
+    varying vec3 vNormalWorld;
+    varying vec3 vNormalView;
     varying vec3 vViewPosition;
     uniform sampler2D uMap;
     uniform vec3 uLightDirection;
     uniform float uOpacity;
     void main() {
         vec3 color = texture2D(uMap, vUv).rgb;
-        vec3 normal = normalize(vNormal);
-        vec3 lightDir = normalize(uLightDirection);
-        vec3 viewDir = normalize(vViewPosition);
 
-        // Terminador planetario realista (dot product corregido)
+        // Iluminación: ambos en world-space → correcto independientemente del ángulo de cámara
+        vec3 normal = normalize(vNormalWorld);
+        vec3 lightDir = normalize(uLightDirection);
         float dotNL = dot(normal, lightDir);
         float light = smoothstep(-0.15, 0.25, dotNL);
-        
-        // Fresnel sutil para atmósfera/borde
-        float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 3.0);
-        vec3 atmosphericGlow = vec3(0.1, 0.3, 0.6) * fresnel * light * 0.4;
 
-        // Luz ambiental mínima para ver el lado oscuro sutilmente
-        float ambient = 0.04;
-        
+        // Fresnel: view-space normal vs dirección de vista (correcto para borde atmosférico)
+        vec3 viewDir = normalize(vViewPosition);
+        float fresnel = pow(1.0 - max(dot(normalize(vNormalView), viewDir), 0.0), 3.0);
+        vec3 atmosphericGlow = vec3(0.1, 0.3, 0.6) * fresnel * 0.5;
+
+        float ambient = 0.06;
         vec3 finalColor = color * (light + ambient) + atmosphericGlow;
         gl_FragColor = vec4(finalColor, uOpacity);
     }
@@ -116,7 +134,7 @@ function useSafeTexture(url: string) {
     return tex;
 }
 
-function SunMesh() {
+function SunMesh({ pos }: { pos: [number, number, number] }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const glowRef = useRef<THREE.Mesh>(null);
     const texture = useSafeTexture(TEXTURES.sun);
@@ -142,7 +160,7 @@ function SunMesh() {
     });
 
     return (
-        <group position={[0, 0, 0]} visible={opacity > 0.01}>
+        <group position={pos} visible={opacity > 0.01}>
             <mesh ref={meshRef}>
                 <sphereGeometry args={[0.5, 64, 64]} />
                 <shaderMaterial
@@ -206,7 +224,7 @@ function MoonMesh({ planet, phase, opacity }: { planet: { pos: [number, number, 
             <mesh ref={meshRef}>
                 <sphereGeometry args={[0.4, 64, 64]} />
                 <shaderMaterial
-                    vertexShader={SUN_VERTEX_SHADER}
+                    vertexShader={PLANET_VERTEX_SHADER}
                     fragmentShader={PLANET_FRAGMENT_SHADER}
                     uniforms={uniforms}
                     transparent
@@ -281,7 +299,7 @@ function PlanetMesh({ planet }: { planet: PlanetData }) {
                 <mesh ref={meshRef}>
                     <sphereGeometry args={[scale, 64, 64]} />
                     <shaderMaterial
-                        vertexShader={SUN_VERTEX_SHADER}
+                        vertexShader={PLANET_VERTEX_SHADER}
                         fragmentShader={PLANET_FRAGMENT_SHADER}
                         uniforms={uniforms}
                         transparent
@@ -371,6 +389,13 @@ export default function Planets() {
             };
         } catch {}
 
+        // Posición astronómica del Sol (para renderizarlo en el lugar correcto)
+        let sunPos: [number, number, number] = [0, PLANET_RADIUS, 0];
+        try {
+            const eq = Astronomy.Equator(Astronomy.Body.Sun, time, bs, true, true);
+            sunPos = equatorialTo3D(eq.ra * 15, eq.dec, PLANET_RADIUS) as [number, number, number];
+        } catch {}
+
         // Júpiter Vector para sus lunas
         const jupiter = planets.find(p => p.name === "Júpiter");
         let jMoons: MoonData[] = [];
@@ -386,13 +411,13 @@ export default function Planets() {
                 ] as [number, number, number]
             }));
         }
-        
-        return { planets, moon, jMoons };
+
+        return { planets, moon, jMoons, sunPos };
     }, [time, observer]);
 
     return (
         <group>
-            <SunMesh />
+            <SunMesh pos={data.sunPos} />
             {data.planets.map(p => (
                 <PlanetMesh key={p.name} planet={p} />
             ))}
