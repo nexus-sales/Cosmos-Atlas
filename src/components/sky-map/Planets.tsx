@@ -2,6 +2,7 @@
 
 import { Html, Float } from '@react-three/drei';
 import { useMemo, useRef, useEffect, useState } from 'react';
+import type { CSSProperties } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
@@ -332,7 +333,7 @@ function JupiterMoonMesh({ moon }: { moon: MoonData }) {
                 <div 
                     role="presentation" 
                     className="pointer-events-none whitespace-nowrap text-[8px] font-mono opacity-80" 
-                    style={{ color: moon.color as any }}
+                    style={{ color: moon.color } as CSSProperties}
                 >
                     {moon.name}
                 </div>
