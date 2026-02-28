@@ -50,12 +50,10 @@ interface AppState {
     focusedConstellation: string | null;
     setFocusedConstellation: (name: string | null) => void;
 
-    // God Mode: Flight System
-    viewMode: 'observatory' | 'orbital';
-    setViewMode: (mode: 'observatory' | 'orbital') => void;
-    flightTarget: string | null;
-    startFlight: (targetName: string) => void;
-    endFlight: () => void;
+    // SIMBAD / Dynamic Objects
+    simbadObjects: Star[];
+    addSimbadObject: (obj: Star) => void;
+    clearSimbadObjects: () => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -123,11 +121,13 @@ export const useAppStore = create<AppState>((set) => ({
     setFollowOrientation: (followOrientation) => set({ followOrientation }),
     focusedConstellation: null,
     setFocusedConstellation: (focusedConstellation) => set({ focusedConstellation }),
-    
-    // God Mode: Flight System
-    viewMode: 'observatory',
-    setViewMode: (mode: 'observatory' | 'orbital') => set({ viewMode: mode }),
-    flightTarget: null,
-    startFlight: (targetName) => set({ flightTarget: targetName, viewMode: 'orbital' }),
-    endFlight: () => set({ flightTarget: null, viewMode: 'observatory' }),
+
+    simbadObjects: [],
+    addSimbadObject: (obj) => set((state) => ({
+        simbadObjects: state.simbadObjects.some(s => s.name === obj.name)
+            ? state.simbadObjects
+            : [...state.simbadObjects, obj]
+    })),
+    clearSimbadObjects: () => set({ simbadObjects: [] }),
+
 }));

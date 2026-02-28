@@ -54,9 +54,9 @@ function sinGalLat(x: number, y: number, z: number): number {
     return -0.86766615 * x - 0.19807637 * y + 0.45598379 * z;
 }
 
-const TOTAL = 40000;            // 40k — fondo estelar sin abrumar al catálogo
+const TOTAL = 250000;           // Aumentado a 250k para una densidad masiva
 const RADIUS = 96;
-const MAX_VISIBLE_STARS = 8000; // Máximo que enviamos al GPU por frame
+const MAX_VISIBLE_STARS = 60000; // Capacidad de renderizado aumentada para el fondo denso
 
 export default function BackgroundStars() {
     const pointsRef = useRef<THREE.Points>(null);
@@ -93,14 +93,14 @@ export default function BackgroundStars() {
             positions[i * 3 + 1] = py * RADIUS;
             positions[i * 3 + 2] = pz * RADIUS;
 
-            // Magnitudes: sesgado fuertemente a tenues (mag 6·5–9)
-            // Para que no compitan con el catálogo (Stars.tsx cubre mag <8)
-            const mag = 6.5 + Math.pow(rng(), 0.55) * 2.5; // Mag 6.5–9
+            // Magnitudes: distribuido para que haya una manta densa de estrellas tenues
+            // El catálogo principal cubre mag < 8, este fondo llena el resto hasta mag 11
+            const mag = 6.5 + rng() * 4.5;
             magnitudes[i] = mag;
-            // Pogson: cada mag es 2.512× más oscuro. Ref en mag 6.5
-            const brightness = Math.pow(2.512, 6.5 - mag); // 1.0 en mag6.5, ~0.02 en mag9
-            // Tamaño muy pequeño: 0.08–0.55 px para que sean "polvo estelar"
-            sizes[i] = Math.max(0.08, brightness * 0.55);
+            
+            // Tamaño basado en magnitud: más abundantes y pequeñas
+            const brightness = Math.pow(2.512, 6.5 - mag); 
+            sizes[i] = Math.max(0.06, brightness * 0.45);
 
             const t = rng();
             if (t < 0.6) { // M/K

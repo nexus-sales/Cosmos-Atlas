@@ -15,31 +15,6 @@ import { Html } from '@react-three/drei';
 export default function Horizon() {
     return (
         <group>
-            {/* ── Brillo Atmosférico (Atmospheric Scattering Simulation) ── */}
-            {/* Un gran domo invertido que simula la neblina densa cerca del horizonte */}
-            <mesh scale={[1, 1, 1]}>
-                <sphereGeometry args={[91, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2]} />
-                <meshBasicMaterial
-                    color="#1a3a5a"
-                    transparent
-                    opacity={0.3}
-                    side={THREE.BackSide}
-                    depthWrite={false}
-                />
-            </mesh>
-
-            {/* Segundo halo de neblina más bajo y denso */}
-            <mesh position={[0, -2, 0]}>
-                <cylinderGeometry args={[110, 110, 8, 64, 1, true]} />
-                <meshBasicMaterial
-                    color="#0a1f35"
-                    transparent
-                    opacity={0.6}
-                    side={THREE.DoubleSide}
-                    depthWrite={false}
-                />
-            </mesh>
-
             {/* ── Suelo opaco — oculta estrellas bajo el horizonte ─── */}
             <mesh
                 position={[0, -0.3, 0]}

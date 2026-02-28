@@ -39,15 +39,15 @@ const starVertexShader = `
     float depthFactor = 1.0 - distanceFactor * 0.4;
 
     // Twinkle más dinámico
-    float twinkleSpeed = 2.5 + airmass * 0.5;
-    float twinkleAmp = 0.15 + airmass * 0.12;
+    float twinkleSpeed = 3.2 + airmass * 0.5;
+    float twinkleAmp = 0.28 + airmass * 0.15; // Aumentado ligeramente para más vida
     float noise = sin(uTime * twinkleSpeed + position.x * 100.0) * 0.6 + sin(uTime * twinkleSpeed * 0.8 + position.y * 100.0) * 0.4;
     vOpacity = varFactor * depthFactor * ((1.0 - twinkleAmp) + twinkleAmp * noise);
     vAirmass = airmass;
 
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-    // Ajuste de tamaño para que estrellas brillantes resalten más (efecto bloom simulado)
-    gl_PointSize = size * (vOpacity * 0.5 + 0.5) * (1000.0 / -mvPosition.z);
+    // Tamaño base aumentado para que las estrellas principales resalten
+    gl_PointSize = size * 1.8 * (vOpacity * 0.5 + 0.5) * (1000.0 / -mvPosition.z);
     gl_Position = projectionMatrix * mvPosition;
   }
 `;

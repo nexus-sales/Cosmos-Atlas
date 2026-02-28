@@ -41,17 +41,28 @@ export default function ObjectInfoTab() {
         '--accent-90': `${accentColor}90`,
     } as CSSProperties;
     
-    const startFlight = useAppStore((state) => state.startFlight);
-    const endFlight = useAppStore((state) => state.endFlight);
-    const viewMode = useAppStore((state) => state.viewMode);
-    const flightTarget = useAppStore((state) => state.flightTarget);
+    const setTargetedObject = useAppStore((state) => state.setTargetedObject);
+    const targetedObject = useAppStore((state) => state.targetedObject);
     
-    const isFlightActive = viewMode === 'orbital' && flightTarget === selected.name;
+    const isTargeted = targetedObject?.name === selected.name;
 
     return (
         <div className="space-y-4 animate-in fade-in duration-300" style={accentVars}>
             {/* Header con nombre y tipo */}
             <div className="object-card relative rounded-xl overflow-hidden p-5 bg-white/[0.03] border">
+
+                {/* Botón de fijar objetivo animado */}
+                <button
+                    onClick={() => setTargetedObject(isTargeted ? null : selected)}
+                    className={`absolute bottom-3 right-3 w-8 h-8 rounded-full flex items-center justify-center border transition-all duration-500 z-10 ${
+                        isTargeted 
+                        ? 'bg-[#00f2ff] border-[#00f2ff] shadow-[0_0_15px_rgba(0,242,255,0.4)]' 
+                        : 'bg-white/5 border-white/10 hover:bg-white/10'
+                    }`}
+                    title={isTargeted ? "Dejar de seguir" : "Seguir con telescopio"}
+                >
+                    <Navigation className={`w-3.5 h-3.5 ${isTargeted ? 'text-black fill-black' : 'text-white/40'}`} />
+                </button>
 
                 <div className="object-orb absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl -translate-y-8 translate-x-8" />
 
@@ -84,14 +95,6 @@ export default function ObjectInfoTab() {
                                  Sistema Solar · Feb 2026
                              </span>
                         </div>
-                        
-                        <button 
-                            onClick={() => isFlightActive ? endFlight() : startFlight(selected.name)}
-                            className={`text-[10px] font-bold tracking-widest px-3 py-2 rounded border transition-all hover:bg-white/10 flex items-center justify-center gap-2 mt-2 orbit-button ${isFlightActive ? 'orbit-button-active' : ''}`}
-                        >
-                            <Zap className="w-3 h-3" />
-                            {isFlightActive ? 'ABORTAR ORBITA' : 'INICIAR VUELO ORBITAL'}
-                        </button>
                     </div>
                 )}
 

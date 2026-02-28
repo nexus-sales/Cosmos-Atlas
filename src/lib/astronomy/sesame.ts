@@ -24,7 +24,12 @@ export async function resolveObjectName(query: string): Promise<SesameResolution
         const response = await fetch(url);
         if (!response.ok) return null;
 
-        const data = await response.json();
+        const text = await response.text();
+        if (text.startsWith('#') || !text.trim().startsWith('{')) {
+            return null;
+        }
+
+        const data = JSON.parse(text);
 
         // Sesame returns a complex JSON. We look for the first valid resolution.
         // Usually data.Target.Resolver contains the result.

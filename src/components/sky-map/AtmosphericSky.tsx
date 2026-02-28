@@ -21,8 +21,8 @@ const SKY_FRAGMENT_SHADER = `
     uniform float uSuppression; // 1.0 = normal, 0.0 = dark (space mode)
     varying vec3 vWorldPosition;
 
-    const vec3 EarthBlue = vec3(0.05, 0.21, 0.55); 
-    const vec3 SpaceBlack = vec3(0.002, 0.005, 0.012);
+    const vec3 EarthBlue = vec3(0.04, 0.18, 0.52);
+    const vec3 SpaceBlack = vec3(0.001, 0.002, 0.005);
 
     void main() {
         vec3 viewDir = normalize(vWorldPosition);
@@ -31,30 +31,42 @@ const SKY_FRAGMENT_SHADER = `
         float cosTheta = dot(viewDir, sunDir);
         float zenithAngle = viewDir.y; 
         
+        // Rayleigh Scattering
         float rPhase = 0.75 * (1.0 + cosTheta * cosTheta);
         vec3 rayleighColor = EarthBlue * rPhase;
 
+        // Mie Scattering (Haze)
         float mPhase = (1.0 - 0.7 * 0.7) / (pow(1.0 + 0.7 * 0.7 - 2.0 * 0.7 * cosTheta, 1.5) * 4.0 * 3.1415);
-        vec3 mieColor = vec3(1.0, 0.8, 0.4) * mPhase * 0.2;
+        vec3 mieColor = vec3(1.0, 0.95, 0.8) * mPhase * 0.15;
 
         float sunAltitude = sunDir.y;
-        float dayFactor = smoothstep(-0.2, 0.2, sunAltitude);
+        float dayFactor = smoothstep(-0.25, 0.15, sunAltitude);
         
-        // Gradiente de horizonte
-        float horizonGlow = exp(-max(0.0, zenithAngle) * 5.0);
-        vec3 nightColor = mix(SpaceBlack, vec3(0.03, 0.08, 0.18), horizonGlow * (uBortle / 4.0));
+        // Gradiente de horizonte (bruma nocturna)
+        float horizonGlow = exp(-max(0.0, zenithAngle) * 6.5);
+        vec3 nightGlow = mix(SpaceBlack, vec3(0.015, 0.04, 0.12), horizonGlow * (uBortle / 4.0));
         
-        vec3 sunsetColor = vec3(1.0, 0.3, 0.1) * pow(max(0.0, cosTheta), 3.0) * (1.0 - dayFactor);
+        // Puesta de sol más estrecha y concentrada
+        vec3 sunsetColor = vec3(1.0, 0.35, 0.12) * pow(max(0.0, cosTheta), 8.0) * smoothstep(-0.35, 0.1, sunAltitude) * (1.0 - dayFactor);
         
-        // Aplicar supresión atmosférica (Space Mode)
-        vec3 dayColor = mix(nightColor, rayleighColor + mieColor, dayFactor);
-        vec3 finalColor = mix(nightColor, dayColor, uSuppression);
-        
-        finalColor += sunsetColor * smoothstep(-0.3, 0.0, sunAltitude) * uSuppression;
+        // Mezcla día/noche
+        vec3 dayColor = mix(nightGlow, rayleighColor + mieColor, dayFactor);
+        vec3 finalColor = mix(nightGlow, dayColor, dayFactor);
+        finalColor += sunsetColor;
 
-        finalColor = 1.0 - exp(-2.0 * finalColor);
+        // Space Mode: Limpieza total al hacer zoom en planetas
+        // Bajamos el alpha para que la esfera atmosférica no tape nada
+        float alpha = clamp(uSuppression, 0.0, 1.0);
+
+        // Bloqueo total bajo el horizonte (para no ver glow desde abajo)
+        if (zenithAngle < -0.05) {
+            alpha = 0.0;
+        }
+
+        // Tonemapping
+        finalColor = 1.0 - exp(-2.2 * finalColor);
         
-        gl_FragColor = vec4(finalColor, 1.0);
+        gl_FragColor = vec4(finalColor, alpha);
     }
 `;
 
@@ -74,9 +86,10 @@ export default function AtmosphericSky() {
     useFrame((state) => {
         if (!meshRef.current) return;
 
-        // Suprimir atmósfera si estamos haciendo zoom (FOV < 45)
+        // Suprimir atmósfera si estamos haciendo zoom agresivo (FOV < 30)
+        // El factor baja a 0 cuando el FOV es pequeño (zoom a planetas)
         const suppression = THREE.MathUtils.clamp(
-            THREE.MathUtils.mapLinear(camFov, 45, 20, 1.0, 0.0),
+            THREE.MathUtils.mapLinear(camFov, 35, 10, 1.0, 0.0),
             0.0, 1.0
         );
         uniforms.uSuppression.value = suppression;

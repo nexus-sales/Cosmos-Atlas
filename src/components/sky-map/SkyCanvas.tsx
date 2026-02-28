@@ -20,9 +20,10 @@ import Compass from '@/components/panels/Compass';
 import Satellites from '@/components/sky-map/Satellites';
 import MeteorShower from '@/components/effects/MeteorShower';
 import Comets from '@/components/sky-map/Comets';
+import SimbadOverlay from '@/components/sky-map/SimbadOverlay';
 import TelescopeEffect from '@/components/sky-map/TelescopeEffect';
 import AtmosphericSky from '@/components/sky-map/AtmosphericSky';
-import FlightController from '@/components/sky-map/FlightController';
+import CameraNavigator from '@/components/sky-map/CameraNavigator';
 import { useAppStore } from '@/stores/useAppStore';
 import * as THREE from 'three';
 import { getLST } from '@/lib/astronomy/time';
@@ -191,309 +192,10 @@ function CelestialGroup({ children }: { children: React.ReactNode }) {
     return <group ref={groupRef}>{children}</group>;
 }
 
-/**
- * Smoothly flies the camera to face the targeted object.
- * Runs after OrbitControls (priority 0 > -1) so our position sticks each frame.
- */
-// Add controlsRef prop type to CameraNavigator
-function CameraNavigator({
-    controlsRef,
-    trackingRef,
-    manualFovRef,
-    manualFovHoldRef,
-}: {
-    controlsRef?: React.MutableRefObject<any>;
-    trackingRef: React.MutableRefObject<boolean>;
-    manualFovRef: React.MutableRefObject<number | null>;
-    manualFovHoldRef: React.MutableRefObject<number>;
-}) {
-    const { camera } = useThree();
-    const targetedObject = useAppStore((s) => s.targetedObject);
-    const viewMode = useAppStore((s) => s.viewMode);
-    const followTarget = useAppStore((s) => s.settings.followTarget);
-    const setCamFov = useAppStore((state) => state.setCamFov);
-
-    const isFlying = useRef(false);
-    const prevTarget = useRef<typeof targetedObject>(null);
-    const targetFov = useRef(60);
-    const targetWorldDirRef = useRef<THREE.Vector3 | null>(null);
-    const targetCamPosRef = useRef<THREE.Vector3 | null>(null);
-
-    useEffect(() => {
-        if (!followTarget) {
-            isFlying.current = false;
-            trackingRef.current = false;
-            prevTarget.current = targetedObject;
-            return;
-        }
-
-        if (targetedObject && targetedObject !== prevTarget.current) {
-            isFlying.current = true;
-            trackingRef.current = true;
-            const { time, observer } = useAppStore.getState();
-            const lst = getLST(time, observer.lon);
-            const euler = new THREE.Euler(
-                THREE.MathUtils.degToRad(90 - observer.lat),
-                THREE.MathUtils.degToRad(-lst),
-                0,
-                'XYZ',
-            );
-            const rotMatrix = new THREE.Matrix4().makeRotationFromEuler(euler);
-            const [ex, ey, ez] = equatorialTo3D(targetedObject.ra, targetedObject.dec, 1);
-            const targetWorldDir = new THREE.Vector3(ex, ey, ez).applyMatrix4(rotMatrix).normalize();
-            targetWorldDirRef.current = targetWorldDir;
-            targetCamPosRef.current = targetWorldDir.clone().negate().multiplyScalar(0.01);
-            // Si es planeta o DSO, zoom in automático para ver el modelo 3D
-            const isPlanet = 'kind' in targetedObject && targetedObject.kind === 'planet';
-            const isDSO = 'type' in targetedObject; // DSO check
-            targetFov.current = (isPlanet || isDSO) ? 22 : 60;
-        } else if (!targetedObject) {
-             isFlying.current = false;
-             trackingRef.current = false;
-             targetWorldDirRef.current = null;
-             targetCamPosRef.current = null;
-             
-             // AL DETENERSE (por cancelar target): Sincronizar OrbitControls
-             if (controlsRef?.current) {
-                 // Forzamos a OrbitControls a leer la posición actual de la cámara
-                 // y recalcular sus ángulos esféricos internos.
-                 // Esto normalmente no es método público, pero seteando objeto.position funciona si llamamos update
-                 // PERO update() escribe.
-                 // El truco es: controls.target.copy(0,0,0); controls.object.position.copy(camera.position); controls.update();
-                 // Pero update() mueve la cámara...
-                 
-                 // En Three.js OrbitControls, para re-sincronizar:
-                 // controls.update() usa la posición actual de la cámara PARA calcular el offset si no ha cambiado?
-                 // No, usa sus coordenadas esféricas internas.
-                 
-                 // Debemos REGENERAR las coordenadas esféricas internas desde la posición actual.
-                 // Esto ocurre en el constructor... o si llamamos a saveState() / reset()? No.
-                 
-                 // Solución común:
-                 // controls.target.set(0,0,0);
-                 // controls.object.position.copy(camera.position); 
-                 // controls.update(); // <- Esto puede causar el salto si los internos están desincronizados.
-                 
-                 // PERO, si llamamos a `controls.listenToKeyEvents(window)` o similar, a veces se resetea.
-                 
-                 // La solución robusta conocida:
-                 // controlsRef.current.object.position.copy(camera.position);
-                 // controlsRef.current.object.lookAt(controlsRef.current.target);
-                 // Y *luego* actualizar internos... pero cómo?
-                 
-                 // Si miramos el código fuente de OrbitControls, `update()` recalcula la posición DESDE theta/phi.
-                 // No hay un `updateFromCamera()`.
-                 
-                 // Espera! Si OrbitControls tiene `enableDamping={true}` se actualiza.
-                 // Si no, no se actualiza solo?
-                 
-                 // El salto ocurre porque `OrbitControls` mantiene `spherical` state.
-                 // Si modificamos la cámara externamente, `spherical` se vuelve obsoleto.
-                 // Cuando OrbitControls retoma el control, usa `spherical` antiguo.
-                 
-                 // PARA ACTUALIZAR `spherical` desde cámara:
-                 // No hay API pública.
-                 // PERO: Si cambiamos `target`, a veces recalcula.
-                 
-                 // TRUCO: Disparar un 'change' event manualmente? No.
-                 
-                 // Lo que suele funcionar es acceder a las propiedades privadas o reinicializar.
-                 // O, simplemente, mantener OrbitControls actualizado MIENTRAS volamos.
-                 
-                 // Vamos a intentar actualizar la posición en el controlsRef MIENTRAS volamos,
-                 // pero sin llamar a update(). 
-                 // Solo actualizamos la posición del objeto de controls (que es la cámara, ya lo hacemos).
-                 
-                 // Ah! En `drei`, `makeDefault` hace que los controles se actualicen con el loop de render.
-                 // Si no usamos `makeDefault`, quizás no.
-                 
-                 // Si el usuario reporta "vuelve al horizonte", es probable que el punto (0,0,0) de la esfera
-                 // coincida con el horizonte en la configuración inicial o por defecto (theta/phi).
-                 
-                 // VOY A APLICAR LA ESTRATEGIA:
-                 // En cada frame de vuelo, actualizamos manualmentes los controles si es posible,
-                 // O mejor: Al finalizar el vuelo, reseteamos los controles para que recalcule desde la posición actual.
-                 // Pero `reset()` vuelve al estado inicial.
-                 
-                 // Si miramos la documentacion de Three.js OrbitControls:
-                 // "This control ... expects that the camera is positioned at the desired start position."
-                 
-                 // Entonces, si desmontamos y montamos OrbitControls, cogerá la nueva posición.
-                 // Esto es una opción: key={someKey} en OrbitControls.
-                 
-                 // Vamos a forzar un re-mount de OrbitControls cuando `targetedObject` cambia a null?
-                 // No, eso cortaría el gesto de drag.
-                 
-                 // ESPERA. `setTargetedObject(null)` se llama en `onStart`.
-                 // El usuario YA ha empezado el drag.
-                 // OrbitControls YA ha capturado el estado inicial del drag (mousedown).
-                 // Y ese estado inicial era DONDE ESTABA LA CÁMARA antes de `setTargetedObject`.
-                 
-                 // Si la cámara estaba siendo movida por `CameraNavigator` (por ejemplo tracking de Luna),
-                 // y OrbitControls NO se actualizaba, entonces su estado interno REFLEJA LA POSICIÓN ANTIGUA
-                 // (quizás desde la última vez que interactuamos, o el inicio).
-                 
-                 // POR ESO SALTA.
-             }
-        }
-        prevTarget.current = targetedObject;
-    }, [targetedObject, controlsRef]); // Añadido controlsRef
-
-    useFrame((_, delta) => {
-        // Disable navigation if not in observatory mode
-        if (viewMode !== 'observatory') return;
-        if (!followTarget) {
-            trackingRef.current = false;
-            isFlying.current = false;
-            return;
-        }
-        if (!trackingRef.current) {
-            isFlying.current = false;
-            return;
-        }
-
-        if (targetedObject && isFlying.current) {
-            // ...existing logic helper...
-        } else {
-            // Si NO estamos volando, o targetedObject es null...
-            // Y si OrbitControls está activo...
-        }
-        
-        if (!targetedObject || !targetCamPosRef.current) return;
-
-        const targetCamPos = targetCamPosRef.current;
-        const currentPos = camera.position.clone();
-
-        const dot = currentPos.normalize().dot(targetCamPos.clone().normalize());
-
-        // FOV Transition
-        const cam = camera as THREE.PerspectiveCamera;
-        let desiredFov = targetFov.current;
-        if (manualFovRef.current !== null) {
-            desiredFov = manualFovRef.current;
-            manualFovHoldRef.current = Math.max(0, manualFovHoldRef.current - delta);
-            if (manualFovHoldRef.current === 0) {
-                manualFovRef.current = null;
-            }
-        }
-
-        if (Math.abs(cam.fov - desiredFov) > 0.1) {
-            cam.fov = THREE.MathUtils.lerp(cam.fov, desiredFov, 0.05);
-            cam.updateProjectionMatrix();
-            setCamFov(cam.fov);
-        }
-
-        // Tracking logic
-        // Si no estamos volando (ya llegamos), verificamos si debemos mantener el tracking
-        if (!isFlying.current) return;
-
-        // Flight logic
-        const speed = THREE.MathUtils.clamp(0.06 + (1 - dot) * 0.08, 0.05, 0.15);
-        const newPos = camera.position.clone().lerp(targetCamPos, speed).normalize().multiplyScalar(0.01);
-        
-        // Apply position
-        camera.position.copy(newPos);
-        camera.lookAt(0, 0, 0);
-
-        // Update OrbitControls if available so it knows where we are
-        // This prevents the "snap back" when user grabs control
-        if (controlsRef?.current) {
-             // No hay método público para "leer" la cámara, pero si movemos la cámara
-             // y luego llamamos a update(), OrbitControls podría sobreescribirlo o leerlo.
-             // En este caso, queremos que OrbitControls NO aplique su estado antiguo.
-             // La mejor forma es deshabilitarlo momentáneamente o, mejor aún,
-             // intentar actualizar su estado interno si pudiéramos.
-             // Como no podemos fácilmente sin hacks, asumimos que al iniciar el drag (onStart)
-             // OrbitControls leerá la posición actual si no tiene inercia pendiente.
-             
-             // PERO el usuario reporta que "vuelve al horizonte".
-             // Esto significa que OrbitControls TIENE un estado guardado (probablemente phi=PI/2).
-             
-             // Vamos a intentar un truco: desactivar enableRotate mientras volamos?
-             // No, porque eso re-renderiza Canvas.
-             
-             // Truco: controls.object.position.copy(camera.position) YA está hecho porque object===camera.
-             // controls.target es 0,0,0.
-             
-             // Si forzamos controls.update() AQUI, OrbitControls dirá:
-             // "Mi estado es phi=PI/2, theta=0. Voy a poner la cámara ahí".
-             // Y nos fastidia el vuelo.
-             
-             // Lo que necesitamos es: controls.object = camera.
-             // controls.update() hace:
-             // offset.copy( object.position ).sub( target );
-             // spherical.setFromVector3( offset );
-             // ... y luego aplica límites ...
-             // ... y luego object.position.copy(...)
-             
-             // ESPERA. update() lee `object.position` y calcula spherical SOLO SI `autoRotate` o `autoPush`?
-             // No, update() generalmente hace:
-             // 1. Aplica damping/autorotate a spherical.
-             // 2. Calcula offset desde spherical.
-             // 3. Aplica offset a camera.position.
-             
-             // ENTONCES update() MACHACA la posición de la cámara.
-             // Por eso si llamamos update() o si OrbitControls llama update() en su loop, nos machaca si el estado interno difiere.
-             
-             // Y si NO llamamos update(), OrbitControls no machaca nada... hasta que tocamos.
-             // Cuando tocamos (onPointerDown), ¿OrbitControls lee la cámara?
-             // SÍ, OrbitControls hace:
-             // rotateStart.set( event.clientX, event.clientY );
-             // Y asume que el estado actual (spherical) es válido.
-             
-             // POR TANTO: El estado spherical interno de OrbitControls ESTÁ DESACTUALIZADO.
-             // Necesitamos actualizarlo.
-             
-             // ¿Cómo actualizar `spherical` sin llamar a `update` (que escribe)?
-             // No hay API pública.
-             
-             // PERO: Si llamamos a `controls.update()` *justo después* de mover la cámara,
-             // OrbitControls sobreescribirá la cámara con el estado viejo.
-             
-             // EXCEPTO si seteamos el estado viejo para que coincida con la cámara.
-             // Tampoco podemos.
-             
-             // UN MOMENTO. Hay una función `setAzimuthalAngle` y `setPolarAngle`?
-             // En la implementación estándar de OrbitControls de jsm, NO.
-             // Getters sí: getAzimuthalAngle, getPolarAngle.
-             
-             // Si el user dice "vuelve al horizonte", es porque OrbitControls cree que phi=PI/2.
-             
-             // LA SOLUCIÓN DEFINITIVA:
-             // Destruir y recrear OrbitControls al terminar el vuelo.
-             // O cambiar la `key` de OrbitControls.
-             
-             // Vamos a usar el hack de la `key`.
-        }
-
-        if (dot > 0.999 && Math.abs(cam.fov - targetFov.current) < 0.5) {
-            isFlying.current = false;
-            trackingRef.current = false;
-            camera.position.copy(targetCamPos);
-            camera.lookAt(0, 0, 0);
-            
-            // Force OrbitControls update/resync by invalidating or similar?
-            return;
-        }
-    });
-
+function DebugHud() {
     return null;
 }
 
-
-
-/**
- * When followOrientation is active, reads the module-level deviceOrientationRef
- * (written by the DeviceOrientation event listener) and applies the device heading
- * and elevation to the camera position each frame.
- *
- * Mapping (Three.js scene: North=-Z, East=+X, Zenith=+Y):
- *   elevation = clamp(90 - beta, -10, 90)
- *   azimuth   = alpha (0=North, clockwise)
- *   cam_pos   = (-cos(el)*sin(az), -sin(el), cos(el)*cos(az)) * 0.01
- *
- * A lerp smoothing factor of 0.12 removes gyroscope jitter.
- */
 function OrientationDriver() {
     const { camera } = useThree();
     const followOrientation = useAppStore((s) => s.followOrientation);
@@ -505,11 +207,8 @@ function OrientationDriver() {
 
         const { alpha, beta } = deviceOrientationRef;
 
-        // elevation: 90° when phone flat face-up → looking at zenith
-        //            0° when phone vertical      → looking at horizon
         const targetEl = Math.max(-10, Math.min(90, 90 - beta));
 
-        // Smooth angle lerp — handle 359→1 wrap-around for azimuth
         const dAz = ((alpha - azRef.current) % 360 + 540) % 360 - 180;
         azRef.current = (azRef.current + dAz * 0.12 + 360) % 360;
         elRef.current += (targetEl - elRef.current) * 0.12;
@@ -525,27 +224,6 @@ function OrientationDriver() {
     });
 
     return null;
-}
-
-function DebugHud() {
-    const { camera } = useThree();
-    const camFov = useAppStore((s) => s.camFov);
-    const viewMode = useAppStore((s) => s.viewMode);
-    const flightTarget = useAppStore((s) => s.flightTarget);
-    const targetedObject = useAppStore((s) => s.targetedObject);
-    const is3DThreshold = camFov <= 30;
-
-    return (
-        <Html fullscreen className="pointer-events-none">
-            <div className="fixed bottom-5 left-5 z-50 rounded-md border border-white/10 bg-black/60 px-2 py-1 text-[10px] font-mono text-white/70">
-                <div>FOV(store): {camFov.toFixed(1)} {is3DThreshold ? '(3D on)' : '(3D off)'}</div>
-                <div>FOV(cam): {(camera as THREE.PerspectiveCamera).fov.toFixed(1)}</div>
-                <div>Mode: {viewMode}</div>
-                <div>Flight: {flightTarget ?? 'none'}</div>
-                <div>Target: {targetedObject?.name ?? 'none'}</div>
-            </div>
-        </Html>
-    );
 }
 
 function SeeingJitter() {
@@ -584,7 +262,7 @@ export default function SkyCanvas() {
     const manualFovHoldRef = useRef(0);
 
     return (
-        <div className="w-full h-full bg-[#04091a] relative">
+        <div className="w-full h-full bg-[#02050e] relative">
             <Canvas
                 shadows={{ type: THREE.PCFShadowMap }}
                 gl={{ antialias: true, stencil: false, powerPreference: 'high-performance' }}
@@ -603,10 +281,8 @@ export default function SkyCanvas() {
                         color="#ffffff"
                     />
 
-                    {/* In AR/orientation mode, disable drag rotation so OrientationDriver owns the camera */}
-                    {/* Key prop ensures re-mount when target changes, preventing "snap back" to old position */}
+                    {/* OrbitControls ya no usa key para evitar re-mounting que corta el drag */}
                     <OrbitControls
-                        key={targetedObject ? 'targeted' : 'free'}
                         ref={controlsRef}
                         enableZoom={false}
                         enablePan={false}
@@ -624,10 +300,9 @@ export default function SkyCanvas() {
                         manualFovRef={manualFovRef}
                         manualFovHoldRef={manualFovHoldRef}
                     />
-                    <FlightController />
 
                     {/* Esfera Atmosférica Pro — reemplaza a CelestialSphere */}
-                    <AtmosphericSky />
+                    <CelestialSphere />
 
                     {/* Grupo rotado al sistema horizontal del observador */}
                     <CelestialGroup>
@@ -643,23 +318,12 @@ export default function SkyCanvas() {
                         <TargetPointer />
                         {/* Cometas con colas dinámicas (usan coordenadas ecuatoriales) */}
                         <Comets />
+                        <SimbadOverlay />
                     </CelestialGroup>
 
                     {/* Satélites en espacio mundo horizontal (Alt/Az), NO dentro del CelestialGroup */}
                     <Satellites />
                     
-                    {/* Move CameraNavigator inside to access the controls ref if we passed it, but better: 
-                        Make CameraNavigator take the ref as prop. But CameraNavigator is defined outside.
-                        Actually, let's keep CameraNavigator as is and use a context or effect for syncing.
-                        
-                        Wait, we can forward the ref to CameraNavigator if we move it inside SkyCanvas or pass it.
-                        Or better: Use a Context.
-                        
-                        Simplest way: Define CameraNavigator inside SkyCanvas (it's fine if it's memoized or stable).
-                        Or pass the ref to a wrapper.
-                        
-                        Let's pass the ref to CameraNavigator. We need to modify the component signature.
-                     */}
                     <CameraNavigator
                         controlsRef={controlsRef}
                         trackingRef={trackingRef}
@@ -681,10 +345,11 @@ export default function SkyCanvas() {
                     {/* FOVOverlay maneja su propio Html wrapper internamente */}
                     <FOVOverlay />
                     {/* Brújula con reset de orientación */}
-                    <DebugHud />
                     <Compass />
                 </Suspense>
             </Canvas>
         </div>
     );
 }
+
+
