@@ -115,31 +115,6 @@ function useSafeTexture(url: string) {
     return tex;
 }
 
-function makeGlowTexture() {
-    const S = 128;
-    const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = S;
-    const ctx = canvas.getContext('2d')!;
-    const cx = S / 2, cy = S / 2, r = S / 2;
-    
-    ctx.save();
-    ctx.clearRect(0, 0, S, S);
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.clip();
-
-    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-    grad.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
-    grad.addColorStop(0.3, 'rgba(255, 255, 255, 0.4)');
-    grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-    
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, S, S);
-    ctx.restore();
-    
-    return new THREE.CanvasTexture(canvas);
-}
-
 function SunMesh() {
     const meshRef = useRef<THREE.Mesh>(null);
     const glowRef = useRef<THREE.Mesh>(null);
@@ -154,20 +129,16 @@ function SunMesh() {
 
     useFrame((state) => {
         if (meshRef.current) {
-            (meshRef.current.material as THREE.ShaderMaterial).uniforms.uTime.value = state.clock.elapsedTime;
+            const material = meshRef.current.material as THREE.ShaderMaterial;
+            material.uniforms.uTime.value = state.clock.elapsedTime;
+            if (texture) material.uniforms.uMap.value = texture;
+            material.uniforms.uOpacity.value = opacity;
             meshRef.current.rotation.y += 0.002;
         }
         if (glowRef.current) {
             glowRef.current.scale.setScalar(1.2 + Math.sin(state.clock.elapsedTime * 2.0) * 0.05);
         }
     });
-
-    useEffect(() => {
-        if (texture) {
-            uniforms.uMap.value = texture;
-        }
-        uniforms.uOpacity.value = opacity;
-    }, [texture, opacity, uniforms.uMap, uniforms.uOpacity]);
 
     return (
         <group position={[0, 0, 0]} visible={opacity > 0.01}>
@@ -207,15 +178,12 @@ function MoonMesh({ planet, phase, opacity }: { planet: { pos: [number, number, 
         uLightDirection: { value: new THREE.Vector3(1, 0, 0) }
     }), []);
 
-    useEffect(() => {
-        if (texture) {
-            uniforms.uMap.value = texture;
-        }
-        uniforms.uOpacity.value = opacity;
-    }, [texture, opacity, uniforms.uMap, uniforms.uOpacity]);
-
     useFrame(() => {
         if (!meshRef.current) return;
+        const material = meshRef.current.material as THREE.ShaderMaterial;
+        if (texture) material.uniforms.uMap.value = texture;
+        material.uniforms.uOpacity.value = opacity;
+
         try {
             const obs = new Astronomy.Observer(observer.lat, observer.lon, 0);
             const sunEq = Astronomy.Equator(Astronomy.Body.Sun, time, obs, true, true);
@@ -224,7 +192,7 @@ function MoonMesh({ planet, phase, opacity }: { planet: { pos: [number, number, 
             const el = THREE.MathUtils.degToRad(sunHor.altitude);
             const az = THREE.MathUtils.degToRad(sunHor.azimuth);
             
-            uniforms.uLightDirection.value.set(
+            material.uniforms.uLightDirection.value.set(
                 Math.cos(el) * Math.sin(az),
                 Math.sin(el),
                 -Math.cos(el) * Math.cos(az)
@@ -256,6 +224,8 @@ interface PlanetData {
     name: string;
     pos: [number, number, number];
     textureKey: string;
+    ra: number;
+    dec: number;
 }
 
 function PlanetMesh({ planet }: { planet: PlanetData }) {
@@ -281,15 +251,11 @@ function PlanetMesh({ planet }: { planet: PlanetData }) {
         uLightDirection: { value: new THREE.Vector3(1, 0, 0) }
     }), []);
 
-    useEffect(() => {
-        if (texture) {
-            uniforms.uMap.value = texture;
-        }
-        uniforms.uOpacity.value = opacity;
-    }, [texture, opacity, uniforms.uMap, uniforms.uOpacity]);
-
     useFrame(() => {
         if (!meshRef.current) return;
+        const material = meshRef.current.material as THREE.ShaderMaterial;
+        if (texture) material.uniforms.uMap.value = texture;
+        material.uniforms.uOpacity.value = opacity;
         
         try {
             const obs = new Astronomy.Observer(observer.lat, observer.lon, 0);
@@ -300,7 +266,7 @@ function PlanetMesh({ planet }: { planet: PlanetData }) {
             const az = THREE.MathUtils.degToRad(sunHor.azimuth);
             
             // Dirección sol -> observador en coordenadas locales
-            uniforms.uLightDirection.value.set(
+            material.uniforms.uLightDirection.value.set(
                 Math.cos(el) * Math.sin(az),
                 Math.sin(el),
                 -Math.cos(el) * Math.cos(az)
@@ -363,7 +329,7 @@ function JupiterMoonMesh({ moon }: { moon: MoonData }) {
                 <meshBasicMaterial color={moon.color} />
             </mesh>
             <Html distanceFactor={80}>
-                <div role="presentation" className="pointer-events-none whitespace-nowrap text-[8px] font-mono" style={{ color: moon.color }}>
+                <div role="presentation" className="pointer-events-none whitespace-nowrap text-[8px] font-mono opacity-80" style={{ color: moon.color }}>
                     {moon.name}
                 </div>
             </Html>
