@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { Html, Float } from '@react-three/drei';
-import { useMemo, useRef, useEffect, useState } from 'react';
+import { useMemo, useRef } from 'react';
 import type { CSSProperties } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
@@ -16,26 +16,126 @@ const JUPITER_MOON_DATA = [
     { id: 'callisto', name: 'Calisto', color: '#a2a2a2', mag: 5.7 }
 ];
 
-const TEXTURES = {
-    mercury: '/textures/planets/mercury.jpg',
-    venus: '/textures/planets/venus.jpg',
-    mars: '/textures/planets/mars.jpg',
-    jupiter: '/textures/planets/jupiter.jpg',
-    saturn: '/textures/planets/saturn.jpg',
-    uranus: '/textures/planets/uranus.jpg',
-    neptune: '/textures/planets/neptune.jpg',
-    moon: '/textures/planets/moon.jpg',
-    sun: '/textures/planets/sun.jpg',
-};
+// ── Texturas procedurales — sin dependencias externas ────────────────────────
+function lcg(seed: number) {
+    let s = seed >>> 0;
+    return () => { s = (Math.imul(1664525, s) + 1013904223) >>> 0; return s / 0x100000000; };
+}
+
+function makeProceduralTexture(key: string): THREE.CanvasTexture {
+    const W = 512, H = 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d')!;
+
+    switch (key) {
+        case 'sun': {
+            const g = ctx.createRadialGradient(W / 2, H / 2, 10, W / 2, H / 2, W / 2);
+            g.addColorStop(0, '#fff5a0'); g.addColorStop(0.4, '#ffa500'); g.addColorStop(1, '#cc4400');
+            ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+            const r = lcg(42);
+            for (let i = 0; i < 10; i++) {
+                ctx.fillStyle = `rgba(0,0,0,${0.15 + r() * 0.25})`;
+                ctx.beginPath(); ctx.arc(r() * W, r() * H, 6 + r() * 22, 0, Math.PI * 2); ctx.fill();
+            }
+            break;
+        }
+        case 'mercury': {
+            ctx.fillStyle = '#7a7a7a'; ctx.fillRect(0, 0, W, H);
+            const r = lcg(100);
+            for (let i = 0; i < 55; i++) {
+                const [x, y, cr] = [r() * W, r() * H, 3 + r() * 18];
+                ctx.fillStyle = `rgba(50,50,50,${0.25 + r() * 0.35})`;
+                ctx.beginPath(); ctx.arc(x, y, cr, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = `rgba(180,180,180,${0.2 + r() * 0.2})`; ctx.lineWidth = 0.8;
+                ctx.beginPath(); ctx.arc(x, y, cr, 0, Math.PI * 2); ctx.stroke();
+            }
+            break;
+        }
+        case 'venus': {
+            ctx.fillStyle = '#e8dca0'; ctx.fillRect(0, 0, W, H);
+            const r = lcg(200);
+            for (let y = 0; y < H; y++) {
+                const wave = Math.sin(y * 0.12 + r() * 0.3) * 0.08;
+                ctx.fillStyle = `rgba(255,248,220,${0.25 + wave + r() * 0.08})`;
+                ctx.fillRect(0, y, W, 1);
+            }
+            break;
+        }
+        case 'mars': {
+            ctx.fillStyle = '#b5401a'; ctx.fillRect(0, 0, W, H);
+            const r = lcg(300);
+            for (let i = 0; i < 25; i++) {
+                ctx.fillStyle = `rgba(${160 + r() * 50},${40 + r() * 30},${10 + r() * 15},${0.25 + r() * 0.35})`;
+                ctx.beginPath(); ctx.arc(r() * W, r() * H, 25 + r() * 70, 0, Math.PI * 2); ctx.fill();
+            }
+            const cap = ctx.createLinearGradient(0, 0, 0, 35);
+            cap.addColorStop(0, 'rgba(240,240,255,0.85)'); cap.addColorStop(1, 'rgba(240,240,255,0)');
+            ctx.fillStyle = cap; ctx.fillRect(0, 0, W, 35);
+            break;
+        }
+        case 'jupiter': {
+            const bands = ['#c88b3a', '#f0e0b0', '#a05828', '#d4a060', '#ecdcac', '#b07030', '#e0c888', '#c09850'];
+            bands.forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(0, i * (H / bands.length), W, H / bands.length + 1); });
+            ctx.fillStyle = '#c02800';
+            ctx.beginPath(); ctx.ellipse(W * 0.6, H * 0.56, 38, 22, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = '#a02000'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.ellipse(W * 0.6, H * 0.56, 42, 26, 0, 0, Math.PI * 2); ctx.stroke();
+            break;
+        }
+        case 'saturn': {
+            const bands = ['#e8d890', '#d8c870', '#f4ecb0', '#c4b060', '#e0d488'];
+            bands.forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(0, i * (H / bands.length), W, H / bands.length + 1); });
+            break;
+        }
+        case 'uranus': {
+            const g = ctx.createLinearGradient(0, 0, 0, H);
+            g.addColorStop(0, '#a0f4f4'); g.addColorStop(0.5, '#7de8e8'); g.addColorStop(1, '#50c4c4');
+            ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+            break;
+        }
+        case 'neptune': {
+            const g = ctx.createLinearGradient(0, 0, 0, H);
+            g.addColorStop(0, '#304090'); g.addColorStop(0.5, '#3f54ba'); g.addColorStop(1, '#1a2878');
+            ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+            ctx.fillStyle = 'rgba(10,15,80,0.55)';
+            ctx.beginPath(); ctx.ellipse(W * 0.38, H * 0.42, 32, 18, 0.3, 0, Math.PI * 2); ctx.fill();
+            break;
+        }
+        case 'moon': {
+            ctx.fillStyle = '#b8b8b8'; ctx.fillRect(0, 0, W, H);
+            const r = lcg(500);
+            for (let i = 0; i < 5; i++) {
+                ctx.fillStyle = `rgba(80,80,90,${0.3 + r() * 0.35})`;
+                ctx.beginPath(); ctx.arc(r() * W, r() * H, 35 + r() * 65, 0, Math.PI * 2); ctx.fill();
+            }
+            for (let i = 0; i < 45; i++) {
+                const [x, y, cr] = [r() * W, r() * H, 2 + r() * 14];
+                ctx.strokeStyle = `rgba(255,255,255,${0.15 + r() * 0.25})`; ctx.lineWidth = 0.6;
+                ctx.beginPath(); ctx.arc(x, y, cr, 0, Math.PI * 2); ctx.stroke();
+            }
+            break;
+        }
+        default: { ctx.fillStyle = '#888'; ctx.fillRect(0, 0, W, H); }
+    }
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.needsUpdate = true;
+    return tex;
+}
+
+function usePlanetTexture(key: string): THREE.CanvasTexture {
+    return useMemo(() => makeProceduralTexture(key), [key]);
+}
 
 const PLANET_CONFIGS = [
-    { body: Astronomy.Body.Mercury, name: "Mercurio", symbol: "☿", color: "#A5A5A5", textureKey: "mercury" as const, description: (mag: number) => `El planeta más cercano al Sol. Mag: ${mag.toFixed(1)}` },
-    { body: Astronomy.Body.Venus, name: "Venus", symbol: "♀", color: "#E3BB76", textureKey: "venus" as const, description: (mag: number) => `El lucero del alba, cubierto de nubes. Mag: ${mag.toFixed(1)}` },
-    { body: Astronomy.Body.Mars, name: "Marte", symbol: "♂", color: "#E27B58", textureKey: "mars" as const, description: (mag: number) => `El planeta rojo. Mag: ${mag.toFixed(1)}` },
-    { body: Astronomy.Body.Jupiter, name: "Júpiter", symbol: "♃", color: "#D39C7E", textureKey: "jupiter" as const, description: (mag: number) => `Gigante gaseoso con su Gran Mancha Roja. Mag: ${mag.toFixed(1)}` },
-    { body: Astronomy.Body.Saturn, name: "Saturno", symbol: "♄", color: "#C5AB6E", textureKey: "saturn" as const, description: (mag: number) => `El señor de los anillos. Mag: ${mag.toFixed(1)}` },
-    { body: Astronomy.Body.Uranus, name: "Urano", symbol: "⛢", color: "#B5E3E3", textureKey: "uranus" as const, description: (mag: number) => `Un gigante helado con eje inclinado. Mag: ${mag.toFixed(1)}` },
-    { body: Astronomy.Body.Neptune, name: "Neptuno", symbol: "♆", color: "#6081FF", textureKey: "neptune" as const, description: (mag: number) => `El planeta más lejano y ventoso. Mag: ${mag.toFixed(1)}` },
+    { body: Astronomy.Body.Mercury, name: "Mercurio", symbol: "☿", color: "#b0b0b0", textureKey: "mercury" as const, description: (mag: number) => `El planeta más cercano al Sol. Mag: ${mag.toFixed(1)}` },
+    { body: Astronomy.Body.Venus,   name: "Venus",    symbol: "♀", color: "#f0e6c0", textureKey: "venus"   as const, description: (mag: number) => `El lucero del alba, cubierto de nubes. Mag: ${mag.toFixed(1)}` },
+    { body: Astronomy.Body.Mars,    name: "Marte",    symbol: "♂", color: "#c1440e", textureKey: "mars"    as const, description: (mag: number) => `El planeta rojo. Mag: ${mag.toFixed(1)}` },
+    { body: Astronomy.Body.Jupiter, name: "Júpiter",  symbol: "♃", color: "#c88b3a", textureKey: "jupiter" as const, description: (mag: number) => `Gigante gaseoso con su Gran Mancha Roja. Mag: ${mag.toFixed(1)}` },
+    { body: Astronomy.Body.Saturn,  name: "Saturno",  symbol: "♄", color: "#e8d890", textureKey: "saturn"  as const, description: (mag: number) => `El señor de los anillos. Mag: ${mag.toFixed(1)}` },
+    { body: Astronomy.Body.Uranus,  name: "Urano",    symbol: "⛢", color: "#7de8e8", textureKey: "uranus"  as const, description: (mag: number) => `Un gigante helado con eje inclinado. Mag: ${mag.toFixed(1)}` },
+    { body: Astronomy.Body.Neptune, name: "Neptuno",  symbol: "♆", color: "#3f54ba", textureKey: "neptune" as const, description: (mag: number) => `El planeta más lejano y ventoso. Mag: ${mag.toFixed(1)}` },
 ];
 
 const SUN_VERTEX_SHADER = `
@@ -122,22 +222,11 @@ const PLANET_FRAGMENT_SHADER = `
 
 const PLANET_RADIUS = 95;
 
-function useSafeTexture(url: string) {
-    const [tex, setTex] = useState<THREE.Texture | null>(null);
-    useEffect(() => {
-        new THREE.TextureLoader().load(url, (t) => {
-            t.minFilter = THREE.LinearFilter;
-            t.generateMipmaps = true;
-            setTex(t);
-        });
-    }, [url]);
-    return tex;
-}
 
 function SunMesh({ pos }: { pos: [number, number, number] }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const glowRef = useRef<THREE.Mesh>(null);
-    const texture = useSafeTexture(TEXTURES.sun);
+    const texture = usePlanetTexture('sun');
     const opacity = useAppStore(state => state.camFov < 45 ? 1.0 : 0.0);
 
     const uniforms = useMemo(() => ({
@@ -189,7 +278,7 @@ function MoonMesh({ planet, phase, opacity }: { planet: { pos: [number, number, 
     const meshRef = useRef<THREE.Mesh>(null);
     const time = useAppStore(state => state.time);
     const observer = useAppStore(state => state.observer);
-    const texture = useSafeTexture(TEXTURES.moon);
+    const texture = usePlanetTexture('moon');
     
     const uniforms = useMemo(() => ({
         uMap: { value: null as THREE.Texture | null },
@@ -252,7 +341,7 @@ function PlanetMesh({ planet }: { planet: PlanetData }) {
     const camFov = useAppStore(state => state.camFov);
     const time = useAppStore(state => state.time);
     const observer = useAppStore(state => state.observer);
-    const texture = useSafeTexture(TEXTURES[planet.textureKey as keyof typeof TEXTURES]);
+    const texture = usePlanetTexture(planet.textureKey);
     
     const isGasGiant = ["Júpiter", "Saturno", "Urano", "Neptuno"].includes(planet.name);
     const baseScale = isGasGiant ? 0.9 : 0.5;
