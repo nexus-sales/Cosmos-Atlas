@@ -211,9 +211,9 @@ function MilkyWayParticles() {
     return (
         <points ref={pointsRef} renderOrder={-1}>
             <bufferGeometry>
-                <bufferAttribute attach="attributes-position" count={positions.length / 3} array={positions} itemSize={3} />
-                <bufferAttribute attach="attributes-color" count={colors.length / 3} array={colors} itemSize={3} />
-                <bufferAttribute attach="attributes-size" count={sizes.length} array={sizes} itemSize={1} />
+                <bufferAttribute attach="attributes-position" count={positions.length / 3} array={positions} itemSize={3} args={[positions, 3]} />
+                <bufferAttribute attach="attributes-color" count={colors.length / 3} array={colors} itemSize={3} args={[colors, 3]} />
+                <bufferAttribute attach="attributes-size" count={sizes.length} array={sizes} itemSize={1} args={[sizes, 1]} />
             </bufferGeometry>
             <pointsMaterial map={glowTexture} size={0.28} sizeAttenuation={true} vertexColors transparent opacity={0.3} alphaTest={0.001} blending={THREE.AdditiveBlending} depthWrite={false} depthTest={false} toneMapped={false} />
         </points>
