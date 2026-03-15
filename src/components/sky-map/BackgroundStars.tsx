@@ -14,7 +14,7 @@ const vertexShader = `
   void main() {
     vColor = color;
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-    gl_PointSize = size * (500.0 / -mvPosition.z);
+    gl_PointSize = size * (600.0 / -mvPosition.z);
     gl_Position = projectionMatrix * mvPosition;
   }
 `;
@@ -31,13 +31,11 @@ const fragmentShader = `
     vec3 outColor = vColor;
     if (uNightMode) {
         float luminance = dot(vColor, vec3(0.299, 0.587, 0.114));
-        outColor = vec3(luminance * 1.5, 0.0, 0.0);
+        outColor = vec3(luminance * 1.2, 0.0, 0.0);
     }
 
-    // Perfil exponencial: núcleo puntual + halo atmosférico suave
-    float core  = exp(-r * 6.0);          // Caída exponencial rápida (Airy disc)
-    float halo  = exp(-r * 2.2) * 0.45;  // Halo ancho y muy suave
-    float alpha = clamp(core + halo, 0.0, 1.0);
+    float core = exp(-r * 5.0);
+    float alpha = clamp(core, 0.0, 0.8);
     gl_FragColor = vec4(outColor, alpha);
   }
 `;
@@ -54,17 +52,17 @@ function sinGalLat(x: number, y: number, z: number): number {
     return -0.86766615 * x - 0.19807637 * y + 0.45598379 * z;
 }
 
-const TOTAL = 50000;           // Reducido de 250k para no saturar el mapa
+const TOTAL = 20000; // Reducido drásticamente para evitar el efecto de "ruido"
 const RADIUS = 96;
-const MAX_VISIBLE_STARS = 20000; // Reducido acorde al TOTAL
+const MAX_VISIBLE_STARS = 10000;
 
 export default function BackgroundStars() {
     const pointsRef = useRef<THREE.Points>(null);
     const nightMode = useAppStore((state) => state.settings.nightMode);
     const bortleScale = useAppStore((state) => state.settings.bortleScale);
+    const viewMode = useAppStore((state) => state.viewMode);
     const { camera } = useThree();
 
-    // ── 1. Generar Catálogo Sintético Hipparcos ─────────────────────────────
     const [allPositions, allColors, allSizes, allMagnitudes, octree] = useMemo(() => {
         const positions = new Float32Array(TOTAL * 3);
         const colors = new Float32Array(TOTAL * 3);
@@ -81,34 +79,29 @@ export default function BackgroundStars() {
             const pz = sinPhi * Math.sin(theta);
 
             const sinB = sinGalLat(px, py, pz);
-            // Concentración galáctica más fuerte: 25× hacia el plano vs. polos
-            const galWeight = Math.exp(-sinB * sinB * 25.0);
+            const galWeight = Math.exp(-sinB * sinB * 20.0);
 
-            // Densidad galáctica: mínimo 20% isotrópico + 80% concentrado
-            if (rng() > (0.22 + 0.78 * galWeight)) {
-                i--; continue; // Re-intentar para mantener TOTAL
+            if (rng() > (0.3 + 0.7 * galWeight)) {
+                i--; continue;
             }
 
             positions[i * 3] = px * RADIUS;
             positions[i * 3 + 1] = py * RADIUS;
             positions[i * 3 + 2] = pz * RADIUS;
 
-            // Magnitudes: distribuido para que haya una manta densa de estrellas tenues
-            // El catálogo principal cubre mag < 8, este fondo llena el resto hasta mag 11
-            const mag = 6.5 + rng() * 4.5;
+            const mag = 7.0 + rng() * 4.0;
             magnitudes[i] = mag;
 
-            // Tamaño basado en magnitud: más abundantes y pequeñas
-            const brightness = Math.pow(2.512, 6.5 - mag);
-            sizes[i] = Math.max(0.06, brightness * 0.45);
+            const brightness = Math.pow(2.512, 7.0 - mag);
+            sizes[i] = Math.max(0.04, brightness * 0.35);
 
             const t = rng();
-            if (t < 0.6) { // M/K
-                colors[i * 3] = 1.0; colors[i * 3 + 1] = 0.7; colors[i * 3 + 2] = 0.5;
-            } else if (t < 0.85) { // G/F
-                colors[i * 3] = 1.0; colors[i * 3 + 1] = 1.0; colors[i * 3 + 2] = 0.8;
-            } else { // B/A
-                colors[i * 3] = 0.7; colors[i * 3 + 1] = 0.8; colors[i * 3 + 2] = 1.0;
+            if (t < 0.6) { 
+                colors[i * 3] = 1.0; colors[i * 3 + 1] = 0.8; colors[i * 3 + 2] = 0.6;
+            } else if (t < 0.85) {
+                colors[i * 3] = 1.0; colors[i * 3 + 1] = 1.0; colors[i * 3 + 2] = 0.9;
+            } else {
+                colors[i * 3] = 0.8; colors[i * 3 + 1] = 0.9; colors[i * 3 + 2] = 1.0;
             }
         }
 
@@ -116,7 +109,6 @@ export default function BackgroundStars() {
         return [positions, colors, sizes, magnitudes, tree];
     }, []);
 
-    // ── 2. Preparar Geometría Dinámica para GPU ─────────────────────────────
     const materialRef = useRef<THREE.ShaderMaterial | null>(null);
     const [geometry, material] = useMemo(() => {
         const geom = new THREE.BufferGeometry();
@@ -133,34 +125,23 @@ export default function BackgroundStars() {
             blending: THREE.AdditiveBlending
         });
 
-        // eslint-disable-next-line react-hooks/refs
         materialRef.current = mat;
         return [geom, mat];
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-    // ── 3. Loop de Culling & Rendering ──────────────────────────────────────
-    const frustum = useMemo(() => new THREE.Frustum(), []);
-    const projScreenMatrix = useMemo(() => new THREE.Matrix4(), []);
-    const prevCamDir = useRef(new THREE.Vector3());
-    const frameSkip = useRef(0);
+    }, []);
 
     useFrame(() => {
         if (!pointsRef.current) return;
 
-        // Actualizar frustum teniendo en cuenta la rotación del grupo (matrixWorld)
-        // Esto soluciona el problema de que las estrellas desaparezcan al rotar la esfera
         projScreenMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
         projScreenMatrix.multiply(pointsRef.current.matrixWorld);
         frustum.setFromProjectionMatrix(projScreenMatrix);
 
-        // Búsqueda en Octree sin esperas para respuesta instantánea
         const visibleIndices: number[] = [];
         octree.search(frustum, visibleIndices);
 
-        // Filtrado por magnitud (Bortle)
-        // Bortle 1 (cielo oscuro) → hasta mag 9.0
-        // Bortle 9 (ciudad densa)  → hasta mag 4.5
-        const limitingMag = 7.5 - (bortleScale - 1) * 0.65;
+        // Limitar magnitud aún más en modo cámara para no ensuciar el sensor real
+        const camFactor = viewMode === 'camera' ? 1.5 : 0;
+        const limitingMag = 7.0 - (bortleScale - 1) * 0.6 - camFactor;
 
         const posAttr = geometry.getAttribute('position') as THREE.BufferAttribute;
         const colAttr = geometry.getAttribute('color') as THREE.BufferAttribute;
@@ -169,15 +150,14 @@ export default function BackgroundStars() {
         let count = 0;
         for (let i = 0; i < visibleIndices.length && count < MAX_VISIBLE_STARS; i++) {
             const idx = visibleIndices[i];
-
-            // Umbral de magnitud más estricto
-            if (allMagnitudes[idx] > limitingMag + 1.5) continue;
+            if (allMagnitudes[idx] > limitingMag) continue;
 
             posAttr.setXYZ(count, allPositions[idx * 3], allPositions[idx * 3 + 1], allPositions[idx * 3 + 2]);
             colAttr.setXYZ(count, allColors[idx * 3], allColors[idx * 3 + 1], allColors[idx * 3 + 2]);
 
-            // Multiplicador de tamaño más discreto
-            sizAttr.setX(count, allSizes[idx] * 1.2);
+            // Reducción de tamaño en modo cámara para máxima fidelidad
+            const sizeMult = viewMode === 'camera' ? 0.8 : 1.0;
+            sizAttr.setX(count, allSizes[idx] * sizeMult);
             count++;
         }
 
@@ -191,7 +171,8 @@ export default function BackgroundStars() {
         }
     });
 
-    // renderOrder=0 → siempre bajo las estrellas del catálogo (order 1) y constelaciones (order 3)
+    const frustum = useMemo(() => new THREE.Frustum(), []);
+    const projScreenMatrix = useMemo(() => new THREE.Matrix4(), []);
+
     return <points ref={pointsRef} geometry={geometry} material={material} renderOrder={0} />;
 }
-

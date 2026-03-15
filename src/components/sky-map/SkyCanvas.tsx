@@ -30,6 +30,7 @@ import * as THREE from 'three';
 import { getLST } from '@/lib/astronomy/time';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { deviceOrientationRef } from '@/hooks/useDeviceOrientation';
+import { cn } from '@/lib/utils';
 
 /**
  * Zoom por FOV — rueda de ratón + pinch táctil.
@@ -156,20 +157,25 @@ function FovZoom({
 function SetupRenderer() {
     const glRef = useRef<THREE.WebGLRenderer | null>(null);
     const { gl } = useThree();
+    const viewMode = useAppStore(s => s.viewMode);
 
     useEffect(() => {
         glRef.current = gl;
         gl.localClippingEnabled = true;
         
-        // Configuración inicial de transparencia
-        gl.setClearColor(0x000000, 1);
+        // Transparencia total en modo cámara, negro en modo bóveda
+        if (viewMode === 'camera') {
+            gl.setClearColor(0x000000, 0);
+        } else {
+            gl.setClearColor(0x000000, 1);
+        }
         
         return () => {
             if (glRef.current) {
                 glRef.current.localClippingEnabled = false;
             }
         };
-    }, [gl]);
+    }, [gl, viewMode]);
 
     return null;
 }
@@ -251,6 +257,7 @@ function SeeingJitter() {
 
 
 export default function SkyCanvas() {
+    const viewMode = useAppStore((state) => state.viewMode);
     const showGrid = useAppStore((state) => state.settings.showGrid);
     const showMilkyWay = useAppStore((state) => state.settings.showMilkyWay);
     const showEcliptic = useAppStore((state) => state.settings.showEcliptic);
@@ -266,7 +273,10 @@ export default function SkyCanvas() {
     const manualFovHoldRef = useRef(0);
 
     return (
-        <div className="w-full h-full bg-black relative overflow-hidden">
+        <div className={cn(
+            "w-full h-full relative overflow-hidden transition-colors duration-1000",
+            viewMode === 'camera' ? "bg-transparent" : "bg-black"
+        )}>
             {/* Fondo de Cámara para AR */}
             <CameraBackground />
 
