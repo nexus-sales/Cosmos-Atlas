@@ -46,8 +46,8 @@ const starVertexShader = `
     vAirmass = airmass;
 
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-    // Tamaño base aumentado para que las estrellas principales resalten
-    gl_PointSize = size * 1.8 * (vOpacity * 0.5 + 0.5) * (1000.0 / -mvPosition.z);
+    // Tamaño base aumentado para que las estrellas principales resalten mucho más que el fondo
+    gl_PointSize = size * 2.4 * (vOpacity * 0.5 + 0.5) * (1000.0 / -mvPosition.z);
     gl_Position = projectionMatrix * mvPosition;
   }
 `;

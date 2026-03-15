@@ -52,8 +52,8 @@ export default function Constellations() {
                     ? (isFocused ? '#ff3333' : '#661111')
                     : (isFocused ? '#ffffff' : '#a8c4e8');
 
-                const opacity = isFocused ? 0.9 : 0.15;
-                const lineWidth = isFocused ? 1.8 : 0.6;
+                const opacity = isFocused ? 0.9 : 0.4;
+                const lineWidth = isFocused ? 2.0 : 1.1;
 
                 return (
                     <group key={name}>

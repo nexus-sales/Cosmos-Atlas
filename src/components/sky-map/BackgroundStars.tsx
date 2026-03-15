@@ -54,9 +54,9 @@ function sinGalLat(x: number, y: number, z: number): number {
     return -0.86766615 * x - 0.19807637 * y + 0.45598379 * z;
 }
 
-const TOTAL = 250000;           // Aumentado a 250k para una densidad masiva
+const TOTAL = 50000;           // Reducido de 250k para no saturar el mapa
 const RADIUS = 96;
-const MAX_VISIBLE_STARS = 60000; // Capacidad de renderizado aumentada para el fondo denso
+const MAX_VISIBLE_STARS = 20000; // Reducido acorde al TOTAL
 
 export default function BackgroundStars() {
     const pointsRef = useRef<THREE.Points>(null);
@@ -170,15 +170,14 @@ export default function BackgroundStars() {
         for (let i = 0; i < visibleIndices.length && count < MAX_VISIBLE_STARS; i++) {
             const idx = visibleIndices[i];
 
-            // Umbral de magnitud mucho más generoso para que el fondo siempre tenga "textura"
-            // Incluso en Bortle 9 permitimos hasta 7.0 para que se vea el granulado
-            if (allMagnitudes[idx] > limitingMag + 2.5) continue;
+            // Umbral de magnitud más estricto
+            if (allMagnitudes[idx] > limitingMag + 1.5) continue;
 
             posAttr.setXYZ(count, allPositions[idx * 3], allPositions[idx * 3 + 1], allPositions[idx * 3 + 2]);
             colAttr.setXYZ(count, allColors[idx * 3], allColors[idx * 3 + 1], allColors[idx * 3 + 2]);
 
-            // Multiplicador de tamaño para visibilidad (mínimo 1.2px en pantalla)
-            sizAttr.setX(count, allSizes[idx] * 2.2);
+            // Multiplicador de tamaño más discreto
+            sizAttr.setX(count, allSizes[idx] * 1.2);
             count++;
         }
 
