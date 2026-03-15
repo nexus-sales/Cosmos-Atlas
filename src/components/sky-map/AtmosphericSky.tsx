@@ -77,8 +77,6 @@ export default function AtmosphericSky() {
     const viewMode = useAppStore((s) => s.viewMode);
     const sunPos = useMemo(() => new THREE.Vector3(100, 0, 0), []);
 
-    if (viewMode === 'camera') return null;
-
     const uniforms = useMemo(() => ({
         uSunPos: { value: sunPos },
         uTime: { value: 0 },
@@ -117,6 +115,8 @@ export default function AtmosphericSky() {
         meshRef.current.position.copy(state.camera.position);
     });
 
+    if (viewMode === 'camera') return null;
+
     return (
         <mesh ref={meshRef} renderOrder={-5}>
             <sphereGeometry args={[115, 64, 64]} />
@@ -126,7 +126,7 @@ export default function AtmosphericSky() {
                 uniforms={uniforms}
                 side={THREE.BackSide}
                 depthWrite={false}
-                transparent={true} // Cambiado a true para permitir fade a negro/espacio
+                transparent={true}
             />
         </mesh>
     );

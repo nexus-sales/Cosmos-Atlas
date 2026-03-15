@@ -19,7 +19,7 @@ interface AppState {
         showMilkyWay: boolean;
         showEcliptic: boolean;
         nightMode: boolean;
-        bortleScale: number; // 1 to 9
+        bortleScale: number;
         showFOV: boolean;
         showSatellites: boolean;
         showStarlink: boolean;
@@ -46,15 +46,12 @@ interface AppState {
         starlinkStatus: 'idle' | 'loading' | 'ok' | 'error';
     };
     setSatelliteInfo: (patch: Partial<AppState['satelliteInfo']>) => void;
-    // View Management
     viewMode: 'vault' | 'camera';
     setViewMode: (mode: 'vault' | 'camera') => void;
     followOrientation: boolean;
     setFollowOrientation: (v: boolean) => void;
     focusedConstellation: string | null;
     setFocusedConstellation: (name: string | null) => void;
-
-    // SIMBAD / Dynamic Objects
     simbadObjects: Star[];
     addSimbadObject: (obj: Star) => void;
     clearSimbadObjects: () => void;
@@ -63,7 +60,7 @@ interface AppState {
 export const useAppStore = create<AppState>()(
     persist(
         (set) => ({
-            observer: { lat: 28.3, lon: -16.3 }, // Default Tenerife
+            observer: { lat: 28.3, lon: -16.3 },
             setObserver: (observer) => set({ observer }),
             selectedObject: null,
             setSelectedObject: (obj) => set({ selectedObject: obj }),
@@ -143,7 +140,6 @@ export const useAppStore = create<AppState>()(
             setFollowOrientation: (followOrientation) => set({ followOrientation }),
             focusedConstellation: null,
             setFocusedConstellation: (focusedConstellation) => set({ focusedConstellation }),
-
             simbadObjects: [],
             addSimbadObject: (obj) => set((state) => ({
                 simbadObjects: state.simbadObjects.some(s => s.name === obj.name)
