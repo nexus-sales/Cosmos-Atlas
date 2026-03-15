@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { Star, DSO, Observer, Planet } from '../types/celestial';
 
 interface AppState {
@@ -59,95 +60,106 @@ interface AppState {
     clearSimbadObjects: () => void;
 }
 
-export const useAppStore = create<AppState>((set) => ({
-    observer: { lat: 28.3, lon: -16.3 }, // Default Tenerife
-    setObserver: (observer) => set({ observer }),
-    selectedObject: null,
-    setSelectedObject: (obj) => set({ selectedObject: obj }),
-    targetedObject: null,
-    setTargetedObject: (obj) => set({ targetedObject: obj }),
-    time: new Date(),
-    setTime: (time) => set({ time }),
-    isLive: true,
-    setIsLive: (isLive) => set({ isLive }),
-    viewMode: 'vault',
-    setViewMode: (viewMode) => set((state) => {
-        // Al cambiar de modo, ajustamos parámetros automáticamente
-        if (viewMode === 'camera') {
-            return {
-                viewMode,
-                camFov: 15, // Zoom inicial de cámara
-                settings: { ...state.settings, telescopeMode: true, showFOV: true }
-            };
-        } else {
-            return {
-                viewMode,
-                camFov: 60, // Vista amplia de mapa
-                settings: { ...state.settings, telescopeMode: false, showFOV: false }
-            };
+export const useAppStore = create<AppState>()(
+    persist(
+        (set) => ({
+            observer: { lat: 28.3, lon: -16.3 }, // Default Tenerife
+            setObserver: (observer) => set({ observer }),
+            selectedObject: null,
+            setSelectedObject: (obj) => set({ selectedObject: obj }),
+            targetedObject: null,
+            setTargetedObject: (obj) => set({ targetedObject: obj }),
+            time: new Date(),
+            setTime: (time) => set({ time }),
+            isLive: true,
+            setIsLive: (isLive) => set({ isLive }),
+            viewMode: 'vault',
+            setViewMode: (viewMode) => set((state) => {
+                if (viewMode === 'camera') {
+                    return {
+                        viewMode,
+                        camFov: 15,
+                        settings: { ...state.settings, telescopeMode: true, showFOV: true }
+                    };
+                } else {
+                    return {
+                        viewMode,
+                        camFov: 60,
+                        settings: { ...state.settings, telescopeMode: false, showFOV: false }
+                    };
+                }
+            }),
+            settings: {
+                showConstellations: true,
+                showGrid: false,
+                showMilkyWay: true,
+                showEcliptic: false,
+                nightMode: false,
+                bortleScale: 4,
+                showFOV: false,
+                showSatellites: true,
+                showStarlink: false,
+                focalLength: 1000,
+                sensorWidth: 36,
+                sensorHeight: 24,
+                telescopeMode: false,
+                followTarget: true,
+            },
+            toggleSetting: (key) =>
+                set((state) => ({
+                    settings: { ...state.settings, [key]: !state.settings[key] },
+                })),
+            setBortleScale: (bortleScale) =>
+                set((state) => ({
+                    settings: { ...state.settings, bortleScale },
+                })),
+            setFOVParams: (params) =>
+                set((state) => ({
+                    settings: { ...state.settings, ...params },
+                })),
+            sidebarOpen: true,
+            setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
+            foundChallenges: [],
+            addFoundChallenge: (name) =>
+                set((state) => ({
+                    foundChallenges: state.foundChallenges.includes(name)
+                        ? state.foundChallenges
+                        : [...state.foundChallenges, name],
+                })),
+            camFov: 60,
+            setCamFov: (camFov) => set({ camFov }),
+            satelliteInfo: {
+                loadedSpecial: 0,
+                loadedStarlink: 0,
+                visibleSpecial: 0,
+                visibleStarlink: 0,
+                starlinkStatus: 'idle',
+            },
+            setSatelliteInfo: (patch) =>
+                set((state) => ({
+                    satelliteInfo: { ...state.satelliteInfo, ...patch },
+                })),
+            followOrientation: false,
+            setFollowOrientation: (followOrientation) => set({ followOrientation }),
+            focusedConstellation: null,
+            setFocusedConstellation: (focusedConstellation) => set({ focusedConstellation }),
+
+            simbadObjects: [],
+            addSimbadObject: (obj) => set((state) => ({
+                simbadObjects: state.simbadObjects.some(s => s.name === obj.name)
+                    ? state.simbadObjects
+                    : [...state.simbadObjects, obj]
+            })),
+            clearSimbadObjects: () => set({ simbadObjects: [] }),
+        }),
+        {
+            name: 'cosmos-atlas-storage',
+            storage: createJSONStorage(() => localStorage),
+            partialize: (state) => ({
+                settings: state.settings,
+                observer: state.observer,
+                foundChallenges: state.foundChallenges,
+            }),
         }
-    }),
-    settings: {
-        showConstellations: true,
-        showGrid: true,
-        showMilkyWay: false,
-        showEcliptic: false,
-        nightMode: false,
-        bortleScale: 4,
-        showFOV: false,
-        showSatellites: true,
-        showStarlink: false,
-        focalLength: 1000,
-        sensorWidth: 36, // Full Frame
-        sensorHeight: 24,
-        telescopeMode: false,
-        followTarget: true,
-    },
-    toggleSetting: (key) =>
-        set((state) => ({
-            settings: { ...state.settings, [key]: !state.settings[key] },
-        })),
-    setBortleScale: (bortleScale) =>
-        set((state) => ({
-            settings: { ...state.settings, bortleScale },
-        })),
-    setFOVParams: (params) =>
-        set((state) => ({
-            settings: { ...state.settings, ...params },
-        })),
-    sidebarOpen: true,
-    setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
-    foundChallenges: [],
-    addFoundChallenge: (name) =>
-        set((state) => ({
-            foundChallenges: state.foundChallenges.includes(name)
-                ? state.foundChallenges
-                : [...state.foundChallenges, name],
-        })),
-    camFov: 60,
-    setCamFov: (camFov) => set({ camFov }),
-    satelliteInfo: {
-        loadedSpecial: 0,
-        loadedStarlink: 0,
-        visibleSpecial: 0,
-        visibleStarlink: 0,
-        starlinkStatus: 'idle',
-    },
-    setSatelliteInfo: (patch) =>
-        set((state) => ({
-            satelliteInfo: { ...state.satelliteInfo, ...patch },
-        })),
-    followOrientation: false,
-    setFollowOrientation: (followOrientation) => set({ followOrientation }),
-    focusedConstellation: null,
-    setFocusedConstellation: (focusedConstellation) => set({ focusedConstellation }),
-
-    simbadObjects: [],
-    addSimbadObject: (obj) => set((state) => ({
-        simbadObjects: state.simbadObjects.some(s => s.name === obj.name)
-            ? state.simbadObjects
-            : [...state.simbadObjects, obj]
-    })),
-    clearSimbadObjects: () => set({ simbadObjects: [] }),
-
-}));
+    )
+);

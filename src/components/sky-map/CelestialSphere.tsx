@@ -52,6 +52,9 @@ function getSkyColor(alt: number): THREE.Color {
 export default function CelestialSphere() {
     const matRef = useRef<THREE.MeshBasicMaterial>(null);
     const currentColor = useRef(SKY_NIGHT.clone());
+    const viewMode = useAppStore(s => s.viewMode);
+
+    if (viewMode === 'camera') return null;
 
     useFrame(() => {
         if (!matRef.current) return;

@@ -4,6 +4,7 @@ import SkyCanvas from '@/components/sky-map/SkyCanvas';
 import Header from '@/components/panels/Header';
 import SidePanel from '@/components/panels/SidePanel';
 import TimeTravelControls from '@/components/panels/TimeTravelControls';
+import ViewModeWidget from '@/components/panels/ViewModeWidget';
 import { useEffect } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
 import { useGeolocation } from '@/hooks/useGeolocation';
@@ -36,6 +37,7 @@ export default function Home() {
           <div className="flex-1 relative min-w-0">
             <SkyCanvas />
             <TimeTravelControls />
+            <ViewModeWidget />
           </div>
 
           {/* Mobile backdrop — closes sidebar on tap outside */}

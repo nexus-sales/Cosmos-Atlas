@@ -74,7 +74,10 @@ export default function AtmosphericSky() {
     const meshRef = useRef<THREE.Mesh>(null);
     const bortleScale = useAppStore((s) => s.settings.bortleScale);
     const camFov = useAppStore((s) => s.camFov);
+    const viewMode = useAppStore((s) => s.viewMode);
     const sunPos = useMemo(() => new THREE.Vector3(100, 0, 0), []);
+
+    if (viewMode === 'camera') return null;
 
     const uniforms = useMemo(() => ({
         uSunPos: { value: sunPos },

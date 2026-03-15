@@ -24,6 +24,7 @@ import SimbadOverlay from '@/components/sky-map/SimbadOverlay';
 import TelescopeEffect from '@/components/sky-map/TelescopeEffect';
 import AtmosphericSky from '@/components/sky-map/AtmosphericSky';
 import CameraNavigator from '@/components/sky-map/CameraNavigator';
+import CameraBackground from '@/components/sky-map/CameraBackground';
 import { useAppStore } from '@/stores/useAppStore';
 import * as THREE from 'three';
 import { getLST } from '@/lib/astronomy/time';
@@ -158,8 +159,11 @@ function SetupRenderer() {
 
     useEffect(() => {
         glRef.current = gl;
-        // eslint-disable-next-line react-hooks/immutability
         gl.localClippingEnabled = true;
+        
+        // Configuración inicial de transparencia
+        gl.setClearColor(0x000000, 1);
+        
         return () => {
             if (glRef.current) {
                 glRef.current.localClippingEnabled = false;
@@ -262,11 +266,23 @@ export default function SkyCanvas() {
     const manualFovHoldRef = useRef(0);
 
     return (
-        <div className="w-full h-full bg-[#02050e] relative">
+        <div className="w-full h-full bg-black relative overflow-hidden">
+            {/* Fondo de Cámara para AR */}
+            <CameraBackground />
+
             <Canvas
                 shadows={{ type: THREE.PCFShadowMap }}
-                gl={{ antialias: true, stencil: false, powerPreference: 'high-performance' }}
+                gl={{ 
+                    antialias: true, 
+                    stencil: false, 
+                    powerPreference: 'high-performance',
+                    alpha: true // Permitir fondo transparente para ver la cámara
+                }}
                 camera={{ position: [0, 0, 0.01], fov: 60, near: 0.001, far: 200 }}
+                onCreated={({ gl }) => {
+                    // Asegurar que el fondo del canvas sea transparente
+                    gl.setClearColor(0x000000, 0);
+                }}
             >
                 <Suspense fallback={null}>
                     <SetupRenderer />

@@ -3,16 +3,16 @@
 import * as THREE from 'three';
 import { Html } from '@react-three/drei';
 
+import { useAppStore } from '@/stores/useAppStore';
+
 /**
  * Horizonte en espacio MUNDO (sin rotación con el cielo).
- * El CelestialGroup de SkyCanvas ya aplica LST + latitud a todos
- * los objetos celestes; este disco opaco bloquea el hemisferio
- * inferior y da a los puntos cardinales una orientación correcta
- * respecto al Norte geográfico (Z− = Norte cuando lat/lon son correctos).
- *
- * renderOrder=2 garantiza que se pinta SOBRE las estrellas (order 0-1).
  */
 export default function Horizon() {
+    const viewMode = useAppStore(s => s.viewMode);
+
+    if (viewMode === 'camera') return null;
+
     return (
         <group>
             {/* ── Suelo opaco — oculta estrellas bajo el horizonte ─── */}
