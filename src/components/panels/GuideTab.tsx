@@ -293,7 +293,7 @@ export default function GuideTab() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                 <input
                     type="text"
-                    placeholder="Buscar objeto o constelaci\u00f3n..."
+                    placeholder="Buscar objeto o constelación..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="w-full rounded-lg border border-white/15 bg-white/[0.06] py-2.5 pl-10 pr-8 text-[12px] font-mono text-white/85 focus:outline-none transition-colors placeholder:text-white/25"
@@ -348,7 +348,7 @@ export default function GuideTab() {
             )}
 
             {/* PLANETAS */}
-            {planetList.length > 0 && (
+            {(filter === 'all' || filter === 'planets') && planetList.length > 0 && (
                 <section>
                     <SectionToggle label="Planetas" icon={<Globe2 className="w-3.5 h-3.5 text-orange-400/70" />}
                         count={planetList.length} total={planetList.length}
@@ -385,7 +385,7 @@ export default function GuideTab() {
             )}
 
             {/* ESTRELLAS */}
-            {starList.length > 0 && (
+            {(filter === 'all' || filter === 'stars') && starList.length > 0 && (
                 <section>
                     <SectionToggle label="Estrellas" icon={<StarIcon className="w-3.5 h-3.5 text-yellow-400/70" />}
                         count={starList.length} total={starTotal}
@@ -422,26 +422,26 @@ export default function GuideTab() {
                 </section>
             )}
 
-            {dsoList.filter(d => d.type === 'galaxy').length > 0 && (
+            {(filter === 'all' || filter === 'galaxies') && dsoList.filter(d => d.type === 'galaxy').length > 0 && (
                 <DSOSection title="Galaxias" items={dsoList.filter(d => d.type === 'galaxy').slice(0, limit)}
                     total={galaxyTotal} isOpen={openSections.galaxies} onToggle={() => toggleSection('galaxies')}
                     isTargeted={isTargeted} onSelect={handleSelect} />
             )}
 
-            {dsoList.filter(d => d.type === 'nebula').length > 0 && (
+            {(filter === 'all' || filter === 'nebulae') && dsoList.filter(d => d.type === 'nebula').length > 0 && (
                 <DSOSection title="Nebulosas" items={dsoList.filter(d => d.type === 'nebula').slice(0, limit)}
                     total={nebulaTotal} isOpen={openSections.nebulae} onToggle={() => toggleSection('nebulae')}
                     isTargeted={isTargeted} onSelect={handleSelect} />
             )}
 
-            {dsoList.filter(d => d.type === 'cluster').length > 0 && (
+            {(filter === 'all' || filter === 'clusters') && dsoList.filter(d => d.type === 'cluster').length > 0 && (
                 <DSOSection title="Cúmulos" items={dsoList.filter(d => d.type === 'cluster').slice(0, limit)}
                     total={clusterTotal} isOpen={openSections.clusters} onToggle={() => toggleSection('clusters')}
                     isTargeted={isTargeted} onSelect={handleSelect} />
             )}
 
             {/* CONSTELACIONES */}
-            {constellationList.length > 0 && (
+            {(filter === 'all' || filter === 'constellations') && constellationList.length > 0 && (
                 <section>
                     <SectionToggle label="Constelaciones" icon={<Share2 className="w-3.5 h-3.5 text-indigo-400/70" />}
                         count={constellationList.length} total={constellationTotal}
