@@ -39,10 +39,12 @@ Totalmente responsive e instalable como PWA.
 - **Inercia Zoom "Líquida"** — Refinado el momentum del zoom táctil para una experiencia de navegación fluida.
 - **Bloom Calibrado** — `threshold 0.7`, `intensity 0.4` (puntos de luz puros y precisos).
 - **Giroscopio Premium** — Filtro complementario EMA α=0.85 con compensación de deriva.
+- **Modo Nocturno Pro** — Rojo astronómico profundo calibrado para proteger la visión nocturna en observación de campo.
 
 ---
 
-- **IA Astrónoma (Voice-Over)** — Asistente virtual con síntesis de voz real (Web Speech API) que narra los secretos de los astros seleccionados. UI glassmorphic con visualización de audio dinámica.
+- **IA Astrónoma (Voice-Over)** — Asistente virtual con síntesis de voz real (Web Speech API) que narra secretos, mitología y reacciona a tus logros.
+- **Pasaporte Estelar (Gamificación)** — Sistema de recompensas y trofeos que registra tus hitos: "Cazador de Planetas", "Maratón Messier" y favoritos personales. Persistencia total vía LocalStorage.
 - **Inmersión Planetaria 3D (V3.0)** — Transición fluida de sprites 2D a modelos 3D detallados mediante **Cinematic Zoom** (FOV dinámico). 
 - **Sol Procedural de Alta Fidelidad** — Shader de superficie solar con efecto de ebullición, cromoesfera y corona pulsante.
 - **Atmospheric/Sun Suppression (Space Mode)** — Supresión dinámica de la atmósfera y el resplandor solar al hacer zoom en DSOs o planetas, proporcionando claridad de "Telescopio Espacial" inclusdo de día.
