@@ -14,12 +14,14 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { loadHipparcos, bvToHex, type HipStar } from '@/lib/astronomy/hipparcos';
+import { StarOctree } from '@/lib/astronomy/Octree';
 import { useAppStore } from '@/stores/useAppStore';
 
-const RADIUS = 98; // igual que Stars.tsx
+const RADIUS = 98; 
+const MAX_VISIBLE_STARS = 10000;
 
 // ── Shaders (idénticos a Stars.tsx para consistencia visual) ────────────────
 const vertexShader = `
@@ -41,7 +43,6 @@ const vertexShader = `
 
     float depthFactor = 1.0 - distanceFactor * 0.2;
 
-    // Centelleo sutil — las estrellas débiles centellean menos
     float twinkleSpeed = 1.8 + airmass * 0.25;
     float twinkleAmp = 0.12 + airmass * 0.08;
     float noise = sin(uTime * twinkleSpeed + position.x * 47.0) * 0.6
@@ -79,83 +80,119 @@ const fragmentShader = `
   }
 `;
 
-/** Convierte la lista de HipStar en BufferGeometry + ShaderMaterial */
-function buildGeometry(stars: HipStar[]): [THREE.BufferGeometry, THREE.ShaderMaterial] {
-    const n = stars.length;
-    const pos     = new Float32Array(n * 3);
-    const col     = new Float32Array(n * 3);
-    const sz      = new Float32Array(n);
-    const distFac = new Float32Array(n);
-
-    const tmpColor = new THREE.Color();
-    const refMag   = -1.5;
-
-    for (let i = 0; i < n; i++) {
-        const star = stars[i];
-        const p = equatorialTo3D(star.ra, star.dec, RADIUS);
-        pos[i * 3]     = p[0];
-        pos[i * 3 + 1] = p[1];
-        pos[i * 3 + 2] = p[2];
-
-        tmpColor.set(bvToHex(star.bv));
-        col[i * 3]     = tmpColor.r;
-        col[i * 3 + 1] = tmpColor.g;
-        col[i * 3 + 2] = tmpColor.b;
-
-        const brightness = Math.pow(2.512, refMag - star.mag);
-        const normB      = Math.min(1.0, brightness);
-        sz[i]            = 0.5 + Math.pow(normB, 0.45) * 5.5;
-        distFac[i]       = Math.min(1.0, Math.max(0.0, (star.mag + 1.5) / 8.5));
-    }
-
-    const geom = new THREE.BufferGeometry();
-    geom.setAttribute('position',     new THREE.BufferAttribute(pos,     3));
-    geom.setAttribute('color',        new THREE.BufferAttribute(col,     3));
-    geom.setAttribute('size',         new THREE.BufferAttribute(sz,      1));
-    geom.setAttribute('distanceFactor', new THREE.BufferAttribute(distFac, 1));
-
-    const mat = new THREE.ShaderMaterial({
-        vertexShader,
-        fragmentShader,
-        uniforms: {
-            uTime:      { value: 0 },
-            uNightMode: { value: false },
-        },
-        transparent: true,
-        depthWrite:  false,
-    });
-
-    return [geom, mat];
-}
-
 export default function HipparcosStars() {
     const bortleScale = useAppStore(s => s.settings.bortleScale);
     const nightMode   = useAppStore(s => s.settings.nightMode);
+    const { camera }  = useThree();
 
     const [allStars, setAllStars] = useState<HipStar[]>([]);
-    const pointsRef = useRef<THREE.Points>(null);
+    const pointsRef   = useRef<THREE.Points>(null);
+    const frustum     = useMemo(() => new THREE.Frustum(), []);
+    const projMatrix  = useMemo(() => new THREE.Matrix4(), []);
 
     // Cargar catálogo una sola vez
     useEffect(() => {
         loadHipparcos().then(setAllStars);
     }, []);
 
-    // Magnitud límite por escala Bortle (misma fórmula que Stars.tsx)
-    const limitingMag = 5.5 - (bortleScale - 1) * 0.45;
+    // 1. Datos estáticos de todo el catálogo + Octree
+    const [positions, colors, sizes, magnitudes, distFactors, octree] = useMemo(() => {
+        if (allStars.length === 0) return [null, null, null, null, null, null];
+        
+        const count = allStars.length;
+        const pos     = new Float32Array(count * 3);
+        const col     = new Float32Array(count * 3);
+        const sz      = new Float32Array(count);
+        const mags    = new Float32Array(count);
+        const dFac    = new Float32Array(count);
+        
+        const tmpColor = new THREE.Color();
+        const refMag   = -1.5;
 
-    // Filtrar por limitingMag y reconstruir geometría
+        for (let i = 0; i < count; i++) {
+            const s = allStars[i];
+            const p = equatorialTo3D(s.ra, s.dec, RADIUS);
+            pos[i * 3]     = p[0];
+            pos[i * 3 + 1] = p[1];
+            pos[i * 3 + 2] = p[2];
+
+            tmpColor.set(bvToHex(s.bv));
+            col[i * 3]     = tmpColor.r;
+            col[i * 3 + 1] = tmpColor.g;
+            col[i * 3 + 2] = tmpColor.b;
+
+            const brightness = Math.pow(2.512, refMag - s.mag);
+            const normB      = Math.min(1.0, brightness);
+            sz[i]            = 0.5 + Math.pow(normB, 0.45) * 5.5;
+            mags[i]          = s.mag;
+            dFac[i]          = Math.min(1.0, Math.max(0.0, (s.mag + 1.5) / 8.5));
+        }
+
+        const tree = new StarOctree(pos, count);
+        return [pos, col, sz, mags, dFac, tree];
+    }, [allStars]);
+
+    // 2. Buffer para los puntos visibles (Instanced-like behavior manually via drawRange)
     const [geometry, material] = useMemo(() => {
-        if (allStars.length === 0) return [null, null];
-        const filtered = allStars.filter(s => s.mag <= limitingMag);
-        return buildGeometry(filtered);
-    }, [allStars, limitingMag]);
+        const geom = new THREE.BufferGeometry();
+        geom.setAttribute('position',       new THREE.BufferAttribute(new Float32Array(MAX_VISIBLE_STARS * 3), 3));
+        geom.setAttribute('color',          new THREE.BufferAttribute(new Float32Array(MAX_VISIBLE_STARS * 3), 3));
+        geom.setAttribute('size',           new THREE.BufferAttribute(new Float32Array(MAX_VISIBLE_STARS), 1));
+        geom.setAttribute('distanceFactor', new THREE.BufferAttribute(new Float32Array(MAX_VISIBLE_STARS), 1));
+
+        const mat = new THREE.ShaderMaterial({
+            vertexShader,
+            fragmentShader,
+            uniforms: {
+                uTime:      { value: 0 },
+                uNightMode: { value: false },
+            },
+            transparent: true,
+            depthWrite:  false,
+            blending:    THREE.AdditiveBlending
+        });
+
+        return [geom, mat];
+    }, []);
 
     useFrame((state) => {
-        if (!material) return;
-        const mat = material as THREE.ShaderMaterial;
-        // eslint-disable-next-line react-hooks/immutability
-        mat.uniforms.uTime.value      = state.clock.elapsedTime;
-        mat.uniforms.uNightMode.value = nightMode;
+        if (!octree || !pointsRef.current) return;
+
+        // Frustum Culling Manual vía Octree
+        projMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+        projMatrix.multiply(pointsRef.current.matrixWorld);
+        frustum.setFromProjectionMatrix(projMatrix);
+
+        const visibleIndices: number[] = [];
+        octree.search(frustum, visibleIndices);
+
+        const limitingMag = 8.0 - (bortleScale - 1) * 0.55;
+
+        const posAttr = geometry.getAttribute('position') as THREE.BufferAttribute;
+        const colAttr = geometry.getAttribute('color') as THREE.BufferAttribute;
+        const sizAttr = geometry.getAttribute('size') as THREE.BufferAttribute;
+        const distAttr = geometry.getAttribute('distanceFactor') as THREE.BufferAttribute;
+
+        let count = 0;
+        for (let i = 0; i < visibleIndices.length && count < MAX_VISIBLE_STARS; i++) {
+            const idx = visibleIndices[i];
+            if (magnitudes![idx] > limitingMag) continue;
+
+            posAttr.setXYZ(count, positions![idx * 3], positions![idx * 3 + 1], positions![idx * 3 + 2]);
+            colAttr.setXYZ(count, colors![idx * 3], colors![idx * 3 + 1], colors![idx * 3 + 2]);
+            sizAttr.setX(count, sizes![idx]);
+            distAttr.setX(count, distFactors![idx]);
+            count++;
+        }
+
+        geometry.setDrawRange(0, count);
+        posAttr.needsUpdate = true;
+        colAttr.needsUpdate = true;
+        sizAttr.needsUpdate = true;
+        distAttr.needsUpdate = true;
+
+        material.uniforms.uTime.value      = state.clock.elapsedTime;
+        material.uniforms.uNightMode.value = nightMode;
     });
 
     if (!geometry || !material) return null;
@@ -165,7 +202,7 @@ export default function HipparcosStars() {
             ref={pointsRef}
             geometry={geometry}
             material={material}
-            renderOrder={0}  // renderizar antes que las estrellas nombradas (renderOrder=1)
+            renderOrder={0}
         />
     );
 }

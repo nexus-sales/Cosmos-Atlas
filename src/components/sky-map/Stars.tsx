@@ -152,7 +152,7 @@ export default function Stars() {
     const setSelectedObject = useAppStore(s => s.setSelectedObject);
     const { raycaster } = useThree();
 
-    const limitingMag = 5.5 - (bortleScale - 1) * 0.45;
+    const limitingMag = 8.0 - (bortleScale - 1) * 0.55;
 
     // Estado del tooltip hover — una sola instancia para toda la nube de puntos
     const [hovered, setHovered] = useState<{

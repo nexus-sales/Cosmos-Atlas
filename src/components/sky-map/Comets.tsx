@@ -109,8 +109,9 @@ function CometTail({ comet, position }: { comet: typeof COMETS[0]; position: [nu
             timeRef.current = state.clock.elapsedTime;
             (tailRef.current.material as THREE.ShaderMaterial).uniforms.uTime.value = timeRef.current;
             
-            // Rotación suave de la cola
-            tailRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.5) * 0.1;
+            // La cola ya está orientada por el componente padre (CometItem) 
+            // solo añadimos un suave rastro de turbulencia
+            tailRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.5) * 0.15;
         }
     });
 
@@ -177,11 +178,18 @@ function CometItem({ comet }: { comet: CometData }) {
                 <meshBasicMaterial transparent opacity={0} depthWrite={false} />
             </mesh>
 
-            {/* Cometa con cola */}
-            <CometTail 
-                comet={{ ...COMETS.find(c => c.id === comet.id)!, color: comet.color, tailLength: comet.tailAngle }}
-                position={[0, 0, 0]}
-            />
+            {/* Cometa con cola orientada anti-solar */}
+            <group onUpdate={(self) => {
+                // Orientar la cola en dirección opuesta al origen (el Sol está cerca del origen en coord ec)
+                // En una app pro usaríamos la posición real del Sol, aquí simplificamos a vector radial inverso
+                const dir = new THREE.Vector3().copy(new THREE.Vector3(...comet.pos)).normalize();
+                self.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, -1), dir);
+            }}>
+                <CometTail 
+                    comet={{ ...COMETS.find(c => c.id === comet.id)!, color: comet.color, tailLength: comet.tailAngle }}
+                    position={[0, 0, 0]}
+                />
+            </group>
 
             {/* Label en hover */}
             {hovered && (

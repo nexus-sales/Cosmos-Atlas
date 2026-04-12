@@ -6,16 +6,12 @@ import { Stars, MapPin, Play, Square } from 'lucide-react';
 import CelestialSearch from './CelestialSearch';
 import { cn } from '@/lib/utils';
 
-export default function Header() {
-    const time = useAppStore((state) => state.time);
-    const observer = useAppStore((state) => state.observer);
-    const isTourActive = useAppStore((state) => state.isTourActive);
-    const setIsTourActive = useAppStore((state) => state.setIsTourActive);
-    const [mounted, setMounted] = useState(false);
+function Clock() {
+    const [time, setTime] = useState(new Date());
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setMounted(true);
+        const timer = setInterval(() => setTime(new Date()), 1000);
+        return () => clearInterval(timer);
     }, []);
 
     const formatTime = (date: Date) => {
@@ -34,6 +30,23 @@ export default function Header() {
             month: 'long',
         });
     };
+
+    return (
+        <div className="flex flex-col items-end text-right" aria-live="polite" aria-atomic="true" aria-label="Hora actual del observatorio">
+            <div className="text-base md:text-[18px] text-blue-400 tabular-nums leading-none font-bold glow-text">
+                {formatTime(time)}
+            </div>
+            <div className="hidden md:block text-[10px] text-white/30 uppercase mt-1 tracking-wider" aria-hidden="true">
+                {formatDate(time)}
+            </div>
+        </div>
+    );
+}
+
+export default function Header() {
+    const observer = useAppStore((state) => state.observer);
+    const isTourActive = useAppStore((state) => state.isTourActive);
+    const setIsTourActive = useAppStore((state) => state.setIsTourActive);
 
     return (
         <header className="h-14 md:h-16 border-b border-white/10 bg-black/60 backdrop-blur-md flex items-center justify-between px-3 md:px-6 z-20 overflow-hidden shrink-0">
@@ -87,15 +100,7 @@ export default function Header() {
                     </div>
                 </div>
 
-                {/* Time Display */}
-                <div className="flex flex-col items-end text-right" aria-live="polite" aria-atomic="true" aria-label="Hora actual del observatorio">
-                    <div className="text-base md:text-[18px] text-blue-400 tabular-nums leading-none font-bold glow-text">
-                        {mounted ? formatTime(time) : '--:--:--'}
-                    </div>
-                    <div className="hidden md:block text-[10px] text-white/30 uppercase mt-1 tracking-wider" aria-hidden="true">
-                        {mounted ? formatDate(time) : '...'}
-                    </div>
-                </div>
+                <Clock />
             </div>
         </header>
     );

@@ -39,27 +39,42 @@ export default function Home() {
   useEffect(() => {
     if (!isLive) return;
     const timer = setInterval(() => {
-      setTime(new Date());
-    }, 1000);
+      useAppStore.getState().setTime(new Date());
+    }, 60000);
     return () => clearInterval(timer);
-  }, [isLive, setTime]);
+  }, [isLive]);
 
   return (
     <main className={`flex flex-col h-screen w-screen overflow-hidden bg-black font-sans selection:bg-blue-500/30 transition-all duration-700 ${nightMode ? 'night-mode-active' : ''}`}>
 
-      <div className="z-10 flex flex-col h-full w-full">
-        <Header />
+      {/* Observatorio UI Layer - Respetando Safe Area */}
+      <div className="z-10 flex flex-col h-full w-full pointer-events-none">
+        
+        {/* Header con padding superior para Notch */}
+        <div className="pointer-events-auto" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+          <Header />
+        </div>
 
         <div className="flex flex-1 overflow-hidden relative">
-          {/* Canvas — always fills available space */}
-          <div className="flex-1 relative min-w-0">
+          {/* Canvas - Ocupa TODO el espacio de fondo (edge-to-edge) */}
+          <div className="absolute inset-0 z-0 pointer-events-auto">
             <SkyCanvas />
-            <TimeTravelControls />
-            <ViewModeWidget />
           </div>
 
-          {/* Sidebar — on mobile renders as Bottom Sheet with its own backdrop */}
-          <SidePanel />
+          {/* Floating UI Elements */}
+          <div className="flex-1 relative min-w-0 pointer-events-none">
+            <div className="absolute bottom-6 left-6 pointer-events-auto" style={{ paddingBottom: 'env(safe-area-inset-bottom)', paddingLeft: 'env(safe-area-inset-left)' }}>
+              <TimeTravelControls />
+            </div>
+            <div className="absolute bottom-6 right-6 pointer-events-auto hidden md:block" style={{ paddingBottom: 'env(safe-area-inset-bottom)', paddingRight: 'env(safe-area-inset-right)' }}>
+              <ViewModeWidget />
+            </div>
+          </div>
+
+          {/* Sidebar/BottomSheet Layer */}
+          <div className="pointer-events-auto">
+            <SidePanel />
+          </div>
 
           {/* Mobile FAB — opens the Bottom Sheet when it's closed */}
           {!sidebarOpen && (

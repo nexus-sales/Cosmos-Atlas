@@ -85,8 +85,10 @@ function FovZoom({
             cam.updateProjectionMatrix();
             setCamFov(next);
         }
-        // Fricción: decae ~60% en ~10 frames (≈0.17 s a 60 fps)
-        pinchVelocityRef.current *= 0.88;
+        // Fricción dinámica: decaimiento más natural
+        // A mayor velocidad, mayor resistencia inicial (sensación de masa)
+        const friction = Math.abs(vel) > 1.0 ? 0.92 : 0.85;
+        pinchVelocityRef.current *= friction;
     });
 
     useEffect(() => {
