@@ -18,9 +18,22 @@ export default function ObjectInfoTab() {
     const id = selected ? ('id' in selected ? selected.id : selected.name) : '';
     const isFavorite = favorites.includes(id);
 
-    // Auto-visit tracking
+    // Auto-visit tracking & Achievement Check
     useEffect(() => {
-        if (id) markAsVisited(id);
+        if (!id) return;
+        markAsVisited(id);
+
+        // Check for Planet Hunter
+        const planetIds = ['Mercurio', 'Venus', 'Marte', 'Júpiter', 'Saturno', 'Urano', 'Neptuno'];
+        const visitedPlanets = planetIds.filter(p => useAppStore.getState().visited.includes(p));
+        if (visitedPlanets.length === planetIds.length) {
+            useAppStore.getState().updateAchievement('planetHunter', true);
+        }
+
+        // Check for Messier Marathon (DSOs that start with 'M')
+        const messierVisited = useAppStore.getState().visited.filter(v => v.startsWith('M'));
+        useAppStore.getState().updateAchievement('messierMarathon', messierVisited.length);
+
     }, [id, markAsVisited]);
 
     const isTargeted = targetedObject?.name === selected?.name;
