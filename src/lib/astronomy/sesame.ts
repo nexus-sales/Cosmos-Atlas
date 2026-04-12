@@ -35,7 +35,9 @@ export async function resolveObjectName(query: string): Promise<SesameResolution
 
     try {
         // -oIJ means JSON output
-        const url = `https://cdsweb.u-strasbg.fr/cgi-bin/nph-sesame/-oIJ/A?${encodeURIComponent(query)}`;
+        const base = process.env.NEXT_PUBLIC_SESAME_URL
+            ?? 'https://cdsweb.u-strasbg.fr/cgi-bin/nph-sesame/-oIJ/A';
+        const url = `${base}?${encodeURIComponent(query)}`;
         const response = await fetch(url, { signal: controller.signal });
         clearTimeout(timer);
 

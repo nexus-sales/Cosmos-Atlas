@@ -67,11 +67,11 @@ export default function Header() {
                 </div>
 
                 {/* Time Display */}
-                <div className="flex flex-col items-end text-right">
+                <div className="flex flex-col items-end text-right" aria-live="polite" aria-atomic="true" aria-label="Hora actual del observatorio">
                     <div className="text-base md:text-[18px] text-blue-400 tabular-nums leading-none font-bold glow-text">
                         {mounted ? formatTime(time) : '--:--:--'}
                     </div>
-                    <div className="hidden md:block text-[10px] text-white/30 uppercase mt-1 tracking-wider">
+                    <div className="hidden md:block text-[10px] text-white/30 uppercase mt-1 tracking-wider" aria-hidden="true">
                         {mounted ? formatDate(time) : '...'}
                     </div>
                 </div>

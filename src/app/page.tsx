@@ -10,13 +10,30 @@ import { useAppStore } from '@/stores/useAppStore';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { BookOpen } from 'lucide-react';
 
+/** Detecta el tier de rendimiento del dispositivo de forma síncrona */
+function detectQualityTier(): 'high' | 'medium' | 'low' {
+  if (typeof window === 'undefined') return 'high';
+  const memory = (navigator as any).deviceMemory as number | undefined;
+  const cores  = navigator.hardwareConcurrency ?? 4;
+  const isMobile = navigator.maxTouchPoints > 0 && window.innerWidth < 900;
+  if ((memory !== undefined && memory < 2) || (isMobile && cores <= 4)) return 'low';
+  if (isMobile || cores <= 4) return 'medium';
+  return 'high';
+}
+
 export default function Home() {
   const setTime = useAppStore((state) => state.setTime);
   const isLive = useAppStore((state) => state.isLive);
   const sidebarOpen = useAppStore((state) => state.sidebarOpen);
   const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);
   const nightMode = useAppStore((state) => state.settings.nightMode);
+  const setDeviceQuality = useAppStore((state) => state.setDeviceQuality);
   useGeolocation();
+
+  // Detectar tier de GPU/CPU una sola vez al montar
+  useEffect(() => {
+    setDeviceQuality(detectQualityTier());
+  }, [setDeviceQuality]);
 
   useEffect(() => {
     if (!isLive) return;
@@ -40,22 +57,14 @@ export default function Home() {
             <ViewModeWidget />
           </div>
 
-          {/* Mobile backdrop — closes sidebar on tap outside */}
-          {sidebarOpen && (
-            <div
-              className="fixed inset-0 bg-black/60 z-40 md:hidden"
-              onClick={() => setSidebarOpen(false)}
-            />
-          )}
-
-          {/* Sidebar */}
+          {/* Sidebar — on mobile renders as Bottom Sheet with its own backdrop */}
           <SidePanel />
 
-          {/* Mobile FAB — open sidebar button when closed on mobile */}
+          {/* Mobile FAB — opens the Bottom Sheet when it's closed */}
           {!sidebarOpen && (
             <button
               onClick={() => setSidebarOpen(true)}
-              title="Abrir gu\u00eda"
+              title="Abrir guía"
               className="fixed bottom-24 right-4 z-50 md:hidden w-12 h-12 rounded-full flex items-center justify-center shadow-lg border border-blue-500/40 bg-blue-600/70 backdrop-blur-sm text-white hover:bg-blue-500/80 transition-colors"
             >
               <BookOpen className="w-5 h-5" />

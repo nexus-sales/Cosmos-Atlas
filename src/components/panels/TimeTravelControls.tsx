@@ -177,11 +177,12 @@ export default function TimeTravelControls() {
                         </div>
 
                         {/* Preset jumps + play button */}
-                        <div className="flex items-center justify-center gap-1.5 mt-3.5">
+                        <div className="flex items-center justify-center gap-1.5 mt-3.5" role="group" aria-label="Saltos temporales">
                             {PRESET_JUMPS.map((p) => (
                                 <button
                                     key={p.label}
                                     onClick={() => handlePreset(p.days)}
+                                    aria-label={`Retroceder ${p.label.slice(1)}`}
                                     className="text-[9px] font-mono text-white/35 hover:text-blue-400 transition-all px-2 py-1 rounded-lg border border-white/8 hover:border-blue-500/40 hover:bg-blue-500/5"
                                 >
                                     {p.label}
@@ -190,6 +191,7 @@ export default function TimeTravelControls() {
 
                             <button
                                 onClick={togglePlay}
+                                aria-label={playing ? 'Pausar viaje temporal' : 'Reproducir viaje temporal'}
                                 className={cn(
                                     'mx-1 w-9 h-9 rounded-full flex items-center justify-center border transition-all',
                                     playing
@@ -207,6 +209,7 @@ export default function TimeTravelControls() {
                                 <button
                                     key={`fwd-${p.label}`}
                                     onClick={() => handlePreset(-p.days)}
+                                    aria-label={`Avanzar ${p.label.slice(1)}`}
                                     className="text-[9px] font-mono text-white/35 hover:text-blue-400 transition-all px-2 py-1 rounded-lg border border-white/8 hover:border-blue-500/40 hover:bg-blue-500/5"
                                 >
                                     +{p.label.slice(1)}
@@ -216,14 +219,16 @@ export default function TimeTravelControls() {
 
                         {/* Speed selector + Live button */}
                         <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-white/5">
-                            <div className="flex items-center gap-1">
-                                <span className="text-[8px] text-white/20 font-mono tracking-widest uppercase mr-1.5">
+                            <div className="flex items-center gap-1" role="group" aria-label="Velocidad de reproducción">
+                                <span className="text-[8px] text-white/20 font-mono tracking-widest uppercase mr-1.5" aria-hidden="true">
                                     VEL:
                                 </span>
                                 {SPEEDS.map((s, i) => (
                                     <button
                                         key={i}
                                         onClick={() => setSpeedIdx(i)}
+                                        aria-label={`Velocidad ${s.label}`}
+                                        aria-pressed={speedIdx === i}
                                         className={cn(
                                             'text-[8px] font-mono px-1.5 py-0.5 rounded border transition-all',
                                             speedIdx === i
@@ -250,6 +255,8 @@ export default function TimeTravelControls() {
             {/* Toggle pill */}
             <button
                 onClick={() => setExpanded((e) => !e)}
+                aria-expanded={expanded}
+                aria-label={expanded ? 'Cerrar controles de tiempo' : 'Abrir controles de viaje temporal'}
                 className={cn(
                     'flex items-center gap-2.5 px-4 py-2 rounded-full border backdrop-blur-md transition-all shadow-lg',
                     !isLive

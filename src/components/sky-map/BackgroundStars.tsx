@@ -52,8 +52,10 @@ function sinGalLat(x: number, y: number, z: number): number {
     return -0.86766615 * x - 0.19807637 * y + 0.45598379 * z;
 }
 
-const TOTAL = 20000; // Reducido drásticamente para evitar el efecto de "ruido"
 const RADIUS = 96;
+
+/** Número de partículas según tier: HIGH=20k, MEDIUM=12k, LOW=6k */
+const TOTAL_BY_TIER = { high: 20000, medium: 12000, low: 6000 } as const;
 const MAX_VISIBLE_STARS = 10000;
 
 export default function BackgroundStars() {
@@ -61,7 +63,10 @@ export default function BackgroundStars() {
     const nightMode = useAppStore((state) => state.settings.nightMode);
     const bortleScale = useAppStore((state) => state.settings.bortleScale);
     const viewMode = useAppStore((state) => state.viewMode);
+    const deviceQuality = useAppStore((state) => state.deviceQuality);
     const { camera } = useThree();
+
+    const TOTAL = TOTAL_BY_TIER[deviceQuality];
 
     const [allPositions, allColors, allSizes, allMagnitudes, octree] = useMemo(() => {
         const positions = new Float32Array(TOTAL * 3);
@@ -107,7 +112,9 @@ export default function BackgroundStars() {
 
         const tree = new StarOctree(positions, TOTAL);
         return [positions, colors, sizes, magnitudes, tree];
-    }, []);
+    // TOTAL cambia cuando el deviceQuality es detectado — reconstruir geometría una vez
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [TOTAL]);
 
     // Declarar ANTES de useFrame para que el closure no los use "antes de su declaración"
     const frustum = useMemo(() => new THREE.Frustum(), []);

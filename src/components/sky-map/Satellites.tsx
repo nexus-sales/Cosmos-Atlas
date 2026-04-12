@@ -113,7 +113,9 @@ export default function Satellites() {
         setSatelliteInfo({ loadedSpecial: initial.length });
 
         // Intentar actualizar ISS con TLE real de Celestrak (con timeout y retry)
-        fetchWithTimeout('https://celestrak.org/NORAD/elements/gp.php?CATNR=25544&FORMAT=tle')
+        const issUrl = process.env.NEXT_PUBLIC_CELESTRAK_ISS_URL
+            ?? 'https://celestrak.org/NORAD/elements/gp.php?CATNR=25544&FORMAT=tle';
+        fetchWithTimeout(issUrl)
             .then(t => {
                 const lines = t.split('\n').filter(l => l.trim().length > 0);
                 if (lines.length >= 3) {
@@ -160,7 +162,9 @@ export default function Satellites() {
         setSatelliteInfo({ starlinkStatus: 'loading' });
 
         // Fetch Starlink con timeout + retry
-        fetchWithTimeout('https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle')
+        const starlinkUrl = process.env.NEXT_PUBLIC_CELESTRAK_STARLINK_URL
+            ?? 'https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle';
+        fetchWithTimeout(starlinkUrl)
             .then(text => {
                 const lines = text.split('\n').filter(l => l.trim().length > 0);
                 const records = [];

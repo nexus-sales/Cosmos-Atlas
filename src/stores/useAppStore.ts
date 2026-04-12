@@ -58,6 +58,10 @@ interface AppState {
     simbadObjects: Star[];
     addSimbadObject: (obj: Star) => void;
     clearSimbadObjects: () => void;
+    /** Tier de rendimiento detectado al inicio: high/medium/low.
+     *  No persiste — se detecta en cada sesión. */
+    deviceQuality: 'high' | 'medium' | 'low';
+    setDeviceQuality: (q: 'high' | 'medium' | 'low') => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -156,6 +160,8 @@ export const useAppStore = create<AppState>()(
                     : [...state.simbadObjects, obj]
             })),
             clearSimbadObjects: () => set({ simbadObjects: [] }),
+            deviceQuality: 'high',
+            setDeviceQuality: (deviceQuality) => set({ deviceQuality }),
         }),
         {
             name: 'cosmos-atlas-storage',
@@ -164,6 +170,7 @@ export const useAppStore = create<AppState>()(
                 settings: state.settings,
                 observer: state.observer,
                 foundChallenges: state.foundChallenges,
+                // deviceQuality excluido — se detecta en cada sesión
             }),
         }
     )

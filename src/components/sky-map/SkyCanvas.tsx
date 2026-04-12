@@ -58,12 +58,35 @@ function FovZoom({
     const camFov = useAppStore((state) => state.camFov);
     const setCamFov = useAppStore((state) => state.setCamFov);
 
+    // Inercia del pinch: velocidad acumulada que se decae con fricción
+    const pinchVelocityRef = useRef(0);
+    const pinchActiveRef   = useRef(false);
+
     useEffect(() => {
         const cam = camera as THREE.PerspectiveCamera;
         fovRef.current = camFov;
         cam.fov = camFov;
         cam.updateProjectionMatrix();
     }, [camera, camFov]);
+
+    // Aplica la inercia del pinch en cada frame tras levantar los dedos
+    useFrame(() => {
+        const vel = pinchVelocityRef.current;
+        if (pinchActiveRef.current || Math.abs(vel) < 0.02) {
+            pinchVelocityRef.current = 0;
+            return;
+        }
+        const cam = camera as THREE.PerspectiveCamera;
+        const next = THREE.MathUtils.clamp(fovRef.current + vel, 10, 90);
+        if (next !== fovRef.current) {
+            fovRef.current = next;
+            cam.fov = next;
+            cam.updateProjectionMatrix();
+            setCamFov(next);
+        }
+        // Fricción: decae ~60% en ~10 frames (≈0.17 s a 60 fps)
+        pinchVelocityRef.current *= 0.88;
+    });
 
     useEffect(() => {
         const canvas = gl.domElement;
@@ -90,12 +113,15 @@ function FovZoom({
         };
 
         // ── Pinch táctil con pointer events ────────────────────────────────
-        // Mapa pointerId → posición actual
         const ptrs = new Map<number, { x: number; y: number }>();
         let lastDist = 0;
 
         const onPointerDown = (e: PointerEvent) => {
             ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            if (ptrs.size >= 2) {
+                pinchVelocityRef.current = 0; // reiniciar inercia al iniciar nuevo pinch
+                pinchActiveRef.current = true;
+            }
         };
 
         const onPointerMove = (e: PointerEvent) => {
@@ -113,6 +139,10 @@ function FovZoom({
             // Separar dedos (dist crece) → zoom in (FOV baja)
             const delta = (lastDist - dist) * 0.15;
             lastDist = dist;
+
+            // Acumular velocidad (promedio suavizado con el delta actual)
+            pinchVelocityRef.current = pinchVelocityRef.current * 0.6 + delta * 0.4;
+
             if (trackingRef.current) {
                 const current = manualFovRef.current ?? cam.fov;
                 const next = THREE.MathUtils.clamp(current + delta, 10, 90);
@@ -131,7 +161,11 @@ function FovZoom({
 
         const onPointerUp = (e: PointerEvent) => {
             ptrs.delete(e.pointerId);
-            if (ptrs.size < 2) lastDist = 0;
+            if (ptrs.size < 2) {
+                lastDist = 0;
+                pinchActiveRef.current = false;
+                // La velocidad acumulada seguirá aplicándose en useFrame (inercia)
+            }
         };
 
         canvas.addEventListener('wheel', onWheel, { passive: false });
