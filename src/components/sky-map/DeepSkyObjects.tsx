@@ -200,8 +200,8 @@ function DSOItem({ dso }: { dso: DSOData }) {
                 />
             </mesh>
 
-            {/* Label solo en hover o foco (opcional) */}
-            {hovered && (
+            {/* Label progresivo: aparece si estamos cerca (FOV < 35) o si hacemos hover */}
+            {(hovered || (camFov < 35 && dso.mag < 8.5)) && (
                 <Html distanceFactor={15} zIndexRange={[100, 0]}>
                     <div 
                         className="text-[14px] font-mono pointer-events-none whitespace-nowrap bg-black/80 px-3 py-1.5 rounded-lg border-2 -translate-y-7 font-black transition-all"
@@ -211,9 +211,9 @@ function DSOItem({ dso }: { dso: DSOData }) {
                             borderColor: `${displayColor}aa`,
                         }}
                     >
-                        {dso.id}
+                        {dso.name}
                         <div className="text-[11px] opacity-80 mt-1">
-                            {dso.name} · mag {dso.mag.toFixed(1)}
+                            {dso.id} · mag {dso.mag.toFixed(1)}
                         </div>
                     </div>
                 </Html>
