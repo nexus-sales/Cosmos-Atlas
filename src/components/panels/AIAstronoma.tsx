@@ -91,6 +91,9 @@ export default function AIAstronoma() {
             return () => clearTimeout(timer);
         } else {
             setShowBubble(false);
+            // SILENCIO DE SEGURIDAD: Si no hay selección, cortamos el habla
+            synthRef.current?.cancel();
+            setIsSpeaking(false);
         }
     }, [selected, muted, speak, kidsMode]);
 
