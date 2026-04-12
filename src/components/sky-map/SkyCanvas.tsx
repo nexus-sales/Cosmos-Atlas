@@ -25,6 +25,8 @@ import TelescopeEffect from '@/components/sky-map/TelescopeEffect';
 import AtmosphericSky from '@/components/sky-map/AtmosphericSky';
 import CameraNavigator from '@/components/sky-map/CameraNavigator';
 import CameraBackground from '@/components/sky-map/CameraBackground';
+import HipparcosStars from '@/components/sky-map/HipparcosStars';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { useAppStore } from '@/stores/useAppStore';
 import * as THREE from 'three';
 import { getLST } from '@/lib/astronomy/time';
@@ -332,24 +334,27 @@ export default function SkyCanvas() {
 
                     {/* Grupo rotado al sistema horizontal del observador */}
                     <CelestialGroup>
-                        <BackgroundStars />
-                        {showMilkyWay && <MilkyWay />}
-                        <Stars />
-                        <DeepSkyObjects />
-                        <Constellations />
-                        {showConstellations && <ConstellationLabels />}
-                        <Planets />
-                        {showGrid && <CelestialGrid />}
-                        {showEcliptic && <Ecliptic />}
-                        <TargetPointer />
+                        <ErrorBoundary label="BackgroundStars"><BackgroundStars /></ErrorBoundary>
+                        {showMilkyWay && <ErrorBoundary label="MilkyWay"><MilkyWay /></ErrorBoundary>}
+                        {/* Catálogo Hipparcos — 14.984 estrellas hasta mag 7, carga asíncrona */}
+                        <ErrorBoundary label="HipparcosStars"><HipparcosStars /></ErrorBoundary>
+                        {/* Estrellas nombradas (355) con hitboxes e interacción — encima del catálogo */}
+                        <ErrorBoundary label="Stars"><Stars /></ErrorBoundary>
+                        <ErrorBoundary label="DeepSkyObjects"><DeepSkyObjects /></ErrorBoundary>
+                        <ErrorBoundary label="Constellations"><Constellations /></ErrorBoundary>
+                        {showConstellations && <ErrorBoundary label="ConstellationLabels"><ConstellationLabels /></ErrorBoundary>}
+                        <ErrorBoundary label="Planets"><Planets /></ErrorBoundary>
+                        {showGrid && <ErrorBoundary label="CelestialGrid"><CelestialGrid /></ErrorBoundary>}
+                        {showEcliptic && <ErrorBoundary label="Ecliptic"><Ecliptic /></ErrorBoundary>}
+                        <ErrorBoundary label="TargetPointer"><TargetPointer /></ErrorBoundary>
                         {/* Cometas con colas dinámicas (usan coordenadas ecuatoriales) */}
-                        <Comets />
-                        <SimbadOverlay />
+                        <ErrorBoundary label="Comets"><Comets /></ErrorBoundary>
+                        <ErrorBoundary label="SimbadOverlay"><SimbadOverlay /></ErrorBoundary>
                     </CelestialGroup>
 
                     {/* Satélites en espacio mundo horizontal (Alt/Az), NO dentro del CelestialGroup */}
-                    <Satellites />
-                    
+                    <ErrorBoundary label="Satellites"><Satellites /></ErrorBoundary>
+
                     <CameraNavigator
                         controlsRef={controlsRef}
                         trackingRef={trackingRef}
@@ -358,12 +363,10 @@ export default function SkyCanvas() {
                     />
 
                     {/* Horizonte en espacio mundo (plano horizontal fijo) */}
-
-                    <Horizon />
-
+                    <ErrorBoundary label="Horizon"><Horizon /></ErrorBoundary>
 
                     {/* Lluvia de meteoros real */}
-                    <MeteorShower />
+                    <ErrorBoundary label="MeteorShower"><MeteorShower /></ErrorBoundary>
 
                     <SeeingJitter />
                     <TelescopeEffect />

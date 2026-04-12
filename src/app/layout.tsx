@@ -16,8 +16,10 @@ export const viewport: Viewport = {
   themeColor: "#02050a",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // viewport-fit=cover permite usar env(safe-area-inset-*) en CSS,
+  // necesario para que el canvas no quede tapado por el notch/Dynamic Island.
+  // NO bloqueamos el zoom del navegador: es una barrera de accesibilidad (WCAG 1.4.4).
+  viewportFit: "cover",
 };
 
 export const metadata: Metadata = {

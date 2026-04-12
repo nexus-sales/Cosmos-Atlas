@@ -67,9 +67,41 @@ export default function Satellites() {
     const nightColorsRef = useRef<{ r: number; g: number; b: number }[]>([]);
     const colorCache = useRef(new THREE.Color());
 
+    // ── GMST cache: recalcular máximo 1 vez/segundo, no 60 veces/segundo ───
+    const gmstCacheRef = useRef<{ value: number; ts: number }>({ value: 0, ts: 0 });
+
+    function getCachedGmst(time: Date): number {
+        const now = time.getTime();
+        if (now - gmstCacheRef.current.ts > 1000) {
+            gmstCacheRef.current.value = satellite.gstime(time);
+            gmstCacheRef.current.ts = now;
+        }
+        return gmstCacheRef.current.value;
+    }
+
+    // ── Fetch robusto: timeout 8s + 2 reintentos con backoff ────────────────
+    async function fetchWithTimeout(url: string, timeoutMs = 8000, retries = 2): Promise<string> {
+        for (let attempt = 0; attempt <= retries; attempt++) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                const res = await fetch(url, { signal: controller.signal });
+                clearTimeout(timer);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return await res.text();
+            } catch (err) {
+                clearTimeout(timer);
+                if (attempt === retries) throw err;
+                // Backoff exponencial: 1s, 2s
+                await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+            }
+        }
+        throw new Error('fetchWithTimeout: agotados los reintentos');
+    }
+
     // ── 1. Carga de TLEs ────────────────────────────────────────────────────
     useEffect(() => {
-        // ISS y Hubble
+        // ISS y Hubble desde TLEs hardcodeados como fallback inmediato
         const initial = SATELLITES_TLE.map(s => ({
             name: s.name,
             satrec: satellite.twoline2satrec(s.tle1, s.tle2),
@@ -80,9 +112,8 @@ export default function Satellites() {
         setSpecialSats(initial);
         setSatelliteInfo({ loadedSpecial: initial.length });
 
-        // Fetch ISS Real
-        fetch('https://celestrak.org/NORAD/elements/gp.php?CATNR=25544&FORMAT=tle')
-            .then(r => r.text())
+        // Intentar actualizar ISS con TLE real de Celestrak (con timeout y retry)
+        fetchWithTimeout('https://celestrak.org/NORAD/elements/gp.php?CATNR=25544&FORMAT=tle')
             .then(t => {
                 const lines = t.split('\n').filter(l => l.trim().length > 0);
                 if (lines.length >= 3) {
@@ -98,7 +129,9 @@ export default function Satellites() {
                     ]);
                 }
             })
-            .catch(() => { });
+            .catch(() => {
+                // Sin red: los TLEs de fallback ya están cargados, no se hace nada
+            });
     }, [setSatelliteInfo]);
 
     useEffect(() => {
@@ -126,9 +159,8 @@ export default function Satellites() {
         }
         setSatelliteInfo({ starlinkStatus: 'loading' });
 
-        // Fetch Starlink
-        fetch('https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle')
-            .then(r => r.text())
+        // Fetch Starlink con timeout + retry
+        fetchWithTimeout('https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle')
             .then(text => {
                 const lines = text.split('\n').filter(l => l.trim().length > 0);
                 const records = [];
@@ -143,7 +175,7 @@ export default function Satellites() {
                         });
                     }
                 }
-                // Limitar a los primeros 2000 para no destruir CPUs modestas
+                // Limitar a 2000 para no destruir CPUs modestas
                 const capped = records.slice(0, 2000);
                 setStarlinkSats(capped);
                 setSatelliteInfo({ loadedStarlink: capped.length, starlinkStatus: 'ok' });
@@ -193,7 +225,8 @@ export default function Satellites() {
         // Read time/observer/nightMode from store without subscribing to re-renders
         const { time: currentTime, observer: currentObserver, settings } = useAppStore.getState();
         const isNight = settings.nightMode;
-        const gmst = satellite.gstime(currentTime);
+        // GMST cacheado: se recalcula 1 vez/segundo, no 60 veces/segundo
+        const gmst = getCachedGmst(currentTime);
         const observerGd = {
             longitude: satellite.degreesToRadians(currentObserver.lon),
             latitude: satellite.degreesToRadians(currentObserver.lat),

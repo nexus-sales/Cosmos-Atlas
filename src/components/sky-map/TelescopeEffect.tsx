@@ -31,21 +31,24 @@ export default function TelescopeEffect() {
 
     return (
         <EffectComposer enableNormalPass={false}>
+            {/* Bloom calibrado: solo objetos muy brillantes (Sol, Venus, Sirio).
+                threshold alto evita el efecto "filtro Instagram" en estrellas tenues. */}
             <Bloom
-                intensity={1.0}
-                luminanceThreshold={0.3}
+                intensity={0.4}
+                luminanceThreshold={0.7}
                 mipmapBlur
-                radius={0.5}
+                radius={0.3}
             />
             {telescopeMode ? (
                 <>
                     <ChromaticAberration
-                        offset={new THREE.Vector2(0.0005, 0.0005)}
+                        offset={new THREE.Vector2(0.0003, 0.0003)}
                     />
+                    {/* Viñeta reducida: un telescopio real tiene viñetado suave, no al 80% */}
                     <Vignette
                         eskil={false}
-                        offset={0.1}
-                        darkness={0.8}
+                        offset={0.15}
+                        darkness={0.4}
                     />
                 </>
             ) : (

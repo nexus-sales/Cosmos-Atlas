@@ -31,6 +31,12 @@ body {
   background: var(--background);
   color: var(--foreground);
   overflow: hidden;
+  /* Safe-area para dispositivos con notch / Dynamic Island / barra de inicio.
+     env() sólo tiene efecto cuando viewport-fit=cover está activo en el meta. */
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
 }
 
 @layer utilities {

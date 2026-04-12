@@ -276,8 +276,7 @@ function SunMesh({ pos }: { pos: [number, number, number] }) {
 
 function MoonMesh({ planet, phase, opacity }: { planet: { pos: [number, number, number] }, phase: number, opacity: number }) {
     const meshRef = useRef<THREE.Mesh>(null);
-    const time = useAppStore(state => state.time);
-    const observer = useAppStore(state => state.observer);
+    // time y observer se leen en useFrame desde getState() — sin re-renders innecesarios
     const texture = usePlanetTexture('moon');
     
     const uniforms = useMemo(() => ({
@@ -293,13 +292,14 @@ function MoonMesh({ planet, phase, opacity }: { planet: { pos: [number, number, 
         material.uniforms.uOpacity.value = opacity;
 
         try {
-            const obs = new Astronomy.Observer(observer.lat, observer.lon, 0);
-            const sunEq = Astronomy.Equator(Astronomy.Body.Sun, time, obs, true, true);
-            const sunHor = Astronomy.Horizon(time, obs, sunEq.ra, sunEq.dec, 'normal');
-            
+            const { time: t, observer: obs } = useAppStore.getState();
+            const astObs = new Astronomy.Observer(obs.lat, obs.lon, 0);
+            const sunEq = Astronomy.Equator(Astronomy.Body.Sun, t, astObs, true, true);
+            const sunHor = Astronomy.Horizon(t, astObs, sunEq.ra, sunEq.dec, 'normal');
+
             const el = THREE.MathUtils.degToRad(sunHor.altitude);
             const az = THREE.MathUtils.degToRad(sunHor.azimuth);
-            
+
             material.uniforms.uLightDirection.value.set(
                 Math.cos(el) * Math.sin(az),
                 Math.sin(el),
@@ -339,8 +339,7 @@ interface PlanetData {
 function PlanetMesh({ planet }: { planet: PlanetData }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const camFov = useAppStore(state => state.camFov);
-    const time = useAppStore(state => state.time);
-    const observer = useAppStore(state => state.observer);
+    // time y observer se leen en useFrame desde getState() — sin re-renders innecesarios
     const texture = usePlanetTexture(planet.textureKey);
     
     const isGasGiant = ["Júpiter", "Saturno", "Urano", "Neptuno"].includes(planet.name);
@@ -364,15 +363,16 @@ function PlanetMesh({ planet }: { planet: PlanetData }) {
         const material = meshRef.current.material as THREE.ShaderMaterial;
         if (texture) material.uniforms.uMap.value = texture;
         material.uniforms.uOpacity.value = opacity;
-        
+
         try {
-            const obs = new Astronomy.Observer(observer.lat, observer.lon, 0);
-            const sunEq = Astronomy.Equator(Astronomy.Body.Sun, time, obs, true, true);
-            const sunHor = Astronomy.Horizon(time, obs, sunEq.ra, sunEq.dec, 'normal');
-            
+            const { time: t, observer: obs } = useAppStore.getState();
+            const astObs = new Astronomy.Observer(obs.lat, obs.lon, 0);
+            const sunEq = Astronomy.Equator(Astronomy.Body.Sun, t, astObs, true, true);
+            const sunHor = Astronomy.Horizon(t, astObs, sunEq.ra, sunEq.dec, 'normal');
+
             const el = THREE.MathUtils.degToRad(sunHor.altitude);
             const az = THREE.MathUtils.degToRad(sunHor.azimuth);
-            
+
             // Dirección sol -> observador en coordenadas locales
             material.uniforms.uLightDirection.value.set(
                 Math.cos(el) * Math.sin(az),
@@ -450,7 +450,8 @@ function JupiterMoonMesh({ moon }: { moon: MoonData }) {
 }
 
 export default function Planets() {
-    const time = useAppStore(state => state.time);
+    // timeMinute solo cambia 1x/min — evita recalcular VSOP87 cada segundo
+    const time = useAppStore(state => state.timeMinute);
     const observer = useAppStore(state => state.observer);
     const camFov = useAppStore(state => state.camFov);
 
@@ -485,20 +486,35 @@ export default function Planets() {
             sunPos = equatorialTo3D(eq.ra * 15, eq.dec, PLANET_RADIUS) as [number, number, number];
         } catch {}
 
-        // Júpiter Vector para sus lunas
+        // Lunas galileanas de Júpiter — efemérides reales via astronomy-engine
         const jupiter = planets.find(p => p.name === "Júpiter");
         let jMoons: MoonData[] = [];
         if (jupiter) {
-            jMoons = JUPITER_MOON_DATA.map(m => ({
-                id: m.id,
-                name: m.name,
-                color: m.color,
-                pos: [
-                    jupiter.pos[0] + Math.sin(time.getTime() * 0.001 + m.mag) * 2,
-                    jupiter.pos[1] + Math.cos(time.getTime() * 0.002 + m.mag) * 1.5,
-                    jupiter.pos[2] + Math.cos(time.getTime() * 0.001 + m.mag) * 2
-                ] as [number, number, number]
-            }));
+            try {
+                // GalileanMoons devuelve posiciones en UA relativas a Júpiter
+                // en coordenadas ecuatoriales geocéntricas. Escalamos para la escena.
+                const MOON_SCALE = 4.0; // amplificador visual para que sean visibles
+                const gm = Astronomy.JupiterMoons(time);
+                const moonConfigs = [
+                    { id: 'io',       name: 'Io',        color: '#ffffaa', data: gm.io },
+                    { id: 'europa',   name: 'Europa',    color: '#eef1ff', data: gm.europa },
+                    { id: 'ganymede', name: 'Ganímedes', color: '#d1d1d1', data: gm.ganymede },
+                    { id: 'callisto', name: 'Calisto',   color: '#a2a2a2', data: gm.callisto },
+                ];
+                jMoons = moonConfigs.map(m => ({
+                    id: m.id,
+                    name: m.name,
+                    color: m.color,
+                    pos: [
+                        jupiter.pos[0] + m.data.x * MOON_SCALE,
+                        jupiter.pos[1] + m.data.y * MOON_SCALE,
+                        jupiter.pos[2] + m.data.z * MOON_SCALE,
+                    ] as [number, number, number]
+                }));
+            } catch {
+                // Fallback visual si falla astronomy-engine en un tick concreto
+                jMoons = [];
+            }
         }
 
         return { planets, moon, jMoons, sunPos };

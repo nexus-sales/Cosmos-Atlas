@@ -51,6 +51,7 @@ export default function SidePanel() {
     const sidebarOpen = useAppStore((state) => state.sidebarOpen);
     const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);
     const satelliteInfo = useAppStore((state) => state.satelliteInfo);
+    const viewMode = useAppStore((state) => state.viewMode);
 
     const isMobile = useIsMobile();
 
@@ -178,7 +179,7 @@ export default function SidePanel() {
                                         onClick={() => useAppStore.getState().setViewMode('vault')}
                                         className={cn(
                                             "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-bold tracking-widest transition-all cursor-pointer",
-                                            useAppStore((s) => s.viewMode) === 'vault' ? "bg-white/10 text-white shadow-lg" : "text-white/30 hover:text-white/50"
+                                            viewMode === 'vault' ? "bg-white/10 text-white shadow-lg" : "text-white/30 hover:text-white/50"
                                         )}
                                     >
                                         <Layers className="w-3.5 h-3.5" />
@@ -188,7 +189,7 @@ export default function SidePanel() {
                                         onClick={() => useAppStore.getState().setViewMode('camera')}
                                         className={cn(
                                             "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-bold tracking-widest transition-all cursor-pointer",
-                                            useAppStore((s) => s.viewMode) === 'camera' ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "text-white/30 hover:text-white/50"
+                                            viewMode === 'camera' ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "text-white/30 hover:text-white/50"
                                         )}
                                     >
                                         <Camera className="w-3.5 h-3.5" />

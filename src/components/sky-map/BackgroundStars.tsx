@@ -109,7 +109,10 @@ export default function BackgroundStars() {
         return [positions, colors, sizes, magnitudes, tree];
     }, []);
 
-    const materialRef = useRef<THREE.ShaderMaterial | null>(null);
+    // Declarar ANTES de useFrame para que el closure no los use "antes de su declaración"
+    const frustum = useMemo(() => new THREE.Frustum(), []);
+    const projScreenMatrix = useMemo(() => new THREE.Matrix4(), []);
+
     const [geometry, material] = useMemo(() => {
         const geom = new THREE.BufferGeometry();
         geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(MAX_VISIBLE_STARS * 3), 3));
@@ -125,7 +128,6 @@ export default function BackgroundStars() {
             blending: THREE.AdditiveBlending
         });
 
-        materialRef.current = mat;
         return [geom, mat];
     }, []);
 
@@ -166,13 +168,8 @@ export default function BackgroundStars() {
         colAttr.needsUpdate = true;
         sizAttr.needsUpdate = true;
 
-        if (materialRef.current) {
-            materialRef.current.uniforms.uNightMode.value = nightMode;
-        }
+        material.uniforms.uNightMode.value = nightMode;
     });
-
-    const frustum = useMemo(() => new THREE.Frustum(), []);
-    const projScreenMatrix = useMemo(() => new THREE.Matrix4(), []);
 
     return <points ref={pointsRef} geometry={geometry} material={material} renderOrder={0} />;
 }

@@ -7,6 +7,41 @@ Totalmente responsive e instalable como PWA.
 
 ---
 
+## Registro de mejoras (auditoría técnica 2026-04)
+
+### Rendimiento y re-renders
+- **Sistema de tiempo dual** — `timeMinute` en Zustand: los componentes 3D (Planets, Comets, SimbadOverlay, MeteorShower) se re-renderizan 1×/min en lugar de 1×/seg. Los cálculos VSOP87 bajan de 3 600 a 1 por hora.
+- **PlanetMesh / MoonMesh** — eliminadas las suscripciones a `time` y `observer`; se lee `useAppStore.getState()` dentro de `useFrame` sin coste de re-render.
+- **BackgroundStars** — eliminado `materialRef`; acceso directo al material desde el closure.
+- **GMST cacheado** — `Satellites.tsx` recalcula Greenwich Sidereal Time 1×/seg en lugar de 60×/seg.
+
+### Catálogo estelar
+- **Catálogo Hipparcos** — 14 984 estrellas (mag −1,44 → 6,97), 234 KB en binario Float32Array. Generado con `scripts/generate-hipparcos.mjs` desde VizieR CDS. Shader idéntico al de `Stars.tsx` (twinkle, airmass, color espectral B-V).
+- **Stars.tsx reescrito** — eliminados 200+ `StarHitbox` invisibles; raycasting nativo sobre `BufferGeometry Points` con `e.index`. Umbral adaptativo al FOV: `mapLinear(fov, 80°→4.0, 10°→0.8)`.
+- **DSO texture cache** — mapa global `Map<"tipo:color", CanvasTexture>`: máximo ~5 texturas distintas para los 32 DSOs en lugar de 32 canvas separados con `Math.random()`.
+
+### Fiabilidad
+- **Error Boundaries** — `ErrorBoundary.tsx` envuelve cada componente 3D crítico en `SkyCanvas.tsx`. Un crash en `Planets` o `Satellites` ya no provoca pantalla en blanco.
+- **SIMBAD robusto** — `sesame.ts`: AbortController 8 s + cache en `Map` (misma query → 0 peticiones extra). Los errores de red no se cachean (el usuario puede reintentar).
+- **TLE fetch robusto** — `Satellites.tsx`: timeout 8 s + 2 reintentos con backoff exponencial + fallback inmediato a TLEs hardcodeados.
+
+### Calidad del código
+- **Lint reducido de 70 → 54 problemas** (42 → 27 errores reales):
+  - `SidePanel.tsx` — hook `useAppStore` movido fuera de JSX condicional (rules-of-hooks)
+  - `BackgroundStars.tsx` — `useMemo` reordenados antes de `useFrame`; `materialRef` eliminado
+  - `DeepSkyObjects.tsx` — `fallbackRef.current` en render sustituido por llamada al cache global
+  - `MeteorShower.tsx` + `Comets.tsx` — `Math.random()` en `useMemo` reemplazado por LCG sembrado
+- **MeteorShower / CometTail** — `Math.random()` dentro de `useMemo` reemplazado por LCG determinista; resultados reproducibles por minuto.
+
+### Efectos visuales
+- **Bloom calibrado** — `threshold 0.3→0.7`, `intensity 1.0→0.4` (solo estrellas genuinamente brillantes).
+- **Viñeta telescopio** — `darkness 0.8→0.4` (inmersiva sin oscurecer en exceso).
+- **Lunas de Júpiter** — física real con `Astronomy.JupiterMoons()` en lugar de seno/coseno falso.
+- **Giroscopio** — filtro complementario EMA α=0.85 con manejo de wraparound 0/360°.
+- **Viewport iOS** — `viewportFit=cover` + `env(safe-area-inset-*)` en body CSS.
+
+---
+
 - **IA Astrónoma (Voice-Over)** — Asistente virtual con síntesis de voz real (Web Speech API) que narra los secretos de los astros seleccionados. UI glassmorphic con visualización de audio dinámica.
 - **Inmersión Planetaria 3D (V3.0)** — Transición fluida de sprites 2D a modelos 3D detallados mediante **Cinematic Zoom** (FOV dinámico). 
 - **Sol Procedural de Alta Fidelidad** — Shader de superficie solar con efecto de ebullición, cromoesfera y corona pulsante.
@@ -78,9 +113,11 @@ src/
 │   └── page.tsx                 # Página principal + tick de tiempo real + FAB móvil
 │
 ├── components/
+│   ├── ErrorBoundary.tsx        # Error Boundary genérico — envuelve componentes 3D críticos
+│   │
 │   ├── effects/
-│   │   ├── CosmicParticles.tsx  # Partículas de fondo
-│   │   └── Meteors.tsx          # Efecto de meteoros
+│   │   ├── MeteorShower.tsx     # Lluvia de meteoros (partículas GPU, lluvias reales por fecha)
+│   │   └── ...
 │   │
 │   ├── panels/
 │   │   ├── Header.tsx           # Barra superior responsive (hora, ubicación)
@@ -93,40 +130,49 @@ src/
 │   │   └── AIAstronoma.tsx      # Narración por voz del guía estelar
 │   │
 │   └── sky-map/
-│       ├── SkyCanvas.tsx        # Canvas 3D principal + CameraNavigator
+│       ├── SkyCanvas.tsx        # Canvas 3D principal + Error Boundaries por componente
 │       ├── CelestialSphere.tsx  # Esfera base (fondo negro)
 │       ├── CelestialGrid.tsx    # Cuadrícula ecuatorial
-│       ├── Stars.tsx            # Estrellas (Shader Pogson + Twinkle doble frecuencia)
+│       ├── Stars.tsx            # 355 estrellas nombradas — raycasting nativo (sin hitboxes)
+│       ├── HipparcosStars.tsx   # Catálogo Hipparcos: 14 984 estrellas hasta mag 7 (carga async)
+│       ├── BackgroundStars.tsx  # Campo estelar sintético ~20k partículas con Octree
 │       ├── Constellations.tsx   # Líneas de constelaciones (depthTest:false, estilo Sky Map)
 │       ├── ConstellationLabels.tsx # Etiquetas de nombre en la bóveda (glow sutil)
-│       ├── Planets.tsx          # Planetas (Fases reales + Lunas Galileanas + Anillos dinámicos)
-│       ├── DeepSkyObjects.tsx   # DSOs (Tamaño angular real + Texturas únicas)
+│       ├── Planets.tsx          # Planetas con lunas galileanas reales (JupiterMoons)
+│       ├── DeepSkyObjects.tsx   # DSOs con cache global de texturas procedurales
 │       ├── MilkyWay.tsx         # Vía Láctea (Shader FBM + Partículas Gaia)
-│       ├── BackgroundStars.tsx  # Campo estelar de fondo 40k estrellas con Octree
-│       ├── Satellites.tsx       # Seguimiento TLE en Alt/Az real (ISS, Hubble, Starlink)
+│       ├── Satellites.tsx       # Seguimiento TLE (GMST cacheado, fetch con retry+timeout)
 │       ├── Ecliptic.tsx         # Línea de la eclíptica
 │       ├── Horizon.tsx          # Atmósfera, horizonte y puntos cardinales
 │       ├── FOVOverlay.tsx       # Retículo de campo de visión para astrofotografía
 │       └── TargetPointer.tsx    # Crosshair animado sobre el objeto objetivo
 │
 ├── data/
-│   ├── stars.ts                 # Catálogo de 340+ estrellas nombradas (88 constelaciones IAU)
-│   ├── constellations.ts        # Definición de líneas de 85 constelaciones (de las 88 IAU)
-│   └── dsos.ts                  # 42 objetos de cielo profundo
+│   ├── stars.ts                 # 355 estrellas Yale BSC5 nombradas (88 constelaciones IAU)
+│   ├── constellations.ts        # Definición de líneas de 88 constelaciones IAU
+│   └── dsos.ts                  # 32 objetos Messier/NGC de cielo profundo
 │
 ├── hooks/
 │   ├── useGeolocation.ts        # Geolocalización del navegador
-│   └── useCelestialVisibility.ts
+│   └── useDeviceOrientation.ts  # Giroscopio con filtro complementario EMA (α=0.85)
 │
 ├── lib/
 │   ├── utils.ts
 │   └── astronomy/
 │       ├── time.ts              # LST, Julian Date, conversiones de tiempo
 │       ├── transforms.ts        # Precesión, Refracción y Coordenadas 3D
+│       ├── hipparcos.ts         # Loader async /hipparcos.bin + conversión B-V→color
+│       ├── sesame.ts            # Resolver SIMBAD/NED (cache + timeout 8 s)
 │       └── Octree.ts            # Implementación de Octree para culling estelar
 │
+├── public/
+│   └── hipparcos.bin            # 14 984 estrellas Hipparcos, 234 KB (Float32Array binario)
+│
+├── scripts/
+│   └── generate-hipparcos.mjs   # Descarga VizieR CDS y genera hipparcos.bin
+│
 ├── stores/
-│   └── useAppStore.ts           # Estado global Zustand (time, isLive, observer, settings...)
+│   └── useAppStore.ts           # Estado Zustand: time (1×/seg) + timeMinute (1×/min)
 │
 └── types/
     └── celestial.ts             # Tipos: Star, DSO, Planet, Observer, etc.

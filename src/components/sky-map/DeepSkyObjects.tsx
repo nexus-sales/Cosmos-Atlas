@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect, useRef } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { DSOS } from '@/data/dsos';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
@@ -10,6 +10,11 @@ import { DSOType, DSO } from '@/types/celestial';
 import { getDSOImage, preloadDSOImage } from '@/data/dsoImages';
 import NebulaVolume from '@/components/sky-map/NebulaVolume';
 
+// Cache global: clave = "tipo:color". Las texturas procedurales son idénticas para
+// el mismo tipo+color, así que no tiene sentido crearlas N veces con Math.random().
+// Se reutiliza la misma CanvasTexture en todos los DSOs del mismo tipo.
+const _dsoTextureCache = new Map<string, THREE.CanvasTexture>();
+
 function hexToRgb(hex: string): [number, number, number] {
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
@@ -18,6 +23,10 @@ function hexToRgb(hex: string): [number, number, number] {
 }
 
 function createDSOTexture(type: DSOType, color: string): THREE.CanvasTexture {
+    const cacheKey = `${type}:${color}`;
+    const cached = _dsoTextureCache.get(cacheKey);
+    if (cached) return cached;
+
     const size = 256; // Increased resolution for better noise
     const canvas = document.createElement('canvas');
     canvas.width = canvas.height = size;
@@ -95,6 +104,7 @@ function createDSOTexture(type: DSOType, color: string): THREE.CanvasTexture {
 
     const tex = new THREE.CanvasTexture(canvas);
     tex.needsUpdate = true;
+    _dsoTextureCache.set(cacheKey, tex);
     return tex;
 }
 
@@ -102,55 +112,40 @@ function createDSOTexture(type: DSOType, color: string): THREE.CanvasTexture {
  * Carga textura de imagen real o fallback procedimental
  */
 function useDSOTexture(dso: DSO): THREE.Texture {
-    const [texture, setTexture] = useState<THREE.CanvasTexture | THREE.Texture | null>(null);
-    const fallbackRef = useRef<THREE.CanvasTexture | null>(null);
+    // La textura procedural viene del caché global — sin refs ni allocaciones extra
+    const [texture, setTexture] = useState<THREE.Texture | null>(null);
 
     useEffect(() => {
-        // Crear fallback procedimental
-        fallbackRef.current = createDSOTexture(dso.type, dso.color);
-
-        // Intentar cargar imagen real
         const dsoImage = getDSOImage(dso.id);
-        if (!dsoImage) {
-            setTexture(fallbackRef.current);
-            return;
-        }
+        if (!dsoImage) return; // El fallback del cache se devuelve al renderizar
 
         preloadDSOImage(dso.id).then((img) => {
-            if (img) {
-                const canvas = document.createElement('canvas');
-                canvas.width = canvas.height = 512;
-                const ctx = canvas.getContext('2d')!;
+            if (!img) return;
 
-                // Dibujar imagen centrada
-                ctx.fillStyle = '#000';
-                ctx.fillRect(0, 0, 512, 512);
+            const canvas = document.createElement('canvas');
+            canvas.width = canvas.height = 512;
+            const ctx = canvas.getContext('2d')!;
 
-                // Escalar y centrar imagen
-                const scale = Math.min(512 / img.width, 512 / img.height) * 0.9;
-                const w = img.width * scale;
-                const h = img.height * scale;
-                const x = (512 - w) / 2;
-                const y = (512 - h) / 2;
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, 512, 512);
 
-                ctx.drawImage(img, x, y, w, h);
+            const scale = Math.min(512 / img.width, 512 / img.height) * 0.9;
+            const w = img.width * scale;
+            const h = img.height * scale;
+            ctx.drawImage(img, (512 - w) / 2, (512 - h) / 2, w, h);
 
-                const tex = new THREE.CanvasTexture(canvas);
-                tex.needsUpdate = true;
-                setTexture(tex);
-            } else {
-                setTexture(fallbackRef.current);
-            }
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.needsUpdate = true;
+            setTexture(tex);
         });
 
         return () => {
-            if (texture && texture !== fallbackRef.current) {
-                texture.dispose();
-            }
+            setTexture(prev => { prev?.dispose(); return null; });
         };
     }, [dso.id, dso.type, dso.color]);
 
-    return texture || fallbackRef.current || createDSOTexture(dso.type, dso.color);
+    // Fallback: textura procedural del caché global (O(1), sin new canvas)
+    return texture ?? createDSOTexture(dso.type, dso.color);
 }
 
 // ── Componente individual de DSO con hover ─────────────────────────────────────

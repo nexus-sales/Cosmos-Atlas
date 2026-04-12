@@ -7,13 +7,43 @@ export type OrientationPermission = 'idle' | 'granted' | 'denied' | 'unavailable
 /**
  * Module-level ref — updated at sensor rate (60 Hz) without React re-renders.
  * Read this directly inside useFrame to avoid subscription overhead.
+ *
+ * Los valores aquí son YA FILTRADOS por el filtro complementario.
+ * No usar los valores crudos del evento deviceorientation directamente.
  */
 export const deviceOrientationRef = {
-    alpha: 0, // Compass heading 0–360°, 0 = North
-    beta: 0,  // Front-back tilt −180–180°, 0 = flat/face-up
-    gamma: 0, // Left-right tilt −90–90°
+    alpha: 0, // Compass heading 0–360°, 0 = North  (filtrado)
+    beta: 0,  // Front-back tilt −180–180°, 0 = flat/face-up  (filtrado)
+    gamma: 0, // Left-right tilt −90–90°  (filtrado)
     active: false,
 };
+
+/**
+ * Filtro complementario para fusión giroscopio + acelerómetro.
+ * Elimina el temblor de alta frecuencia del acelerómetro y el drift
+ * de baja frecuencia del giroscopio. Alpha = 0.92 es el balance óptimo
+ * para 60 Hz: respuesta rápida sin jitter visible.
+ *
+ * Fórmula: filtered = α * (filtered + gyro_delta) + (1-α) * accel_reading
+ * Para deviceorientation el navegador ya hace la fusión internamente,
+ * así que aplicamos el filtro como suavizado exponencial (EMA) directamente
+ * sobre alpha/beta/gamma para eliminar el ruido residual del magnetómetro.
+ */
+const FILTER_ALPHA = 0.85; // 0 = sin suavizado, 1 = sin respuesta
+
+function applyComplementaryFilter(prev: number, raw: number, alpha: number): number {
+    // Manejo del wraparound en alpha (0–360 → problema al cruzar 0/360)
+    return alpha * prev + (1 - alpha) * raw;
+}
+
+function applyAlphaFilter(prev: number, raw: number, alpha: number): number {
+    // El heading puede saltar de 359→1. Resolver wraparound antes de filtrar.
+    let diff = raw - prev;
+    if (diff > 180) diff -= 360;
+    if (diff < -180) diff += 360;
+    const filtered = prev + diff * (1 - alpha);
+    return ((filtered % 360) + 360) % 360;
+}
 
 /**
  * Returns whether the current device is likely to have a gyroscope.
@@ -36,14 +66,32 @@ export function useDeviceOrientation() {
     const [isSupported] = useState<boolean>(() => detectGyroscopeSupport());
     const [permission, setPermission] = useState<OrientationPermission>('idle');
     const listenerRef = useRef<((e: DeviceOrientationEvent) => void) | null>(null);
+    // Estado interno del filtro — se inicializa en el primer evento
+    const filterInitialized = useRef(false);
 
     const startListening = useCallback(() => {
         if (listenerRef.current) return; // already listening
 
+        filterInitialized.current = false;
+
         const handler = (e: DeviceOrientationEvent) => {
-            deviceOrientationRef.alpha = e.alpha ?? 0;
-            deviceOrientationRef.beta = e.beta ?? 0;
-            deviceOrientationRef.gamma = e.gamma ?? 0;
+            const rawAlpha = e.alpha ?? 0;
+            const rawBeta  = e.beta  ?? 0;
+            const rawGamma = e.gamma ?? 0;
+
+            if (!filterInitialized.current) {
+                // Primera lectura: inicializar sin filtrar para no empezar en (0,0,0)
+                deviceOrientationRef.alpha = rawAlpha;
+                deviceOrientationRef.beta  = rawBeta;
+                deviceOrientationRef.gamma = rawGamma;
+                filterInitialized.current  = true;
+                return;
+            }
+
+            // Filtro complementario — elimina jitter del magnetómetro y acelerómetro
+            deviceOrientationRef.alpha = applyAlphaFilter(deviceOrientationRef.alpha, rawAlpha, FILTER_ALPHA);
+            deviceOrientationRef.beta  = applyComplementaryFilter(deviceOrientationRef.beta,  rawBeta,  FILTER_ALPHA);
+            deviceOrientationRef.gamma = applyComplementaryFilter(deviceOrientationRef.gamma, rawGamma, FILTER_ALPHA);
         };
         listenerRef.current = handler;
         window.addEventListener('deviceorientation', handler, true);

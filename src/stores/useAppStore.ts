@@ -10,6 +10,9 @@ interface AppState {
     targetedObject: Star | DSO | Planet | null;
     setTargetedObject: (obj: Star | DSO | Planet | null) => void;
     time: Date;
+    /** Igual que `time` pero solo cambia cuando cambia el MINUTO.
+     *  Usar en componentes 3D (Planets, Comets...) para evitar re-renders cada segundo. */
+    timeMinute: Date;
     setTime: (date: Date) => void;
     isLive: boolean;
     setIsLive: (v: boolean) => void;
@@ -67,7 +70,13 @@ export const useAppStore = create<AppState>()(
             targetedObject: null,
             setTargetedObject: (obj) => set({ targetedObject: obj }),
             time: new Date(),
-            setTime: (time) => set({ time }),
+            timeMinute: new Date(),
+            setTime: (time) => set((state) => {
+                const prevMin = Math.floor(state.time.getTime() / 60000);
+                const newMin  = Math.floor(time.getTime() / 60000);
+                const timeMinute = prevMin === newMin ? state.timeMinute : new Date(newMin * 60000);
+                return { time, timeMinute };
+            }),
             isLive: true,
             setIsLive: (isLive) => set({ isLive }),
             viewMode: 'vault',

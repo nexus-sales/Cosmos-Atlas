@@ -41,6 +41,12 @@ const cometFragmentShader = `
     }
 `;
 
+/** LCG determinista — evita Math.random en useMemo (react-hooks/purity) */
+function makeLCG(seed: number) {
+    let s = seed >>> 0;
+    return () => { s = (Math.imul(1664525, s) + 1013904223) >>> 0; return s / 0x100000000; };
+}
+
 function CometTail({ comet, position }: { comet: typeof COMETS[0]; position: [number, number, number] }) {
     const tailRef = useRef<THREE.Points>(null);
     const timeRef = useRef(0);
@@ -51,14 +57,16 @@ function CometTail({ comet, position }: { comet: typeof COMETS[0]; position: [nu
         const colors = new Float32Array(particleCount * 3);
 
         const tailColor = new THREE.Color(comet.color);
+        // Semilla basada en el color del cometa — reproducible y determinista
+        const rng = makeLCG(tailColor.r * 0xffff ^ tailColor.b * 0xabcd);
 
         for (let i = 0; i < particleCount; i++) {
             const t = i / particleCount;
-            
+
             // Cola cónica que se ensancha
             const spread = t * 2.5;
-            const x = (Math.random() - 0.5) * spread;
-            const y = (Math.random() - 0.5) * spread;
+            const x = (rng() - 0.5) * spread;
+            const y = (rng() - 0.5) * spread;
             const z = -t * comet.tailLength * 0.5; // Cola hacia atrás
 
             positions[i * 3] = x;
@@ -196,7 +204,8 @@ function CometItem({ comet }: { comet: CometData }) {
 
 export default function Comets() {
     const COMET_RADIUS = 92;
-    const time = useAppStore((state) => state.time);
+    // timeMinute solo cambia 1x/min — posiciones de cometas no requieren precisión de segundo
+    const time = useAppStore((state) => state.timeMinute);
 
     const cometData = useMemo(() => {
         return COMETS

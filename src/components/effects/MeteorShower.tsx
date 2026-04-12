@@ -57,12 +57,19 @@ const meteorFragmentShader = `
 const METEOR_COUNT = 100;
 const RADIUS = 95;
 
+/** LCG determinista — igual que BackgroundStars, evita Math.random en useMemo */
+function makeLCG(seed: number) {
+    let s = seed >>> 0;
+    return () => { s = (Math.imul(1664525, s) + 1013904223) >>> 0; return s / 0x100000000; };
+}
+
 export default function MeteorShower() {
     const pointsRef = useRef<THREE.Points>(null);
     const timeRef = useRef(0);
     const [isMounted, setIsMounted] = useState(false);
 
-    const time = useAppStore((state) => state.time);
+    // timeMinute solo cambia 1x/min — las lluvias de meteoros activas cambian como máximo 1x/día
+    const time = useAppStore((state) => state.timeMinute);
     const nightMode = useAppStore((state) => state.settings.nightMode);
 
     const activeShowersRef = useRef<MeteorShower[]>([]);
@@ -85,26 +92,28 @@ export default function MeteorShower() {
         const bolides = new Array(METEOR_COUNT);
 
         const activeShowers = isMounted ? getActiveShowers(new Date(time)) : METEOR_SHOWERS;
+        // Semilla derivada del minuto — reproducible para este tick de tiempo
+        const rng = makeLCG(Math.floor(time.getTime() / 60000) ^ 0xdeadbeef);
 
         for (let i = 0; i < METEOR_COUNT; i++) {
             // Asignar a una lluvia activa (o aleatoria si no hay activas)
             const shower = activeShowers.length > 0
-                ? activeShowers[Math.floor(Math.random() * activeShowers.length)]
-                : METEOR_SHOWERS[Math.floor(Math.random() * METEOR_SHOWERS.length)];
+                ? activeShowers[Math.floor(rng() * activeShowers.length)]
+                : METEOR_SHOWERS[Math.floor(rng() * METEOR_SHOWERS.length)];
 
             ids[i] = shower.id;
 
             // Posición inicial aleatoria en la bóveda
-            const theta = Math.random() * Math.PI * 2;
-            const phi = Math.acos(2 * Math.random() - 1);
+            const theta = rng() * Math.PI * 2;
+            const phi = Math.acos(2 * rng() - 1);
             pos[i * 3] = RADIUS * Math.sin(phi) * Math.cos(theta);
             pos[i * 3 + 1] = RADIUS * Math.sin(phi) * Math.sin(theta);
             pos[i * 3 + 2] = RADIUS * Math.cos(phi);
 
             // Velocidad hacia el radiante (simplificado: hacia abajo)
-            vel[i * 3] = (Math.random() - 0.5) * 0.5;
-            vel[i * 3 + 1] = -0.3 - Math.random() * 0.5;
-            vel[i * 3 + 2] = (Math.random() - 0.5) * 0.5;
+            vel[i * 3] = (rng() - 0.5) * 0.5;
+            vel[i * 3 + 1] = -0.3 - rng() * 0.5;
+            vel[i * 3 + 2] = (rng() - 0.5) * 0.5;
 
             // Color según la lluvia
             const color = new THREE.Color(shower.color);
@@ -112,17 +121,12 @@ export default function MeteorShower() {
             col[i * 3 + 1] = color.g;
             col[i * 3 + 2] = color.b;
 
-            // Tamaño y brillo
-            // 5% de probabilidad de bólido (meteoro muy brillante)
-            const isBolide = Math.random() < 0.05;
+            // Tamaño y brillo — 5% de probabilidad de bólido
+            const isBolide = rng() < 0.05;
             bolides[i] = isBolide;
-            siz[i] = isBolide ? 8 + Math.random() * 4 : 2 + Math.random() * 3;
+            siz[i] = isBolide ? 8 + rng() * 4 : 2 + rng() * 3;
 
-            // Alpha inicial
             alp[i] = 0;
-
-            // Vida del meteoro
-            // Se inicializa en negativo para que aparezcan gradualmente
         }
 
         return [pos, col, siz, alp, vel, ids, bolides];
@@ -138,7 +142,7 @@ export default function MeteorShower() {
 
         timeRef.current += delta;
 
-        const now = new Date(time);
+        const now = new Date(useAppStore.getState().time);
         const nowMs = now.getTime();
         const dayKey = now.getDate();
 
