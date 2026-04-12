@@ -21,7 +21,16 @@ export default function AIAstronoma() {
 
     useEffect(() => {
         synthRef.current = window.speechSynthesis;
-        return () => synthRef.current?.cancel();
+        const loadVoices = () => {
+            if (synthRef.current) synthRef.current.getVoices();
+        };
+        loadVoices();
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+          window.speechSynthesis.onvoiceschanged = loadVoices;
+        }
+        return () => {
+            synthRef.current?.cancel();
+        };
     }, []);
 
     const speak = useCallback((text: string) => {
@@ -29,14 +38,26 @@ export default function AIAstronoma() {
         
         synthRef.current.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
+        
+        // Buscar la mejor voz disponible en español
+        const voices = synthRef.current.getVoices();
+        const spanishVoice = voices.find(v => v.lang.startsWith('es') && v.name.includes('Google')) 
+                          || voices.find(v => v.lang.startsWith('es') && v.name.includes('Helena'))
+                          || voices.find(v => v.lang.startsWith('es'));
+        
+        if (spanishVoice) utterance.voice = spanishVoice;
+        
         utterance.lang = 'es-ES';
-        utterance.pitch = 1.1;
-        utterance.rate = 0.95;
+        
+        // Ajustes para que no dé miedo:
+        // - Modo Kids: Tono más alto (1.4) y ritmo más alegre (1.0)
+        // - Modo Normal: Tono cálido (1.1) y ritmo pausado (0.9)
+        utterance.pitch = kidsMode ? 1.3 : 1.15;
+        utterance.rate = kidsMode ? 1.05 : 0.95;
 
         utterance.onstart = () => setIsSpeaking(true);
         utterance.onend = () => {
             setIsSpeaking(false);
-            // Increment mythology buff if it was a significant length text
             if (text.length > 50) {
                 updateAchievement('mythologyBuff', mythologyBuff + 1);
             }
@@ -44,7 +65,7 @@ export default function AIAstronoma() {
         utterance.onerror = () => setIsSpeaking(false);
 
         synthRef.current.speak(utterance);
-    }, [muted, mythologyBuff, updateAchievement]);
+    }, [muted, mythologyBuff, updateAchievement, kidsMode]);
 
     // Reaccionar a cambios de selección
     useEffect(() => {
