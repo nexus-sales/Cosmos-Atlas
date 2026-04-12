@@ -81,7 +81,7 @@ export default function Home() {
             <button
               onClick={() => setSidebarOpen(true)}
               title="Abrir guía"
-              className="fixed bottom-24 right-4 z-50 md:hidden w-12 h-12 rounded-full flex items-center justify-center shadow-lg border border-blue-500/40 bg-blue-600/70 backdrop-blur-sm text-white hover:bg-blue-500/80 transition-colors"
+              className="pointer-events-auto fixed bottom-24 right-4 z-50 md:hidden w-12 h-12 rounded-full flex items-center justify-center shadow-lg border border-blue-500/40 bg-blue-600/70 backdrop-blur-sm text-white hover:bg-blue-500/80 transition-colors"
             >
               <BookOpen className="w-5 h-5" />
             </button>
