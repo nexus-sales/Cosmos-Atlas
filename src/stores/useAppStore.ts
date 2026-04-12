@@ -62,6 +62,11 @@ interface AppState {
      *  No persiste — se detecta en cada sesión. */
     deviceQuality: 'high' | 'medium' | 'low';
     setDeviceQuality: (q: 'high' | 'medium' | 'low') => void;
+    /** true si el usuario ya completó (o saltó) el onboarding */
+    hasSeenOnboarding: boolean;
+    setHasSeenOnboarding: (v: boolean) => void;
+    isTourActive: boolean;
+    setIsTourActive: (v: boolean) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -162,6 +167,10 @@ export const useAppStore = create<AppState>()(
             clearSimbadObjects: () => set({ simbadObjects: [] }),
             deviceQuality: 'high',
             setDeviceQuality: (deviceQuality) => set({ deviceQuality }),
+            hasSeenOnboarding: false,
+            setHasSeenOnboarding: (hasSeenOnboarding) => set({ hasSeenOnboarding }),
+            isTourActive: false,
+            setIsTourActive: (isTourActive) => set({ isTourActive }),
         }),
         {
             name: 'cosmos-atlas-storage',
@@ -170,6 +179,7 @@ export const useAppStore = create<AppState>()(
                 settings: state.settings,
                 observer: state.observer,
                 foundChallenges: state.foundChallenges,
+                hasSeenOnboarding: state.hasSeenOnboarding,
                 // deviceQuality excluido — se detecta en cada sesión
             }),
         }

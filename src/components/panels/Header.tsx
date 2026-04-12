@@ -2,12 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
-import { Stars, MapPin } from 'lucide-react';
+import { Stars, MapPin, Play, Square } from 'lucide-react';
 import CelestialSearch from './CelestialSearch';
+import { cn } from '@/lib/utils';
 
 export default function Header() {
     const time = useAppStore((state) => state.time);
     const observer = useAppStore((state) => state.observer);
+    const isTourActive = useAppStore((state) => state.isTourActive);
+    const setIsTourActive = useAppStore((state) => state.setIsTourActive);
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -53,8 +56,25 @@ export default function Header() {
                 <CelestialSearch />
             </div>
 
-            {/* Right Group: Location & Time */}
-            <div className="flex items-center gap-4 md:gap-8 font-mono">
+            {/* Right Group: Tour button + Location & Time */}
+            <div className="flex items-center gap-3 md:gap-6 font-mono">
+
+                {/* Cinematic Tour toggle */}
+                <button
+                    onClick={() => setIsTourActive(!isTourActive)}
+                    aria-label={isTourActive ? 'Detener tour del cielo' : 'Iniciar tour cinematográfico del cielo'}
+                    aria-pressed={isTourActive}
+                    title={isTourActive ? 'Detener tour' : 'Tour del cielo'}
+                    className={cn(
+                        'hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[10px] font-bold tracking-widest uppercase transition-all cursor-pointer',
+                        isTourActive
+                            ? 'bg-blue-500/20 border-blue-500/40 text-blue-400 shadow-[0_0_16px_rgba(59,130,246,0.2)]'
+                            : 'border-white/10 text-white/25 hover:text-white/60 hover:border-white/20'
+                    )}
+                >
+                    {isTourActive ? <Square className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                    {isTourActive ? 'Stop' : 'Tour'}
+                </button>
                 {/* Location Overlay */}
                 <div className="hidden lg:flex flex-col items-end text-right">
                     <div className="flex items-center gap-2 text-[10px] text-white/40 tracking-[0.2em] uppercase mb-0.5">

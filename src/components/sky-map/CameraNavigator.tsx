@@ -30,6 +30,21 @@ export default function CameraNavigator({
     const targetFov = useRef(60);
     const targetCamPosRef = useRef<THREE.Vector3 | null>(null);
 
+    // Bézier arc state
+    const bezierP0 = useRef(new THREE.Vector3()); // start direction (unit)
+    const bezierP1 = useRef(new THREE.Vector3()); // end direction (unit)
+    const bezierPc = useRef(new THREE.Vector3()); // control point (lifted midpoint)
+    const bezierT  = useRef(0);                   // progress [0, 1]
+    const bezierDur = useRef(3.5);                // flight duration in seconds
+
+    /** Quadratic Bézier between unit vectors using slerp pairs */
+    function bezierSlerp(t: number): THREE.Vector3 {
+        const eased = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; // ease-in-out
+        const q0 = new THREE.Vector3().copy(bezierP0.current).lerp(bezierPc.current, eased).normalize();
+        const q1 = new THREE.Vector3().copy(bezierPc.current).lerp(bezierP1.current, eased).normalize();
+        return q0.lerp(q1, eased).normalize();
+    }
+
     useFrame((_, delta) => {
         if (!followTarget) {
             trackingRef.current = false;
@@ -52,7 +67,19 @@ export default function CameraNavigator({
             const [ex, ey, ez] = equatorialTo3D(targetedObject.ra, targetedObject.dec, 1);
             const targetWorldDir = new THREE.Vector3(ex, ey, ez).applyMatrix4(rotMatrix).normalize();
             targetCamPosRef.current = targetWorldDir.clone().negate().multiplyScalar(0.01);
-            
+
+            // Setup Bézier arc
+            bezierP0.current.copy(camera.position).normalize();
+            bezierP1.current.copy(targetWorldDir).negate();
+            // Control point: midpoint lifted toward zenith (+Y)
+            const mid = bezierP0.current.clone().add(bezierP1.current).normalize();
+            const lift = new THREE.Vector3(0, 1, 0).multiplyScalar(0.4);
+            bezierPc.current.copy(mid).add(lift).normalize();
+            bezierT.current = 0;
+            // Shorter flight if already close
+            const dot = bezierP0.current.dot(bezierP1.current.clone().negate());
+            bezierDur.current = THREE.MathUtils.clamp(2.0 + Math.acos(Math.max(-1, Math.min(1, dot))) * 0.8, 1.5, 4.0);
+
             const isPlanet = 'kind' in targetedObject && targetedObject.kind === 'planet';
             const isDSO = 'type' in (targetedObject as any);
             targetFov.current = (isPlanet || isDSO) ? 22 : 60;
@@ -67,10 +94,6 @@ export default function CameraNavigator({
 
         if (!targetedObject || !targetCamPosRef.current) return;
 
-        const targetCamPos = targetCamPosRef.current;
-        const currentPos = camera.position.clone();
-        const dot = currentPos.normalize().dot(targetCamPos.clone().normalize());
-
         // FOV Transition
         const cam = camera as THREE.PerspectiveCamera;
         let desiredFov = targetFov.current;
@@ -79,25 +102,37 @@ export default function CameraNavigator({
             manualFovHoldRef.current = Math.max(0, manualFovHoldRef.current - delta);
             if (manualFovHoldRef.current === 0) manualFovRef.current = null;
         }
-
         if (Math.abs(cam.fov - desiredFov) > 0.1) {
             cam.fov = THREE.MathUtils.lerp(cam.fov, desiredFov, 0.05);
             cam.updateProjectionMatrix();
             setCamFov(cam.fov);
         }
 
-        // Flight & Tracking logic
-        const speed = isFlying.current 
-            ? THREE.MathUtils.clamp(0.06 + (1 - dot) * 0.08, 0.05, 0.15)
-            : 1.0; 
+        // Bézier arc flight or tracking snap
+        if (isFlying.current) {
+            bezierT.current = Math.min(1, bezierT.current + delta / bezierDur.current);
+            const arcDir = bezierSlerp(bezierT.current);
+            camera.position.copy(arcDir).multiplyScalar(0.01);
+            if (bezierT.current >= 1) isFlying.current = false;
+        } else {
+            // Settled tracking: snap tightly to keep up with sky rotation
+            camera.position.copy(targetCamPosRef.current);
+            // Refresh target pos to follow sky rotation
+            const { time, observer } = useAppStore.getState();
+            const lst = getLST(time, observer.lon);
+            const euler = new THREE.Euler(
+                THREE.MathUtils.degToRad(90 - observer.lat),
+                THREE.MathUtils.degToRad(-lst), 0, 'XYZ',
+            );
+            const rotMatrix = new THREE.Matrix4().makeRotationFromEuler(euler);
+            const [ex, ey, ez] = equatorialTo3D(targetedObject.ra, targetedObject.dec, 1);
+            const dir = new THREE.Vector3(ex, ey, ez).applyMatrix4(rotMatrix).normalize();
+            targetCamPosRef.current = dir.clone().negate().multiplyScalar(0.01);
+        }
 
-        const newPos = camera.position.clone().lerp(targetCamPos, speed).normalize().multiplyScalar(0.01);
-        camera.position.copy(newPos);
         camera.lookAt(0, 0, 0);
 
-        if (dot > 0.9999) isFlying.current = false;
-
-        // CRITICAL FIX: Sincronizar OrbitControls MIENTRAS volamos o trackeamos
+        // Sync OrbitControls
         if (controlsRef?.current) {
             controlsRef.current.update();
         }

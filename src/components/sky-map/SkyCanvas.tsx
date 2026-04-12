@@ -26,6 +26,7 @@ import AtmosphericSky from '@/components/sky-map/AtmosphericSky';
 import CameraNavigator from '@/components/sky-map/CameraNavigator';
 import CameraBackground from '@/components/sky-map/CameraBackground';
 import HipparcosStars from '@/components/sky-map/HipparcosStars';
+import CinematicTour from '@/components/sky-map/CinematicTour';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { useAppStore } from '@/stores/useAppStore';
 import * as THREE from 'three';
@@ -402,6 +403,7 @@ export default function SkyCanvas() {
                     {/* Lluvia de meteoros real */}
                     <ErrorBoundary label="MeteorShower"><MeteorShower /></ErrorBoundary>
 
+                    <CinematicTour />
                     <SeeingJitter />
                     <TelescopeEffect />
 

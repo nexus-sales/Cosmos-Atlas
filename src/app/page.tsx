@@ -5,6 +5,7 @@ import Header from '@/components/panels/Header';
 import SidePanel from '@/components/panels/SidePanel';
 import TimeTravelControls from '@/components/panels/TimeTravelControls';
 import ViewModeWidget from '@/components/panels/ViewModeWidget';
+import Onboarding from '@/components/Onboarding';
 import { useEffect } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
 import { useGeolocation } from '@/hooks/useGeolocation';
@@ -72,6 +73,9 @@ export default function Home() {
           )}
         </div>
       </div>
+
+      {/* Onboarding — shown only on first visit */}
+      <Onboarding />
 
       {/* Visual background glow */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
