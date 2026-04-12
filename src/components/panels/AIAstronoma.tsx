@@ -38,6 +38,12 @@ export default function AIAstronoma() {
         if (!synthRef.current || muted) return;
         
         synthRef.current.cancel();
+        
+        // Algunos navegadores pausan el habla si no hay actividad, forzar resume
+        if (synthRef.current.paused) {
+            synthRef.current.resume();
+        }
+
         const utterance = new SpeechSynthesisUtterance(text);
         
         // Buscar la mejor voz disponible en español

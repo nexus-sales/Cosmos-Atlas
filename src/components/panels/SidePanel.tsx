@@ -59,6 +59,7 @@ function PanelContent({
     const telescopeMode = useAppStore((state) => state.settings.telescopeMode);
     const setFOVParams = useAppStore((state) => state.setFOVParams);
     const toggleSetting = useAppStore((state) => state.toggleSetting);
+    const kidsMode = useAppStore((state) => state.settings.kidsMode);
     const satelliteInfo = useAppStore((state) => state.satelliteInfo);
     const viewMode = useAppStore((state) => state.viewMode);
 
@@ -81,7 +82,7 @@ function PanelContent({
         { key: 'showStarlink' as const, label: 'STARLINK', icon: Globe, active: showStarlink },
         { key: 'telescopeMode' as const, label: 'TELESCOPIO', icon: Camera, active: telescopeMode },
         { key: 'followTarget' as const, label: 'SEGUIR', icon: Crosshair, active: followTarget },
-        { key: 'kidsMode' as const, label: 'MODO KIDS', icon: Sparkles, active: useAppStore.getState().settings.kidsMode },
+        { key: 'kidsMode' as const, label: 'MODO KIDS', icon: Sparkles, active: kidsMode },
     ];
 
     const [layersOpen, setLayersOpen] = useState(false);
