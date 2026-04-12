@@ -59,16 +59,7 @@ export default function TargetPointer() {
     const isPlanet = 'kind' in targetedObject && (targetedObject as { kind: string }).kind === 'planet';
     const isConstellation = isPlanet && (targetedObject as { symbol: string }).symbol === '\u2736';
 
-    // Colores vibrantes para UI (foco/anillos) — mismos tonos que los planetas pero más saturados para claridad visual
-    const planetAccentColors: Record<string, string> = {
-        'Júpiter': '#f59e0b',  // ocre → ámbar vibrante
-        'Saturno': '#fbbf24',  // beige → amarillo dorado
-        'Marte': '#f87171',  // rojo óxido → rojo intenso
-        'Venus': '#fde047',  // crema → amarillo claro
-        'Urano': '#22d3ee',  // cian pálido → cyan brillante
-        'Neptuno': '#60a5fa',  // azul → azul brillante
-        'Mercurio': '#e5e7eb',  // gris → gris claro
-    };
+
 
     const accentColor = isGalaxy ? '#f59e0b'
         : isNebula ? '#34d399'

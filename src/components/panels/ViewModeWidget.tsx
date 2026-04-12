@@ -11,7 +11,7 @@ export default function ViewModeWidget() {
     const setViewMode = useAppStore(s => s.setViewMode);
     const followOrientation = useAppStore(s => s.followOrientation);
     const setFollowOrientation = useAppStore(s => s.setFollowOrientation);
-    const { isSupported, requestAndStart, stop } = useDeviceOrientation();
+    const { isSupported, requestAndStart } = useDeviceOrientation();
 
     useEffect(() => {
         if (viewMode === 'camera' && isSupported && !followOrientation) {
@@ -19,7 +19,7 @@ export default function ViewModeWidget() {
                 setFollowOrientation(true);
             });
         }
-    }, [viewMode, isSupported, requestAndStart, setFollowOrientation]);
+    }, [viewMode, isSupported, followOrientation, requestAndStart, setFollowOrientation]);
 
     return (
         <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3 pointer-events-none">

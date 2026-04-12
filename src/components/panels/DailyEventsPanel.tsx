@@ -1,10 +1,10 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
 import { getDailyEvents, getBestViewingEvents, formatEventTime } from '@/lib/dailyEvents';
 import type { CelestialEvent } from '@/lib/dailyEvents';
-import { Sun, Moon, Star, CloudRain, Eye, EyeOff, Clock, Calendar } from 'lucide-react';
+import { Eye, EyeOff, Clock, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function DailyEventsPanel() {
@@ -20,18 +20,17 @@ export default function DailyEventsPanel() {
         const currentTime = useAppStore.getState().time;
         const allEvents = getDailyEvents(currentTime, observer);
         const best = getBestViewingEvents(currentTime, observer);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setEvents(allEvents);
         setBestEvents(best);
     }, [dateKey, observer]);
 
-    const todayStr = useMemo(() => {
-        return timeDisplay.toLocaleDateString('es-ES', {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric'
-        });
-    }, [dateKey]); // eslint-disable-line react-hooks/exhaustive-deps
+    const todayStr = new Date(dateKey).toLocaleDateString('es-ES', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+    });
 
     const isNight = hour >= 20 || hour <= 6;
 

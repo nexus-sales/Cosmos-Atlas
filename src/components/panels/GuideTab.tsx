@@ -259,13 +259,11 @@ export default function GuideTab() {
     // --- Debounced Remote Search ---
     useEffect(() => {
         if (!q || q.length < 3) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setRemoteResult(null);
             setIsSearchingRemote(false);
             return;
         }
-
-        // Only search remote if local results are scarce (e.g. fewer than 5)
-        const totalLocal = starTotal + dsoTotal + planetList.length + constellationTotal;
 
         const timeoutId = setTimeout(async () => {
             if (lastSearchRef.current === q) return;
@@ -497,13 +495,13 @@ export default function GuideTab() {
                         <span className="text-[10px] font-bold tracking-widest text-blue-300 uppercase">Resultado SIMBAD</span>
                     </div>
                     {(() => {
-                        const obj = {
+                        const obj: Planet = {
                             name: remoteResult.name,
                             ra: remoteResult.ra,
                             dec: remoteResult.dec,
                             mag: remoteResult.mag || 0,
                             desc: `Objeto resuelto v\u00eda ${remoteResult.source}. Tipo: ${remoteResult.type || 'Desconocido'}.`,
-                            kind: 'planet' as const, // We use planet kind for generic targetable things
+                            kind: 'planet' as const,
                             symbol: '\u2727',
                             color: '#60a5fa'
                         };
@@ -511,7 +509,7 @@ export default function GuideTab() {
                         const active = isTargeted(obj);
                         return (
                             <div key="remote-result">
-                                <button onClick={() => handleSelect(obj as any)}
+                                <button onClick={() => handleSelect(obj)}
                                     className={cn('w-full flex items-center gap-2.5 px-2.5 py-3 rounded-lg text-left transition-all border',
                                         active ? 'border-blue-400/50 bg-blue-500/10 text-blue-200 shadow-[0_0_15px_rgba(59,130,246,0.1)]'
                                             : 'border-blue-400/20 bg-blue-500/5 text-white/75 hover:text-white hover:border-blue-400/40')}>
@@ -523,7 +521,7 @@ export default function GuideTab() {
                                     <div suppressHydrationWarning title={alt > 0 ? `Visible \u00b7 Alt ${alt.toFixed(0)}\u00b0` : 'Bajo el horizonte'}
                                         className={cn('w-1.5 h-1.5 rounded-full shrink-0 ml-0.5', alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15')} />
                                 </button>
-                                {active && <InfoCard obj={obj as any} />}
+                                {active && <InfoCard obj={obj} />}
                             </div>
                         );
                     })()}

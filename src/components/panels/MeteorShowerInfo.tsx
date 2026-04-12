@@ -8,17 +8,16 @@ import { cn } from '@/lib/utils';
 
 export default function MeteorShowerInfo() {
     const time = useAppStore((state) => state.time);
-    const date = new Date(time);
 
-    const { activeShowers, bestShower, dateStr } = useMemo(() => {
-        const active = getActiveShowers(date);
-        const best = getBestShower(date);
+    const { activeShowers, bestShower } = useMemo(() => {
+        const d = new Date(time);
         return {
-            activeShowers: active,
-            bestShower: best,
-            dateStr: date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
+            activeShowers: getActiveShowers(d),
+            bestShower: getBestShower(d),
         };
     }, [time]);
+
+    const date = new Date(time);
 
     return (
         <div className="space-y-3">

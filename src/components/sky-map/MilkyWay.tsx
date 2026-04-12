@@ -176,6 +176,7 @@ function MilkyWayParticles() {
         const rimColor = new THREE.Color('#ffffff');
         const SPHERE_R = 97;
         let rngSeed = 12345;
+        // eslint-disable-next-line react-hooks/immutability
         const rng = () => { rngSeed = (Math.imul(1664525, rngSeed) + 1013904223) >>> 0; return rngSeed / 0x100000000; };
 
         for (let i = 0; i < count; i++) {

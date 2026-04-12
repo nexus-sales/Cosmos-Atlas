@@ -14,7 +14,7 @@ import { BookOpen } from 'lucide-react';
 /** Detecta el tier de rendimiento del dispositivo de forma síncrona */
 function detectQualityTier(): 'high' | 'medium' | 'low' {
   if (typeof window === 'undefined') return 'high';
-  const memory = (navigator as any).deviceMemory as number | undefined;
+  const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
   const cores  = navigator.hardwareConcurrency ?? 4;
   const isMobile = navigator.maxTouchPoints > 0 && window.innerWidth < 900;
   if ((memory !== undefined && memory < 2) || (isMobile && cores <= 4)) return 'low';

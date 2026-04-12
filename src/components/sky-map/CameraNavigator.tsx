@@ -1,14 +1,16 @@
 'use client';
 
 import { useThree, useFrame } from '@react-three/fiber';
-import { useRef, useEffect } from 'react';
+import { useRef } from 'react';
 import * as THREE from 'three';
 import { useAppStore } from '@/stores/useAppStore';
 import { getLST } from '@/lib/astronomy/time';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
+import type { Star, DSO, Planet } from '@/types/celestial';
+import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 
 interface CameraNavigatorProps {
-    controlsRef: React.MutableRefObject<any>;
+    controlsRef: React.MutableRefObject<OrbitControlsImpl | null>;
     trackingRef: React.MutableRefObject<boolean>;
     manualFovRef: React.MutableRefObject<number | null>;
     manualFovHoldRef: React.MutableRefObject<number>;
@@ -26,7 +28,7 @@ export default function CameraNavigator({
     const setCamFov = useAppStore((state) => state.setCamFov);
 
     const isFlying = useRef(false);
-    const prevTarget = useRef<any>(null);
+    const prevTarget = useRef<Star | DSO | Planet | null>(null);
     const targetFov = useRef(60);
     const targetCamPosRef = useRef<THREE.Vector3 | null>(null);
 
@@ -81,7 +83,7 @@ export default function CameraNavigator({
             bezierDur.current = THREE.MathUtils.clamp(2.0 + Math.acos(Math.max(-1, Math.min(1, dot))) * 0.8, 1.5, 4.0);
 
             const isPlanet = 'kind' in targetedObject && targetedObject.kind === 'planet';
-            const isDSO = 'type' in (targetedObject as any);
+            const isDSO = 'type' in targetedObject;
             targetFov.current = (isPlanet || isDSO) ? 22 : 60;
             prevTarget.current = targetedObject;
         }
@@ -103,6 +105,7 @@ export default function CameraNavigator({
             if (manualFovHoldRef.current === 0) manualFovRef.current = null;
         }
         if (Math.abs(cam.fov - desiredFov) > 0.1) {
+            // eslint-disable-next-line react-hooks/immutability
             cam.fov = THREE.MathUtils.lerp(cam.fov, desiredFov, 0.05);
             cam.updateProjectionMatrix();
             setCamFov(cam.fov);

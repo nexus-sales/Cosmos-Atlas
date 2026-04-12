@@ -213,18 +213,18 @@ export default function Stars() {
         });
 
         return [geom, mat, filteredStars, positions3D];
-        // nightMode excluido: se actualiza via uniform en useFrame
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [limitingMag]);
 
     useFrame((state) => {
         const mat     = material as THREE.ShaderMaterial;
         const elapsed = state.clock.elapsedTime;
+        // eslint-disable-next-line react-hooks/immutability
         mat.uniforms.uTime.value      = elapsed;
         mat.uniforms.uTimeSec.value   = elapsed;
         mat.uniforms.uNightMode.value = nightMode;
 
         // Actualizar umbral de raycasting según FOV actual
+        // eslint-disable-next-line react-hooks/immutability
         raycaster.params.Points = { threshold: getRaycastThreshold(camFov) };
     });
 

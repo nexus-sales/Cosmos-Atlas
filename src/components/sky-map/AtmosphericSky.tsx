@@ -93,6 +93,7 @@ export default function AtmosphericSky() {
             THREE.MathUtils.mapLinear(camFov, 35, 10, 1.0, 0.0),
             0.0, 1.0
         );
+        // eslint-disable-next-line react-hooks/immutability
         uniforms.uSuppression.value = suppression;
 
         const { time, observer } = useAppStore.getState();

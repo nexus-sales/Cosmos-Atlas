@@ -60,8 +60,9 @@ export async function resolveObjectName(query: string): Promise<SesameResolution
             return null;
         }
 
-        const resolvers = Array.isArray(target.Resolver) ? target.Resolver : [target.Resolver];
-        const bestResolver = resolvers.find((r: any) => r.jpos) || resolvers[0];
+        type Resolver = { jpos?: string; jradeg: string; jdedeg: string; oname?: string; otype?: string; vmag?: string; _name?: string; };
+        const resolvers: Resolver[] = Array.isArray(target.Resolver) ? target.Resolver : [target.Resolver];
+        const bestResolver = resolvers.find((r) => r.jpos) || resolvers[0];
 
         if (!bestResolver || !bestResolver.jpos) {
             _sesameCache.set(key, null);
@@ -81,15 +82,15 @@ export async function resolveObjectName(query: string): Promise<SesameResolution
             ra,
             dec,
             type: bestResolver.otype,
-            mag: parseFloat(bestResolver.vmag),
-            source: bestResolver._name as any,
+            mag: parseFloat(bestResolver.vmag ?? '0'),
+            source: (bestResolver._name ?? 'SIMBAD') as SesameResolution['source'],
         };
 
         _sesameCache.set(key, result);
         return result;
     } catch (error) {
         clearTimeout(timer);
-        if ((error as any)?.name === 'AbortError') {
+        if (error instanceof Error && error.name === 'AbortError') {
             console.warn('[Sesame] Timeout al resolver:', query);
         } else {
             console.error('[Sesame] Error de conexión:', error);

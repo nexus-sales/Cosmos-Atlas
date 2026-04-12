@@ -7,15 +7,6 @@ import { useAppStore } from '@/stores/useAppStore';
 import { METEOR_SHOWERS, getActiveShowers } from '@/data/meteorShowers';
 import type { MeteorShower } from '@/data/meteorShowers';
 
-interface MeteorParticle {
-    position: THREE.Vector3;
-    velocity: THREE.Vector3;
-    brightness: number;
-    life: number;
-    maxLife: number;
-    showerId: string;
-    isBolide: boolean;
-}
 
 const meteorVertexShader = `
     attribute float size;
@@ -78,11 +69,12 @@ export default function MeteorShower() {
     const hasActiveShowersRef = useRef(false);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsMounted(true);
     }, []);
 
     // Inicializar partículas de meteoros
-    const [positions, colors, sizes, alphas, velocities, showerIds, isBolides] = useMemo(() => {
+    const [positions, colors, sizes, alphas, velocities, , isBolides] = useMemo(() => {
         const pos = new Float32Array(METEOR_COUNT * 3);
         const col = new Float32Array(METEOR_COUNT * 3);
         const siz = new Float32Array(METEOR_COUNT);

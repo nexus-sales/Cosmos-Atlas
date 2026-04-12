@@ -1,7 +1,7 @@
 'use client';
 
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { OrbitControls, Html } from '@react-three/drei';
+import { OrbitControls } from '@react-three/drei';
 import { Suspense, useEffect, useRef } from 'react';
 import CelestialSphere from '@/components/sky-map/CelestialSphere';
 import Stars from '@/components/sky-map/Stars';
@@ -22,7 +22,6 @@ import MeteorShower from '@/components/effects/MeteorShower';
 import Comets from '@/components/sky-map/Comets';
 import SimbadOverlay from '@/components/sky-map/SimbadOverlay';
 import TelescopeEffect from '@/components/sky-map/TelescopeEffect';
-import AtmosphericSky from '@/components/sky-map/AtmosphericSky';
 import CameraNavigator from '@/components/sky-map/CameraNavigator';
 import CameraBackground from '@/components/sky-map/CameraBackground';
 import HipparcosStars from '@/components/sky-map/HipparcosStars';
@@ -31,8 +30,8 @@ import ConstellationArt from '@/components/sky-map/ConstellationArt';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { useAppStore } from '@/stores/useAppStore';
 import * as THREE from 'three';
+import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { getLST } from '@/lib/astronomy/time';
-import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { deviceOrientationRef } from '@/hooks/useDeviceOrientation';
 import { cn } from '@/lib/utils';
 
@@ -183,7 +182,8 @@ function FovZoom({
             canvas.removeEventListener('pointerup', onPointerUp);
             canvas.removeEventListener('pointercancel', onPointerUp);
         };
-    }, [camera, gl, setCamFov]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [camera, gl, setCamFov]); // trackingRef/manualFovRef/manualFovHoldRef are refs — stable by design
 
     return null;
 }
@@ -199,6 +199,7 @@ function SetupRenderer() {
 
     useEffect(() => {
         glRef.current = gl;
+        // eslint-disable-next-line react-hooks/immutability
         gl.localClippingEnabled = true;
         
         // Transparencia total en modo cámara, negro en modo bóveda
@@ -238,10 +239,6 @@ function CelestialGroup({ children }: { children: React.ReactNode }) {
     });
 
     return <group ref={groupRef}>{children}</group>;
-}
-
-function DebugHud() {
-    return null;
 }
 
 function OrientationDriver() {
@@ -302,10 +299,9 @@ export default function SkyCanvas() {
     const showConstellations = useAppStore((state) => state.settings.showConstellations);
     const followOrientation = useAppStore((state) => state.followOrientation);
     const setTargetedObject = useAppStore((state) => state.setTargetedObject);
-    const targetedObject = useAppStore((state) => state.targetedObject);
-    
+
     // Create a ref for OrbitControls to sync it
-    const controlsRef = useRef<any>(null);
+    const controlsRef = useRef<OrbitControlsImpl | null>(null);
     const trackingRef = useRef(false);
     const manualFovRef = useRef<number | null>(null);
     const manualFovHoldRef = useRef(0);

@@ -1,8 +1,6 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
-import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
+import { useMemo } from 'react';
 import { Html } from '@react-three/drei';
 import { useAppStore } from '@/stores/useAppStore';
 import { equToHor } from '@/lib/astronomy/transforms';
@@ -34,7 +32,7 @@ export default function SimbadOverlay() {
                 return { ...obj, pos: [x, y, z] as [number, number, number], alt };
             }
             return null;
-        }).filter(Boolean) as any[];
+        }).filter((obj): obj is NonNullable<typeof obj> => obj !== null);
     }, [simbadObjects, observer, time]);
 
     if (visibleObjects.length === 0) return null;

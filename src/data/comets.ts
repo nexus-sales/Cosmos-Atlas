@@ -212,7 +212,7 @@ export function getCometPosition(comet: Comet, date: Date): { ra: number; dec: n
 /**
  * Obtiene cometas activos en una fecha
  */
-export function getActiveComets(date: Date): Comet[] {
+export function getActiveComets(): Comet[] {
     return COMETS.filter(c => c.active);
 }
 

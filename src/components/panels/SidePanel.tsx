@@ -349,6 +349,7 @@ export default function SidePanel() {
     const isMobile = useIsMobile();
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (selectedObject) setActiveTab('info');
     }, [selectedObject]);
 

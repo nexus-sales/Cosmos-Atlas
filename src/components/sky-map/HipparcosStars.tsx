@@ -153,6 +153,7 @@ export default function HipparcosStars() {
     useFrame((state) => {
         if (!material) return;
         const mat = material as THREE.ShaderMaterial;
+        // eslint-disable-next-line react-hooks/immutability
         mat.uniforms.uTime.value      = state.clock.elapsedTime;
         mat.uniforms.uNightMode.value = nightMode;
     });

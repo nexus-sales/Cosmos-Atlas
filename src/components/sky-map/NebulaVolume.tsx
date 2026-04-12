@@ -103,6 +103,7 @@ export default function NebulaVolume({ color, size, opacity }: { color: string; 
 
     useFrame((state) => {
         if (meshRef.current) {
+            // eslint-disable-next-line react-hooks/immutability
             uniforms.iTime.value = state.clock.getElapsedTime();
             // Billboard effect: que mire siempre a cámara
             meshRef.current.quaternion.copy(state.camera.quaternion);

@@ -9,12 +9,6 @@ import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { useAppStore } from '@/stores/useAppStore';
 import * as Astronomy from 'astronomy-engine';
 
-const JUPITER_MOON_DATA = [
-    { id: 'io', name: 'Io', color: '#ffffaa', mag: 5.0 },
-    { id: 'europa', name: 'Europa', color: '#eef1ff', mag: 5.3 },
-    { id: 'ganymede', name: 'Ganímedes', color: '#d1d1d1', mag: 4.6 },
-    { id: 'callisto', name: 'Calisto', color: '#a2a2a2', mag: 5.7 }
-];
 
 // ── Texturas procedurales — sin dependencias externas ────────────────────────
 function lcg(seed: number) {

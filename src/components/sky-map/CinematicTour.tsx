@@ -72,8 +72,8 @@ export default function CinematicTour() {
         const visitNext = () => {
             if (!startedRef.current) return;
             const obj = TOUR_OBJECTS[indexRef.current % TOUR_OBJECTS.length];
-            setTargetedObject(obj as any);
-            setSelectedObject(obj as any);
+            setTargetedObject(obj);
+            setSelectedObject(obj);
             indexRef.current++;
         };
 

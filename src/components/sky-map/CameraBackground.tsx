@@ -21,6 +21,7 @@ export default function CameraBackground() {
                 stream.getTracks().forEach(track => track.stop());
                 videoRef.current.srcObject = null;
             }
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setStreamActive(false);
             return;
         }
@@ -47,9 +48,10 @@ export default function CameraBackground() {
                         setStreamActive(true);
                     };
                 }
-            } catch (err: any) {
+            } catch (err: unknown) {
                 console.error("Error al acceder a la cámara:", err);
-                setError(err.name === 'NotAllowedError' ? 'Permiso denegado' : 'Cámara no disponible');
+                const name = err instanceof Error ? err.name : '';
+                setError(name === 'NotAllowedError' ? 'Permiso denegado' : 'Cámara no disponible');
             }
         }
 

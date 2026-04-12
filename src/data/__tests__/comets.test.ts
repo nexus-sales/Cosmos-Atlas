@@ -93,12 +93,11 @@ describe('getCometMagnitude', () => {
 
 describe('getActiveComets', () => {
     it('returns only active comets', () => {
-        const date = new Date();
-        const active = getActiveComets(date);
+        const active = getActiveComets();
         expect(active.every(c => c.active)).toBe(true);
     });
 
     it('returns at least one active comet', () => {
-        expect(getActiveComets(new Date()).length).toBeGreaterThan(0);
+        expect(getActiveComets().length).toBeGreaterThan(0);
     });
 });

@@ -42,7 +42,7 @@ export default function ConstellationArt() {
         }));
     }, []);
 
-    if (!showConstellationArt || !showConstellations) return null;
+    if (!showConstellationArt) return null;
 
     return (
         <group renderOrder={2}>

@@ -112,8 +112,6 @@ export default function BackgroundStars() {
 
         const tree = new StarOctree(positions, TOTAL);
         return [positions, colors, sizes, magnitudes, tree];
-    // TOTAL cambia cuando el deviceQuality es detectado — reconstruir geometría una vez
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [TOTAL]);
 
     // Declarar ANTES de useFrame para que el closure no los use "antes de su declaración"
@@ -136,6 +134,8 @@ export default function BackgroundStars() {
         });
 
         return [geom, mat];
+    // nightMode excluido: se actualiza via uniform en useFrame
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useFrame(() => {
