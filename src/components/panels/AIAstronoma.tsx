@@ -12,6 +12,7 @@ export default function AIAstronoma() {
     const updateAchievement = useAppStore((s) => s.updateAchievement);
     const mythologyBuff = useAppStore((s) => s.achievements.mythologyBuff);
     const kidsMode = useAppStore((s) => s.settings.kidsMode);
+    const sidebarOpen = useAppStore((s) => s.sidebarOpen);
     
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [muted, setMuted] = useState(false);
@@ -88,7 +89,13 @@ export default function AIAstronoma() {
     }, [selected, muted, speak, kidsMode]);
 
     return (
-        <div className="fixed bottom-24 right-6 z-[60] flex flex-col items-end gap-3 pointer-events-none">
+        <div className={cn(
+            "fixed z-[60] flex flex-col items-end gap-3 pointer-events-none",
+            // Desktop: bottom-right corner
+            "md:bottom-24 md:right-6",
+            // Mobile: above the FAB (bottom-40), hidden when bottom sheet is open
+            sidebarOpen ? "hidden md:flex" : "bottom-40 right-4"
+        )}>
             {/* Bocadillo de texto */}
             <AnimatePresence>
                 {showBubble && message && (

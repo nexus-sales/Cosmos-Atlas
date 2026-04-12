@@ -7,7 +7,7 @@ import { useEffect } from 'react';
 import { useCelestialVisibility } from '@/hooks/useCelestialVisibility';
 import type { Star, DSO, Planet } from '@/types/celestial';
 import { getKidFact } from '@/data/kidFacts';
-import { Rocket, Sparkles } from 'lucide-react';
+import { Rocket } from 'lucide-react';
 
 export default function ObjectInfoTab() {
     const selected = useAppStore((state) => state.selectedObject) as Star | DSO | Planet | null;

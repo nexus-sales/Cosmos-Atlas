@@ -64,6 +64,7 @@ export default function ConstellationArt() {
         (state) => state.focusedConstellation
     );
     const nightMode = useAppStore((state) => state.settings.nightMode);
+    const kidsMode  = useAppStore((state) => state.settings.kidsMode);
 
     const figures = useMemo(() => {
         return CONSTELLATION_ART.map((figure) => ({
@@ -82,8 +83,6 @@ export default function ConstellationArt() {
             {figures.map(({ name, polylines, fillGeometries }) => {
                 const isFocused = name === focusedConstellation;
 
-                const kidsMode = useAppStore(s => s.settings.kidsMode);
-                
                 const color = nightMode
                     ? (isFocused ? '#ff6644' : '#661100')
                     : (isFocused 
