@@ -574,5 +574,9 @@ export const CONSTELLATIONS: Record<string, [string, string][]> = {
     "Camelopardalis": [
         ["Beta Cam", "Alpha Cam"],
     ],
+    "Columba": [
+        ["Phact", "Wazn"],
+        ["Phact", "Ghusn al Zaitun"],
+    ],
 };
 

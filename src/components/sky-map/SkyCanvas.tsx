@@ -375,7 +375,7 @@ export default function SkyCanvas() {
                         <ErrorBoundary label="DeepSkyObjects"><DeepSkyObjects /></ErrorBoundary>
                         <ErrorBoundary label="Constellations"><Constellations /></ErrorBoundary>
                         <ErrorBoundary label="ConstellationArt"><ConstellationArt /></ErrorBoundary>
-                        {showConstellations && <ErrorBoundary label="ConstellationLabels"><ConstellationLabels /></ErrorBoundary>}
+                        <ErrorBoundary label="ConstellationLabels"><ConstellationLabels /></ErrorBoundary>
                         <ErrorBoundary label="Planets"><Planets /></ErrorBoundary>
                         {showGrid && <ErrorBoundary label="CelestialGrid"><CelestialGrid /></ErrorBoundary>}
                         {showEcliptic && <ErrorBoundary label="Ecliptic"><Ecliptic /></ErrorBoundary>}
