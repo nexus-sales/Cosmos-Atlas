@@ -82,13 +82,17 @@ export default function ConstellationArt() {
             {figures.map(({ name, polylines, fillGeometries }) => {
                 const isFocused = name === focusedConstellation;
 
+                const kidsMode = useAppStore(s => s.settings.kidsMode);
+                
                 const color = nightMode
                     ? (isFocused ? '#ff6644' : '#661100')
-                    : (isFocused ? '#f0b840' : '#c8961a');
+                    : (isFocused 
+                        ? (kidsMode ? '#44ccff' : '#f0b840') 
+                        : (kidsMode ? '#226688' : '#c8961a'));
 
-                const fillOpacity = isFocused ? 0.14 : 0.07;
+                const fillOpacity = isFocused ? (kidsMode ? 0.25 : 0.14) : 0.07;
                 const lineOpacity = isFocused ? 0.65 : 0.22;
-                const lineWidth   = isFocused ? 1.2  : 0.7;
+                const lineWidth   = isFocused ? (kidsMode ? 2.5 : 1.2) : 0.7;
 
                 return (
                     <group key={name}>

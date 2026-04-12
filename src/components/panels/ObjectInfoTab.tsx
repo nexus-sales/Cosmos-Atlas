@@ -6,6 +6,8 @@ import { MousePointer2, Star as StarIcon, Navigation, Zap, Eye, EyeOff, Globe, H
 import { useEffect } from 'react';
 import { useCelestialVisibility } from '@/hooks/useCelestialVisibility';
 import type { Star, DSO, Planet } from '@/types/celestial';
+import { getKidFact } from '@/data/kidFacts';
+import { Rocket, Sparkles } from 'lucide-react';
 
 export default function ObjectInfoTab() {
     const selected = useAppStore((state) => state.selectedObject) as Star | DSO | Planet | null;
@@ -184,18 +186,21 @@ export default function ObjectInfoTab() {
                     </div>
                 </div>
 
-                <div className="h-1 w-full rounded-full overflow-hidden bg-white/5">
-                    <div
-                        className="h-full rounded-full transition-all duration-1000"
-                        style={{
-                            width: `${Math.max(3, Math.min(100, (coords.alt + 90) / 180 * 100))}%`,
-                            background: isVisible
-                                ? 'linear-gradient(90deg, #4ade80, #22c55e)'
-                                : 'linear-gradient(90deg, #ef4444, #dc2626)',
-                        }}
-                    />
                 </div>
             </div>
+
+            {/* KID MODE CONTENT */}
+            {useAppStore.getState().settings.kidsMode && getKidFact(selected.name) && (
+                <div className="rounded-xl p-4 bg-gradient-to-br from-yellow-400/20 to-orange-500/10 border border-yellow-400/30 animate-in bounce-in duration-500">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Rocket className="w-4 h-4 text-yellow-500 animate-bounce" />
+                        <span className="text-[10px] font-black tracking-widest text-yellow-500 uppercase">¡Dato Espacial para Niños!</span>
+                    </div>
+                    <p className="text-[13px] font-medium text-white/90 leading-relaxed italic">
+                        {getKidFact(selected.name)}
+                    </p>
+                </div>
+            )}
         </div>
     );
 }

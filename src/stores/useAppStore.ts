@@ -32,6 +32,7 @@ interface AppState {
         sensorHeight: number;
         telescopeMode: boolean;
         followTarget: boolean;
+        kidsMode: boolean;
     };
     toggleSetting: (key: keyof AppState['settings']) => void;
     setBortleScale: (scale: number) => void;
@@ -132,6 +133,7 @@ export const useAppStore = create<AppState>()(
                 sensorHeight: 24,
                 telescopeMode: false,
                 followTarget: true,
+                kidsMode: false,
             },
             toggleSetting: (key) =>
                 set((state) => ({

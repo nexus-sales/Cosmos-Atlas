@@ -81,6 +81,7 @@ function PanelContent({
         { key: 'showStarlink' as const, label: 'STARLINK', icon: Globe, active: showStarlink },
         { key: 'telescopeMode' as const, label: 'TELESCOPIO', icon: Camera, active: telescopeMode },
         { key: 'followTarget' as const, label: 'SEGUIR', icon: Crosshair, active: followTarget },
+        { key: 'kidsMode' as const, label: 'MODO KIDS', icon: Sparkles, active: useAppStore.getState().settings.kidsMode },
     ];
 
     const [layersOpen, setLayersOpen] = useState(false);

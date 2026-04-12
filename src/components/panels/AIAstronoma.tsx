@@ -5,11 +5,13 @@ import { useAppStore } from '@/stores/useAppStore';
 import { Volume2, VolumeX, Sparkles, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { getKidFact } from '@/data/kidFacts';
 
 export default function AIAstronoma() {
     const selected = useAppStore((s) => s.selectedObject);
     const updateAchievement = useAppStore((s) => s.updateAchievement);
     const mythologyBuff = useAppStore((s) => s.achievements.mythologyBuff);
+    const kidsMode = useAppStore((s) => s.settings.kidsMode);
     
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [muted, setMuted] = useState(false);
@@ -47,7 +49,11 @@ export default function AIAstronoma() {
     // Reaccionar a cambios de selección
     useEffect(() => {
         if (selected && !muted) {
-            const intro = `Has seleccionado ${selected.name}. ${selected.desc}`;
+            const kidFact = kidsMode ? getKidFact(selected.name) : null;
+            const intro = kidFact 
+                ? `¡Hola explorador! Has encontrado ${selected.name}. ${kidFact}` 
+                : `Has seleccionado ${selected.name}. ${selected.desc}`;
+                
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setMessage(intro);
             setShowBubble(true);
@@ -58,7 +64,7 @@ export default function AIAstronoma() {
         } else {
             setShowBubble(false);
         }
-    }, [selected, muted, speak]);
+    }, [selected, muted, speak, kidsMode]);
 
     return (
         <div className="fixed bottom-24 right-6 z-[60] flex flex-col items-end gap-3 pointer-events-none">
