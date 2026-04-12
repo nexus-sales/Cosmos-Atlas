@@ -1,13 +1,15 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import type { CSSProperties } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
-import { COMETS, getCometPosition, getCometInfo } from '@/data/comets';
+import { COMETS, getCometPosition, getCometInfo, type Comet } from '@/data/comets';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { useAppStore } from '@/stores/useAppStore';
 import { Html } from '@react-three/drei';
+import type { CometLiveData } from '@/app/api/comets/route';
+import type { OrbitalElements } from '@/lib/astronomy/cometOrbits';
 
 const cometVertexShader = `
     attribute vec3 color;
@@ -202,19 +204,70 @@ function CometItem({ comet }: { comet: CometData }) {
     );
 }
 
+/** Merge live JPL data into our static catalog, returning a combined list */
+function mergeLiveData(live: CometLiveData[]): Comet[] {
+    // Start with the static catalog
+    const base = new Map<string, Comet>(COMETS.map(c => [c.id, { ...c }]));
+
+    for (const l of live) {
+        const els: OrbitalElements = { e: l.e, q: l.q, i: l.i, om: l.om, w: l.w, tp: l.tp };
+        const existing = base.get(l.pdes);
+        if (existing) {
+            // Update elements from live data, keep visual styling from static catalog
+            existing.elements = els;
+            if (l.M1 !== null) existing.magnitude = l.M1;
+        } else {
+            // New comet from JPL not in our static list
+            base.set(l.pdes, {
+                id: l.pdes,
+                name: l.name,
+                designation: l.pdes,
+                period: l.per ?? 0,
+                perihelion: l.q,
+                aphelion: l.per ? l.q * (1 + l.e) / (1 - l.e) : l.q * 20,
+                inclination: l.i,
+                eccentricity: l.e,
+                magnitude: l.M1 ?? 10,
+                color: '#aaddff',
+                tailLength: 4,
+                active: true,
+                description: `Cometa ${l.pdes}. Datos en tiempo real de JPL.`,
+                elements: els,
+            });
+        }
+    }
+
+    return Array.from(base.values());
+}
+
 export default function Comets() {
     const COMET_RADIUS = 92;
     // timeMinute solo cambia 1x/min — posiciones de cometas no requieren precisión de segundo
     const time = useAppStore((state) => state.timeMinute);
+    const [liveComets, setLiveComets] = useState<Comet[]>(COMETS);
+
+    // Fetch live data from our API route once on mount
+    useEffect(() => {
+        fetch('/api/comets')
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (data?.ok && Array.isArray(data.comets)) {
+                    setLiveComets(mergeLiveData(data.comets));
+                }
+            })
+            .catch(() => {
+                // Network error: keep using static catalog
+            });
+    }, []);
 
     const cometData = useMemo(() => {
-        return COMETS
+        return liveComets
             .filter(c => c.active)
             .map((comet) => {
                 const pos = getCometPosition(comet, time);
                 const info = getCometInfo(comet, time);
                 const spherePos = equatorialTo3D(pos.ra, pos.dec, COMET_RADIUS) as [number, number, number];
-                
+
                 return {
                     ...comet,
                     pos: spherePos,
@@ -224,7 +277,7 @@ export default function Comets() {
                     description: info.description
                 };
             });
-    }, [time]);
+    }, [liveComets, time]);
 
     return (
         <group>
