@@ -9,6 +9,7 @@ import type { Star, DSO, Planet } from '@/types/celestial';
 
 export default function ObjectInfoTab() {
     const selected = useAppStore((state) => state.selectedObject) as Star | DSO | Planet | null;
+    const setTargetedObject = useAppStore((state) => state.setTargetedObject);
     const targetedObject = useAppStore((state) => state.targetedObject);
     const favorites = useAppStore((state) => state.favorites);
     const toggleFavorite = useAppStore((state) => state.toggleFavorite);
