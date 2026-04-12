@@ -1,7 +1,7 @@
 'use client';
 
 import { useAppStore } from '@/stores/useAppStore';
-import { Trophy, Star, Heart, Map as MapIcon, CheckCircle2, Circle, Eye } from 'lucide-react';
+import { Trophy, Star, Heart, Map as MapIcon, CheckCircle2, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { STARS } from '@/data/stars';
 import { DSOS } from '@/data/dsos';

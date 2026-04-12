@@ -191,6 +191,7 @@ export default function HipparcosStars() {
         sizAttr.needsUpdate = true;
         distAttr.needsUpdate = true;
 
+        // eslint-disable-next-line react-hooks/immutability
         material.uniforms.uTime.value      = state.clock.elapsedTime;
         material.uniforms.uNightMode.value = nightMode;
     });

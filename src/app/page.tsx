@@ -24,7 +24,6 @@ function detectQualityTier(): 'high' | 'medium' | 'low' {
 }
 
 export default function Home() {
-  const setTime = useAppStore((state) => state.setTime);
   const isLive = useAppStore((state) => state.isLive);
   const sidebarOpen = useAppStore((state) => state.sidebarOpen);
   const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);

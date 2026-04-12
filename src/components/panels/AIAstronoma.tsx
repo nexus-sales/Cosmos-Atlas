@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
-import { Volume2, VolumeX, Sparkles, MessageSquare, Play, Square } from 'lucide-react';
+import { Volume2, VolumeX, Sparkles, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -48,6 +48,7 @@ export default function AIAstronoma() {
     useEffect(() => {
         if (selected && !muted) {
             const intro = `Has seleccionado ${selected.name}. ${selected.desc}`;
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setMessage(intro);
             setShowBubble(true);
             

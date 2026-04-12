@@ -299,7 +299,6 @@ export default function SkyCanvas() {
     const showGrid = useAppStore((state) => state.settings.showGrid);
     const showMilkyWay = useAppStore((state) => state.settings.showMilkyWay);
     const showEcliptic = useAppStore((state) => state.settings.showEcliptic);
-    const showConstellations = useAppStore((state) => state.settings.showConstellations);
     const followOrientation = useAppStore((state) => state.followOrientation);
     const setTargetedObject = useAppStore((state) => state.setTargetedObject);
 

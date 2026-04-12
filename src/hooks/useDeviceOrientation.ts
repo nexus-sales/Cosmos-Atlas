@@ -38,7 +38,6 @@ export const deviceOrientationRef = {
 // Parámetros del filtro Madgwick adaptado
 const MADGWICK_BETA = 0.08; // Gain del algoritmo de gradiente (0.02-0.1 típico)
 const INTEGRAL_GAIN_KI = 0.001; // Ganancia integral para eliminar bias
-const SAMPLE_FREQ = 60; // Frecuencia de muestreo estimada (Hz)
 
 // Estado del filtro Madgwick
 interface MadgwickState {
@@ -62,18 +61,6 @@ const madgwickState: MadgwickState = {
     lastGamma: 0,
     lastUpdate: 0,
 };
-
-/**
- * Quaternion multiplication
- */
-function quatMultiply(q1: [number, number, number, number], q2: [number, number, number, number]): [number, number, number, number] {
-    return [
-        q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2] - q1[3] * q2[3],
-        q1[0] * q2[1] + q1[1] * q2[0] + q1[2] * q2[3] - q1[3] * q2[2],
-        q1[0] * q2[2] - q1[1] * q2[3] + q1[2] * q2[0] + q1[3] * q2[1],
-        q1[0] * q2[3] + q1[1] * q2[2] - q1[2] * q2[1] + q1[3] * q2[0],
-    ];
-}
 
 /**
  * Normalize a quaternion
@@ -162,7 +149,7 @@ function madgwickUpdate(
     const gz = gyroZ * Math.PI / 180;
 
     // Pre-normalizar quaternion
-    let q = quatNormalize([...madgwickState.q]);
+    const q = quatNormalize([...madgwickState.q]);
 
     // Quaternion delta basado en el giroscopio
     const qDot = [
@@ -260,8 +247,6 @@ function applyMadgwickFilter(
  * así que aplicamos el filtro como suavizado exponencial (EMA) directamente
  * sobre alpha/beta/gamma para eliminar el ruido residual del magnetómetro.
  */
-const FILTER_ALPHA = 0.85; // 0 = sin suavizado, 1 = sin respuesta
-
 function applyComplementaryFilter(prev: number, raw: number, alpha: number): number {
     // Manejo del wraparound en alpha (0–360 → problema al cruzar 0/360)
     return alpha * prev + (1 - alpha) * raw;
@@ -319,10 +304,11 @@ export function useDeviceOrientation() {
                 return;
             }
 
-            // Filtro complementario — elimina jitter del magnetómetro y acelerómetro
-            deviceOrientationRef.alpha = applyAlphaFilter(deviceOrientationRef.alpha, rawAlpha, FILTER_ALPHA);
-            deviceOrientationRef.beta = applyComplementaryFilter(deviceOrientationRef.beta, rawBeta, FILTER_ALPHA);
-            deviceOrientationRef.gamma = applyComplementaryFilter(deviceOrientationRef.gamma, rawGamma, FILTER_ALPHA);
+            // Filtro Madgwick — fusión de orientación con corrección de drift
+            const filtered = applyMadgwickFilter(rawAlpha, rawBeta, rawGamma, e.timeStamp);
+            deviceOrientationRef.alpha = filtered.alpha;
+            deviceOrientationRef.beta = filtered.beta;
+            deviceOrientationRef.gamma = filtered.gamma;
         };
         listenerRef.current = handler;
         window.addEventListener('deviceorientation', handler, true);

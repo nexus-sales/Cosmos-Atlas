@@ -78,7 +78,7 @@ interface AppState {
     };
     toggleFavorite: (id: string) => void;
     markAsVisited: (id: string) => void;
-    updateAchievement: (key: 'messierMarathon' | 'planetHunter' | 'mythologyBuff', value: any) => void;
+    updateAchievement: (key: 'messierMarathon' | 'planetHunter' | 'mythologyBuff', value: number | boolean) => void;
 }
 
 export const useAppStore = create<AppState>()(
