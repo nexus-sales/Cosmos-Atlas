@@ -87,7 +87,7 @@ export const DSO_IMAGES: Record<string, DSOImage> = {
     },
     'NGC2392': {
         id: 'NGC2392',
-        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/c/cc/Eskimo_Nebula_NGC_2392.jpg',
+        imageUrl: 'https://esahubble.org/media/archives/images/screen/heic1310a.jpg',
         credit: 'NASA, ESA, A. Fruchter',
         telescope: 'Hubble'
     },
@@ -225,33 +225,15 @@ export const DSO_IMAGES: Record<string, DSOImage> = {
         credit: 'NASA, ESA, Hubble',
         telescope: 'Hubble'
     },
-    'M32': {
-        id: 'M32',
-        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/e/e4/M32_HST_ACS_2004-28-a-large_web.jpg',
-        credit: 'NASA, ESA, Hubble',
-        telescope: 'Hubble'
-    },
     'M110': {
         id: 'M110',
-        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/e/eb/Messier_110_Hubble_WikiSky.jpg',
-        credit: 'NASA, ESA, Hubble',
-        telescope: 'Hubble'
-    },
-    'NGC891': {
-        id: 'NGC891',
-        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/a/a2/NGC_891_HST.jpg',
+        imageUrl: 'https://esahubble.org/media/archives/images/screen/heic0202a.jpg',
         credit: 'NASA, ESA, Hubble',
         telescope: 'Hubble'
     },
     'M74': {
         id: 'M74',
-        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/d/d4/Messier_74_by_HST.jpg',
-        credit: 'NASA, ESA, Hubble',
-        telescope: 'Hubble'
-    },
-    'M77': {
-        id: 'M77',
-        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/f/f6/Messier_77_Hubble_WikiSky.jpg',
+        imageUrl: 'https://esahubble.org/media/archives/images/screen/heic0719a.jpg',
         credit: 'NASA, ESA, Hubble',
         telescope: 'Hubble'
     },
@@ -275,13 +257,7 @@ export const DSO_IMAGES: Record<string, DSOImage> = {
     },
     'CenA': {
         id: 'CenA',
-        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/5/58/Centaurus_A_Hubble_WikiSky.jpg',
-        credit: 'NASA, ESA, Hubble',
-        telescope: 'Hubble'
-    },
-    'NGC55': {
-        id: 'NGC55',
-        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/e/e0/NGC_55_Hubble_WikiSky.jpg',
+        imageUrl: 'https://esahubble.org/media/archives/images/screen/heic1107a.jpg',
         credit: 'NASA, ESA, Hubble',
         telescope: 'Hubble'
     },
