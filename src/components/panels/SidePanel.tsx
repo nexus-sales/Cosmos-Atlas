@@ -8,10 +8,11 @@ import { cn } from '@/lib/utils';
 import ChallengeTab from '@/components/panels/ChallengeTab';
 import ObjectInfoTab from '@/components/panels/ObjectInfoTab';
 import GuideTab from '@/components/panels/GuideTab';
+import PassportTab from '@/components/panels/PassportTab';
 import MeteorShowerInfo from '@/components/panels/MeteorShowerInfo';
 import DailyEventsPanel from '@/components/panels/DailyEventsPanel';
 
-type TabType = 'challenge' | 'info' | 'guide';
+type TabType = 'challenge' | 'info' | 'guide' | 'passport';
 
 function useIsMobile() {
     const [isMobile, setIsMobile] = useState(() => {
@@ -62,9 +63,10 @@ function PanelContent({
     const viewMode = useAppStore((state) => state.viewMode);
 
     const tabs = [
-        { id: 'challenge', label: 'RETO', icon: Target },
-        { id: 'info', label: 'OBJETO', icon: Info },
         { id: 'guide', label: 'GUÍA', icon: BookOpen },
+        { id: 'info', label: 'OBJETO', icon: Info },
+        { id: 'challenge', label: 'RETO', icon: Target },
+        { id: 'passport', label: 'PASAPORTE', icon: Sparkles },
     ] as const;
 
     const layerToggles = [
@@ -152,6 +154,7 @@ function PanelContent({
                     {activeTab === 'challenge' && <ChallengeTab />}
                     {activeTab === 'info' && <ObjectInfoTab />}
                     {activeTab === 'guide' && <GuideTab />}
+                    {activeTab === 'passport' && <PassportTab />}
                 </div>
 
                 {/* Accordions */}

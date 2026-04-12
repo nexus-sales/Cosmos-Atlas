@@ -106,10 +106,16 @@ body {
   animation: meteor 5s linear infinite;
 }
 
-/* Night Mode (Red Preservation) */
+/* Night Mode (Deep Red Preservation) */
 .night-mode-active {
-  filter: grayscale(1) sepia(100%) hue-rotate(0deg) saturate(600%) brightness(0.8) !important;
-  transition: filter 0.7s ease-in-out;
+  /* Rojo profundo astronómico: preserva pigmentos de la retina */
+  filter: grayscale(1) sepia(100%) hue-rotate(-15deg) saturate(1000%) brightness(0.6) contrast(1.2) !important;
+  background-color: #050000 !important;
+  transition: filter 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.night-mode-active canvas {
+  filter: brightness(0.7) contrast(1.1);
 }
 
 .text-shadow-soft {

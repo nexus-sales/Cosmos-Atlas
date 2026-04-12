@@ -2,15 +2,26 @@
 
 import { useAppStore } from '@/stores/useAppStore';
 import type { CSSProperties } from 'react';
-import { MousePointer2, Star as StarIcon, Navigation, Zap, Eye, EyeOff, Globe } from 'lucide-react';
+import { MousePointer2, Star as StarIcon, Navigation, Zap, Eye, EyeOff, Globe, Heart } from 'lucide-react';
+import { useEffect } from 'react';
 import { useCelestialVisibility } from '@/hooks/useCelestialVisibility';
 import type { Star, DSO, Planet } from '@/types/celestial';
 
 export default function ObjectInfoTab() {
     const selected = useAppStore((state) => state.selectedObject) as Star | DSO | Planet | null;
-    const setTargetedObject = useAppStore((state) => state.setTargetedObject);
     const targetedObject = useAppStore((state) => state.targetedObject);
+    const favorites = useAppStore((state) => state.favorites);
+    const toggleFavorite = useAppStore((state) => state.toggleFavorite);
+    const markAsVisited = useAppStore((state) => state.markAsVisited);
     const coords = useCelestialVisibility(selected?.ra || 0, selected?.dec || 0);
+
+    const id = selected ? ('id' in selected ? selected.id : selected.name) : '';
+    const isFavorite = favorites.includes(id);
+
+    // Auto-visit tracking
+    useEffect(() => {
+        if (id) markAsVisited(id);
+    }, [id, markAsVisited]);
 
     const isTargeted = targetedObject?.name === selected?.name;
     const isStar = selected ? 'constellation' in selected : false;
@@ -49,17 +60,30 @@ export default function ObjectInfoTab() {
             {/* Header con nombre y tipo */}
             <div className="object-card relative rounded-xl overflow-hidden p-5 bg-white/[0.03] border">
 
-                {/* Botón de fijar objetivo animado */}
-                <button
-                    onClick={() => setTargetedObject(isTargeted ? null : selected)}
-                    className={`absolute bottom-3 right-3 w-8 h-8 rounded-full flex items-center justify-center border transition-all duration-500 z-10 ${isTargeted
-                            ? 'bg-[#00f2ff] border-[#00f2ff] shadow-[0_0_15px_rgba(0,242,255,0.4)]'
-                            : 'bg-white/5 border-white/10 hover:bg-white/10'
+                <div className="absolute bottom-3 right-3 flex gap-2 z-10">
+                    {/* Botón Favorito */}
+                    <button
+                        onClick={() => toggleFavorite(id)}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all duration-300 ${
+                            isFavorite ? 'bg-red-500/20 border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]' : 'bg-white/5 border-white/10 hover:bg-white/10'
                         }`}
-                    title={isTargeted ? "Dejar de seguir" : "Seguir con telescopio"}
-                >
-                    <Navigation className={`w-3.5 h-3.5 ${isTargeted ? 'text-black fill-black' : 'text-white/40'}`} />
-                </button>
+                        title={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
+                    >
+                        <Heart className={`w-3.5 h-3.5 ${isFavorite ? 'text-red-500 fill-red-500' : 'text-white/40'}`} />
+                    </button>
+
+                    {/* Botón de fijar objetivo animado */}
+                    <button
+                        onClick={() => setTargetedObject(isTargeted ? null : selected)}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all duration-500 ${isTargeted
+                             ? 'bg-[#00f2ff] border-[#00f2ff] shadow-[0_0_15px_rgba(0,242,255,0.4)]'
+                             : 'bg-white/5 border-white/10 hover:bg-white/10'
+                            }`}
+                        title={isTargeted ? "Dejar de seguir" : "Seguir con telescopio"}
+                    >
+                        <Navigation className={`w-3.5 h-3.5 ${isTargeted ? 'text-black fill-black' : 'text-white/40'}`} />
+                    </button>
+                </div>
 
                 <div className="object-orb absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl -translate-y-8 translate-x-8" />
 

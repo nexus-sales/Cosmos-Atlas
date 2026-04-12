@@ -68,6 +68,17 @@ interface AppState {
     setHasSeenOnboarding: (v: boolean) => void;
     isTourActive: boolean;
     setIsTourActive: (v: boolean) => void;
+    // --- STELLAR PASSPORT ---
+    favorites: string[];
+    visited: string[];
+    achievements: {
+        messierMarathon: number;
+        planetHunter: boolean;
+        mythologyBuff: number;
+    };
+    toggleFavorite: (id: string) => void;
+    markAsVisited: (id: string) => void;
+    updateAchievement: (key: 'messierMarathon' | 'planetHunter' | 'mythologyBuff', value: any) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -173,6 +184,26 @@ export const useAppStore = create<AppState>()(
             setHasSeenOnboarding: (hasSeenOnboarding) => set({ hasSeenOnboarding }),
             isTourActive: false,
             setIsTourActive: (isTourActive) => set({ isTourActive }),
+
+            // --- PASSPORT ACTIONS ---
+            favorites: [],
+            visited: [],
+            achievements: {
+                messierMarathon: 0,
+                planetHunter: false,
+                mythologyBuff: 0,
+            },
+            toggleFavorite: (id) => set((s) => ({
+                favorites: s.favorites.includes(id) 
+                    ? s.favorites.filter(x => x !== id) 
+                    : [...s.favorites, id]
+            })),
+            markAsVisited: (id) => set((s) => ({
+                visited: s.visited.includes(id) ? s.visited : [...s.visited, id]
+            })),
+            updateAchievement: (key, value) => set((s) => ({
+                achievements: { ...s.achievements, [key]: value }
+            })),
         }),
         {
             name: 'cosmos-atlas-storage',
@@ -182,6 +213,9 @@ export const useAppStore = create<AppState>()(
                 observer: state.observer,
                 foundChallenges: state.foundChallenges,
                 hasSeenOnboarding: state.hasSeenOnboarding,
+                favorites: state.favorites,
+                visited: state.visited,
+                achievements: state.achievements,
                 // deviceQuality excluido — se detecta en cada sesión
             }),
         }

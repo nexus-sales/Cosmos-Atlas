@@ -3,6 +3,7 @@
 import SkyCanvas from '@/components/sky-map/SkyCanvas';
 import Header from '@/components/panels/Header';
 import SidePanel from '@/components/panels/SidePanel';
+import AIAstronoma from '@/components/panels/AIAstronoma';
 import TimeTravelControls from '@/components/panels/TimeTravelControls';
 import ViewModeWidget from '@/components/panels/ViewModeWidget';
 import Onboarding from '@/components/Onboarding';
@@ -88,6 +89,9 @@ export default function Home() {
           )}
         </div>
       </div>
+
+      {/* Guía Vocal IA */}
+      <AIAstronoma />
 
       {/* Onboarding — shown only on first visit */}
       <Onboarding />

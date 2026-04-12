@@ -12,8 +12,10 @@ export default function manifest(): MetadataRoute.Manifest {
     orientation: "any",
     categories: ["education", "utilities"],
     icons: [
-      { src: "/icon", sizes: "192x192", type: "image/png", purpose: "maskable" },
-      { src: "/apple-icon", sizes: "180x180", type: "image/png", purpose: "any" },
+      { src: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { src: "/android-chrome-192x192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
+      { src: "/android-chrome-512x512.png", sizes: "512x512", type: "image/png" },
+      { src: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
   };
 }

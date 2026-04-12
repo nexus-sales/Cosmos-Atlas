@@ -31,6 +31,10 @@ export const metadata: Metadata = {
     title: "Cosmos Atlas",
   },
   formatDetection: { telephone: false },
+  icons: {
+    icon: "/favicon-32x32.png",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({
