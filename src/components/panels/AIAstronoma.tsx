@@ -82,43 +82,45 @@ export default function AIAstronoma() {
                 )}
             </AnimatePresence>
 
-            {/* Botón Flotante */}
-            <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                    if (isSpeaking) {
-                        synthRef.current?.cancel();
-                        setIsSpeaking(false);
-                    } else if (message) {
-                        speak(message);
-                    }
-                    setMuted(false);
-                }}
-                className={cn(
-                    "pointer-events-auto w-14 h-14 rounded-full flex items-center justify-center border transition-all duration-500",
-                    isSpeaking 
-                        ? "bg-blue-600 border-blue-400 shadow-[0_0_30px_rgba(37,99,235,0.6)]" 
-                        : "bg-black/40 backdrop-blur-md border-white/10 hover:border-blue-500/50"
-                )}
-            >
-                {isSpeaking ? (
-                    <div className="flex items-center gap-1">
-                        {[1, 2, 3].map(i => (
-                            <motion.div
-                                key={i}
-                                animate={{ height: [8, 20, 8] }}
-                                transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.1 }}
-                                className="w-1 bg-white rounded-full"
-                            />
-                        ))}
-                    </div>
-                ) : (
-                    <MessageSquare className="w-6 h-6 text-white/40" />
-                )}
-                
-                {/* Indicador de Silencio */}
-                <button 
+            {/* Botón Flotante — wrapper relativo para que el botón de mute sea hermano */}
+            <div className="pointer-events-auto relative">
+                <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                        if (isSpeaking) {
+                            synthRef.current?.cancel();
+                            setIsSpeaking(false);
+                        } else if (message) {
+                            speak(message);
+                        }
+                        setMuted(false);
+                    }}
+                    className={cn(
+                        "w-14 h-14 rounded-full flex items-center justify-center border transition-all duration-500",
+                        isSpeaking
+                            ? "bg-blue-600 border-blue-400 shadow-[0_0_30px_rgba(37,99,235,0.6)]"
+                            : "bg-black/40 backdrop-blur-md border-white/10 hover:border-blue-500/50"
+                    )}
+                >
+                    {isSpeaking ? (
+                        <div className="flex items-center gap-1">
+                            {[1, 2, 3].map(i => (
+                                <motion.div
+                                    key={i}
+                                    animate={{ height: [8, 20, 8] }}
+                                    transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.1 }}
+                                    className="w-1 bg-white rounded-full"
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <MessageSquare className="w-6 h-6 text-white/40" />
+                    )}
+                </motion.button>
+
+                {/* Indicador de Silencio — hermano del botón principal, no hijo */}
+                <button
                     onClick={(e) => {
                         e.stopPropagation();
                         setMuted(!muted);
@@ -128,7 +130,7 @@ export default function AIAstronoma() {
                 >
                     {muted ? <VolumeX className="w-3 h-3 text-red-400" /> : <Volume2 className="w-3 h-3 text-white/50" />}
                 </button>
-            </motion.button>
+            </div>
         </div>
     );
 }

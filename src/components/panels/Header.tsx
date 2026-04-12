@@ -7,9 +7,11 @@ import CelestialSearch from './CelestialSearch';
 import { cn } from '@/lib/utils';
 
 function Clock() {
-    const [time, setTime] = useState(new Date());
+    const [time, setTime] = useState<Date | null>(null);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setTime(new Date());
         const timer = setInterval(() => setTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
@@ -34,10 +36,10 @@ function Clock() {
     return (
         <div className="flex flex-col items-end text-right" aria-live="polite" aria-atomic="true" aria-label="Hora actual del observatorio">
             <div className="text-base md:text-[18px] text-blue-400 tabular-nums leading-none font-bold glow-text">
-                {formatTime(time)}
+                {time ? formatTime(time) : '--:--:--'}
             </div>
             <div className="hidden md:block text-[10px] text-white/30 uppercase mt-1 tracking-wider" aria-hidden="true">
-                {formatDate(time)}
+                {time ? formatDate(time) : ''}
             </div>
         </div>
     );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { Html } from '@react-three/drei';
 import { CONSTELLATIONS } from '@/data/constellations';
@@ -26,6 +26,10 @@ export default function ConstellationLabels() {
     const focusedConstellation = useAppStore((state) => state.focusedConstellation);
     const setFocusedConstellation = useAppStore((state) => state.setFocusedConstellation);
     const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);
+
+    // Tracks which label the mouse is currently over.
+    // Prevents useFrame from overriding hover-based focus.
+    const hoveredRef = useRef<string | null>(null);
 
     const labels = useMemo(() => {
         return Object.entries(CONSTELLATIONS).flatMap(([name, pairs]) => {
@@ -56,8 +60,16 @@ export default function ConstellationLabels() {
         });
     }, []);
 
-    // Track what the user is looking at in the center of the viewport
+    // Track what the user is looking at in the center of the viewport.
+    // If the mouse is over a label, that takes priority over camera detection.
     useFrame(({ camera }) => {
+        if (hoveredRef.current) {
+            if (hoveredRef.current !== focusedConstellation) {
+                setFocusedConstellation(hoveredRef.current);
+            }
+            return;
+        }
+
         const lookDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
 
         let bestName = null;
@@ -65,7 +77,7 @@ export default function ConstellationLabels() {
 
         labels.forEach(({ name, vector }) => {
             const dot = lookDir.dot(vector);
-            if (dot > 0.82 && dot > bestDot) { // ~35 degrees of field of view tolerance
+            if (dot > 0.82 && dot > bestDot) {
                 bestDot = dot;
                 bestName = name;
             }
@@ -97,7 +109,9 @@ export default function ConstellationLabels() {
                         distanceFactor={130}
                         zIndexRange={[100, 50]}
                     >
-                        <div 
+                        <div
+                            onMouseEnter={() => { hoveredRef.current = name; }}
+                            onMouseLeave={() => { hoveredRef.current = null; }}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 setFocusedConstellation(name);
