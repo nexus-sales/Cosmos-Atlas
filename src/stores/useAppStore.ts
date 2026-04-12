@@ -18,6 +18,7 @@ interface AppState {
     setIsLive: (v: boolean) => void;
     settings: {
         showConstellations: boolean;
+        showConstellationArt: boolean;
         showGrid: boolean;
         showMilkyWay: boolean;
         showEcliptic: boolean;
@@ -106,6 +107,7 @@ export const useAppStore = create<AppState>()(
             }),
             settings: {
                 showConstellations: true,
+                showConstellationArt: false,
                 showGrid: false,
                 showMilkyWay: true,
                 showEcliptic: false,

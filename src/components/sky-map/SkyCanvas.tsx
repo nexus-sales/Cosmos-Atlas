@@ -27,6 +27,7 @@ import CameraNavigator from '@/components/sky-map/CameraNavigator';
 import CameraBackground from '@/components/sky-map/CameraBackground';
 import HipparcosStars from '@/components/sky-map/HipparcosStars';
 import CinematicTour from '@/components/sky-map/CinematicTour';
+import ConstellationArt from '@/components/sky-map/ConstellationArt';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { useAppStore } from '@/stores/useAppStore';
 import * as THREE from 'three';
@@ -377,6 +378,7 @@ export default function SkyCanvas() {
                         <ErrorBoundary label="Stars"><Stars /></ErrorBoundary>
                         <ErrorBoundary label="DeepSkyObjects"><DeepSkyObjects /></ErrorBoundary>
                         <ErrorBoundary label="Constellations"><Constellations /></ErrorBoundary>
+                        <ErrorBoundary label="ConstellationArt"><ConstellationArt /></ErrorBoundary>
                         {showConstellations && <ErrorBoundary label="ConstellationLabels"><ConstellationLabels /></ErrorBoundary>}
                         <ErrorBoundary label="Planets"><Planets /></ErrorBoundary>
                         {showGrid && <ErrorBoundary label="CelestialGrid"><CelestialGrid /></ErrorBoundary>}

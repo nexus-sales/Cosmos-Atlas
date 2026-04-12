@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { useAppStore } from '@/stores/useAppStore';
-import { Target, Info, BookOpen, Layers, Grid3X3, ChevronRight, ChevronLeft, ChevronDown, X, Moon, Mountain, Camera, Satellite, Globe, CloudRain, Settings2, Crosshair } from 'lucide-react';
+import { Target, Info, BookOpen, Layers, Grid3X3, ChevronRight, ChevronLeft, ChevronDown, X, Moon, Mountain, Camera, Satellite, Globe, CloudRain, Settings2, Crosshair, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChallengeTab from '@/components/panels/ChallengeTab';
 import ObjectInfoTab from '@/components/panels/ObjectInfoTab';
@@ -44,6 +44,7 @@ function PanelContent({
 }) {
     const showGrid = useAppStore((state) => state.settings.showGrid);
     const showConstellations = useAppStore((state) => state.settings.showConstellations);
+    const showConstellationArt = useAppStore((state) => state.settings.showConstellationArt);
     const showMilkyWay = useAppStore((state) => state.settings.showMilkyWay);
     const showEcliptic = useAppStore((state) => state.settings.showEcliptic);
     const showSatellites = useAppStore((state) => state.settings.showSatellites);
@@ -69,6 +70,7 @@ function PanelContent({
     const layerToggles = [
         { key: 'showGrid' as const, label: 'GRID', icon: Grid3X3, active: showGrid },
         { key: 'showConstellations' as const, label: 'CONSTEL.', icon: Layers, active: showConstellations },
+        { key: 'showConstellationArt' as const, label: 'MITOLOGÍA', icon: Sparkles, active: showConstellationArt },
         { key: 'showMilkyWay' as const, label: 'VÍA LÁCTEA', icon: Layers, active: showMilkyWay },
         { key: 'showEcliptic' as const, label: 'ECLÍPT.', icon: Layers, active: showEcliptic },
         { key: 'nightMode' as const, label: 'NOCTURNO', icon: Moon, active: nightMode },
