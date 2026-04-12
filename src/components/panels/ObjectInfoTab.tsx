@@ -16,6 +16,7 @@ export default function ObjectInfoTab() {
     const favorites = useAppStore((state) => state.favorites);
     const toggleFavorite = useAppStore((state) => state.toggleFavorite);
     const markAsVisited = useAppStore((state) => state.markAsVisited);
+    const kidsMode = useAppStore((state) => state.settings.kidsMode);
     const coords = useCelestialVisibility(selected?.ra || 0, selected?.dec || 0);
 
     const id = selected ? ('id' in selected ? selected.id : selected.name) : '';
@@ -185,12 +186,10 @@ export default function ObjectInfoTab() {
                         </div>
                     </div>
                 </div>
-
-                </div>
             </div>
 
             {/* KID MODE CONTENT */}
-            {useAppStore.getState().settings.kidsMode && getKidFact(selected.name) && (
+            {kidsMode && selected && getKidFact(selected.name) && (
                 <div className="rounded-xl p-4 bg-gradient-to-br from-yellow-400/20 to-orange-500/10 border border-yellow-400/30 animate-in bounce-in duration-500">
                     <div className="flex items-center gap-2 mb-2">
                         <Rocket className="w-4 h-4 text-yellow-500 animate-bounce" />
