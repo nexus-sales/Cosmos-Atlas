@@ -2,7 +2,7 @@
 
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import { Suspense, useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import CelestialSphere from '@/components/sky-map/CelestialSphere';
 import Stars from '@/components/sky-map/Stars';
 import DeepSkyObjects from '@/components/sky-map/DeepSkyObjects';
