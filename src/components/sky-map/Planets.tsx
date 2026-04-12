@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Html, Float } from '@react-three/drei';
 import { useMemo, useRef } from 'react';
@@ -314,7 +314,7 @@ function MoonMesh({ planet, phase, opacity }: { planet: { pos: [number, number, 
                 />
             </mesh>
             <Html distanceFactor={120} zIndexRange={[90, 0]}>
-                <div className="pointer-events-none whitespace-nowrap rounded border border-white/20 bg-black/80 px-2 py-1 text-[10px] font-bold font-mono text-white -translate-x-1/2 -translate-y-8">
+                <div className="pointer-events-none whitespace-nowrap rounded-lg border-2 border-white/30 bg-black/90 px-3 py-1.5 text-[14px] font-black font-mono text-white -translate-x-1/2 -translate-y-10 shadow-lg transition-all">
                     LUNA ({phase.toFixed(0)}°)
                 </div>
             </Html>
@@ -403,7 +403,7 @@ function PlanetMesh({ planet }: { planet: PlanetData }) {
                 )}
             </Float>
             <Html distanceFactor={150}>
-                <div className="pointer-events-none whitespace-nowrap rounded border border-white/20 bg-black/80 px-2 py-1 text-[10px] font-bold font-mono text-white -translate-x-1/2 -translate-y-12">
+                <div className="pointer-events-none whitespace-nowrap rounded-lg border-2 border-white/30 bg-black/90 px-3 py-1.5 text-[14px] font-black font-mono text-white -translate-x-1/2 -translate-y-14 shadow-xl transition-all">
                     {planet.name.toUpperCase()}
                 </div>
             </Html>
@@ -433,7 +433,7 @@ function JupiterMoonMesh({ moon }: { moon: MoonData }) {
             <Html distanceFactor={80}>
                 <div 
                     role="presentation" 
-                    className="pointer-events-none whitespace-nowrap text-[8px] font-mono opacity-80" 
+                    className="pointer-events-none whitespace-nowrap text-[14px] font-bold font-mono opacity-100 bg-black/80 px-2 py-0.5 rounded border border-white/20 shadow-sm" 
                     style={{ color: moon.color } as CSSProperties}
                 >
                     {moon.name}

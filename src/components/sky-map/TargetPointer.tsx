@@ -138,13 +138,14 @@ export default function TargetPointer() {
                 center
             >
                 <div
-                    className="accent-label-strong mt-7 font-mono text-[10px] font-bold tracking-[0.15em] uppercase whitespace-nowrap bg-[#020612]/75 px-1.5 py-0.5 rounded border"
+                    className="accent-label-strong mt-10 font-mono text-[14px] font-black tracking-widest uppercase whitespace-nowrap bg-[#020617] px-3 py-1.5 rounded-lg border-2"
                     style={{
                         '--accent-color': accentColor,
-                        '--accent-border': `${accentColor}44`,
+                        '--accent-border': `${accentColor}88`,
+                        color: accentColor,
                     } as CSSProperties}
                 >
-                    ◎ {targetedObject.name}
+                    {targetedObject.name}
                 </div>
             </Html>
         </group>

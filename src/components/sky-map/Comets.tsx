@@ -195,14 +195,16 @@ function CometItem({ comet }: { comet: CometData }) {
             {hovered && (
                 <Html distanceFactor={15} zIndexRange={[100, 0]}>
                     <div
-                        className="accent-label pointer-events-none whitespace-nowrap -translate-y-5 rounded border bg-black/60 px-2 py-[3px] text-[11px] font-bold font-mono"
+                        className="accent-label pointer-events-none whitespace-nowrap -translate-y-7 rounded-lg border-2 bg-black/80 px-3 py-1.5 text-[14px] font-black font-mono transition-all"
                         style={{
                             '--accent-color': displayColor,
-                            '--accent-border': `${displayColor}66`,
+                            '--accent-border': `${displayColor}aa`,
+                            color: displayColor,
+                            textShadow: `0 0 10px ${displayColor}`,
                         } as CSSProperties}
                     >
                         ☄️ {comet.name}
-                        <div className="mt-0.5 text-[9px] opacity-70">
+                        <div className="mt-1 text-[11px] opacity-80">
                             Mag {comet.magnitude.toFixed(1)} · {comet.visible ? '✓ Visible' : '⚠ Débil'}
                         </div>
                     </div>

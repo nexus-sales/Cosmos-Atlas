@@ -204,15 +204,15 @@ function DSOItem({ dso }: { dso: DSOData }) {
             {hovered && (
                 <Html distanceFactor={15} zIndexRange={[100, 0]}>
                     <div 
-                        className="text-[11px] font-mono pointer-events-none whitespace-nowrap bg-black/60 px-2 py-0.5 rounded border -translate-y-5 font-bold"
+                        className="text-[14px] font-mono pointer-events-none whitespace-nowrap bg-black/80 px-3 py-1.5 rounded-lg border-2 -translate-y-7 font-black transition-all"
                         style={{
                             color: displayColor,
-                            textShadow: `0 0 8px ${displayColor}, 0 0 3px black`,
-                            borderColor: `${displayColor}66`,
+                            textShadow: `0 0 12px ${displayColor}, 0 0 4px black`,
+                            borderColor: `${displayColor}aa`,
                         }}
                     >
                         {dso.id}
-                        <div className="text-[9px] opacity-70 mt-0.5">
+                        <div className="text-[11px] opacity-80 mt-1">
                             {dso.name} · mag {dso.mag.toFixed(1)}
                         </div>
                     </div>

@@ -139,15 +139,15 @@ export default function ConstellationLabels() {
                             {/* The Label */}
                             <span 
                                 className={cn(
-                                    "px-3 py-1 rounded-full text-[10px] font-bold tracking-[0.2em] whitespace-nowrap",
-                                    "transition-all duration-500 border",
+                                    "px-4 py-1.5 rounded-full text-[12px] font-black tracking-widest whitespace-nowrap",
+                                    "transition-all duration-500 border-2",
                                     isFocused 
                                         ? (nightMode 
-                                            ? "text-red-400 bg-red-950/80 border-red-500/50" 
-                                            : "text-white bg-blue-600/60 border-blue-400/50 shadow-[0_0_20px_rgba(59,130,246,0.3)]")
+                                            ? "text-red-400 bg-red-950/90 border-red-500/80" 
+                                            : "text-white bg-blue-700/80 border-blue-300 shadow-[0_0_30px_rgba(59,130,246,0.5)]")
                                         : (nightMode
-                                            ? "text-red-900 bg-black/40 border-red-900/20"
-                                            : "text-white/80 bg-black/60 border-white/10")
+                                            ? "text-red-900 bg-black/60 border-red-900/40"
+                                            : "text-white/90 bg-black/80 border-white/20")
                                 )}
                             >
                                 {label}
