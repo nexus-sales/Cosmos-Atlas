@@ -108,10 +108,11 @@ export default function ConstellationLabels() {
                         center
                         distanceFactor={130}
                         zIndexRange={[100, 50]}
+                        pointerEvents="auto"
                     >
                         <div
-                            onMouseEnter={() => { hoveredRef.current = name; }}
-                            onMouseLeave={() => { hoveredRef.current = null; }}
+                            onPointerEnter={() => { hoveredRef.current = name; }}
+                            onPointerLeave={() => { hoveredRef.current = null; }}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 setFocusedConstellation(name);
