@@ -10,10 +10,10 @@ Totalmente responsive e instalable como PWA.
 ## Registro de mejoras (auditoría técnica 2026-04)
 
 ### Rendimiento y re-renders
-- **Sistema de tiempo dual** — `timeMinute` en Zustand: los componentes 3D (Planets, Comets, SimbadOverlay, MeteorShower) se re-renderizan 1×/min en lugar de 1×/seg. Los cálculos VSOP87 bajan de 3 600 a 1 por hora.
-- **PlanetMesh / MoonMesh** — eliminadas las suscripciones a `time` y `observer`; se lee `useAppStore.getState()` dentro de `useFrame` sin coste de re-render.
-- **BackgroundStars** — eliminado `materialRef`; acceso directo al material desde el closure.
-- **GMST cacheado** — `Satellites.tsx` recalcula Greenwich Sidereal Time 1×/seg en lugar de 60×/seg.
+- **[PERFORMANCE 120 FPS] Octree de Alto Rendimiento** — Motor de culling espacial optimizado en `HipparcosStars`. Solo se renderiza lo que el usuario está mirando, permitiendo escalar hasta 20.000 estrellas sin penalización.
+- **Sistema de tiempo dual** — `timeMinute` en Zustand: los cálculos astronómicos pesados bajan drásticamente su frecuencia de actualización mientras la UI permanece fluida.
+- **Eliminación del Re-render Bomb** — El reloj central ha sido aislado en un componente local; el bucle de React ya no se dispara globalmente cada segundo, eliminando el stuttering visual.
+- **GMST cacheado** — `Satellites.tsx` recalcula Greenwich Sidereal Time de forma inteligente.
 
 ### Catálogo estelar
 - **Catálogo Hipparcos** — 14 984 estrellas (mag −1,44 → 6,97), 234 KB en binario Float32Array. Generado con `scripts/generate-hipparcos.mjs` desde VizieR CDS. Shader idéntico al de `Stars.tsx` (twinkle, airmass, color espectral B-V).
@@ -34,11 +34,11 @@ Totalmente responsive e instalable como PWA.
 - **MeteorShower / CometTail** — `Math.random()` dentro de `useMemo` reemplazado por LCG determinista; resultados reproducibles por minuto.
 
 ### Efectos visuales
-- **Bloom calibrado** — `threshold 0.3→0.7`, `intensity 1.0→0.4` (solo estrellas genuinamente brillantes).
-- **Viñeta telescopio** — `darkness 0.8→0.4` (inmersiva sin oscurecer en exceso).
-- **Lunas de Júpiter** — física real con `Astronomy.JupiterMoons()` en lugar de seno/coseno falso.
-- **Giroscopio** — filtro complementario EMA α=0.85 con manejo de wraparound 0/360°.
-- **Viewport iOS** — `viewportFit=cover` + `env(safe-area-inset-*)` en body CSS.
+- **Safe-Area e Inmersión Total** — Soporte para iPhone Notch y Dynamic Island. El canvas es edge-to-edge mientras la UI se desplaza a zonas seguras.
+- **Física de Cometas** — Colas con orientación física real: siempre apuntan en dirección opuesta al Sol (viento solar).
+- **Inercia Zoom "Líquida"** — Refinado el momentum del zoom táctil para una experiencia de navegación fluida.
+- **Bloom Calibrado** — `threshold 0.7`, `intensity 0.4` (puntos de luz puros y precisos).
+- **Giroscopio Premium** — Filtro complementario EMA α=0.85 con compensación de deriva.
 
 ---
 

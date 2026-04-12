@@ -201,60 +201,55 @@ export default function GuideTab() {
     // When no search, limit items; when searching show all matches
     const limit = q ? Infinity : MAX_PER_SECTION;
 
-    const { starList, dsoList, planetList, constellationList, starTotal, dsoTotal, constellationTotal } = useMemo(() => {
+    const { 
+        starList, dsoList, planetList, constellationList, 
+        starTotal, galaxyTotal, nebulaTotal, clusterTotal, constellationTotal 
+    } = useMemo(() => {
         const matchStar = (s: Star) =>
             s.name.toLowerCase().includes(q) || s.constellation.toLowerCase().includes(q);
         const matchDSO = (d: DSO) =>
             d.name.toLowerCase().includes(q) || d.id.toLowerCase().includes(q);
         const matchName = (n: string) => n.toLowerCase().includes(q);
 
-        const allStars = (filter === 'all' || filter === 'stars')
-            ? [...STARS].filter(matchStar).map(s => ({
-                ...s,
-                alt: equToHor(s.ra, s.dec, observer.lat, observer.lon, time).alt,
-            })).sort((a, b) => a.mag - b.mag) // brightest first
-            : [];
+        // All objects matching the query
+        const allStars = [...STARS]
+            .filter(matchStar)
+            .map(s => ({ ...s, alt: equToHor(s.ra, s.dec, observer.lat, observer.lon, time).alt }))
+            .sort((a, b) => a.mag - b.mag);
 
-        const allDSOs = (filter === 'all' || filter === 'galaxies' || filter === 'nebulae' || filter === 'clusters')
-            ? DSOS.filter((d) => {
-                if (!matchDSO(d)) return false;
-                if (filter === 'galaxies') return d.type === 'galaxy';
-                if (filter === 'nebulae') return d.type === 'nebula';
-                if (filter === 'clusters') return d.type === 'cluster';
-                return true;
-            }).map(d => ({
-                ...d,
-                alt: equToHor(d.ra, d.dec, observer.lat, observer.lon, time).alt,
-            })).sort((a, b) => a.mag - b.mag)
-            : [];
+        const allDSOs = DSOS
+            .filter(matchDSO)
+            .map(d => ({ ...d, alt: equToHor(d.ra, d.dec, observer.lat, observer.lon, time).alt }))
+            .sort((a, b) => a.mag - b.mag);
 
-        const planets = (filter === 'all' || filter === 'planets')
-            ? PLANET_GUIDE_CONFIGS
-                .map(cfg => buildPlanet(cfg, time, observer.lat, observer.lon))
-                .filter((p): p is Planet & { alt: number } => p !== null && matchName(p.name))
-                .sort((a, b) => a.mag - b.mag)
-            : [];
+        const allPlanets = PLANET_GUIDE_CONFIGS
+            .map(cfg => buildPlanet(cfg, time, observer.lat, observer.lon))
+            .filter((p): p is Planet & { alt: number } => p !== null && matchName(p.name))
+            .sort((a, b) => a.mag - b.mag);
 
-        const allConstellations = (filter === 'all' || filter === 'constellations')
-            ? CONSTELLATION_TARGETS
-                .filter(c => matchName(c.name) || matchName(getConstellationDisplayName(c.name)))
-                .map(c => ({
-                    ...c,
-                    alt: equToHor(c.ra, c.dec, observer.lat, observer.lon, time).alt,
-                }))
-                .sort((a, b) => getConstellationDisplayName(a.name).localeCompare(getConstellationDisplayName(b.name)))
-            : [];
+        const allConsts = CONSTELLATION_TARGETS
+            .filter(c => matchName(c.name) || matchName(getConstellationDisplayName(c.name)))
+            .map(c => ({ ...c, alt: equToHor(c.ra, c.dec, observer.lat, observer.lon, time).alt }))
+            .sort((a, b) => getConstellationDisplayName(a.name).localeCompare(getConstellationDisplayName(b.name)));
+
+        // Categorized DSOs for counts
+        const galaxies = allDSOs.filter(d => d.type === 'galaxy');
+        const nebulae = allDSOs.filter(d => d.type === 'nebula');
+        const clusters = allDSOs.filter(d => d.type === 'cluster');
 
         return {
             starList: allStars.slice(0, limit),
-            dsoList: allDSOs.slice(0, limit),
-            planetList: planets,
-            constellationList: allConstellations.slice(0, limit),
+            dsoList: allDSOs, // We will filter and slice this in the render sections
+            planetList: allPlanets,
+            constellationList: allConsts.slice(0, limit),
+            // Totals
             starTotal: allStars.length,
-            dsoTotal: allDSOs.length,
-            constellationTotal: allConstellations.length,
+            galaxyTotal: galaxies.length,
+            nebulaTotal: nebulae.length,
+            clusterTotal: clusters.length,
+            constellationTotal: allConsts.length,
         };
-    }, [q, filter, observer, time, limit]);
+    }, [q, observer, time, limit]);
 
     // --- Debounced Remote Search ---
     useEffect(() => {
@@ -428,20 +423,20 @@ export default function GuideTab() {
             )}
 
             {dsoList.filter(d => d.type === 'galaxy').length > 0 && (
-                <DSOSection title="Galaxias" items={dsoList.filter(d => d.type === 'galaxy')}
-                    total={dsoTotal} isOpen={openSections.galaxies} onToggle={() => toggleSection('galaxies')}
+                <DSOSection title="Galaxias" items={dsoList.filter(d => d.type === 'galaxy').slice(0, limit)}
+                    total={galaxyTotal} isOpen={openSections.galaxies} onToggle={() => toggleSection('galaxies')}
                     isTargeted={isTargeted} onSelect={handleSelect} />
             )}
 
             {dsoList.filter(d => d.type === 'nebula').length > 0 && (
-                <DSOSection title="Nebulosas" items={dsoList.filter(d => d.type === 'nebula')}
-                    total={dsoTotal} isOpen={openSections.nebulae} onToggle={() => toggleSection('nebulae')}
+                <DSOSection title="Nebulosas" items={dsoList.filter(d => d.type === 'nebula').slice(0, limit)}
+                    total={nebulaTotal} isOpen={openSections.nebulae} onToggle={() => toggleSection('nebulae')}
                     isTargeted={isTargeted} onSelect={handleSelect} />
             )}
 
             {dsoList.filter(d => d.type === 'cluster').length > 0 && (
-                <DSOSection title="Cúmulos" items={dsoList.filter(d => d.type === 'cluster')}
-                    total={dsoTotal} isOpen={openSections.clusters} onToggle={() => toggleSection('clusters')}
+                <DSOSection title="Cúmulos" items={dsoList.filter(d => d.type === 'cluster').slice(0, limit)}
+                    total={clusterTotal} isOpen={openSections.clusters} onToggle={() => toggleSection('clusters')}
                     isTargeted={isTargeted} onSelect={handleSelect} />
             )}
 
