@@ -39,10 +39,18 @@
   - It also features a "Space Mode" suppression uniform (`uSuppression`) to fade out the atmosphere when zooming in/out.
 
 ## 7. Adaptive Soundscape (`src/components/audio/AdaptiveSoundscape.tsx`)
-- **Status:** **Partially Implemented**
+- **Status:** **Implemented** ✅ *(Updated)*
 - **Details:**
-  - **Implemented:** The audio changes based on the `targetedObject` (specifically for the Sun) by modulating a low-pass filter and gain on a noise node.
-  - **Partially Implemented:** While there is code to detect "Horizon/Wind" based on look direction (`lookDir.y`), the comment `// de momento el master Space reacciona sutilmente` suggests this is a basic implementation. The "Adaptive" aspect is limited to Sun proximity and horizon look-angle.
+  - **Fully implemented** with 5 distinct sound profiles: `deep_space`, `sun`, `planet`, `horizon_wind`, `constellation`.
+  - Uses Web Audio API with brownian noise generation, multiple oscillators per profile, low-pass filter modulation, and LFO-based amplitude modulation.
+  - **Reactive to context:**
+    - `targetedObject` changes trigger profile switches (Sun → aggressive sawtooth, planets → warm sine/triangle, stars → harmonic intervals).
+    - Camera look direction: horizon tilt (< -0.3 Y) activates wind profile.
+    - Night mode reduces overall volume by 50%.
+    - Bortle scale increases noise floor proportionally (simulating light pollution hum).
+  - Smooth parameter interpolation per-frame via exponential approach (delta-time based).
+  - Requires user gesture to initialize (browser autoplay policy), shows a subtle "🔊 Enable Soundscape" button.
+  - Integrated into `SkyCanvas.tsx` within the React Three Fiber `<Suspense>` boundary.
 
 ## 8. AI Astronomer (`src/components/panels/AIAstronoma.tsx`)
 - **Status:** **Implemented**
@@ -52,7 +60,13 @@
   - It includes logic for a "Smart Suggestion" tour finding visible objects based on altitude.
 
 ## 9. Device Orientation (`src/hooks/useDeviceOrientation.ts`)
-- **Status:** **Missing / Basic**
+- **Status:** **Implemented** ✅ *(Updated)*
 - **Details:**
-  - **Missing:** There are **no Kalman filters or sensor fusion algorithms** implemented.
-  - The implementation is a raw listener for `deviceorientation` events (`deviceOrientationRef.alpha = e.alpha`). It does not smooth or fuse data with accelerometers/magnetometers to reduce drift, which is standard for "advanced sensor fusion".
+  - **Madgwick filter** implemented for sensor fusion (replaces previous simple EMA):
+    - Maintains a full quaternion orientation estimate `[w, x, y, z]`.
+    - Uses gravity as an accelerometer reference vector for drift correction.
+    - Proportional-integral (PI) feedback eliminates long-term gyro drift.
+    - Parameters: `MADGWICK_BETA = 0.08` (gradient descent gain), `INTEGRAL_GAIN_KI = 0.001` (bias elimination).
+    - Falls back to EMA smoothing when delta-time is unstable (> 50ms).
+  - Full Euler ↔ Quaternion conversion utilities included.
+  - Preserves iOS 13+ permission flow and gyroscope support detection.

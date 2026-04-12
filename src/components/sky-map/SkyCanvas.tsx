@@ -27,6 +27,7 @@ import CameraBackground from '@/components/sky-map/CameraBackground';
 import HipparcosStars from '@/components/sky-map/HipparcosStars';
 import CinematicTour from '@/components/sky-map/CinematicTour';
 import ConstellationArt from '@/components/sky-map/ConstellationArt';
+import { AdaptiveSoundscape } from '@/components/audio/AdaptiveSoundscape';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { useAppStore } from '@/stores/useAppStore';
 import * as THREE from 'three';
@@ -61,7 +62,7 @@ function FovZoom({
 
     // Inercia del pinch: velocidad acumulada que se decae con fricción
     const pinchVelocityRef = useRef(0);
-    const pinchActiveRef   = useRef(false);
+    const pinchActiveRef = useRef(false);
 
     useEffect(() => {
         const cam = camera as THREE.PerspectiveCamera;
@@ -184,7 +185,7 @@ function FovZoom({
             canvas.removeEventListener('pointerup', onPointerUp);
             canvas.removeEventListener('pointercancel', onPointerUp);
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [camera, gl, setCamFov]); // trackingRef/manualFovRef/manualFovHoldRef are refs — stable by design
 
     return null;
@@ -203,14 +204,14 @@ function SetupRenderer() {
         glRef.current = gl;
         // eslint-disable-next-line react-hooks/immutability
         gl.localClippingEnabled = true;
-        
+
         // Transparencia total en modo cámara, negro en modo bóveda
         if (viewMode === 'camera') {
             gl.setClearColor(0x000000, 0);
         } else {
             gl.setClearColor(0x000000, 1);
         }
-        
+
         return () => {
             if (glRef.current) {
                 glRef.current.localClippingEnabled = false;
@@ -318,9 +319,9 @@ export default function SkyCanvas() {
 
             <Canvas
                 shadows={{ type: THREE.PCFShadowMap }}
-                gl={{ 
-                    antialias: true, 
-                    stencil: false, 
+                gl={{
+                    antialias: true,
+                    stencil: false,
                     powerPreference: 'high-performance',
                     alpha: true // Permitir fondo transparente para ver la cámara
                 }}
@@ -332,6 +333,7 @@ export default function SkyCanvas() {
             >
                 <Suspense fallback={null}>
                     <SetupRenderer />
+                    <AdaptiveSoundscape />
 
                     {/* Iluminación para planetas y Luna (meshStandardMaterial) */}
                     {/* Luz ambiental suave para el lado oscuro */}
