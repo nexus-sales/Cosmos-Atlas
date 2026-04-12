@@ -50,10 +50,14 @@ function FovZoom({
     trackingRef,
     manualFovRef,
     manualFovHoldRef,
+    isMultitouch,
+    setIsMultitouch
 }: {
     trackingRef: React.MutableRefObject<boolean>;
     manualFovRef: React.MutableRefObject<number | null>;
     manualFovHoldRef: React.MutableRefObject<number>;
+    isMultitouch: boolean;
+    setIsMultitouch: (v: boolean) => void;
 }) {
     const { camera, gl } = useThree();
     const fovRef = useRef(60);
@@ -121,10 +125,12 @@ function FovZoom({
         let lastDist = 0;
 
         const onPointerDown = (e: PointerEvent) => {
+            canvas.setPointerCapture(e.pointerId);
             ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
             if (ptrs.size >= 2) {
-                pinchVelocityRef.current = 0; // reiniciar inercia al iniciar nuevo pinch
+                pinchVelocityRef.current = 0;
                 pinchActiveRef.current = true;
+                setIsMultitouch(true);
             }
         };
 
@@ -140,11 +146,8 @@ function FovZoom({
 
             if (lastDist === 0) { lastDist = dist; return; }
 
-            // Separar dedos (dist crece) → zoom in (FOV baja)
             const delta = (lastDist - dist) * 0.15;
             lastDist = dist;
-
-            // Acumular velocidad (promedio suavizado con el delta actual)
             pinchVelocityRef.current = pinchVelocityRef.current * 0.6 + delta * 0.4;
 
             if (trackingRef.current) {
@@ -164,11 +167,12 @@ function FovZoom({
         };
 
         const onPointerUp = (e: PointerEvent) => {
+            canvas.releasePointerCapture(e.pointerId);
             ptrs.delete(e.pointerId);
             if (ptrs.size < 2) {
                 lastDist = 0;
                 pinchActiveRef.current = false;
-                // La velocidad acumulada seguirá aplicándose en useFrame (inercia)
+                setIsMultitouch(false);
             }
         };
 
@@ -307,6 +311,7 @@ export default function SkyCanvas() {
     const trackingRef = useRef(false);
     const manualFovRef = useRef<number | null>(null);
     const manualFovHoldRef = useRef(0);
+    const [isMultitouch, setIsMultitouch] = useState(false);
 
     return (
         <div className={cn(
@@ -349,7 +354,7 @@ export default function SkyCanvas() {
                         ref={controlsRef}
                         enableZoom={false}
                         enablePan={false}
-                        enableRotate={!followOrientation}
+                        enableRotate={!followOrientation && !isMultitouch}
                         rotateSpeed={-0.4}
                         target={[0, 0, 0]}
                         onStart={() => {
@@ -362,6 +367,8 @@ export default function SkyCanvas() {
                         trackingRef={trackingRef}
                         manualFovRef={manualFovRef}
                         manualFovHoldRef={manualFovHoldRef}
+                        isMultitouch={isMultitouch}
+                        setIsMultitouch={setIsMultitouch}
                     />
 
                     {/* Esfera Atmosférica Pro — reemplaza a CelestialSphere */}
