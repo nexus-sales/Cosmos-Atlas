@@ -88,18 +88,27 @@ export default function ConstellationLabels() {
         }
     });
 
-    const scaleFactor = THREE.MathUtils.mapLinear(camFov, 90, 10, 0.9, 1.4);
+    const scaleFactor = THREE.MathUtils.mapLinear(camFov, 120, 10, 0.8, 1.6);
+
+    // Fade de los labels no-focused:
+    // FOV >= 70° → todos visibles (1.0)
+    // FOV  35–70° → transición gradual (1.0 → 0.0)
+    // FOV <  35° → solo el focused es visible, el resto desaparece
+    const nonFocusedFade = THREE.MathUtils.clamp(
+        THREE.MathUtils.mapLinear(camFov, 35, 70, 0.0, 1.0),
+        0.0, 1.0
+    );
 
     return (
         <group renderOrder={100}>
             {labels.map(({ name, label, pos }) => {
                 const isFocused = name === focusedConstellation;
-                
-                // Visibility logic: 
-                // High contrast always for legibility.
-                const baseOpacity = isFocused ? 1.0 : 0.85;
-                const zoomFade = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 90, 50, 1.0, 0.4), 0.4, 1.0);
-                const opacity = baseOpacity * zoomFade;
+
+                // Focused siempre visible; el resto se desvanece con el zoom
+                const opacity = isFocused ? 1.0 : 0.80 * nonFocusedFade;
+
+                // No renderizar elementos invisibles para ahorrar DOM
+                if (opacity < 0.01 && !isFocused) return null;
 
                 return (
                     <Html
@@ -123,9 +132,10 @@ export default function ConstellationLabels() {
                                 "transition-all duration-500 transform-gpu",
                                 isFocused ? "scale-105" : "scale-90"
                             )}
-                            style={{ 
+                            style={{
                                 opacity,
                                 transform: `scale(${scaleFactor})`,
+                                transition: 'opacity 0.4s ease',
                             }}
                         >
                             {/* Decorative dot */}

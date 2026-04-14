@@ -83,7 +83,7 @@ function FovZoom({
             return;
         }
         const cam = camera as THREE.PerspectiveCamera;
-        const next = THREE.MathUtils.clamp(fovRef.current + vel, 10, 90);
+        const next = THREE.MathUtils.clamp(fovRef.current + vel, 5, 120);
         if (next !== fovRef.current) {
             fovRef.current = next;
             cam.fov = next;
@@ -106,7 +106,7 @@ function FovZoom({
             const delta = e.deltaY > 0 ? 3 : -3;
             if (trackingRef.current) {
                 const current = manualFovRef.current ?? cam.fov;
-                const next = THREE.MathUtils.clamp(current + delta, 10, 90);
+                const next = THREE.MathUtils.clamp(current + delta, 5, 120);
                 manualFovRef.current = next;
                 manualFovHoldRef.current = 1.0;
                 cam.fov = next;
@@ -114,7 +114,7 @@ function FovZoom({
                 setCamFov(next);
                 return;
             }
-            fovRef.current = THREE.MathUtils.clamp(fovRef.current + delta, 10, 90);
+            fovRef.current = THREE.MathUtils.clamp(fovRef.current + delta, 5, 120);
             cam.fov = fovRef.current;
             cam.updateProjectionMatrix();
             setCamFov(fovRef.current);
@@ -152,7 +152,7 @@ function FovZoom({
 
             if (trackingRef.current) {
                 const current = manualFovRef.current ?? cam.fov;
-                const next = THREE.MathUtils.clamp(current + delta, 10, 90);
+                const next = THREE.MathUtils.clamp(current + delta, 5, 120);
                 manualFovRef.current = next;
                 manualFovHoldRef.current = 1.0;
                 cam.fov = next;
@@ -160,7 +160,7 @@ function FovZoom({
                 setCamFov(next);
                 return;
             }
-            fovRef.current = THREE.MathUtils.clamp(fovRef.current + delta, 10, 90);
+            fovRef.current = THREE.MathUtils.clamp(fovRef.current + delta, 5, 120);
             cam.fov = fovRef.current;
             cam.updateProjectionMatrix();
             setCamFov(fovRef.current);
