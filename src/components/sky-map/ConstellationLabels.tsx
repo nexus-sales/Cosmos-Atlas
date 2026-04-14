@@ -25,7 +25,6 @@ export default function ConstellationLabels() {
     const camFov = useAppStore((state) => state.camFov);
     const focusedConstellation = useAppStore((state) => state.focusedConstellation);
     const setFocusedConstellation = useAppStore((state) => state.setFocusedConstellation);
-    const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);
 
     // Tracks which label the mouse is currently over.
     // Prevents useFrame from overriding hover-based focus.
@@ -125,7 +124,6 @@ export default function ConstellationLabels() {
                             onClick={(e) => {
                                 e.stopPropagation();
                                 setFocusedConstellation(name);
-                                setSidebarOpen(true);
                             }}
                             className={cn(
                                 "flex flex-col items-center pointer-events-auto cursor-pointer select-none",
