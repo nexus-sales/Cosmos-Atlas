@@ -27,6 +27,7 @@ export default function ViewModeWidget() {
     const setViewMode = useAppStore((s) => s.setViewMode);
     const followOrientation = useAppStore((s) => s.followOrientation);
     const setFollowOrientation = useAppStore((s) => s.setFollowOrientation);
+    const addArHealthSample = useAppStore((s) => s.addArHealthSample);
     const { isSupported, permission, requestAndStart, stop } = useDeviceOrientation();
 
     const clearCalibrationTimers = useCallback(() => {
@@ -51,6 +52,12 @@ export default function ViewModeWidget() {
         if (!granted) {
             setCalibrationPhase('failed');
             setCalibrationProgress(0);
+            addArHealthSample({
+                timestamp: Date.now(),
+                success: false,
+                jitterDeg: Math.round(deviceOrientationRef.headingJitter),
+                stableRatio: 0,
+            });
             timersRef.current.clearStatusId = setTimeout(() => setCalibrationPhase('idle'), 2400);
             return;
         }
@@ -78,11 +85,17 @@ export default function ViewModeWidget() {
             clearCalibrationTimers();
             const stableRatio = samples > 0 ? stableSamples / samples : 0;
             const success = deviceOrientationRef.active && !deviceOrientationRef.needsCalibration && stableRatio >= 0.55;
+            addArHealthSample({
+                timestamp: Date.now(),
+                success,
+                jitterDeg: Math.round(deviceOrientationRef.headingJitter),
+                stableRatio,
+            });
             setCalibrationPhase(success ? 'done' : 'failed');
             if (!success) setFollowOrientation(false);
             timersRef.current.clearStatusId = setTimeout(() => setCalibrationPhase('idle'), 2400);
         }, durationMs + 80);
-    }, [clearCalibrationTimers, requestAndStart, setFollowOrientation, stop]);
+    }, [addArHealthSample, clearCalibrationTimers, requestAndStart, setFollowOrientation, stop]);
 
     useEffect(() => {
         if (viewMode === 'camera' && isSupported && !followOrientation) {

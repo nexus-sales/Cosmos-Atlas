@@ -13,6 +13,14 @@ interface AppState {
         updatedAt: number | null;
     };
     setGeolocation: (patch: Partial<AppState['geolocation']>) => void;
+    arHealthHistory: Array<{
+        timestamp: number;
+        success: boolean;
+        jitterDeg: number;
+        stableRatio: number;
+    }>;
+    addArHealthSample: (sample: { timestamp: number; success: boolean; jitterDeg: number; stableRatio: number }) => void;
+    clearArHealthHistory: () => void;
     selectedObject: Star | DSO | Planet | null;
     setSelectedObject: (obj: Star | DSO | Planet | null) => void;
     targetedObject: Star | DSO | Planet | null;
@@ -107,6 +115,12 @@ export const useAppStore = create<AppState>()(
                 set((state) => ({
                     geolocation: { ...state.geolocation, ...patch },
                 })),
+            arHealthHistory: [],
+            addArHealthSample: (sample) =>
+                set((state) => ({
+                    arHealthHistory: [sample, ...state.arHealthHistory].slice(0, 5),
+                })),
+            clearArHealthHistory: () => set({ arHealthHistory: [] }),
             selectedObject: null,
             setSelectedObject: (obj) => set({ selectedObject: obj }),
             targetedObject: null,
@@ -235,6 +249,7 @@ export const useAppStore = create<AppState>()(
                 settings: state.settings,
                 observer: state.observer,
                 geolocation: state.geolocation,
+                arHealthHistory: state.arHealthHistory,
                 foundChallenges: state.foundChallenges,
                 hasSeenOnboarding: state.hasSeenOnboarding,
                 favorites: state.favorites,

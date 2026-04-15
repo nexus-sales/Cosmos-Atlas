@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { useAppStore } from '@/stores/useAppStore';
-import { Target, Info, BookOpen, Layers, Grid3X3, ChevronRight, ChevronLeft, ChevronDown, X, Moon, Mountain, Camera, Satellite, Globe, CloudRain, Settings2, Crosshair, Sparkles, Activity } from 'lucide-react';
+import { Target, Info, BookOpen, Layers, Grid3X3, ChevronRight, ChevronLeft, ChevronDown, X, Moon, Mountain, Camera, Satellite, Globe, CloudRain, Settings2, Crosshair, Sparkles, Activity, ShieldCheck, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChallengeTab from '@/components/panels/ChallengeTab';
 import ObjectInfoTab from '@/components/panels/ObjectInfoTab';
@@ -63,6 +63,8 @@ function PanelContent({
     const kidsMode = useAppStore((state) => state.settings.kidsMode);
     const satelliteInfo = useAppStore((state) => state.satelliteInfo);
     const viewMode = useAppStore((state) => state.viewMode);
+    const arHealthHistory = useAppStore((state) => state.arHealthHistory);
+    const clearArHealthHistory = useAppStore((state) => state.clearArHealthHistory);
 
     const tabs = [
         { id: 'guide', label: 'GUÍA', icon: BookOpen },
@@ -93,11 +95,12 @@ function PanelContent({
     const [fovOpen, setFovOpen] = useState(false);
     const [eventsOpen, setEventsOpen] = useState(false);
     const [meteorsOpen, setMeteorsOpen] = useState(false);
+    const [arHealthOpen, setArHealthOpen] = useState(false);
 
     return (
         <>
             {/* Tab bar */}
-            <div className="flex border-b border-white/8 h-12 shrink-0 items-center">
+            <div className="flex border-b border-white/8 h-14 shrink-0 items-center">
                 {tabs.map((tab) => {
                     const Icon = tab.icon;
                     const isActive = activeTab === tab.id;
@@ -106,12 +109,12 @@ function PanelContent({
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as TabType)}
                             className={cn(
-                                'flex-1 flex flex-col items-center justify-center gap-1 transition-all relative overflow-hidden h-full cursor-pointer',
+                                'flex-1 flex flex-col items-center justify-center gap-1.5 transition-all relative overflow-hidden h-full cursor-pointer',
                                 isActive ? 'text-blue-400' : 'text-white/30 hover:text-white/60'
                             )}
                         >
                             <Icon className="w-4 h-4" />
-                            <span className="text-[10px] font-bold tracking-[0.2em]">{tab.label}</span>
+                            <span className="text-[11px] font-bold tracking-[0.16em]">{tab.label}</span>
                             {isActive && <div className="absolute bottom-0 left-[20%] right-[20%] h-[3px] bg-blue-500 rounded-t-full shadow-[0_0_12px_rgba(59,130,246,0.8)]" />}
                         </button>
                     );
@@ -130,13 +133,13 @@ function PanelContent({
 
             {/* Scrollable content */}
             <div className="flex-1 overflow-y-auto custom-scrollbar">
-                <div className="p-5">
+                <div className="p-6">
                     {/* Selector de Modo de Vista */}
                     <div className="mb-6 bg-white/5 p-1 rounded-xl flex gap-1 border border-white/5">
                         <button
                             onClick={() => useAppStore.getState().setViewMode('vault')}
                             className={cn(
-                                "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-bold tracking-widest transition-all cursor-pointer",
+                                "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-[11px] font-bold tracking-[0.12em] transition-all cursor-pointer",
                                 viewMode === 'vault' ? "bg-white/10 text-white shadow-lg" : "text-white/30 hover:text-white/50"
                             )}
                         >
@@ -146,7 +149,7 @@ function PanelContent({
                         <button
                             onClick={() => useAppStore.getState().setViewMode('camera')}
                             className={cn(
-                                "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-bold tracking-widest transition-all cursor-pointer",
+                                "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-[11px] font-bold tracking-[0.12em] transition-all cursor-pointer",
                                 viewMode === 'camera' ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "text-white/30 hover:text-white/50"
                             )}
                         >
@@ -166,7 +169,7 @@ function PanelContent({
                     <AccordionSection title="Capas del Cielo" icon={<Settings2 className="w-4 h-4" />} isOpen={layersOpen} onToggle={() => setLayersOpen(!layersOpen)}>
                         <div className="grid grid-cols-2 gap-2">
                             {layerToggles.map(({ key, label, icon: Icon, active }) => (
-                                <button key={key} onClick={() => toggleSetting(key)} className={cn('flex flex-col items-center gap-1.5 py-2.5 rounded-lg text-[9px] font-bold tracking-wider transition-all border outline-none cursor-pointer', active ? 'text-blue-400 border-blue-500/30 bg-blue-500/10' : 'text-white/30 border-white/5 hover:text-white/50 hover:border-white/12')}>
+                                <button key={key} onClick={() => toggleSetting(key)} className={cn('flex flex-col items-center gap-1.5 py-3 rounded-lg text-[10px] font-bold tracking-[0.08em] transition-all border outline-none cursor-pointer', active ? 'text-blue-400 border-blue-500/30 bg-blue-500/10' : 'text-white/35 border-white/5 hover:text-white/60 hover:border-white/12')}>
                                     <Icon className="w-4 h-4" />
                                     {label}
                                 </button>
@@ -203,6 +206,51 @@ function PanelContent({
                                 </div>
                                 <div className="text-[11px] text-blue-300 font-mono">{satelliteInfo.visibleStarlink} visibles</div>
                             </div>
+                        </div>
+                    </AccordionSection>
+
+                    <AccordionSection title="Salud AR" icon={<ShieldCheck className="w-4 h-4" />} isOpen={arHealthOpen} onToggle={() => setArHealthOpen(!arHealthOpen)}>
+                        <div className="space-y-3">
+                            <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
+                                <div className="text-[11px] text-white/70 mb-1">
+                                    Últimas calibraciones: <span className="text-blue-300">{arHealthHistory.length}</span>
+                                </div>
+                                <div className="text-[10px] text-white/45">
+                                    Éxito reciente: <span className="text-white/75">{arHealthHistory[0]?.success ? 'OK' : arHealthHistory.length > 0 ? 'Fallo' : 'N/A'}</span>
+                                </div>
+                            </div>
+
+                            {arHealthHistory.length === 0 ? (
+                                <div className="text-[10px] text-white/45 rounded-lg border border-white/8 p-3">
+                                    Aún no hay datos. Ejecuta calibración AR para registrar salud magnética.
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {arHealthHistory.map((item, idx) => (
+                                        <div key={`${item.timestamp}-${idx}`} className="rounded-lg border border-white/8 bg-white/[0.02] p-2.5">
+                                            <div className="flex items-center justify-between text-[10px]">
+                                                <span className={cn("font-bold", item.success ? "text-emerald-300" : "text-red-300")}>
+                                                    {item.success ? 'Calibración OK' : 'Calibración fallida'}
+                                                </span>
+                                                <span className="text-white/40 font-mono">
+                                                    {new Date(item.timestamp).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </div>
+                                            <div className="mt-1 text-[10px] text-white/55">
+                                                Jitter: {item.jitterDeg}° · Estabilidad: {Math.round(item.stableRatio * 100)}%
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <button
+                                onClick={clearArHealthHistory}
+                                className="w-full rounded-lg border border-red-400/25 bg-red-500/10 text-red-300 text-[10px] font-bold tracking-[0.08em] py-2 hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                LIMPIAR HISTORIAL AR
+                            </button>
                         </div>
                     </AccordionSection>
 
