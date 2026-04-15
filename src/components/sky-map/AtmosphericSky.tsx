@@ -106,8 +106,6 @@ export default function AtmosphericSky() {
         );
         // eslint-disable-next-line react-hooks/immutability
         uniforms.uSuppression.value = suppression;
-        // eslint-disable-next-line react-hooks/immutability
-        uniforms.uBortle.value = useAppStore.getState().settings.bortleScale;
 
         const { time, observer } = useAppStore.getState();
         try {

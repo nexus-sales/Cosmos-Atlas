@@ -51,13 +51,11 @@ function FovZoom({
     trackingRef,
     manualFovRef,
     manualFovHoldRef,
-    isMultitouch,
     setIsMultitouch
 }: {
     trackingRef: React.MutableRefObject<boolean>;
     manualFovRef: React.MutableRefObject<number | null>;
     manualFovHoldRef: React.MutableRefObject<number>;
-    isMultitouch: boolean;
     setIsMultitouch: (v: boolean) => void;
 }) {
     const { camera, gl } = useThree();
@@ -388,7 +386,6 @@ export default function SkyCanvas() {
                         trackingRef={trackingRef}
                         manualFovRef={manualFovRef}
                         manualFovHoldRef={manualFovHoldRef}
-                        isMultitouch={isMultitouch}
                         setIsMultitouch={setIsMultitouch}
                     />
 
