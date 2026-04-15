@@ -130,10 +130,10 @@ export function useDeviceOrientation() {
         setPermission('idle');
     }, []);
 
-    const requestAndStart = useCallback(async () => {
+    const requestAndStart = useCallback(async (): Promise<boolean> => {
         if (!isSupported) {
             setPermission('unavailable');
-            return;
+            return false;
         }
 
         // iOS 13+ requires explicit user-gesture permission
@@ -148,16 +148,20 @@ export function useDeviceOrientation() {
                 if (result === 'granted') {
                     setPermission('granted');
                     startListening();
+                    return true;
                 } else {
                     setPermission('denied');
+                    return false;
                 }
             } catch {
                 setPermission('denied');
+                return false;
             }
         } else {
             // Android / non-iOS browsers: no permission needed
             setPermission('granted');
             startListening();
+            return true;
         }
     }, [isSupported, startListening]);
 

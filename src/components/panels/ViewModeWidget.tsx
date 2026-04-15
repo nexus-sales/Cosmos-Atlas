@@ -15,8 +15,8 @@ export default function ViewModeWidget() {
 
     useEffect(() => {
         if (viewMode === 'camera' && isSupported && !followOrientation) {
-            requestAndStart().then(() => {
-                setFollowOrientation(true);
+            requestAndStart().then((granted) => {
+                setFollowOrientation(granted);
             });
         }
     }, [viewMode, isSupported, followOrientation, requestAndStart, setFollowOrientation]);

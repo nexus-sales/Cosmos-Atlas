@@ -7,11 +7,9 @@ import CelestialSearch from './CelestialSearch';
 import { cn } from '@/lib/utils';
 
 function Clock() {
-    const [time, setTime] = useState<Date | null>(null);
+    const [time, setTime] = useState<Date | null>(() => new Date());
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setTime(new Date());
         const timer = setInterval(() => setTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
@@ -47,8 +45,13 @@ function Clock() {
 
 export default function Header() {
     const observer = useAppStore((state) => state.observer);
+    const geolocation = useAppStore((state) => state.geolocation);
     const isTourActive = useAppStore((state) => state.isTourActive);
     const setIsTourActive = useAppStore((state) => state.setIsTourActive);
+
+    const latHemisphere = observer.lat >= 0 ? 'N' : 'S';
+    const lonHemisphere = observer.lon < 0 ? 'O' : 'E';
+    const hasPreciseLocation = geolocation.source === 'gps' && geolocation.accuracyM !== null && geolocation.accuracyM <= 1000;
 
     return (
         <header className="h-14 md:h-16 border-b border-white/10 bg-black/60 backdrop-blur-md flex items-center justify-between px-3 md:px-6 z-20 overflow-hidden shrink-0">
@@ -67,19 +70,15 @@ export default function Header() {
                 </div>
             </div>
 
-            {/* Central Search Bar */}
             <div className="flex-1 max-w-sm px-4 hidden sm:block">
                 <CelestialSearch />
             </div>
 
-            {/* Right Group: Tour button + Location & Time */}
             <div className="flex items-center gap-3 md:gap-6 font-mono">
-
-                {/* Cinematic Tour toggle */}
                 <button
                     onClick={() => setIsTourActive(!isTourActive)}
                     aria-label={isTourActive ? 'Detener tour del cielo' : 'Iniciar tour cinematográfico del cielo'}
-                    aria-pressed={isTourActive}
+                    aria-pressed={isTourActive ? 'true' : 'false'}
                     title={isTourActive ? 'Detener tour' : 'Tour del cielo'}
                     className={cn(
                         'hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[10px] font-bold tracking-widest uppercase transition-all cursor-pointer',
@@ -91,14 +90,22 @@ export default function Header() {
                     {isTourActive ? <Square className="w-3 h-3" /> : <Play className="w-3 h-3" />}
                     {isTourActive ? 'Stop' : 'Tour'}
                 </button>
-                {/* Location Overlay */}
+
                 <div className="hidden lg:flex flex-col items-end text-right">
                     <div className="flex items-center gap-2 text-[10px] text-white/40 tracking-[0.2em] uppercase mb-0.5">
                         <MapPin className="w-3 h-3" />
                         Ubicación
                     </div>
                     <div className="text-sm text-blue-200/70">
-                        {observer.lat.toFixed(2)}°N {Math.abs(observer.lon).toFixed(2)}°{observer.lon < 0 ? 'O' : 'E'}
+                        {Math.abs(observer.lat).toFixed(2)}°{latHemisphere} {Math.abs(observer.lon).toFixed(2)}°{lonHemisphere}
+                    </div>
+                    <div className={cn(
+                        'text-[9px] mt-0.5 font-mono uppercase tracking-wider',
+                        hasPreciseLocation ? 'text-emerald-300/70' : 'text-amber-300/70'
+                    )}>
+                        {hasPreciseLocation
+                            ? `GPS ±${Math.round(geolocation.accuracyM ?? 0)}m`
+                            : 'Ubicación aproximada'}
                     </div>
                 </div>
 

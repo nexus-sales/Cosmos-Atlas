@@ -5,6 +5,14 @@ import { Star, DSO, Observer, Planet } from '../types/celestial';
 interface AppState {
     observer: Observer;
     setObserver: (observer: Observer) => void;
+    geolocation: {
+        status: 'idle' | 'granted' | 'denied' | 'error';
+        source: 'gps' | 'fallback';
+        accuracyM: number | null;
+        message: string | null;
+        updatedAt: number | null;
+    };
+    setGeolocation: (patch: Partial<AppState['geolocation']>) => void;
     selectedObject: Star | DSO | Planet | null;
     setSelectedObject: (obj: Star | DSO | Planet | null) => void;
     targetedObject: Star | DSO | Planet | null;
@@ -87,6 +95,17 @@ export const useAppStore = create<AppState>()(
         (set) => ({
             observer: { lat: 28.3, lon: -16.3 },
             setObserver: (observer) => set({ observer }),
+            geolocation: {
+                status: 'idle',
+                source: 'fallback',
+                accuracyM: null,
+                message: null,
+                updatedAt: null,
+            },
+            setGeolocation: (patch) =>
+                set((state) => ({
+                    geolocation: { ...state.geolocation, ...patch },
+                })),
             selectedObject: null,
             setSelectedObject: (obj) => set({ selectedObject: obj }),
             targetedObject: null,
@@ -213,6 +232,7 @@ export const useAppStore = create<AppState>()(
             partialize: (state) => ({
                 settings: state.settings,
                 observer: state.observer,
+                geolocation: state.geolocation,
                 foundChallenges: state.foundChallenges,
                 hasSeenOnboarding: state.hasSeenOnboarding,
                 favorites: state.favorites,

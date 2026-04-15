@@ -44,7 +44,7 @@ export default function Compass() {
     useFrame(() => {
         let az: number;
         if (followOrientationRef.current && deviceOrientationRef.active) {
-            az = deviceOrientationRef.alpha;
+            az = deviceOrientationRef.heading;
         } else {
             const lookDir = camera.position.clone().negate().normalize();
             az = (Math.atan2(lookDir.x, -lookDir.z) * (180 / Math.PI) + 360) % 360;
@@ -79,15 +79,18 @@ export default function Compass() {
             stop();
             setFollowOrientation(false);
         } else {
-            await requestAndStart();
-            // Set followOrientation as soon as permission is granted,
-            // regardless of whether the first sensor event has fired yet
+            const granted = await requestAndStart();
+            if (!granted) {
+                setFollowOrientation(false);
+                return;
+            }
+            // Set followOrientation as soon as permission is granted.
             if (deviceOrientationRef.active) {
                 setFollowOrientation(true);
-            } else {
-                // Fallback: wait one tick for active flag to settle (Android)
-                setTimeout(() => setFollowOrientation(true), 100);
+                return;
             }
+            // Fallback: wait one tick for active flag to settle (Android)
+            setTimeout(() => setFollowOrientation(!!deviceOrientationRef.active), 100);
         }
     }, [requestAndStart, stop, setFollowOrientation]);
 

@@ -127,12 +127,10 @@ function DynamicStarLabels({
                 return (
                     <Html key={star.name} position={pos} center distanceFactor={15} zIndexRange={[150, 50]}>
                         <div
-                            className="font-sans font-medium tracking-[0.05em] pointer-events-none select-none translate-y-3.5 text-center"
+                            className="font-sans font-medium tracking-[0.05em] pointer-events-none select-none translate-y-3.5 text-center text-[10px] [text-shadow:0_1px_4px_rgba(0,0,0,0.8)]"
                             style={{
-                                color,
-                                opacity,
-                                fontSize: '10px',
-                                textShadow: '0 1px 4px rgba(0,0,0,0.8)',
+                                color: color,
+                                opacity: opacity,
                             }}
                         >
                             {star.name}
