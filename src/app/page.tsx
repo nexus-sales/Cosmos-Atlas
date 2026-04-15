@@ -40,7 +40,7 @@ export default function Home() {
     if (!isLive) return;
     const timer = setInterval(() => {
       useAppStore.getState().setTime(new Date());
-    }, 60000);
+    }, 1000);
     return () => clearInterval(timer);
   }, [isLive]);
 

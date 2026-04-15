@@ -5,6 +5,7 @@ import { Html } from '@react-three/drei';
 import { useRef, useCallback, useEffect } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
 import { useDeviceOrientation, deviceOrientationRef } from '@/hooks/useDeviceOrientation';
+import { computeMagneticDeclination } from '@/lib/astronomy/magneticDeclination';
 
 // Cardinal from azimuth degrees
 function cardinalFromAz(az: number): string {
@@ -35,6 +36,8 @@ export default function Compass() {
     const followOrientation = useAppStore((s) => s.followOrientation);
     const setFollowOrientation = useAppStore((s) => s.setFollowOrientation);
     const { isSupported, permission, requestAndStart, stop } = useDeviceOrientation();
+    const declinationRef = useRef(0);
+    const lastObsRef = useRef({ lat: NaN, lon: NaN, year: NaN });
 
     // Keep a ref so useFrame always sees current value without subscription
     const followOrientationRef = useRef(followOrientation);
@@ -44,7 +47,20 @@ export default function Compass() {
     useFrame(() => {
         let az: number;
         if (followOrientationRef.current && deviceOrientationRef.active) {
-            az = deviceOrientationRef.heading;
+            const { observer, time } = useAppStore.getState();
+            const year = time.getFullYear() + time.getMonth() / 12;
+            const last = lastObsRef.current;
+
+            if (
+                Math.abs(observer.lat - last.lat) > 0.5 ||
+                Math.abs(observer.lon - last.lon) > 0.5 ||
+                Math.abs(year - last.year) > 0.5
+            ) {
+                declinationRef.current = computeMagneticDeclination(observer.lat, observer.lon, time);
+                lastObsRef.current = { lat: observer.lat, lon: observer.lon, year };
+            }
+
+            az = ((deviceOrientationRef.heading + declinationRef.current) % 360 + 360) % 360;
         } else {
             const lookDir = camera.position.clone().negate().normalize();
             az = (Math.atan2(lookDir.x, -lookDir.z) * (180 / Math.PI) + 360) % 360;
