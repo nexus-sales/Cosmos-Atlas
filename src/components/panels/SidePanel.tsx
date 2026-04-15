@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { useAppStore } from '@/stores/useAppStore';
-import { Target, Info, BookOpen, Layers, Grid3X3, ChevronRight, ChevronLeft, ChevronDown, X, Moon, Mountain, Camera, Satellite, Globe, CloudRain, Settings2, Crosshair, Sparkles } from 'lucide-react';
+import { Target, Info, BookOpen, Layers, Grid3X3, ChevronRight, ChevronLeft, ChevronDown, X, Moon, Mountain, Camera, Satellite, Globe, CloudRain, Settings2, Crosshair, Sparkles, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChallengeTab from '@/components/panels/ChallengeTab';
 import ObjectInfoTab from '@/components/panels/ObjectInfoTab';
@@ -50,6 +50,7 @@ function PanelContent({
     const showEcliptic = useAppStore((state) => state.settings.showEcliptic);
     const showSatellites = useAppStore((state) => state.settings.showSatellites);
     const showStarlink = useAppStore((state) => state.settings.showStarlink);
+    const showDiagnostics = useAppStore((state) => state.settings.showDiagnostics);
     const nightMode = useAppStore((state) => state.settings.nightMode);
     const followTarget = useAppStore((state) => state.settings.followTarget);
     const bortleScale = useAppStore((state) => state.settings.bortleScale);
@@ -80,6 +81,7 @@ function PanelContent({
         { key: 'showFOV' as const, label: 'SIM. FOV', icon: Camera, active: showFOV },
         { key: 'showSatellites' as const, label: 'SATÉLITES', icon: Satellite, active: showSatellites },
         { key: 'showStarlink' as const, label: 'STARLINK', icon: Globe, active: showStarlink },
+        { key: 'showDiagnostics' as const, label: 'DIAGNÓSTICO', icon: Activity, active: showDiagnostics },
         { key: 'telescopeMode' as const, label: 'TELESCOPIO', icon: Camera, active: telescopeMode },
         { key: 'followTarget' as const, label: 'SEGUIR', icon: Crosshair, active: followTarget },
         { key: 'kidsMode' as const, label: 'MODO KIDS', icon: Sparkles, active: kidsMode },

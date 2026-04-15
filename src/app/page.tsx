@@ -6,6 +6,7 @@ import SidePanel from '@/components/panels/SidePanel';
 import AIAstronoma from '@/components/panels/AIAstronoma';
 import TimeTravelControls from '@/components/panels/TimeTravelControls';
 import ViewModeWidget from '@/components/panels/ViewModeWidget';
+import DiagnosticsOverlay from '@/components/panels/DiagnosticsOverlay';
 import Onboarding from '@/components/Onboarding';
 import { useEffect } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
@@ -75,6 +76,8 @@ export default function Home() {
           <div className="pointer-events-auto">
             <SidePanel />
           </div>
+
+          <DiagnosticsOverlay />
 
           {/* Mobile FAB — opens the Bottom Sheet when it's closed */}
           {!sidebarOpen && (

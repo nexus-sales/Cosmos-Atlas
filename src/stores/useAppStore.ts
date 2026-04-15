@@ -35,6 +35,7 @@ interface AppState {
         showFOV: boolean;
         showSatellites: boolean;
         showStarlink: boolean;
+        showDiagnostics: boolean;
         focalLength: number;
         sensorWidth: number;
         sensorHeight: number;
@@ -147,6 +148,7 @@ export const useAppStore = create<AppState>()(
                 showFOV: false,
                 showSatellites: true,
                 showStarlink: false,
+                showDiagnostics: false,
                 focalLength: 1000,
                 sensorWidth: 36,
                 sensorHeight: 24,
