@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
@@ -19,7 +19,7 @@ function Clock() {
             hour: '2-digit',
             minute: '2-digit',
             second: '2-digit',
-            hour12: false
+            hour12: false,
         });
     };
 
@@ -46,6 +46,7 @@ function Clock() {
 export default function Header() {
     const observer = useAppStore((state) => state.observer);
     const geolocation = useAppStore((state) => state.geolocation);
+    const arHealthHistory = useAppStore((state) => state.arHealthHistory);
     const isTourActive = useAppStore((state) => state.isTourActive);
     const setIsTourActive = useAppStore((state) => state.setIsTourActive);
 
@@ -53,10 +54,34 @@ export default function Header() {
     const lonHemisphere = observer.lon < 0 ? 'O' : 'E';
     const hasPreciseLocation = geolocation.source === 'gps' && geolocation.accuracyM !== null && geolocation.accuracyM <= 1000;
     const mobileLocationLabel = hasPreciseLocation
-        ? `GPS ±${Math.round(geolocation.accuracyM ?? 0)}m`
+        ? `GPS +/-${Math.round(geolocation.accuracyM ?? 0)}m`
         : geolocation.status === 'denied'
-            ? 'GPS bloqueado'
-            : 'Ubicación aprox.';
+          ? 'GPS bloqueado'
+          : 'Ubicacion aprox.';
+
+    const arHealthScore =
+        arHealthHistory.length === 0
+            ? null
+            : Math.round(
+                  arHealthHistory.reduce((acc, item) => {
+                      const successScore = item.success ? 40 : 0;
+                      const stableScore = Math.max(0, Math.min(40, Math.round(item.stableRatio * 40)));
+                      const jitterPenalty = Math.min(30, Math.round(item.jitterDeg * 1.5));
+                      const jitterScore = Math.max(0, 20 - jitterPenalty);
+                      return acc + successScore + stableScore + jitterScore;
+                  }, 0) / arHealthHistory.length
+              );
+
+    const arBadgeClass =
+        arHealthScore == null
+            ? 'text-white/65 border-white/20 bg-white/10'
+            : arHealthScore >= 85
+              ? 'text-emerald-300 border-emerald-400/30 bg-emerald-500/10'
+              : arHealthScore >= 65
+                ? 'text-cyan-300 border-cyan-400/30 bg-cyan-500/10'
+                : arHealthScore >= 45
+                  ? 'text-amber-300 border-amber-400/30 bg-amber-500/10'
+                  : 'text-red-300 border-red-400/30 bg-red-500/10';
 
     return (
         <header className="h-14 md:h-16 border-b border-white/10 bg-black/60 backdrop-blur-md flex items-center justify-between px-3 md:px-6 z-20 overflow-hidden shrink-0">
@@ -82,7 +107,7 @@ export default function Header() {
             <div className="flex items-center gap-3 md:gap-6 font-mono">
                 <button
                     onClick={() => setIsTourActive(!isTourActive)}
-                    aria-label={isTourActive ? 'Detener tour del cielo' : 'Iniciar tour cinematográfico del cielo'}
+                    aria-label={isTourActive ? 'Detener tour del cielo' : 'Iniciar tour cinematografico del cielo'}
                     aria-pressed={isTourActive ? 'true' : 'false'}
                     title={isTourActive ? 'Detener tour' : 'Tour del cielo'}
                     className={cn(
@@ -99,29 +124,52 @@ export default function Header() {
                 <div className="hidden lg:flex flex-col items-end text-right">
                     <div className="flex items-center gap-2 text-[10px] text-white/40 tracking-[0.2em] uppercase mb-0.5">
                         <MapPin className="w-3 h-3" />
-                        Ubicación
+                        Ubicacion
                     </div>
                     <div className="text-sm text-blue-200/70">
-                        {Math.abs(observer.lat).toFixed(2)}°{latHemisphere} {Math.abs(observer.lon).toFixed(2)}°{lonHemisphere}
+                        {Math.abs(observer.lat).toFixed(2)}deg{latHemisphere} {Math.abs(observer.lon).toFixed(2)}deg{lonHemisphere}
                     </div>
-                    <div className={cn(
-                        'text-[9px] mt-0.5 font-mono uppercase tracking-wider',
-                        hasPreciseLocation ? 'text-emerald-300/70' : 'text-amber-300/70'
-                    )}>
+                    <div
+                        className={cn(
+                            'text-[9px] mt-0.5 font-mono uppercase tracking-wider',
+                            hasPreciseLocation ? 'text-emerald-300/70' : 'text-amber-300/70'
+                        )}
+                    >
                         {hasPreciseLocation
-                            ? `GPS ±${Math.round(geolocation.accuracyM ?? 0)}m`
-                            : 'Ubicación aproximada'}
+                            ? `GPS +/-${Math.round(geolocation.accuracyM ?? 0)}m`
+                            : 'Ubicacion aproximada'}
                     </div>
                 </div>
 
+                <div
+                    className={cn(
+                        'hidden md:flex items-center rounded-md border px-2 py-1 text-[9px] font-bold tracking-wider uppercase',
+                        arBadgeClass
+                    )}
+                >
+                    AR {arHealthScore == null ? 'N/A' : `${arHealthScore}/100`}
+                </div>
+
                 <Clock />
-                <div className={cn(
-                    'lg:hidden text-[9px] uppercase tracking-wider font-mono rounded px-1.5 py-0.5 border',
-                    hasPreciseLocation
-                        ? 'text-emerald-300/80 border-emerald-400/30 bg-emerald-500/10'
-                        : 'text-amber-300/80 border-amber-400/30 bg-amber-500/10'
-                )}>
+
+                <div
+                    className={cn(
+                        'lg:hidden text-[9px] uppercase tracking-wider font-mono rounded px-1.5 py-0.5 border',
+                        hasPreciseLocation
+                            ? 'text-emerald-300/80 border-emerald-400/30 bg-emerald-500/10'
+                            : 'text-amber-300/80 border-amber-400/30 bg-amber-500/10'
+                    )}
+                >
                     {mobileLocationLabel}
+                </div>
+
+                <div
+                    className={cn(
+                        'md:hidden text-[9px] uppercase tracking-wider font-mono rounded px-1.5 py-0.5 border',
+                        arBadgeClass
+                    )}
+                >
+                    AR {arHealthScore == null ? 'N/A' : arHealthScore}
                 </div>
             </div>
         </header>
