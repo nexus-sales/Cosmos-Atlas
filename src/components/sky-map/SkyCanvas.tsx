@@ -34,6 +34,7 @@ import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { getLST } from '@/lib/astronomy/time';
 import { deviceOrientationRef } from '@/hooks/useDeviceOrientation';
+import { computeMagneticDeclination } from '@/lib/astronomy/magneticDeclination';
 import { cn } from '@/lib/utils';
 
 /**
@@ -251,17 +252,35 @@ function CelestialGroup({ children }: { children: React.ReactNode }) {
 function OrientationDriver() {
     const { camera } = useThree();
     const followOrientation = useAppStore((s) => s.followOrientation);
-    const azRef = useRef(0);
-    const elRef = useRef(45);
+    const azRef   = useRef(0);
+    const elRef   = useRef(45);
+    // Declinación magnética cacheada — se recalcula cada vez que cambia el observador
+    const declRef        = useRef(0);
+    const lastObsRef     = useRef({ lat: NaN, lon: NaN, year: NaN });
 
     useFrame(() => {
         if (!followOrientation) return;
 
-        // Usar heading/elevation ya corregidos por orientación de pantalla y gamma
-        const { heading, elevation } = deviceOrientationRef;
+        // ── Declinación magnética (WMM2020) ──────────────────────────────────
+        // Recalcular solo si el observador o el año cambian más de lo umbral
+        const { observer, time } = useAppStore.getState();
+        const year = time.getFullYear() + time.getMonth() / 12;
+        const last = lastObsRef.current;
+        if (Math.abs(observer.lat - last.lat) > 0.5
+            || Math.abs(observer.lon - last.lon) > 0.5
+            || Math.abs(year - last.year) > 0.5) {
+            declRef.current    = computeMagneticDeclination(observer.lat, observer.lon, time);
+            lastObsRef.current = { lat: observer.lat, lon: observer.lon, year };
+        }
 
-        // Filtro suave para evitar jitter — interpolación EMA sobre el ángulo
-        const dAz = ((heading - azRef.current) % 360 + 540) % 360 - 180;
+        // heading ya tiene la corrección de screen.orientation (landscape).
+        // Añadir declinación magnética: True = Magnetic + Declination
+        const rawHeading = deviceOrientationRef.heading;
+        const trueHeading = ((rawHeading + declRef.current) % 360 + 360) % 360;
+        const elevation   = deviceOrientationRef.elevation;
+
+        // Filtro suave EMA sobre azimut y elevación para evitar jitter
+        const dAz = ((trueHeading - azRef.current) % 360 + 540) % 360 - 180;
         azRef.current = (azRef.current + dAz * 0.12 + 360) % 360;
         elRef.current += (elevation - elRef.current) * 0.12;
 
@@ -269,15 +288,11 @@ function OrientationDriver() {
         const azRad = THREE.MathUtils.degToRad(azRef.current);
 
         // Norte celeste está en dirección +Z del mundo (CelestialGroup rotado por LST y lat).
-        // Para que la cámara mire hacia (sin(az)*cos(el), sin(el), cos(az)*cos(el)),
-        // su posición debe ser la inversa de ese vector (la cámara mira hacia el origen).
-        //
-        // CORRECCIÓN CRÍTICA: signo Z negativo.
-        // El error anterior ponía +cos(az)*cos(el), haciendo que Norte apuntara al Sur.
+        // camera.position = -lookDir * 0.01  (la cámara mira hacia el origen)
         camera.position.set(
             -Math.sin(azRad) * Math.cos(elRad) * 0.01,
             -Math.sin(elRad) * 0.01,
-            -Math.cos(azRad) * Math.cos(elRad) * 0.01,  // ← signo correcto
+            -Math.cos(azRad) * Math.cos(elRad) * 0.01,
         );
     });
 

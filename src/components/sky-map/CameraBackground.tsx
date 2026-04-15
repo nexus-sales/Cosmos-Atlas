@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
+import { cn } from '@/lib/utils';
 
 /**
  * Componente que gestiona el stream de video de la cámara trasera.
@@ -73,8 +74,10 @@ export default function CameraBackground() {
                 autoPlay
                 playsInline
                 muted
-                className="w-full h-full object-cover transition-opacity duration-1000"
-                style={{ opacity: streamActive ? 1 : 0 }}
+                className={cn(
+                    "w-full h-full object-cover transition-opacity duration-1000",
+                    streamActive ? "opacity-100" : "opacity-0"
+                )}
             />
             
             {/* Overlay de carga o error */}
