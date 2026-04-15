@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
-import { Stars, MapPin, Play, Square } from 'lucide-react';
+import { Stars, MapPin, Play, Square, ShieldCheck } from 'lucide-react';
 import CelestialSearch from './CelestialSearch';
 import { cn } from '@/lib/utils';
+import { getArHealthSummary, getArToneClasses } from '@/lib/arHealth';
 
 function Clock() {
     const [time, setTime] = useState<Date | null>(() => new Date());
@@ -59,32 +60,11 @@ export default function Header() {
           ? 'GPS bloqueado'
           : 'Ubicacion aprox.';
 
-    const arHealthScore =
-        arHealthHistory.length === 0
-            ? null
-            : Math.round(
-                  arHealthHistory.reduce((acc, item) => {
-                      const successScore = item.success ? 40 : 0;
-                      const stableScore = Math.max(0, Math.min(40, Math.round(item.stableRatio * 40)));
-                      const jitterPenalty = Math.min(30, Math.round(item.jitterDeg * 1.5));
-                      const jitterScore = Math.max(0, 20 - jitterPenalty);
-                      return acc + successScore + stableScore + jitterScore;
-                  }, 0) / arHealthHistory.length
-              );
-
-    const arBadgeClass =
-        arHealthScore == null
-            ? 'text-white/65 border-white/20 bg-white/10'
-            : arHealthScore >= 85
-              ? 'text-emerald-300 border-emerald-400/30 bg-emerald-500/10'
-              : arHealthScore >= 65
-                ? 'text-cyan-300 border-cyan-400/30 bg-cyan-500/10'
-                : arHealthScore >= 45
-                  ? 'text-amber-300 border-amber-400/30 bg-amber-500/10'
-                  : 'text-red-300 border-red-400/30 bg-red-500/10';
+    const arSummary = getArHealthSummary(arHealthHistory);
+    const arBadgeClass = getArToneClasses(arSummary.tone);
 
     return (
-        <header className="h-14 md:h-16 border-b border-white/10 bg-black/60 backdrop-blur-md flex items-center justify-between px-3 md:px-6 z-20 overflow-hidden shrink-0">
+        <header className="atlas-panel h-14 md:h-16 border-b border-white/10 flex items-center justify-between px-3 md:px-6 z-20 overflow-hidden shrink-0">
             <div className="flex items-center gap-2 md:gap-4">
                 <div className="relative flex items-center justify-center w-8 h-8 md:w-10 md:h-10 border border-blue-500/30 rounded-full bg-blue-500/5 group">
                     <Stars className="w-4 h-4 md:w-6 md:h-6 text-blue-400 group-hover:scale-110 transition-transform" />
@@ -143,11 +123,12 @@ export default function Header() {
 
                 <div
                     className={cn(
-                        'hidden md:flex items-center rounded-md border px-2 py-1 text-[9px] font-bold tracking-wider uppercase',
+                        'hidden md:flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[9px] font-bold tracking-[0.18em] uppercase',
                         arBadgeClass
                     )}
                 >
-                    AR {arHealthScore == null ? 'N/A' : `${arHealthScore}/100`}
+                    <ShieldCheck className="w-3 h-3" />
+                    AR {arSummary.score == null ? 'N/A' : `${arSummary.score}/100`}
                 </div>
 
                 <Clock />
@@ -165,11 +146,12 @@ export default function Header() {
 
                 <div
                     className={cn(
-                        'md:hidden text-[9px] uppercase tracking-wider font-mono rounded px-1.5 py-0.5 border',
+                        'md:hidden flex items-center gap-1 text-[9px] uppercase tracking-wider font-mono rounded-full px-1.5 py-0.5 border',
                         arBadgeClass
                     )}
                 >
-                    AR {arHealthScore == null ? 'N/A' : arHealthScore}
+                    <ShieldCheck className="w-3 h-3" />
+                    {arSummary.score == null ? 'AR N/A' : `AR ${arSummary.score}`}
                 </div>
             </div>
         </header>

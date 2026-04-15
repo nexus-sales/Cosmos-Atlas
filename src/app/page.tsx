@@ -7,6 +7,7 @@ import AIAstronoma from '@/components/panels/AIAstronoma';
 import TimeTravelControls from '@/components/panels/TimeTravelControls';
 import ViewModeWidget from '@/components/panels/ViewModeWidget';
 import DiagnosticsOverlay from '@/components/panels/DiagnosticsOverlay';
+import SystemAlerts from '@/components/panels/SystemAlerts';
 import Onboarding from '@/components/Onboarding';
 import { useEffect } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
@@ -78,6 +79,7 @@ export default function Home() {
           </div>
 
           <DiagnosticsOverlay />
+          <SystemAlerts />
 
           {/* Mobile FAB — opens the Bottom Sheet when it's closed */}
           {!sidebarOpen && (

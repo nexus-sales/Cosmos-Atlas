@@ -24,7 +24,6 @@ import {
     Sparkles,
     Activity,
     ShieldCheck,
-    Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChallengeTab from '@/components/panels/ChallengeTab';
@@ -33,6 +32,7 @@ import GuideTab from '@/components/panels/GuideTab';
 import PassportTab from '@/components/panels/PassportTab';
 import MeteorShowerInfo from '@/components/panels/MeteorShowerInfo';
 import DailyEventsPanel from '@/components/panels/DailyEventsPanel';
+import { getArHealthSummary, getArToneClasses } from '@/lib/arHealth';
 
 type TabType = 'challenge' | 'info' | 'guide' | 'passport';
 
@@ -84,63 +84,24 @@ function PanelContent({
     const satelliteInfo = useAppStore((state) => state.satelliteInfo);
     const viewMode = useAppStore((state) => state.viewMode);
     const arHealthHistory = useAppStore((state) => state.arHealthHistory);
-    const clearArHealthHistory = useAppStore((state) => state.clearArHealthHistory);
 
-    const scoreFromSample = (item: { success: boolean; jitterDeg: number; stableRatio: number }) => {
-        const successScore = item.success ? 40 : 0;
-        const stableScore = Math.max(0, Math.min(40, Math.round(item.stableRatio * 40)));
-        const jitterPenalty = Math.min(30, Math.round(item.jitterDeg * 1.5));
-        const jitterScore = Math.max(0, 20 - jitterPenalty);
-        return successScore + stableScore + jitterScore;
-    };
-
-    const arHealthScore =
-        arHealthHistory.length === 0
-            ? null
-            : Math.round(
-                  arHealthHistory.reduce((acc, item) => acc + scoreFromSample(item), 0) / arHealthHistory.length
-              );
-    const arHealthTrend = [...arHealthHistory].reverse().map((item) => scoreFromSample(item));
-    const avgJitter =
-        arHealthHistory.length === 0
-            ? null
-            : Math.round(arHealthHistory.reduce((acc, item) => acc + item.jitterDeg, 0) / arHealthHistory.length);
-    const avgStability =
-        arHealthHistory.length === 0
-            ? null
-            : Math.round((arHealthHistory.reduce((acc, item) => acc + item.stableRatio, 0) / arHealthHistory.length) * 100);
-
-    const arHealthLabel =
-        arHealthScore == null
-            ? 'No data'
-            : arHealthScore >= 85
-              ? 'Excellent'
-              : arHealthScore >= 65
-                ? 'Good'
-                : arHealthScore >= 45
-                  ? 'Unstable'
-                  : 'Critical';
-    const arHealthRecommendation =
-        arHealthScore == null
-            ? 'Run a full calibration to create your AR baseline.'
-            : arHealthScore >= 85
-              ? 'AR ready. Tracking is precise for premium overlays.'
-              : arHealthScore >= 65
-                ? 'Usable, but recalibrate before long observation sessions.'
-                : arHealthScore >= 45
-                  ? 'Medium drift detected. Recalibrate in open sky and away from metal.'
-                  : 'Low reliability. Recalibrate now with a clear sky and figure-8 motion.';
-
-    const arHealthBadgeClass =
-        arHealthScore == null
-            ? 'text-white/70 border-white/20 bg-white/10'
-            : arHealthScore >= 85
-              ? 'text-emerald-300 border-emerald-400/35 bg-emerald-500/10'
-              : arHealthScore >= 65
-                ? 'text-cyan-300 border-cyan-400/35 bg-cyan-500/10'
-                : arHealthScore >= 45
-                  ? 'text-amber-300 border-amber-400/35 bg-amber-500/10'
-                  : 'text-red-300 border-red-400/35 bg-red-500/10';
+    const arSummary = getArHealthSummary(arHealthHistory);
+    const arHealthBadgeClass = getArToneClasses(arSummary.tone);
+    const activeLayerCount = layerTogglesCount({
+        showGrid,
+        showConstellations,
+        showConstellationArt,
+        showMilkyWay,
+        showEcliptic,
+        nightMode,
+        showFOV,
+        showSatellites,
+        showStarlink,
+        showDiagnostics,
+        telescopeMode,
+        followTarget,
+        kidsMode,
+    });
 
     const tabs = [
         { id: 'guide', label: 'GUIDE', icon: BookOpen },
@@ -207,7 +168,32 @@ function PanelContent({
             </div>
 
             <div className="flex-1 overflow-y-auto custom-scrollbar">
-                <div className="p-6">
+                <div className="p-5 md:p-6">
+                    <div className="atlas-card mb-5 rounded-2xl p-4">
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/42">Observation Mode</p>
+                                <h2 className="mt-1 text-[18px] font-semibold tracking-[0.08em] text-white">
+                                    {viewMode === 'camera' ? 'AR Sky Lens' : 'Sky Vault'}
+                                </h2>
+                                <p className="mt-1 text-[12px] leading-5 text-white/58">
+                                    {viewMode === 'camera'
+                                        ? 'Live calibration guidance and sensor health for field use.'
+                                        : 'Deep-sky exploration with overlays tuned for clarity.'}
+                                </p>
+                            </div>
+                            <div className={cn('rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em]', arHealthBadgeClass)}>
+                                {arSummary.score == null ? 'AR Pending' : `${arSummary.label} AR`}
+                            </div>
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-3 gap-2">
+                            <StatusMetric label="Layers" value={`${activeLayerCount}`} hint="active" />
+                            <StatusMetric label="GPS" value={satelliteInfo.visibleSpecial + satelliteInfo.visibleStarlink > 0 ? 'Live' : 'Standby'} hint="tracking" />
+                            <StatusMetric label="AR" value={arSummary.score == null ? 'N/A' : `${arSummary.score}`} hint="health" />
+                        </div>
+                    </div>
+
                     <div className="mb-6 bg-white/5 p-1 rounded-xl flex gap-1 border border-white/5">
                         <button
                             onClick={() => useAppStore.getState().setViewMode('vault')}
@@ -239,18 +225,29 @@ function PanelContent({
 
                 <div className="border-t border-white/8 divide-y divide-white/5">
                     <AccordionSection title="Sky Layers" icon={<Settings2 className="w-4 h-4" />} isOpen={layersOpen} onToggle={() => setLayersOpen(!layersOpen)}>
+                        <div className="mb-3 flex items-center justify-between rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-[10px] text-white/52">
+                            <span>Visible overlays curated for quick reading.</span>
+                            <span className="font-mono text-white/72">{activeLayerCount} on</span>
+                        </div>
                         <div className="grid grid-cols-2 gap-2">
                             {layerToggles.map(({ key, label, icon: Icon, active }) => (
                                 <button
                                     key={key}
                                     onClick={() => toggleSetting(key)}
                                     className={cn(
-                                        'flex flex-col items-center gap-1.5 py-3 rounded-lg text-[10px] font-bold tracking-[0.08em] transition-all border outline-none cursor-pointer',
-                                        active ? 'text-blue-400 border-blue-500/30 bg-blue-500/10' : 'text-white/35 border-white/5 hover:text-white/60 hover:border-white/12'
+                                        'flex items-center gap-2.5 px-3 py-3 rounded-xl text-[10px] font-bold tracking-[0.08em] transition-all border outline-none cursor-pointer text-left',
+                                        active ? 'text-blue-300 border-blue-500/30 bg-blue-500/10' : 'text-white/35 border-white/5 hover:text-white/60 hover:border-white/12'
                                     )}
                                 >
-                                    <Icon className="w-4 h-4" />
-                                    {label}
+                                    <div className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border', active ? 'border-blue-400/20 bg-blue-500/10' : 'border-white/8 bg-white/[0.03]')}>
+                                        <Icon className="w-4 h-4" />
+                                    </div>
+                                    <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                                        <span className="truncate">{label}</span>
+                                        <span className={cn('text-[9px] font-mono', active ? 'text-blue-200/80' : 'text-white/25')}>
+                                            {active ? 'ON' : 'OFF'}
+                                        </span>
+                                    </div>
                                 </button>
                             ))}
                         </div>
@@ -258,6 +255,9 @@ function PanelContent({
 
                     <AccordionSection title={`Light Pollution: Bortle ${bortleScale}`} icon={<Mountain className="w-4 h-4" />} isOpen={bortleOpen} onToggle={() => setBortleOpen(!bortleOpen)}>
                         <div className="space-y-3">
+                            <div className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2.5 text-[11px] leading-5 text-white/60">
+                                {bortleScale <= 2 ? 'Pristine contrast for nebulae and Milky Way structure.' : bortleScale <= 4 ? 'Balanced rural sky with good deep-sky visibility.' : bortleScale <= 6 ? 'Moderate suburban glow. Bright targets still read well.' : 'Strong urban glow. Prioritise Moon, planets and brightest stars.'}
+                            </div>
                             <div className="flex gap-1 justify-between">
                                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((val) => (
                                     <button key={val} onClick={() => setBortleScale(val)} className={cn('flex-1 py-1.5 rounded-md text-[11px] font-mono transition-all border outline-none cursor-pointer', bortleScale === val ? 'bg-blue-500/20 border-blue-500/40 text-blue-400' : 'bg-white/5 border-transparent text-white/25 hover:bg-white/10')}>
@@ -272,131 +272,88 @@ function PanelContent({
                     </AccordionSection>
 
                     <AccordionSection title="Satellites" icon={<Satellite className="w-4 h-4" />} isOpen={satellitesOpen} onToggle={() => setSatellitesOpen(!satellitesOpen)}>
+                        <div className="mb-3 rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2.5 text-[11px] leading-5 text-white/60">
+                            Quick glance at premium satellite traffic without opening a denser tracker view.
+                        </div>
                         <div className="grid grid-cols-2 gap-2">
-                            <div className="rounded-lg border border-white/8 bg-white/2 p-2">
-                                <div className="flex items-center gap-2 text-[10px] font-bold text-white/70 mb-1">
+                            <div className="atlas-card rounded-xl p-3">
+                                <div className="flex items-center gap-2 text-[10px] font-bold text-white/70 mb-1.5">
                                     <div className="w-2 h-2 rounded-full bg-white shadow-[0_0_6px_white]" /> ISS/HUBBLE
                                 </div>
-                                <div className="text-[11px] text-blue-300 font-mono">{satelliteInfo.visibleSpecial} visible</div>
+                                <div className="text-[18px] text-blue-200 font-mono">{satelliteInfo.visibleSpecial}</div>
+                                <div className="text-[10px] text-white/42 uppercase tracking-[0.16em]">visible now</div>
                             </div>
-                            <div className="rounded-lg border border-white/8 bg-white/2 p-2">
-                                <div className="flex items-center gap-2 text-[10px] font-bold text-white/70 mb-1">
+                            <div className="atlas-card rounded-xl p-3">
+                                <div className="flex items-center gap-2 text-[10px] font-bold text-white/70 mb-1.5">
                                     <div className="w-2 h-2 rounded-full bg-[#88aaff] shadow-[0_0_6px_#88aaff]" /> STARLINK
                                 </div>
-                                <div className="text-[11px] text-blue-300 font-mono">{satelliteInfo.visibleStarlink} visible</div>
+                                <div className="text-[18px] text-blue-200 font-mono">{satelliteInfo.visibleStarlink}</div>
+                                <div className="text-[10px] text-white/42 uppercase tracking-[0.16em]">visible now</div>
                             </div>
                         </div>
                     </AccordionSection>
 
                     <AccordionSection title="AR Health" icon={<ShieldCheck className="w-4 h-4" />} isOpen={arHealthOpen} onToggle={() => setArHealthOpen(!arHealthOpen)}>
                         <div className="space-y-3">
-                            <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
+                            <div className="atlas-card rounded-2xl p-3.5">
                                 <div className="flex items-center justify-between mb-2">
-                                    <div className="text-[11px] text-white/70">AR Health Score</div>
-                                    <div className={cn('text-[10px] px-2 py-0.5 rounded-full border font-bold tracking-wide', arHealthBadgeClass)}>
-                                        {arHealthLabel}
+                                    <div className="text-[11px] text-white/74">AR Health Score</div>
+                                    <div className={cn('text-[10px] px-2.5 py-1 rounded-full border font-bold tracking-[0.16em] uppercase', arHealthBadgeClass)}>
+                                        {arSummary.label}
                                     </div>
                                 </div>
-                                <div className="flex items-center justify-between text-[12px]">
+                                <div className="flex items-center justify-between text-[13px]">
                                     <span className="text-white/40">Score</span>
                                     <span className="text-blue-300 font-mono font-bold">
-                                        {arHealthScore == null ? 'N/A' : `${arHealthScore}/100`}
+                                        {arSummary.score == null ? 'N/A' : `${arSummary.score}/100`}
                                     </span>
                                 </div>
                                 <div className="mt-2 h-2 rounded-full bg-white/10 overflow-hidden">
                                     <div
                                         className={cn(
                                             'h-full transition-all duration-500',
-                                            arHealthScore == null
+                                            arSummary.score == null
                                                 ? 'bg-white/30'
-                                                : arHealthScore >= 85
+                                                : arSummary.score >= 85
                                                   ? 'bg-emerald-400/85'
-                                                  : arHealthScore >= 65
+                                                  : arSummary.score >= 65
                                                     ? 'bg-cyan-400/85'
-                                                    : arHealthScore >= 45
+                                                    : arSummary.score >= 45
                                                       ? 'bg-amber-400/85'
                                                       : 'bg-red-400/85'
                                         )}
-                                        style={{ width: `${Math.max(6, arHealthScore ?? 6)}%` }}
+                                        style={{ width: `${Math.max(6, arSummary.score ?? 6)}%` }}
                                     />
                                 </div>
-                                <div className="mt-1 text-[10px] text-white/45">
+                                <div className="mt-2 text-[10px] text-white/45">
                                     Calibrations: <span className="text-white/75">{arHealthHistory.length}</span>
                                 </div>
                                 <div className="text-[10px] text-white/45">
-                                    Last status: <span className="text-white/75">{arHealthHistory[0]?.success ? 'OK' : arHealthHistory.length > 0 ? 'Failed' : 'N/A'}</span>
+                                    Last status: <span className="text-white/75">{arSummary.lastSample?.success ? 'OK' : arHealthHistory.length > 0 ? 'Failed' : 'N/A'}</span>
                                 </div>
                                 <div className="text-[10px] text-white/45">
-                                    Avg jitter: <span className="text-white/75">{avgJitter == null ? 'N/A' : `${avgJitter}deg`}</span>
+                                    Avg jitter: <span className="text-white/75">{arSummary.avgJitter == null ? 'N/A' : `${arSummary.avgJitter}deg`}</span>
                                 </div>
                                 <div className="text-[10px] text-white/45">
-                                    Avg stability: <span className="text-white/75">{avgStability == null ? 'N/A' : `${avgStability}%`}</span>
+                                    Avg stability: <span className="text-white/75">{arSummary.avgStability == null ? 'N/A' : `${arSummary.avgStability}%`}</span>
                                 </div>
-                                <p className="mt-2 text-[10px] leading-relaxed text-white/60">{arHealthRecommendation}</p>
+                                <p className="mt-2.5 text-[11px] leading-relaxed text-white/60">{arSummary.recommendation}</p>
                             </div>
 
-                            {arHealthHistory.length === 0 ? (
-                                <div className="text-[10px] text-white/45 rounded-lg border border-white/8 p-3">
-                                    No data yet. Run AR calibration to start health tracking.
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    <div className="rounded-lg border border-white/8 bg-white/[0.02] p-2.5">
-                                        <div className="flex items-end gap-1 h-10">
-                                            {arHealthTrend.map((score, idx) => (
-                                                <div key={`trend-${idx}`} className="flex-1 rounded-sm bg-white/8 overflow-hidden">
-                                                    <div
-                                                        className={cn(
-                                                            'w-full transition-all',
-                                                            score >= 85
-                                                                ? 'bg-emerald-400/80'
-                                                                : score >= 65
-                                                                  ? 'bg-cyan-400/80'
-                                                                  : score >= 45
-                                                                    ? 'bg-amber-400/80'
-                                                                    : 'bg-red-400/80'
-                                                        )}
-                                                        style={{ height: `${Math.max(12, score)}%` }}
-                                                    />
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <div className="mt-1 text-[9px] text-white/45 flex items-center justify-between">
-                                            <span>Trend (old to new)</span>
-                                            <span className="font-mono">last {arHealthTrend.length}</span>
-                                        </div>
-                                    </div>
-                                    {arHealthHistory.map((item, idx) => (
-                                        <div key={`${item.timestamp}-${idx}`} className="rounded-lg border border-white/8 bg-white/[0.02] p-2.5">
-                                            <div className="flex items-center justify-between text-[10px]">
-                                                <span className={cn('font-bold', item.success ? 'text-emerald-300' : 'text-red-300')}>
-                                                    {item.success ? 'Calibration OK' : 'Calibration failed'}
-                                                </span>
-                                                <span className="text-white/40 font-mono">
-                                                    {new Date(item.timestamp).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                                                </span>
-                                            </div>
-                                            <div className="mt-1 text-[10px] text-white/55">
-                                                Jitter: {item.jitterDeg}deg - Stability: {Math.round(item.stableRatio * 100)}%
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            <button
-                                onClick={clearArHealthHistory}
-                                className="w-full rounded-lg border border-red-400/25 bg-red-500/10 text-red-300 text-[10px] font-bold tracking-[0.08em] py-2 hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2"
-                            >
-                                <Trash2 className="w-3.5 h-3.5" />
-                                CLEAR AR HISTORY
-                            </button>
+                            <div className="rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 text-[10px] text-white/50">
+                                {arHealthHistory.length === 0
+                                    ? 'The system will keep a short internal calibration memory once you run AR.'
+                                    : `Short internal memory active with ${arHealthHistory.length} recent calibration sample${arHealthHistory.length > 1 ? 's' : ''}.`}
+                            </div>
                         </div>
                     </AccordionSection>
 
                     {showFOV && (
                         <AccordionSection title="Capture Settings" icon={<Camera className="w-4 h-4" />} isOpen={fovOpen} onToggle={() => setFovOpen(!fovOpen)}>
                             <div className="space-y-4">
+                                <div className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2.5 text-[11px] leading-5 text-white/60">
+                                    Frame your target quickly with focal length and sensor preset tuned for astrophotography planning.
+                                </div>
                                 <div className="space-y-2">
                                     <div className="flex justify-between text-[10px] font-mono text-white/60">
                                         <span>Focal Length</span>
@@ -550,8 +507,7 @@ export default function SidePanel() {
             initial={false}
             animate={{ width: sidebarOpen ? 340 : 52 }}
             transition={{ type: 'spring', stiffness: 350, damping: 35 }}
-            className="relative h-full z-50 flex flex-col overflow-hidden shadow-2xl border-l border-white/5 shrink-0"
-            style={{ background: 'linear-gradient(180deg, rgba(4,12,28,0.98) 0%, rgba(2,6,18,1) 100%)' }}
+            className="atlas-panel relative h-full z-50 flex flex-col overflow-hidden border-l border-white/5 shrink-0"
         >
             {sidebarOpen ? (
                 <PanelContent activeTab={activeTab} setActiveTab={setActiveTab} onClose={() => setSidebarOpen(false)} isMobile={false} />
@@ -610,11 +566,11 @@ function AccordionSection({
                     if (!isOpen) setHasOpened(true);
                     onToggle();
                 }}
-                className={cn('flex items-center justify-between w-full p-4 text-left transition-colors outline-none cursor-pointer', isOpen ? 'bg-white/[0.03]' : 'hover:bg-white/[0.02]')}
+                className={cn('flex items-center justify-between w-full px-4 py-4 text-left transition-colors outline-none cursor-pointer', isOpen ? 'bg-white/[0.04]' : 'hover:bg-white/[0.02]')}
             >
                 <div className="flex items-center gap-3">
                     <span className={cn('transition-colors', isOpen ? 'text-blue-400' : 'text-white/30')}>{icon}</span>
-                    <span className={cn('text-[10px] font-bold tracking-widest uppercase transition-colors', isOpen ? 'text-white' : 'text-white/40')}>{title}</span>
+                    <span className={cn('text-[11px] font-bold tracking-[0.2em] uppercase transition-colors', isOpen ? 'text-white' : 'text-white/40')}>{title}</span>
                 </div>
                 <ChevronDown className={cn('w-4 h-4 text-white/20 transition-transform duration-300', isOpen ? 'rotate-180 text-blue-400/50' : '')} />
             </button>
@@ -623,4 +579,32 @@ function AccordionSection({
             </div>
         </div>
     );
+}
+
+function StatusMetric({ label, value, hint }: { label: string; value: string; hint: string }) {
+    return (
+        <div className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2.5">
+            <div className="text-[9px] uppercase tracking-[0.18em] text-white/38">{label}</div>
+            <div className="mt-1 text-[15px] font-semibold text-white">{value}</div>
+            <div className="text-[9px] uppercase tracking-[0.14em] text-white/32">{hint}</div>
+        </div>
+    );
+}
+
+function layerTogglesCount(settings: {
+    showGrid: boolean;
+    showConstellations: boolean;
+    showConstellationArt: boolean;
+    showMilkyWay: boolean;
+    showEcliptic: boolean;
+    nightMode: boolean;
+    showFOV: boolean;
+    showSatellites: boolean;
+    showStarlink: boolean;
+    showDiagnostics: boolean;
+    telescopeMode: boolean;
+    followTarget: boolean;
+    kidsMode: boolean;
+}) {
+    return Object.values(settings).filter(Boolean).length;
 }

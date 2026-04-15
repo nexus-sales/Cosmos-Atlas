@@ -160,7 +160,7 @@ export default function ViewModeWidget() {
                     className={cn(
                         'flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-bold tracking-widest transition-all',
                         viewMode === 'camera'
-                            ? 'bg-purple-600/80 text-white shadow-[0_0_15px_rgba(147,51,234,0.4)]'
+                            ? 'bg-cyan-500/80 text-white shadow-[0_0_15px_rgba(34,211,238,0.35)]'
                             : 'text-white/40 hover:text-white/70'
                     )}
                 >
@@ -170,24 +170,24 @@ export default function ViewModeWidget() {
             </div>
 
             {viewMode === 'camera' && (
-                <div className="animate-in fade-in slide-in-from-right-4 duration-500 flex items-center gap-3 bg-purple-500/10 border border-purple-500/30 rounded-lg px-4 py-2.5 backdrop-blur-md">
+                <div className="atlas-card animate-in fade-in slide-in-from-right-4 duration-500 flex items-center gap-3 rounded-2xl px-4 py-3">
                     <div className="relative">
-                        <Aperture className="w-4 h-4 text-purple-400 animate-[spin_4s_linear_infinite]" />
-                        <div className="absolute inset-0 bg-purple-400/20 blur-md rounded-full" />
+                        <Aperture className="w-4 h-4 text-cyan-300 animate-[spin_4s_linear_infinite]" />
+                        <div className="absolute inset-0 bg-cyan-300/20 blur-md rounded-full" />
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-[10px] font-bold text-purple-200 tracking-[0.2em] uppercase leading-none mb-1">
+                        <span className="text-[10px] font-bold text-cyan-100 tracking-[0.2em] uppercase leading-none mb-1">
                             Lente AR Activo
                         </span>
-                        <span className="text-[9px] text-purple-300/50 font-mono">{arStatusText}</span>
+                        <span className="text-[10px] text-white/60 font-mono">{arStatusText}</span>
                     </div>
                 </div>
             )}
 
             {showCalibrationCard && (
-                <div className="pointer-events-auto bg-black/70 border border-white/10 rounded-xl px-3 py-2 backdrop-blur-md max-w-[240px]">
-                    <p className="text-[9px] text-white/70 uppercase tracking-wider font-bold mb-1">Calibracion AR</p>
-                    <p className="text-[9px] text-white/45 leading-relaxed mb-2">
+                <div className="atlas-panel pointer-events-auto max-w-[270px] rounded-2xl px-3.5 py-3">
+                    <p className="text-[10px] text-white/78 uppercase tracking-[0.18em] font-semibold mb-1.5">Calibracion AR</p>
+                    <p className="text-[11px] text-white/55 leading-relaxed mb-2.5">
                         {calibrationPhase === 'running'
                             ? 'Mueve el movil en forma de 8 durante 3 segundos.'
                             : needsCalibration
@@ -208,7 +208,7 @@ export default function ViewModeWidget() {
                             </div>
                             <p
                                 className={cn(
-                                    'text-[9px] mb-2 font-mono',
+                                    'text-[10px] mb-2.5 font-mono',
                                     stabilityHint === 'good' ? 'text-emerald-300/80' : 'text-amber-300/80'
                                 )}
                             >
@@ -218,16 +218,16 @@ export default function ViewModeWidget() {
                     )}
 
                     {calibrationPhase === 'done' && (
-                        <p className="text-[9px] mb-2 font-mono text-emerald-300/80">Calibracion correcta</p>
+                        <p className="text-[10px] mb-2.5 font-mono text-emerald-300/80">Calibracion correcta</p>
                     )}
                     {calibrationPhase === 'failed' && (
-                        <p className="text-[9px] mb-2 font-mono text-red-300/80">No se pudo estabilizar. Repite calibracion.</p>
+                        <p className="text-[10px] mb-2.5 font-mono text-red-300/80">No se pudo estabilizar. Repite calibracion.</p>
                     )}
 
                     <button
                         onClick={calibrateAR}
                         disabled={calibrationPhase === 'running'}
-                        className="w-full rounded-lg border border-blue-500/40 bg-blue-500/20 text-blue-300 text-[10px] font-bold tracking-wider py-1.5 hover:bg-blue-500/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="w-full rounded-xl border border-cyan-400/35 bg-cyan-500/18 text-cyan-100 text-[10px] font-bold tracking-[0.16em] py-2 hover:bg-cyan-500/26 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                         {calibrationPhase === 'running'
                             ? 'Calibrando...'

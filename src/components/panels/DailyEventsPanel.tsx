@@ -1,85 +1,98 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
 import { getDailyEvents, getBestViewingEvents, formatEventTime } from '@/lib/dailyEvents';
 import type { CelestialEvent } from '@/lib/dailyEvents';
-import { Eye, EyeOff, Clock, Calendar } from 'lucide-react';
+import { Eye, EyeOff, Clock3, CalendarDays, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function DailyEventsPanel() {
-    // Only re-render when the date (day) or hour changes, NOT every second
     const dateKey = useAppStore((state) => state.time.toDateString());
-    const hour = useAppStore((state) => state.time.getHours());
     const timeDisplay = useAppStore((state) => state.time);
     const observer = useAppStore((state) => state.observer);
-    const [events, setEvents] = useState<CelestialEvent[]>([]);
-    const [bestEvents, setBestEvents] = useState<CelestialEvent[]>([]);
+    const hour = timeDisplay.getHours();
+    const timestamp = timeDisplay.getTime();
 
-    useEffect(() => {
-        const currentTime = useAppStore.getState().time;
-        const allEvents = getDailyEvents(currentTime, observer);
-        const best = getBestViewingEvents(currentTime, observer);
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setEvents(allEvents);
-        setBestEvents(best);
-    }, [dateKey, observer]);
+    const { events, bestEvents } = useMemo(() => {
+        const currentTime = new Date(timestamp);
+        return {
+            events: getDailyEvents(currentTime, observer),
+            bestEvents: getBestViewingEvents(currentTime, observer),
+        };
+    }, [observer, timestamp]);
 
     const todayStr = new Date(dateKey).toLocaleDateString('es-ES', {
         weekday: 'long',
         day: 'numeric',
         month: 'long',
-        year: 'numeric'
+        year: 'numeric',
     });
 
     const isNight = hour >= 20 || hour <= 6;
+    const visibleCount = events.filter((event) => event.visible).length;
 
     return (
         <div className="space-y-4">
-            {/* Header con fecha */}
-            <div className="flex items-center gap-2 text-[10px] font-bold text-white/30 tracking-[0.2em] uppercase px-1">
-                <Calendar className="w-3.5 h-3.5 text-blue-400/70" />
-                EVENTOS DEL DÍA
-            </div>
-
-            <div className="p-3 rounded-lg border border-white/10 bg-white/[0.03]">
-                <div className="text-[11px] text-white/60 mb-1">{todayStr}</div>
-                <div className="flex items-center gap-2 text-[9px]">
-                    <span className={cn(
-                        "px-1.5 py-0.5 rounded",
-                        isNight ? "bg-indigo-500/20 text-indigo-400" : "bg-amber-500/20 text-amber-400"
-                    )}>
-                        {isNight ? '🌙 Noche' : '☀️ Día'}
-                    </span>
-                    <span className="text-white/40 font-mono">{formatEventTime(timeDisplay)}</span>
-                </div>
-            </div>
-
-            {/* Mejores eventos para observar */}
-            {bestEvents.length > 0 && (
-                <div className="space-y-1">
-                    <div className="flex items-center gap-1.5 text-[8px] text-white/20 uppercase tracking-wider px-1">
-                        <Eye className="w-2.5 h-2.5" />
-                        Mejores eventos
+            <div className="atlas-card rounded-2xl p-4">
+                <div className="flex items-start justify-between gap-3">
+                    <div>
+                        <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/42">
+                            <CalendarDays className="h-3.5 w-3.5 text-blue-300/70" />
+                            Daily Sky Briefing
+                        </div>
+                        <div className="mt-1 text-[15px] font-semibold capitalize text-white">{todayStr}</div>
+                        <div className="mt-1 text-[11px] leading-5 text-white/58">
+                            Quick reading of the best viewing windows and the timeline for today.
+                        </div>
                     </div>
-                    {bestEvents.slice(0, 5).map((event) => (
-                        <EventCard key={event.id} event={event} compact />
-                    ))}
+                    <div
+                        className={cn(
+                            'rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em]',
+                            isNight
+                                ? 'border-indigo-400/30 bg-indigo-500/10 text-indigo-200'
+                                : 'border-amber-400/30 bg-amber-500/10 text-amber-200'
+                        )}
+                    >
+                        {isNight ? 'Night' : 'Day'}
+                    </div>
                 </div>
+
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                    <Metric label="Now" value={formatEventTime(timeDisplay)} hint="local" />
+                    <Metric label="Visible" value={`${visibleCount}`} hint="events" />
+                    <Metric label="Highlights" value={`${bestEvents.length}`} hint="best" />
+                </div>
+            </div>
+
+            {bestEvents.length > 0 && (
+                <section className="space-y-2">
+                    <div className="flex items-center gap-2 px-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/34">
+                        <Sparkles className="h-3.5 w-3.5 text-blue-300/70" />
+                        Best Moments
+                    </div>
+                    <div className="space-y-2">
+                        {bestEvents.slice(0, 4).map((event) => (
+                            <EventCard key={event.id} event={event} compact />
+                        ))}
+                    </div>
+                </section>
             )}
 
-            {/* Todos los eventos del día */}
-            <div className="space-y-1">
-                <div className="flex items-center gap-1.5 text-[8px] text-white/20 uppercase tracking-wider px-1">
-                    <Clock className="w-2.5 h-2.5" />
-                    Cronología ({events.length})
+            <section className="space-y-2">
+                <div className="flex items-center justify-between px-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/34">
+                    <div className="flex items-center gap-2">
+                        <Clock3 className="h-3.5 w-3.5 text-blue-300/70" />
+                        Timeline
+                    </div>
+                    <span className="font-mono text-white/44">{events.length}</span>
                 </div>
-                <div className="max-h-64 overflow-y-auto space-y-1 custom-scrollbar">
+                <div className="max-h-72 space-y-2 overflow-y-auto custom-scrollbar pr-1">
                     {events.map((event) => (
                         <EventCard key={event.id} event={event} />
                     ))}
                 </div>
-            </div>
+            </section>
         </div>
     );
 }
@@ -90,44 +103,54 @@ function EventCard({ event, compact = false }: { event: CelestialEvent; compact?
     return (
         <div
             className={cn(
-                "flex items-center gap-2 px-2 py-1.5 rounded border transition-all",
-                isVisible
-                    ? "border-emerald-500/20 bg-emerald-500/5"
-                    : "border-white/5 bg-white/2"
+                'atlas-card rounded-2xl px-3 py-3 transition-all',
+                isVisible ? 'border-emerald-400/18 bg-emerald-500/[0.04]' : 'border-white/8'
             )}
         >
-            {/* Icono */}
-            <div className="text-lg leading-none">{event.icon}</div>
-
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                    <span className={cn(
-                        "text-[9px] font-bold",
-                        isVisible ? "text-white/70" : "text-white/40"
-                    )}>
-                        {event.object}
-                    </span>
-                    {event.type === 'rise' && <span className="text-[7px] text-emerald-400/60">↑</span>}
-                    {event.type === 'set' && <span className="text-[7px] text-red-400/60">↓</span>}
-                    {event.type === 'transit' && <span className="text-[7px] text-blue-400/60">⊕</span>}
+            <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/8 bg-white/[0.04] text-lg leading-none">
+                    {event.icon}
                 </div>
-                {!compact && (
-                    <div className="text-[8px] text-white/30 truncate">{event.description}</div>
-                )}
-            </div>
 
-            {/* Hora */}
-            <div className="text-[8px] text-white/40 font-mono">
-                {formatEventTime(event.time)}
-            </div>
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                                <span className={cn('truncate text-[12px] font-semibold', isVisible ? 'text-white' : 'text-white/70')}>
+                                    {event.object}
+                                </span>
+                                <span className="rounded-full border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[9px] uppercase tracking-[0.14em] text-white/42">
+                                    {event.type}
+                                </span>
+                            </div>
+                            {!compact && (
+                                <p className="mt-1 text-[11px] leading-5 text-white/54">{event.description}</p>
+                            )}
+                        </div>
 
-            {/* Visibilidad */}
-            {isVisible ? (
-                <Eye className="w-3 h-3 text-emerald-400/50" />
-            ) : (
-                <EyeOff className="w-3 h-3 text-white/20" />
-            )}
+                        <div className="text-right">
+                            <div className="text-[12px] font-mono text-blue-200">{formatEventTime(event.time)}</div>
+                            <div className="mt-1 flex justify-end">
+                                {isVisible ? (
+                                    <Eye className="h-3.5 w-3.5 text-emerald-300/70" />
+                                ) : (
+                                    <EyeOff className="h-3.5 w-3.5 text-white/22" />
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function Metric({ label, value, hint }: { label: string; value: string; hint: string }) {
+    return (
+        <div className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2.5">
+            <div className="text-[9px] uppercase tracking-[0.18em] text-white/38">{label}</div>
+            <div className="mt-1 text-[14px] font-semibold text-white">{value}</div>
+            <div className="text-[9px] uppercase tracking-[0.14em] text-white/32">{hint}</div>
         </div>
     );
 }
