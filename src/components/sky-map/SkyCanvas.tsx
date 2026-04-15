@@ -257,21 +257,27 @@ function OrientationDriver() {
     useFrame(() => {
         if (!followOrientation) return;
 
-        const { alpha, beta } = deviceOrientationRef;
+        // Usar heading/elevation ya corregidos por orientación de pantalla y gamma
+        const { heading, elevation } = deviceOrientationRef;
 
-        const targetEl = Math.max(-10, Math.min(90, 90 - beta));
-
-        const dAz = ((alpha - azRef.current) % 360 + 540) % 360 - 180;
+        // Filtro suave para evitar jitter — interpolación EMA sobre el ángulo
+        const dAz = ((heading - azRef.current) % 360 + 540) % 360 - 180;
         azRef.current = (azRef.current + dAz * 0.12 + 360) % 360;
-        elRef.current += (targetEl - elRef.current) * 0.12;
+        elRef.current += (elevation - elRef.current) * 0.12;
 
         const elRad = THREE.MathUtils.degToRad(elRef.current);
         const azRad = THREE.MathUtils.degToRad(azRef.current);
 
+        // Norte celeste está en dirección +Z del mundo (CelestialGroup rotado por LST y lat).
+        // Para que la cámara mire hacia (sin(az)*cos(el), sin(el), cos(az)*cos(el)),
+        // su posición debe ser la inversa de ese vector (la cámara mira hacia el origen).
+        //
+        // CORRECCIÓN CRÍTICA: signo Z negativo.
+        // El error anterior ponía +cos(az)*cos(el), haciendo que Norte apuntara al Sur.
         camera.position.set(
-            -Math.cos(elRad) * Math.sin(azRad) * 0.01,
+            -Math.sin(azRad) * Math.cos(elRad) * 0.01,
             -Math.sin(elRad) * 0.01,
-            Math.cos(elRad) * Math.cos(azRad) * 0.01,
+            -Math.cos(azRad) * Math.cos(elRad) * 0.01,  // ← signo correcto
         );
     });
 

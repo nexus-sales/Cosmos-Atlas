@@ -152,6 +152,8 @@ export default function Stars() {
     const setSelectedObject = useAppStore(s => s.setSelectedObject);
     const { raycaster } = useThree();
 
+    // Zona de fade: 0.8 mag por encima del límite las estrellas empiezan a desaparecer
+    const FADE_RANGE = 0.8;
     const limitingMag = 8.0 - (bortleScale - 1) * 0.55;
 
     // Estado del tooltip hover — una sola instancia para toda la nube de puntos
@@ -161,6 +163,7 @@ export default function Stars() {
     } | null>(null);
 
     const [geometry, material, visibleStars, starPositions] = useMemo(() => {
+        // Incluir estrellas hasta limitingMag (zona de fade ya manejada por tamaño)
         const filteredStars = STARS.filter(s => s.mag <= limitingMag);
 
         const pos         = new Float32Array(filteredStars.length * 3);
@@ -184,10 +187,14 @@ export default function Stars() {
             col[i * 3 + 1] = color.g;
             col[i * 3 + 2] = color.b;
 
-            const refMag   = -1.5;
+            const refMag    = -1.5;
             const brightness = Math.pow(2.512, refMag - star.mag);
-            const normB    = Math.min(1.0, brightness);
-            sz[i]          = 0.8 + Math.pow(normB, 0.4) * 7.0;
+            const normB     = Math.min(1.0, brightness);
+            // Fade suave: estrellas cercanas al límite se achican progresivamente
+            const fadeFactor = star.mag > (limitingMag - FADE_RANGE)
+                ? Math.max(0, (limitingMag - star.mag) / FADE_RANGE)
+                : 1.0;
+            sz[i]          = (0.8 + Math.pow(normB, 0.4) * 7.0) * fadeFactor;
             distFactArr[i] = Math.min(1.0, Math.max(0.0, (star.mag + 1.5) / 7.5));
         });
 

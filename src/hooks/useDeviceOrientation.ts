@@ -7,11 +7,17 @@ export type OrientationPermission = 'idle' | 'granted' | 'denied' | 'unavailable
 /**
  * Module-level ref — updated at sensor rate (60 Hz) without React re-renders.
  * Read this directly inside useFrame to avoid subscription overhead.
+ *
+ * heading   = alpha corregido por orientación de pantalla (0 = Norte real)
+ * elevation = ángulo sobre el horizonte (0° = horizonte, 90° = cénit)
+ *             Incorpora gamma para modo landscape y compensa screen.orientation.angle
  */
 export const deviceOrientationRef = {
-    alpha: 0, // Compass heading 0–360°, 0 = North
-    beta: 0,  // Front-back tilt −180–180°, 0 = flat/face-up
-    gamma: 0, // Left-right tilt −90–90°
+    alpha: 0,     // Raw compass heading 0–360°
+    beta: 0,      // Raw front-back tilt
+    gamma: 0,     // Raw left-right tilt
+    heading: 0,   // Heading corregido por orientación de pantalla
+    elevation: 0, // Elevación real sobre el horizonte (landscape-safe)
     active: false,
 };
 
@@ -76,7 +82,6 @@ export function useDeviceOrientation() {
             const rawGamma = e.gamma ?? 0;
 
             if (!filterInitialized.current) {
-                // Primera lectura: inicializar sin filtrar para no empezar en (0,0,0)
                 deviceOrientationRef.alpha = rawAlpha;
                 deviceOrientationRef.beta = rawBeta;
                 deviceOrientationRef.gamma = rawGamma;
@@ -84,12 +89,32 @@ export function useDeviceOrientation() {
                 return;
             }
 
-            // Filtro complementario EMA — suaviza el ruido residual del sensor
-            // sin integrar velocidades angulares (más estable que Madgwick con
-            // deviceorientation, que ya viene fusionado por el SO).
+            // Filtro EMA sobre los valores raw
             deviceOrientationRef.alpha = applyAlphaFilter(deviceOrientationRef.alpha, rawAlpha, FILTER_ALPHA);
             deviceOrientationRef.beta  = applyComplementaryFilter(deviceOrientationRef.beta,  rawBeta,  FILTER_ALPHA);
             deviceOrientationRef.gamma = applyComplementaryFilter(deviceOrientationRef.gamma, rawGamma, FILTER_ALPHA);
+
+            // ── Compensación de orientación de pantalla ──────────────────────
+            // DeviceOrientationEvent da los ángulos relativos al dispositivo físico,
+            // pero la orientación de pantalla cambia los ejes de referencia del usuario.
+            // screen.orientation.angle: 0=portrait, 90=landscape-left, 270=landscape-right
+            const screenAngle: number =
+                (typeof screen !== 'undefined' && screen.orientation?.angle != null)
+                    ? screen.orientation.angle
+                    : 0;
+
+            // Rotar (beta, gamma) por el ángulo de pantalla para obtener
+            // la inclinación real del dispositivo en el marco del usuario.
+            const screenRad = (screenAngle * Math.PI) / 180;
+            const cosOrient = Math.cos(screenRad);
+            const sinOrient = Math.sin(screenRad);
+            const adjustedBeta = deviceOrientationRef.beta * cosOrient
+                                - deviceOrientationRef.gamma * sinOrient;
+
+            // Heading: el norte magnético se ajusta por la rotación de pantalla
+            deviceOrientationRef.heading   = ((deviceOrientationRef.alpha - screenAngle) % 360 + 360) % 360;
+            // Elevación: 90° − beta_ajustado. Clampeada a [-90, 90]
+            deviceOrientationRef.elevation = Math.max(-90, Math.min(90, 90 - adjustedBeta));
         };
         listenerRef.current = handler;
         window.addEventListener('deviceorientation', handler, true);

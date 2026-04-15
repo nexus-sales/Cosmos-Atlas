@@ -167,20 +167,27 @@ export default function HipparcosStars() {
         octree.search(frustum, visibleIndices);
 
         const limitingMag = 8.0 - (bortleScale - 1) * 0.55;
+        const FADE_RANGE  = 0.8; // mag: zona de transición suave
 
-        const posAttr = geometry.getAttribute('position') as THREE.BufferAttribute;
-        const colAttr = geometry.getAttribute('color') as THREE.BufferAttribute;
-        const sizAttr = geometry.getAttribute('size') as THREE.BufferAttribute;
+        const posAttr  = geometry.getAttribute('position')       as THREE.BufferAttribute;
+        const colAttr  = geometry.getAttribute('color')          as THREE.BufferAttribute;
+        const sizAttr  = geometry.getAttribute('size')           as THREE.BufferAttribute;
         const distAttr = geometry.getAttribute('distanceFactor') as THREE.BufferAttribute;
 
         let count = 0;
         for (let i = 0; i < visibleIndices.length && count < MAX_VISIBLE_STARS; i++) {
             const idx = visibleIndices[i];
-            if (magnitudes![idx] > limitingMag) continue;
+            const mag = magnitudes![idx];
+            if (mag > limitingMag) continue;
+
+            // Fade suave para estrellas cercanas al límite de magnitud
+            const fadeFactor = mag > (limitingMag - FADE_RANGE)
+                ? Math.max(0, (limitingMag - mag) / FADE_RANGE)
+                : 1.0;
 
             posAttr.setXYZ(count, positions![idx * 3], positions![idx * 3 + 1], positions![idx * 3 + 2]);
             colAttr.setXYZ(count, colors![idx * 3], colors![idx * 3 + 1], colors![idx * 3 + 2]);
-            sizAttr.setX(count, sizes![idx]);
+            sizAttr.setX(count, sizes![idx] * fadeFactor);
             distAttr.setX(count, distFactors![idx]);
             count++;
         }
