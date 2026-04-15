@@ -3,20 +3,23 @@
 import { useAppStore } from '@/stores/useAppStore';
 import { Camera, Map as MapIcon, Aperture } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useDeviceOrientation } from '@/hooks/useDeviceOrientation';
-import { useCallback, useEffect } from 'react';
+import { useDeviceOrientation, deviceOrientationRef } from '@/hooks/useDeviceOrientation';
+import { useCallback, useEffect, useState } from 'react';
 
 export default function ViewModeWidget() {
+    const [, setUiTick] = useState(0);
     const viewMode = useAppStore(s => s.viewMode);
     const setViewMode = useAppStore(s => s.setViewMode);
     const followOrientation = useAppStore(s => s.followOrientation);
     const setFollowOrientation = useAppStore(s => s.setFollowOrientation);
-    const { isSupported, permission, requestAndStart } = useDeviceOrientation();
+    const { isSupported, permission, requestAndStart, stop } = useDeviceOrientation();
 
     const calibrateAR = useCallback(async () => {
+        stop();
+        setFollowOrientation(false);
         const granted = await requestAndStart();
         setFollowOrientation(granted);
-    }, [requestAndStart, setFollowOrientation]);
+    }, [requestAndStart, setFollowOrientation, stop]);
 
     useEffect(() => {
         if (viewMode === 'camera' && isSupported && !followOrientation) {
@@ -24,8 +27,19 @@ export default function ViewModeWidget() {
         }
     }, [viewMode, isSupported, followOrientation, calibrateAR]);
 
+    useEffect(() => {
+        if (viewMode !== 'camera') return;
+        const timer = setInterval(() => setUiTick((v) => v + 1), 800);
+        return () => clearInterval(timer);
+    }, [viewMode]);
+
+    const needsCalibration = followOrientation && deviceOrientationRef.needsCalibration;
+    const jitter = Math.round(deviceOrientationRef.headingJitter);
+
     const arStatusText = !isSupported
         ? 'Este dispositivo no soporta giroscopio.'
+        : needsCalibration
+            ? `Deriva magnética detectada (jitter ${jitter}°)`
         : followOrientation
             ? 'TRACKING GYRO: OK'
             : permission === 'denied'
@@ -82,17 +96,19 @@ export default function ViewModeWidget() {
                 </div>
             )}
 
-            {viewMode === 'camera' && isSupported && !followOrientation && (
+            {viewMode === 'camera' && isSupported && (!followOrientation || needsCalibration) && (
                 <div className="pointer-events-auto bg-black/70 border border-white/10 rounded-xl px-3 py-2 backdrop-blur-md max-w-[240px]">
                     <p className="text-[9px] text-white/70 uppercase tracking-wider font-bold mb-1">Calibración AR</p>
                     <p className="text-[9px] text-white/45 leading-relaxed mb-2">
-                        1) Permite sensores. 2) Mueve el móvil en forma de 8 unos segundos.
+                        {needsCalibration
+                            ? 'Señal magnética inestable. Haz un movimiento en forma de 8 y recalibra.'
+                            : '1) Permite sensores. 2) Mueve el móvil en forma de 8 unos segundos.'}
                     </p>
                     <button
                         onClick={calibrateAR}
                         className="w-full rounded-lg border border-blue-500/40 bg-blue-500/20 text-blue-300 text-[10px] font-bold tracking-wider py-1.5 hover:bg-blue-500/30 transition-colors"
                     >
-                        Calibrar AR
+                        {needsCalibration ? 'Recalibrar AR' : 'Calibrar AR'}
                     </button>
                 </div>
             )}

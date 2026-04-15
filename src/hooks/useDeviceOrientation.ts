@@ -18,6 +18,9 @@ export const deviceOrientationRef = {
     gamma: 0,     // Raw left-right tilt
     heading: 0,   // Heading corregido por orientación de pantalla
     elevation: 0, // Elevación real sobre el horizonte (landscape-safe)
+    headingJitter: 0, // Jitter estimado del heading (grados)
+    magneticQuality: 'unknown' as 'unknown' | 'good' | 'unstable',
+    needsCalibration: false,
     active: false,
 };
 
@@ -70,11 +73,20 @@ export function useDeviceOrientation() {
     const listenerRef = useRef<((e: DeviceOrientationEvent) => void) | null>(null);
     // Estado interno del filtro — se inicializa en el primer evento
     const filterInitialized = useRef(false);
+    const prevHeadingRef = useRef<number | null>(null);
+    const jitterEmaRef = useRef(0);
+    const unstableCounterRef = useRef(0);
 
     const startListening = useCallback(() => {
         if (listenerRef.current) return; // already listening
 
         filterInitialized.current = false;
+        prevHeadingRef.current = null;
+        jitterEmaRef.current = 0;
+        unstableCounterRef.current = 0;
+        deviceOrientationRef.headingJitter = 0;
+        deviceOrientationRef.magneticQuality = 'unknown';
+        deviceOrientationRef.needsCalibration = false;
 
         const handler = (e: DeviceOrientationEvent) => {
             const rawAlpha = e.alpha ?? 0;
@@ -112,9 +124,38 @@ export function useDeviceOrientation() {
                                 - deviceOrientationRef.gamma * sinOrient;
 
             // Heading: el norte magnético se ajusta por la rotación de pantalla
-            deviceOrientationRef.heading   = ((deviceOrientationRef.alpha - screenAngle) % 360 + 360) % 360;
+            const correctedHeading = ((deviceOrientationRef.alpha - screenAngle) % 360 + 360) % 360;
+            deviceOrientationRef.heading = correctedHeading;
             // Elevación: 90° − beta_ajustado. Clampeada a [-90, 90]
             deviceOrientationRef.elevation = Math.max(-90, Math.min(90, 90 - adjustedBeta));
+
+            // Diagnóstico de estabilidad magnética:
+            // si hay saltos grandes de heading sin movimiento relevante del teléfono,
+            // consideramos señal inestable y sugerimos recalibración.
+            const prevHeading = prevHeadingRef.current;
+            if (prevHeading != null) {
+                let dHeading = correctedHeading - prevHeading;
+                if (dHeading > 180) dHeading -= 360;
+                if (dHeading < -180) dHeading += 360;
+                const absHeadingJump = Math.abs(dHeading);
+
+                jitterEmaRef.current = jitterEmaRef.current * 0.88 + absHeadingJump * 0.12;
+                deviceOrientationRef.headingJitter = jitterEmaRef.current;
+
+                const motionAmount = Math.abs(rawBeta) + Math.abs(rawGamma);
+                const suspiciousJump = motionAmount < 18 && absHeadingJump > 9;
+
+                if (suspiciousJump) {
+                    unstableCounterRef.current = Math.min(24, unstableCounterRef.current + 1);
+                } else {
+                    unstableCounterRef.current = Math.max(0, unstableCounterRef.current - 1);
+                }
+
+                deviceOrientationRef.needsCalibration = unstableCounterRef.current >= 7;
+                deviceOrientationRef.magneticQuality =
+                    unstableCounterRef.current >= 4 ? 'unstable' : 'good';
+            }
+            prevHeadingRef.current = correctedHeading;
         };
         listenerRef.current = handler;
         window.addEventListener('deviceorientation', handler, true);

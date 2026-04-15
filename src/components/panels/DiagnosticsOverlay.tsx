@@ -42,6 +42,9 @@ export default function DiagnosticsOverlay() {
             geolocationAccuracy: geolocation.accuracyM == null ? 'N/A' : `±${Math.round(geolocation.accuracyM)}m`,
             heading: `${Math.round(deviceOrientationRef.heading)}°`,
             elevation: `${Math.round(deviceOrientationRef.elevation)}°`,
+            jitter: `${Math.round(deviceOrientationRef.headingJitter)}°`,
+            magneticQuality: deviceOrientationRef.magneticQuality,
+            needsCalibration: deviceOrientationRef.needsCalibration ? 'YES' : 'NO',
             arTracking: followOrientation && deviceOrientationRef.active ? 'ON' : 'OFF',
         };
     }, [time, observer.lon, geolocation.source, geolocation.status, geolocation.accuracyM, followOrientation]);
@@ -61,6 +64,9 @@ export default function DiagnosticsOverlay() {
                 <div className="text-white/70">AR Tracking: <span className="text-cyan-300">{diagnostics.arTracking}</span></div>
                 <div className="text-white/70">Heading: <span className="text-cyan-300">{diagnostics.heading}</span></div>
                 <div className="text-white/70">Elevación: <span className="text-cyan-300">{diagnostics.elevation}</span></div>
+                <div className="text-white/70">Jitter: <span className="text-cyan-300">{diagnostics.jitter}</span></div>
+                <div className="text-white/70">Calidad magnética: <span className="text-cyan-300">{diagnostics.magneticQuality}</span></div>
+                <div className="text-white/70">Recalibrar: <span className="text-cyan-300">{diagnostics.needsCalibration}</span></div>
             </div>
         </div>
     );
