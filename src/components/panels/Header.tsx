@@ -52,6 +52,11 @@ export default function Header() {
     const latHemisphere = observer.lat >= 0 ? 'N' : 'S';
     const lonHemisphere = observer.lon < 0 ? 'O' : 'E';
     const hasPreciseLocation = geolocation.source === 'gps' && geolocation.accuracyM !== null && geolocation.accuracyM <= 1000;
+    const mobileLocationLabel = hasPreciseLocation
+        ? `GPS ±${Math.round(geolocation.accuracyM ?? 0)}m`
+        : geolocation.status === 'denied'
+            ? 'GPS bloqueado'
+            : 'Ubicación aprox.';
 
     return (
         <header className="h-14 md:h-16 border-b border-white/10 bg-black/60 backdrop-blur-md flex items-center justify-between px-3 md:px-6 z-20 overflow-hidden shrink-0">
@@ -110,6 +115,14 @@ export default function Header() {
                 </div>
 
                 <Clock />
+                <div className={cn(
+                    'lg:hidden text-[9px] uppercase tracking-wider font-mono rounded px-1.5 py-0.5 border',
+                    hasPreciseLocation
+                        ? 'text-emerald-300/80 border-emerald-400/30 bg-emerald-500/10'
+                        : 'text-amber-300/80 border-amber-400/30 bg-amber-500/10'
+                )}>
+                    {mobileLocationLabel}
+                </div>
             </div>
         </header>
     );

@@ -44,14 +44,26 @@ const SATELLITES_TLE: SatelliteData[] = [
 
 const RADIUS = 95;
 const MAX_SATS = 6000;
+const STARLINK_CAP_BY_QUALITY = {
+    high: 2000,
+    medium: 900,
+    low: 350,
+} as const;
+const UPDATE_SKIP_BY_QUALITY = {
+    high: 0,
+    medium: 1,
+    low: 2,
+} as const;
 
 export default function Satellites() {
     const pointsRef = useRef<THREE.Points>(null);
     const renderedSatsRef = useRef<SatellitePoint[]>([]);
     const prevVisibleRef = useRef({ special: -1, starlink: -1 });
+    const frameCounterRef = useRef(0);
     // showSatellites/showStarlink drive JSX conditionals → subscribe normally
     const showSatellites = useAppStore((state) => state.settings.showSatellites);
     const showStarlink = useAppStore((state) => state.settings.showStarlink);
+    const deviceQuality = useAppStore((state) => state.deviceQuality);
     const setSatelliteInfo = useAppStore((state) => state.setSatelliteInfo);
     const [hoveredSat, setHoveredSat] = useState<{
         name: string;
@@ -153,6 +165,8 @@ export default function Satellites() {
         });
     }, [specialSats, starlinkSats]);
 
+    const allSats = useMemo(() => [...specialSats, ...starlinkSats], [specialSats, starlinkSats]);
+
     useEffect(() => {
         if (!showStarlink) {
             setStarlinkSats([]);
@@ -179,8 +193,9 @@ export default function Satellites() {
                         });
                     }
                 }
-                // Limitar a 2000 para no destruir CPUs modestas
-                const capped = records.slice(0, 2000);
+                // Limitar por calidad de dispositivo para reducir calor/jank en móviles
+                const cap = STARLINK_CAP_BY_QUALITY[useAppStore.getState().deviceQuality];
+                const capped = records.slice(0, cap);
                 setStarlinkSats(capped);
                 setSatelliteInfo({ loadedStarlink: capped.length, starlinkStatus: 'ok' });
             })
@@ -218,6 +233,9 @@ export default function Satellites() {
             return;
         }
         pointsRef.current.visible = true;
+        frameCounterRef.current += 1;
+        const skip = UPDATE_SKIP_BY_QUALITY[deviceQuality];
+        if (skip > 0 && frameCounterRef.current % (skip + 1) !== 0) return;
 
         const posAttr = geometry.getAttribute('position') as THREE.BufferAttribute;
         const colAttr = geometry.getAttribute('color') as THREE.BufferAttribute;
@@ -237,7 +255,6 @@ export default function Satellites() {
             height: 0
         };
 
-        const allSats = [...specialSats, ...starlinkSats];
         const cachedColors = isNight ? nightColorsRef.current : satColorsRef.current;
         renderedSatsRef.current.length = 0;
 

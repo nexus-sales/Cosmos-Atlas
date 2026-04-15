@@ -4,22 +4,35 @@ import { useAppStore } from '@/stores/useAppStore';
 import { Camera, Map as MapIcon, Aperture } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useDeviceOrientation } from '@/hooks/useDeviceOrientation';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 
 export default function ViewModeWidget() {
     const viewMode = useAppStore(s => s.viewMode);
     const setViewMode = useAppStore(s => s.setViewMode);
     const followOrientation = useAppStore(s => s.followOrientation);
     const setFollowOrientation = useAppStore(s => s.setFollowOrientation);
-    const { isSupported, requestAndStart } = useDeviceOrientation();
+    const { isSupported, permission, requestAndStart } = useDeviceOrientation();
+
+    const calibrateAR = useCallback(async () => {
+        const granted = await requestAndStart();
+        setFollowOrientation(granted);
+    }, [requestAndStart, setFollowOrientation]);
 
     useEffect(() => {
         if (viewMode === 'camera' && isSupported && !followOrientation) {
-            requestAndStart().then((granted) => {
-                setFollowOrientation(granted);
-            });
+            calibrateAR();
         }
-    }, [viewMode, isSupported, followOrientation, requestAndStart, setFollowOrientation]);
+    }, [viewMode, isSupported, followOrientation, calibrateAR]);
+
+    const arStatusText = !isSupported
+        ? 'Este dispositivo no soporta giroscopio.'
+        : followOrientation
+            ? 'TRACKING GYRO: OK'
+            : permission === 'denied'
+                ? 'Permiso denegado: activa sensores en el navegador'
+                : permission === 'granted'
+                    ? 'Esperando datos del sensor...'
+                    : 'Pulsa Calibrar AR';
 
     return (
         <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3 pointer-events-none">
@@ -60,12 +73,27 @@ export default function ViewModeWidget() {
                    </div>
                    <div className="flex flex-col">
                        <span className="text-[10px] font-bold text-purple-200 tracking-[0.2em] uppercase leading-none mb-1">
-                           Lente AR Activo
-                       </span>
-                       <span className="text-[9px] text-purple-300/50 font-mono">
-                           {followOrientation ? 'TRACKING GYRO: OK' : 'GIROSCOPIO: ESPERANDO'}
-                       </span>
-                   </div>
+                            Lente AR Activo
+                        </span>
+                        <span className="text-[9px] text-purple-300/50 font-mono">
+                            {arStatusText}
+                        </span>
+                    </div>
+                </div>
+            )}
+
+            {viewMode === 'camera' && isSupported && !followOrientation && (
+                <div className="pointer-events-auto bg-black/70 border border-white/10 rounded-xl px-3 py-2 backdrop-blur-md max-w-[240px]">
+                    <p className="text-[9px] text-white/70 uppercase tracking-wider font-bold mb-1">Calibración AR</p>
+                    <p className="text-[9px] text-white/45 leading-relaxed mb-2">
+                        1) Permite sensores. 2) Mueve el móvil en forma de 8 unos segundos.
+                    </p>
+                    <button
+                        onClick={calibrateAR}
+                        className="w-full rounded-lg border border-blue-500/40 bg-blue-500/20 text-blue-300 text-[10px] font-bold tracking-wider py-1.5 hover:bg-blue-500/30 transition-colors"
+                    >
+                        Calibrar AR
+                    </button>
                 </div>
             )}
         </div>
