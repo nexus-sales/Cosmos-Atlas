@@ -29,6 +29,7 @@ export default function SystemAlerts() {
     const followOrientation = useAppStore((state) => state.followOrientation);
     const viewMode = useAppStore((state) => state.viewMode);
     const arHealthHistory = useAppStore((state) => state.arHealthHistory);
+    const renderErrors = useAppStore((state) => state.renderErrors);
 
     useEffect(() => {
         const timer = setInterval(() => setTick((value) => value + 1), 1200);
@@ -40,6 +41,17 @@ export default function SystemAlerts() {
 
         const nextAlerts: SystemAlert[] = [];
         const arSummary = getArHealthSummary(arHealthHistory);
+
+        if (renderErrors.length > 0) {
+            const latest = renderErrors[0];
+            nextAlerts.push({
+                id: `render-error-${latest.label}`,
+                tone: 'critical',
+                title: `Fallo en ${latest.label}`,
+                detail: latest.message || 'Se desactivó un módulo para mantener la sesión estable.',
+                icon: AlertTriangle,
+            });
+        }
 
         if (geolocation.status === 'denied') {
             nextAlerts.push({
@@ -88,7 +100,7 @@ export default function SystemAlerts() {
         }
 
         return nextAlerts.slice(0, 2);
-    }, [arHealthHistory, followOrientation, geolocation.accuracyM, geolocation.status, tick, viewMode]);
+    }, [arHealthHistory, followOrientation, geolocation.accuracyM, geolocation.status, renderErrors, tick, viewMode]);
 
     if (alerts.length === 0) return null;
 

@@ -49,7 +49,7 @@ function makeLCG(seed: number) {
     return () => { s = (Math.imul(1664525, s) + 1013904223) >>> 0; return s / 0x100000000; };
 }
 
-function CometTail({ comet, position }: { comet: typeof COMETS[0]; position: [number, number, number] }) {
+function CometTail({ comet, position }: { comet: { color: string; tailLength: number }; position: [number, number, number] }) {
     const tailRef = useRef<THREE.Points>(null);
     const timeRef = useRef(0);
 
@@ -186,7 +186,7 @@ function CometItem({ comet }: { comet: CometData }) {
                 self.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, -1), dir);
             }}>
                 <CometTail 
-                    comet={{ ...COMETS.find(c => c.id === comet.id)!, color: comet.color, tailLength: comet.tailAngle }}
+                    comet={{ color: comet.color, tailLength: comet.tailAngle }}
                     position={[0, 0, 0]}
                 />
             </group>
@@ -215,7 +215,7 @@ function CometItem({ comet }: { comet: CometData }) {
 }
 
 /** Merge live JPL data into our static catalog, returning a combined list */
-function mergeLiveData(live: CometLiveData[]): Comet[] {
+export function mergeLiveData(live: CometLiveData[]): Comet[] {
     // Start with the static catalog
     const base = new Map<string, Comet>(COMETS.map(c => [c.id, { ...c }]));
 

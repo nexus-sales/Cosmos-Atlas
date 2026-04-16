@@ -9,8 +9,7 @@ import { getKidFact } from '@/data/kidFacts';
 
 export default function AIAstronoma() {
     const selected = useAppStore((s) => s.selectedObject);
-    const updateAchievement = useAppStore((s) => s.updateAchievement);
-    const mythologyBuff = useAppStore((s) => s.achievements.mythologyBuff);
+    const incrementMythologyBuff = useAppStore((s) => s.incrementMythologyBuff);
     const kidsMode = useAppStore((s) => s.settings.kidsMode);
     const sidebarOpen = useAppStore((s) => s.sidebarOpen);
     
@@ -66,13 +65,13 @@ export default function AIAstronoma() {
         utterance.onend = () => {
             setIsSpeaking(false);
             if (text.length > 50) {
-                updateAchievement('mythologyBuff', mythologyBuff + 1);
+                incrementMythologyBuff();
             }
         };
         utterance.onerror = () => setIsSpeaking(false);
 
         synthRef.current.speak(utterance);
-    }, [muted, mythologyBuff, updateAchievement, kidsMode]);
+    }, [incrementMythologyBuff, muted, kidsMode]);
 
     // Reaccionar a cambios de selección
     useEffect(() => {

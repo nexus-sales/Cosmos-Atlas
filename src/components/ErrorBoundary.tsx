@@ -1,6 +1,7 @@
 'use client';
 
 import { Component, type ReactNode, type ErrorInfo } from 'react';
+import { useAppStore } from '@/stores/useAppStore';
 
 interface Props {
     children: ReactNode;
@@ -37,6 +38,7 @@ export default class ErrorBoundary extends Component<Props, State> {
 
     componentDidCatch(error: Error, info: ErrorInfo) {
         const label = this.props.label ?? 'componente';
+        useAppStore.getState().reportRenderError(label, error.message);
         console.error(`[ErrorBoundary] Crash en ${label}:`, error, info.componentStack);
     }
 

@@ -47,6 +47,12 @@ function parseField(v: string | null | undefined, fallback = 0): number {
     return isNaN(n) ? fallback : n;
 }
 
+function parseOptionalField(v: string | null | undefined): number | null {
+    if (v == null) return null;
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : null;
+}
+
 function mapName(pdes: string, fullName: string): string {
     // fullName is like "1P/Halley (1682 Q1)" — extract the canonical part
     const match = fullName.match(/^[\w\/\-\s]+\(?\s*\d{4}/);
@@ -87,11 +93,15 @@ export async function GET() {
         const iPer   = fi('per');
         const iM1    = fi('M1');
 
+        if ([iDes, iFull, iE, iQ, iI, iOm, iW, iTp, iPer, iM1].some((idx) => idx < 0)) {
+            throw new Error('SBDB payload missing expected fields');
+        }
+
         const comets: CometLiveData[] = data
             .map((row) => {
                 const pdes = row[iDes] ?? '';
                 const fullName = row[iFull] ?? pdes;
-                const per = parseField(row[iPer] ?? null, NaN);
+                const perDays = parseOptionalField(row[iPer]);
                 return {
                     pdes,
                     name: mapName(pdes, fullName),
@@ -101,8 +111,8 @@ export async function GET() {
                     om: parseField(row[iOm]),
                     w:  parseField(row[iW]),
                     tp: parseField(row[iTp]),
-                    per: isNaN(per) ? null : per / 365.25, // SBDB gives days → convert to years
-                    M1: parseField(row[iM1] ?? null, NaN) || null,
+                    per: perDays == null ? null : perDays / 365.25,
+                    M1: parseOptionalField(row[iM1]),
                 } satisfies CometLiveData;
             })
             .filter((c) => c.tp > 0 && c.q > 0 && c.e > 0);
@@ -117,3 +127,4 @@ export async function GET() {
         );
     }
 }
+

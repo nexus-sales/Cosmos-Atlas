@@ -94,9 +94,17 @@ interface AppState {
         planetHunter: boolean;
         mythologyBuff: number;
     };
+    renderErrors: Array<{
+        label: string;
+        message: string;
+        timestamp: number;
+    }>;
     toggleFavorite: (id: string) => void;
     markAsVisited: (id: string) => void;
     updateAchievement: (key: 'messierMarathon' | 'planetHunter' | 'mythologyBuff', value: number | boolean) => void;
+    incrementMythologyBuff: () => void;
+    reportRenderError: (label: string, message: string) => void;
+    clearRenderErrors: () => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -230,6 +238,7 @@ export const useAppStore = create<AppState>()(
                 planetHunter: false,
                 mythologyBuff: 0,
             },
+            renderErrors: [],
             toggleFavorite: (id) => set((s) => ({
                 favorites: s.favorites.includes(id) 
                     ? s.favorites.filter(x => x !== id) 
@@ -241,6 +250,20 @@ export const useAppStore = create<AppState>()(
             updateAchievement: (key, value) => set((s) => ({
                 achievements: { ...s.achievements, [key]: value }
             })),
+            incrementMythologyBuff: () => set((s) => ({
+                achievements: {
+                    ...s.achievements,
+                    mythologyBuff: s.achievements.mythologyBuff + 1,
+                }
+            })),
+            reportRenderError: (label, message) =>
+                set((s) => {
+                    const next = [{ label, message, timestamp: Date.now() }, ...s.renderErrors]
+                        .filter((item, idx, arr) => idx === arr.findIndex((x) => x.label === item.label))
+                        .slice(0, 3);
+                    return { renderErrors: next };
+                }),
+            clearRenderErrors: () => set({ renderErrors: [] }),
         }),
         {
             name: 'cosmos-atlas-storage',
