@@ -36,6 +36,11 @@ export const deviceOrientationRef = {
  */
 const FILTER_ALPHA = 0.85; // 0 = sin suavizado, 1 = sin respuesta
 
+type CompassCapableEvent = DeviceOrientationEvent & {
+    webkitCompassHeading?: number;
+    webkitCompassAccuracy?: number;
+};
+
 function applyComplementaryFilter(prev: number, raw: number, alpha: number): number {
     // Manejo del wraparound en alpha (0–360 → problema al cruzar 0/360)
     return alpha * prev + (1 - alpha) * raw;
@@ -48,6 +53,37 @@ function applyAlphaFilter(prev: number, raw: number, alpha: number): number {
     if (diff < -180) diff += 360;
     const filtered = prev + diff * (1 - alpha);
     return ((filtered % 360) + 360) % 360;
+}
+
+function computeCompassHeading(alpha: number, beta: number, gamma: number): number {
+    const degToRad = Math.PI / 180;
+    const x = beta * degToRad;
+    const y = gamma * degToRad;
+    const z = alpha * degToRad;
+
+    const cX = Math.cos(x);
+    const cY = Math.cos(y);
+    const cZ = Math.cos(z);
+    const sX = Math.sin(x);
+    const sY = Math.sin(y);
+    const sZ = Math.sin(z);
+
+    const vx = -cZ * sY - sZ * sX * cY;
+    const vy = -sZ * sY + cZ * sX * cY;
+
+    return (Math.atan2(vx, vy) * (180 / Math.PI) + 360) % 360;
+}
+
+function extractMagneticHeading(e: CompassCapableEvent, alpha: number, beta: number, gamma: number): number {
+    if (typeof e.webkitCompassHeading === 'number' && Number.isFinite(e.webkitCompassHeading)) {
+        return (e.webkitCompassHeading + 360) % 360;
+    }
+
+    if (e.absolute) {
+        return computeCompassHeading(alpha, beta, gamma);
+    }
+
+    return (360 - alpha + 360) % 360;
 }
 
 /**
@@ -124,7 +160,13 @@ export function useDeviceOrientation() {
                                 - deviceOrientationRef.gamma * sinOrient;
 
             // Heading: el norte magnético se ajusta por la rotación de pantalla
-            const correctedHeading = ((deviceOrientationRef.alpha - screenAngle) % 360 + 360) % 360;
+            const magneticHeading = extractMagneticHeading(
+                e as CompassCapableEvent,
+                deviceOrientationRef.alpha,
+                deviceOrientationRef.beta,
+                deviceOrientationRef.gamma,
+            );
+            const correctedHeading = ((magneticHeading - screenAngle) % 360 + 360) % 360;
             deviceOrientationRef.heading = correctedHeading;
             // Elevación: 90° − beta_ajustado. Clampeada a [-90, 90]
             deviceOrientationRef.elevation = Math.max(-90, Math.min(90, 90 - adjustedBeta));
