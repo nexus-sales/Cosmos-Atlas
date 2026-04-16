@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useAppStore } from '@/stores/useAppStore';
 import { Camera, Map as MapIcon, Aperture } from 'lucide-react';
@@ -99,38 +99,50 @@ export default function ViewModeWidget() {
 
     const handleActivateCameraMode = useCallback(async () => {
         setViewMode('camera');
-
-        // On iOS the permission prompt only works from a direct user gesture.
-        // Trigger calibration from this button instead of an automatic effect.
+        // Si el giroscopio no está activo, intentamos calibrarlo/activarlo
         if (!followOrientation && isSupported) {
             await calibrateAR();
         }
     }, [calibrateAR, followOrientation, isSupported, setViewMode]);
 
     const handleActivateVaultMode = useCallback(() => {
-        clearCalibrationTimers();
-        setCalibrationPhase('idle');
-        setCalibrationProgress(0);
-        setStabilityHint('good');
-        stop();
-        setFollowOrientation(false);
+        // En modo bóveda mantenemos la orientación si el usuario ya la activó.
+        // Solo cambiamos el modo de vista.
         setViewMode('vault');
-    }, [clearCalibrationTimers, setFollowOrientation, setViewMode, stop]);
+    }, [setViewMode]);
+
+    // Función para apagar el giroscopio manualmente si el usuario lo desea
+    const toggleGyro = useCallback(async () => {
+        if (followOrientation) {
+            stop();
+            setFollowOrientation(false);
+        } else {
+            await calibrateAR();
+        }
+    }, [calibrateAR, followOrientation, setFollowOrientation, stop]);
 
     useEffect(() => {
-        if (viewMode !== 'camera') return;
+        // Tick para actualizar la UI con los valores del ref de orientación cada cierto tiempo
         const timer = setInterval(() => setUiTick((v) => v + 1), 800);
-        return () => clearInterval(timer);
-    }, [viewMode]);
-
-    useEffect(() => {
-        return () => clearCalibrationTimers();
+        return () => {
+            clearInterval(timer);
+            clearCalibrationTimers();
+        };
     }, [clearCalibrationTimers]);
 
     const needsCalibration = followOrientation && deviceOrientationRef.needsCalibration;
     const jitter = Math.round(deviceOrientationRef.headingJitter);
+    
+    // Mostramos la card de calibración si:
+    // 1. Estamos en modo cámara (AR) y no hay tracking.
+    // 2. Necesitamos calibración urgente.
+    // 3. Estamos calibrando activamente.
     const showCalibrationCard =
-        viewMode === 'camera' && isSupported && (!followOrientation || needsCalibration || calibrationPhase !== 'idle');
+        isSupported && (
+            (viewMode === 'camera' && !followOrientation) || 
+            needsCalibration || 
+            calibrationPhase !== 'idle'
+        );
 
     const arStatusText =
         calibrationPhase === 'running'
@@ -147,10 +159,11 @@ export default function ViewModeWidget() {
                                 ? 'TRACKING GYRO: OK'
                                 : permission === 'denied'
                                     ? 'Permiso denegado: activa sensores en el navegador'
-                                    : 'Pulsa Calibrar AR';
+                                    : 'Giroscopio inactivo';
 
     return (
         <div className="fixed bottom-24 right-4 z-40 flex flex-col items-end gap-3 pointer-events-none md:bottom-6 md:right-6">
+            {/* Togle de Modo de Vista */}
             <div className="flex bg-black/60 backdrop-blur-xl border border-white/10 rounded-full p-1.5 shadow-2xl pointer-events-auto">
                 <button
                     onClick={handleActivateVaultMode}
@@ -180,30 +193,44 @@ export default function ViewModeWidget() {
                 </button>
             </div>
 
-            {viewMode === 'camera' && (
-                <div className="atlas-card animate-in fade-in slide-in-from-right-4 duration-500 flex items-center gap-3 rounded-2xl px-4 py-3">
+            {/* Widget de Estado del Giroscopio (Visible en ambos modos si es soportado) */}
+            {isSupported && (
+                <div 
+                    onClick={() => { void toggleGyro(); }}
+                    className={cn(
+                        "atlas-card animate-in fade-in slide-in-from-right-4 duration-500 flex items-center gap-3 rounded-2xl px-4 py-3 pointer-events-auto cursor-pointer transition-all active:scale-95",
+                        followOrientation ? "border-cyan-500/40 bg-cyan-500/10" : "border-white/5 bg-black/40 opacity-70"
+                    )}
+                >
                     <div className="relative">
-                        <Aperture className="w-4 h-4 text-cyan-300 animate-[spin_4s_linear_infinite]" />
-                        <div className="absolute inset-0 bg-cyan-300/20 blur-md rounded-full" />
+                        <Aperture className={cn(
+                            "w-4 h-4 transition-colors",
+                            followOrientation ? "text-cyan-300 animate-[spin_4s_linear_infinite]" : "text-white/30"
+                        )} />
+                        {followOrientation && <div className="absolute inset-0 bg-cyan-300/20 blur-md rounded-full" />}
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-[10px] font-bold text-cyan-100 tracking-[0.2em] uppercase leading-none mb-1">
-                            Lente AR Activo
+                        <span className={cn(
+                            "text-[10px] font-bold tracking-[0.2em] uppercase leading-none mb-1",
+                            followOrientation ? "text-cyan-100" : "text-white/40"
+                        )}>
+                            {followOrientation ? 'Giroscopio Activo' : 'Giroscopio Apagado'}
                         </span>
-                        <span className="text-[10px] text-white/60 font-mono">{arStatusText}</span>
+                        <span className="text-[10px] text-white/50 font-mono">{arStatusText}</span>
                     </div>
                 </div>
             )}
 
+            {/* Panel de Calibración */}
             {showCalibrationCard && (
                 <div className="atlas-panel pointer-events-auto max-w-[270px] rounded-2xl px-3.5 py-3">
-                    <p className="text-[10px] text-white/78 uppercase tracking-[0.18em] font-semibold mb-1.5">Calibracion AR</p>
+                    <p className="text-[10px] text-white/78 uppercase tracking-[0.18em] font-semibold mb-1.5">Calibracion Sensores</p>
                     <p className="text-[11px] text-white/55 leading-relaxed mb-2.5">
                         {calibrationPhase === 'running'
                             ? 'Mueve el movil en forma de 8 durante 3 segundos.'
                             : needsCalibration
                                 ? 'Señal magnetica inestable. Haz un movimiento en forma de 8 y recalibra.'
-                                : '1) Permite sensores. 2) Mueve el movil en forma de 8 unos segundos.'}
+                                : 'Activa el giroscopio para que el mapa se mueva con tu movil. Mueve en forma de 8 para mayor precision.'}
                     </p>
 
                     {calibrationPhase === 'running' && (
@@ -213,7 +240,7 @@ export default function ViewModeWidget() {
                                     className={cn(
                                         'h-full transition-all duration-150',
                                         stabilityHint === 'good' ? 'bg-emerald-400/80' : 'bg-amber-400/80'
-                                    )}
+                                        )}
                                     style={{ width: `${calibrationProgress}%` }}
                                 />
                             </div>
@@ -243,8 +270,8 @@ export default function ViewModeWidget() {
                         {calibrationPhase === 'running'
                             ? 'Calibrando...'
                             : needsCalibration || calibrationPhase === 'failed'
-                                ? 'Recalibrar AR'
-                                : 'Calibrar AR'}
+                                ? 'Recalibrar Giroscopio'
+                                : 'Activar Giroscopio (AR)'}
                     </button>
                 </div>
             )}
