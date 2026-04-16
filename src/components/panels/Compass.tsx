@@ -119,7 +119,10 @@ export default function Compass() {
 
     return (
         <Html fullscreen style={{ pointerEvents: 'none' }}>
-            <div className="absolute bottom-6 left-6 z-30 pointer-events-auto flex flex-col items-center gap-2">
+            <div
+                className="absolute bottom-24 left-24 z-30 pointer-events-auto flex flex-col items-center gap-2 md:bottom-6 md:left-6"
+                style={{ paddingBottom: 'env(safe-area-inset-bottom)', paddingLeft: 'env(safe-area-inset-left)' }}
+            >
                 <button
                     onClick={handleCompassClick}
                     className={followOrientation
@@ -187,18 +190,21 @@ export default function Compass() {
                             <div className="mt-1 flex flex-col items-center gap-1">
                                 <button
                                     onClick={handleCalibrateNorth}
-                                    title="Apunta a Polaris o al norte real y pulsa para calibrar"
+                                    title="Apunta a Polaris y pulsa para alinear el norte real"
                                     className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-bold tracking-wider border border-amber-400/45 bg-amber-500/20 text-amber-100 backdrop-blur-md shadow-lg transition-all duration-200 hover:bg-amber-500/30"
                                 >
-                                    N CAL
+                                    Polaris
                                 </button>
+                                <div className="max-w-[120px] text-center text-[9px] leading-tight text-white/55">
+                                    Apunta a Polaris y pulsa para fijar el norte real.
+                                </div>
                                 {Math.abs(compassCalibrationOffset) > 0.1 && (
                                     <button
                                         onClick={zeroCompassCalibrationOffset}
                                         title="Borrar calibracion manual de brujula"
                                         className="text-[9px] font-mono text-white/55 hover:text-white/80 transition-colors"
                                     >
-                                        Reset {Math.round(compassCalibrationOffset)}°
+                                        Borrar calibracion {Math.round(compassCalibrationOffset)}°
                                     </button>
                                 )}
                             </div>
