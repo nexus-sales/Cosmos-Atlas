@@ -97,14 +97,25 @@ export default function ViewModeWidget() {
         }, durationMs + 80);
     }, [addArHealthSample, clearCalibrationTimers, requestAndStart, setFollowOrientation, stop]);
 
-    useEffect(() => {
-        if (viewMode === 'camera' && isSupported && !followOrientation) {
-            const id = setTimeout(() => {
-                calibrateAR();
-            }, 0);
-            return () => clearTimeout(id);
+    const handleActivateCameraMode = useCallback(async () => {
+        setViewMode('camera');
+
+        // On iOS the permission prompt only works from a direct user gesture.
+        // Trigger calibration from this button instead of an automatic effect.
+        if (!followOrientation && isSupported) {
+            await calibrateAR();
         }
-    }, [viewMode, isSupported, followOrientation, calibrateAR]);
+    }, [calibrateAR, followOrientation, isSupported, setViewMode]);
+
+    const handleActivateVaultMode = useCallback(() => {
+        clearCalibrationTimers();
+        setCalibrationPhase('idle');
+        setCalibrationProgress(0);
+        setStabilityHint('good');
+        stop();
+        setFollowOrientation(false);
+        setViewMode('vault');
+    }, [clearCalibrationTimers, setFollowOrientation, setViewMode, stop]);
 
     useEffect(() => {
         if (viewMode !== 'camera') return;
@@ -136,15 +147,13 @@ export default function ViewModeWidget() {
                                 ? 'TRACKING GYRO: OK'
                                 : permission === 'denied'
                                     ? 'Permiso denegado: activa sensores en el navegador'
-                                    : permission === 'granted'
-                                        ? 'Esperando datos del sensor...'
-                                        : 'Pulsa Calibrar AR';
+                                    : 'Pulsa Calibrar AR';
 
     return (
-        <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3 pointer-events-none">
+        <div className="fixed bottom-24 right-4 z-40 flex flex-col items-end gap-3 pointer-events-none md:bottom-6 md:right-6">
             <div className="flex bg-black/60 backdrop-blur-xl border border-white/10 rounded-full p-1.5 shadow-2xl pointer-events-auto">
                 <button
-                    onClick={() => setViewMode('vault')}
+                    onClick={handleActivateVaultMode}
                     className={cn(
                         'flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-bold tracking-widest transition-all',
                         viewMode === 'vault'
@@ -156,7 +165,9 @@ export default function ViewModeWidget() {
                     BOVEDA
                 </button>
                 <button
-                    onClick={() => setViewMode('camera')}
+                    onClick={() => {
+                        void handleActivateCameraMode();
+                    }}
                     className={cn(
                         'flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-bold tracking-widest transition-all',
                         viewMode === 'camera'

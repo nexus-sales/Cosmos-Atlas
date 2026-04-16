@@ -68,7 +68,7 @@ export default function Home() {
             <div className="absolute bottom-6 left-6 pointer-events-auto" style={{ paddingBottom: 'env(safe-area-inset-bottom)', paddingLeft: 'env(safe-area-inset-left)' }}>
               <TimeTravelControls />
             </div>
-            <div className="absolute bottom-6 right-6 pointer-events-auto hidden md:block" style={{ paddingBottom: 'env(safe-area-inset-bottom)', paddingRight: 'env(safe-area-inset-right)' }}>
+            <div className="pointer-events-auto" style={{ paddingBottom: 'env(safe-area-inset-bottom)', paddingRight: 'env(safe-area-inset-right)' }}>
               <ViewModeWidget />
             </div>
           </div>
