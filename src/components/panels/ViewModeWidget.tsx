@@ -95,13 +95,16 @@ export default function ViewModeWidget() {
             });
             setCalibrationPhase(success ? 'done' : 'failed');
             if (!success) setFollowOrientation(false);
-            timersRef.current.clearStatusId = setTimeout(() => setCalibrationPhase('idle'), 2400);
+            timersRef.current.clearStatusId = setTimeout(() => {
+                setCalibrationPhase('idle');
+                scheduleCollapse(1500); // Auto-hide widget un poco después de terminar
+            }, 2400);
         }, durationMs + 80);
     }, [addArHealthSample, clearCalibrationTimers, requestAndStart, setFollowOrientation, stop]);
 
-    const scheduleCollapse = useCallback(() => {
+    const scheduleCollapse = useCallback((delay = 3500) => {
         if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
-        collapseTimerRef.current = setTimeout(() => setCollapsed(true), 2000);
+        collapseTimerRef.current = setTimeout(() => setCollapsed(true), delay);
     }, []);
 
     const handleActivateCameraMode = useCallback(() => {
@@ -118,7 +121,9 @@ export default function ViewModeWidget() {
         if (followOrientation) {
             stop();
             setFollowOrientation(false);
+            scheduleCollapse(2000);
         } else {
+            if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current); // No colapsar mientras calibra
             await calibrateAR();
         }
     }, [calibrateAR, followOrientation, setFollowOrientation, stop]);
@@ -164,7 +169,10 @@ export default function ViewModeWidget() {
     if (collapsed) {
         return (
             <button
-                onClick={() => setCollapsed(false)}
+                onClick={() => { 
+                    setCollapsed(false);
+                    scheduleCollapse(8000); // Si no hacen nada en 8s, se oculta de nuevo
+                }}
                 className={cn(
                     'fixed bottom-20 right-4 z-40 flex items-center gap-2 px-3 py-2 rounded-full border backdrop-blur-xl shadow-xl transition-all active:scale-95 pointer-events-auto md:bottom-6 md:right-6',
                     viewMode === 'camera'

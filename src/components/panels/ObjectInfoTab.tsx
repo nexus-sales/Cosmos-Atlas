@@ -141,62 +141,67 @@ export default function ObjectInfoTab() {
                 </p>
             </div>
 
-            {/* Métricas */}
-            <div className="grid grid-cols-2 gap-2">
-                <MetricCard
-                    label="Magnitud"
-                    value={selected.mag?.toFixed(2) ?? '?'}
-                    sub={selected.mag === undefined ? 'N/A' : (selected.mag < 0 ? 'Superbrill.' : selected.mag < 2 ? 'Muy brillante' : 'Brillante')}
-                    color={accentColor}
-                    icon={<Zap className="w-3 h-3" />}
-                />
-                <MetricCard
-                    label="Posición"
-                    value={`${((selected.ra || 0) / 15).toFixed(1)}h`}
-                    sub={`Dec ${selected.dec > 0 ? '+' : ''}${(selected.dec || 0).toFixed(1)}°`}
-                    color={accentColor}
-                    icon={<Navigation className="w-3 h-3" />}
-                />
-            </div>
+            {/* MODO ADULTO: Métricas Avanzadas */}
+            {!kidsMode && (
+                <>
+                    {/* Métricas */}
+                    <div className="grid grid-cols-2 gap-2">
+                        <MetricCard
+                            label="Magnitud"
+                            value={selected.mag?.toFixed(2) ?? '?'}
+                            sub={selected.mag === undefined ? 'N/A' : (selected.mag < 0 ? 'Superbrill.' : selected.mag < 2 ? 'Muy brillante' : 'Brillante')}
+                            color={accentColor}
+                            icon={<Zap className="w-3 h-3" />}
+                        />
+                        <MetricCard
+                            label="Posición"
+                            value={`${((selected.ra || 0) / 15).toFixed(1)}h`}
+                            sub={`Dec ${selected.dec > 0 ? '+' : ''}${(selected.dec || 0).toFixed(1)}°`}
+                            color={accentColor}
+                            icon={<Navigation className="w-3 h-3" />}
+                        />
+                    </div>
 
-            {/* Visibilidad */}
-            <div className="rounded-xl p-4 bg-white/3 border border-white/6">
-                <div className="flex items-center gap-2 mb-3">
-                    {isVisible
-                        ? <Eye className="w-3.5 h-3.5 text-emerald-400" />
-                        : <EyeOff className="w-3.5 h-3.5 text-red-400" />}
-                    <span
-                        className={`text-[9px] font-bold tracking-[0.2em] uppercase ${isVisible ? 'text-green-400' : 'text-red-400'}`}
-                    >
-                        {isVisible ? 'Visible ahora' : 'Bajo el horizonte'}
-                    </span>
-                </div>
+                    {/* Visibilidad */}
+                    <div className="rounded-xl p-4 bg-white/3 border border-white/6">
+                        <div className="flex items-center gap-2 mb-3">
+                            {isVisible
+                                ? <Eye className="w-3.5 h-3.5 text-emerald-400" />
+                                : <EyeOff className="w-3.5 h-3.5 text-red-400" />}
+                            <span
+                                className={`text-[9px] font-bold tracking-[0.2em] uppercase ${isVisible ? 'text-green-400' : 'text-red-400'}`}
+                            >
+                                {isVisible ? 'Visible ahora' : 'Bajo el horizonte'}
+                            </span>
+                        </div>
 
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                    <div>
-                        <div className="text-[8px] text-white/20 mb-1 tracking-wider uppercase">Altitud</div>
-                        <div className={`text-base font-bold font-mono ${isVisible ? 'text-green-400' : 'text-white/40'}`}>
-                            {coords.alt.toFixed(1)}°
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <div className="text-[8px] text-white/20 mb-1 tracking-wider uppercase">Altitud</div>
+                                <div className={`text-base font-bold font-mono ${isVisible ? 'text-green-400' : 'text-white/40'}`}>
+                                    {coords.alt.toFixed(1)}°
+                                </div>
+                            </div>
+                            <div>
+                                <div className="text-[8px] text-white/20 mb-1 tracking-wider uppercase">Azimut</div>
+                                <div className="text-base font-bold font-mono text-white/70">
+                                    {coords.az.toFixed(1)}°
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div>
-                        <div className="text-[8px] text-white/20 mb-1 tracking-wider uppercase">Azimut</div>
-                        <div className="text-base font-bold font-mono text-white/70">
-                            {coords.az.toFixed(1)}°
-                        </div>
-                    </div>
-                </div>
-            </div>
+                </>
+            )}
 
-            {/* KID MODE CONTENT */}
-            {kidsMode && selected && getKidFact(selected.name) && (
-                <div className="rounded-xl p-4 bg-gradient-to-br from-yellow-400/20 to-orange-500/10 border border-yellow-400/30 animate-in bounce-in duration-500">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Rocket className="w-4 h-4 text-yellow-500 animate-bounce" />
-                        <span className="text-[10px] font-black tracking-widest text-yellow-500 uppercase">¡Dato Espacial para Niños!</span>
+            {/* MODO INFANTIL: Dato Espacial Exclusivo */}
+            {kidsMode && selected && (
+                <div className="rounded-xl p-5 bg-gradient-to-br from-yellow-400/20 to-orange-500/10 border-2 border-yellow-400/40 animate-in bounce-in duration-500 shadow-[0_0_20px_rgba(250,204,21,0.15)]">
+                    <div className="flex items-center gap-2 mb-3 bg-black/20 w-fit px-3 py-1.5 rounded-full border border-yellow-500/30">
+                        <Rocket className="w-4 h-4 text-yellow-400 animate-bounce" />
+                        <span className="text-[10px] font-black tracking-widest text-yellow-400 uppercase">¡Dato Espacial!</span>
                     </div>
-                    <p className="text-[13px] font-medium text-white/90 leading-relaxed italic">
-                        {getKidFact(selected.name)}
+                    <p className="text-[14px] font-semibold text-white/90 leading-relaxed drop-shadow-md">
+                        {getKidFact(selected.name, isStar, isPlanet)}
                     </p>
                 </div>
             )}

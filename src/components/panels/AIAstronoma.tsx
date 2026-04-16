@@ -76,9 +76,12 @@ export default function AIAstronoma() {
     // Reaccionar a cambios de selección
     useEffect(() => {
         if (selected && !muted) {
-            const kidFact = kidsMode ? getKidFact(selected.name) : null;
+            const isStar = 'constellation' in selected;
+            const isPlanet = 'kind' in selected && selected.kind === 'planet';
+            
+            const kidFact = kidsMode ? getKidFact(selected.name, isStar, isPlanet) : null;
             const intro = kidFact 
-                ? `¡Hola explorador! Has encontrado ${selected.name}. ${kidFact}` 
+                ? `¡Hola explorador! Has encontrado a ${selected.name}. ${kidFact}` 
                 : `Has seleccionado ${selected.name}. ${selected.desc}`;
                 
             // eslint-disable-next-line react-hooks/set-state-in-effect
