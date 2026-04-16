@@ -1,7 +1,7 @@
 'use client';
 
 import { useAppStore } from '@/stores/useAppStore';
-import { Camera, Map as MapIcon, Aperture } from 'lucide-react';
+import { Camera, Map as MapIcon, Aperture, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useDeviceOrientation, deviceOrientationRef } from '@/hooks/useDeviceOrientation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -10,6 +10,8 @@ type CalibrationPhase = 'idle' | 'running' | 'done' | 'failed';
 
 export default function ViewModeWidget() {
     const [, setUiTick] = useState(0);
+    const [collapsed, setCollapsed] = useState(false);
+    const collapseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [calibrationPhase, setCalibrationPhase] = useState<CalibrationPhase>('idle');
     const [calibrationProgress, setCalibrationProgress] = useState(0);
     const [stabilityHint, setStabilityHint] = useState<'good' | 'noisy'>('good');
@@ -97,13 +99,20 @@ export default function ViewModeWidget() {
         }, durationMs + 80);
     }, [addArHealthSample, clearCalibrationTimers, requestAndStart, setFollowOrientation, stop]);
 
+    const scheduleCollapse = useCallback(() => {
+        if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
+        collapseTimerRef.current = setTimeout(() => setCollapsed(true), 2000);
+    }, []);
+
     const handleActivateCameraMode = useCallback(() => {
         setViewMode('camera');
-    }, [setViewMode]);
+        scheduleCollapse();
+    }, [setViewMode, scheduleCollapse]);
 
     const handleActivateVaultMode = useCallback(() => {
         setViewMode('vault');
-    }, [setViewMode]);
+        scheduleCollapse();
+    }, [setViewMode, scheduleCollapse]);
 
     const toggleGyro = useCallback(async () => {
         if (followOrientation) {
@@ -119,6 +128,7 @@ export default function ViewModeWidget() {
         return () => {
             clearInterval(timer);
             clearCalibrationTimers();
+            if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
         };
     }, [clearCalibrationTimers]);
 
@@ -150,8 +160,32 @@ export default function ViewModeWidget() {
 
     const methodText = followOrientation ? 'Metodo: giroscopio' : 'Metodo: manual';
 
+    // ── Chip colapsado ─────────────────────────────────────────────────────────
+    if (collapsed) {
+        return (
+            <button
+                onClick={() => setCollapsed(false)}
+                className={cn(
+                    'fixed bottom-20 right-4 z-40 flex items-center gap-2 px-3 py-2 rounded-full border backdrop-blur-xl shadow-xl transition-all active:scale-95 pointer-events-auto md:bottom-6 md:right-6',
+                    viewMode === 'camera'
+                        ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300'
+                        : 'bg-blue-600/20 border-blue-500/40 text-blue-300'
+                )}
+                title="Cambiar modo de vista"
+                aria-label="Cambiar modo de vista"
+            >
+                {viewMode === 'camera' ? <Camera className="w-3.5 h-3.5" /> : <MapIcon className="w-3.5 h-3.5" />}
+                <span className="text-[10px] font-bold tracking-widest uppercase">
+                    {viewMode === 'camera' ? 'CAMARA' : 'BOVEDA'}
+                </span>
+                <ChevronUp className="w-3 h-3 opacity-50" />
+            </button>
+        );
+    }
+
+    // ── Panel expandido ────────────────────────────────────────────────────────
     return (
-        <div className="fixed bottom-24 right-4 z-40 flex flex-col items-end gap-3 pointer-events-none md:bottom-6 md:right-6">
+        <div className="fixed bottom-28 right-4 z-40 flex flex-col items-end gap-3 pointer-events-none md:bottom-6 md:right-6">
             <div className="flex bg-black/60 backdrop-blur-xl border border-white/10 rounded-full p-1.5 shadow-2xl pointer-events-auto">
                 <button
                     onClick={handleActivateVaultMode}

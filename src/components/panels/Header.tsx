@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
@@ -8,9 +8,13 @@ import { cn } from '@/lib/utils';
 import { getArHealthSummary, getArToneClasses } from '@/lib/arHealth';
 
 function Clock() {
-    const [time, setTime] = useState<Date | null>(() => new Date());
+    // Initialize to null to avoid SSR/client hydration mismatch.
+    // The real time is set exclusively on the client after mount.
+    const [time, setTime] = useState<Date | null>(null);
 
     useEffect(() => {
+        // Set immediately on mount so there's no perceptible delay
+        setTime(new Date());
         const timer = setInterval(() => setTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
@@ -34,10 +38,19 @@ function Clock() {
 
     return (
         <div className="flex flex-col items-end text-right" aria-live="polite" aria-atomic="true" aria-label="Hora actual del observatorio">
-            <div className="text-base md:text-[18px] text-blue-400 tabular-nums leading-none font-bold glow-text">
+            {/* suppressHydrationWarning prevents React from warning about the
+                one-frame difference between SSR placeholder and first paint */}
+            <div
+                suppressHydrationWarning
+                className="text-base md:text-[18px] text-blue-400 tabular-nums leading-none font-bold glow-text"
+            >
                 {time ? formatTime(time) : '--:--:--'}
             </div>
-            <div className="hidden md:block text-[10px] text-white/30 uppercase mt-1 tracking-wider" aria-hidden="true">
+            <div
+                suppressHydrationWarning
+                className="hidden md:block text-[10px] text-white/30 uppercase mt-1 tracking-wider"
+                aria-hidden="true"
+            >
                 {time ? formatDate(time) : ''}
             </div>
         </div>

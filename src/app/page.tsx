@@ -65,12 +65,8 @@ export default function Home() {
 
           {/* Floating UI Elements */}
           <div className="flex-1 relative min-w-0 pointer-events-none">
-            <div className="absolute bottom-6 left-6 pointer-events-auto" style={{ paddingBottom: 'env(safe-area-inset-bottom)', paddingLeft: 'env(safe-area-inset-left)' }}>
-              <TimeTravelControls />
-            </div>
-            <div className="pointer-events-auto" style={{ paddingBottom: 'env(safe-area-inset-bottom)', paddingRight: 'env(safe-area-inset-right)' }}>
-              <ViewModeWidget />
-            </div>
+            <TimeTravelControls />
+            <ViewModeWidget />
           </div>
 
           {/* Sidebar/BottomSheet Layer */}
@@ -86,7 +82,7 @@ export default function Home() {
             <button
               onClick={() => setSidebarOpen(true)}
               title="Abrir guía"
-              className="pointer-events-auto fixed bottom-24 right-4 z-[70] md:hidden w-12 h-12 rounded-full flex items-center justify-center shadow-lg border border-blue-500/40 bg-blue-600/70 backdrop-blur-sm text-white hover:bg-blue-500/80 transition-colors"
+              className="pointer-events-auto fixed bottom-6 right-4 z-[70] md:hidden w-12 h-12 rounded-full flex items-center justify-center shadow-lg border border-blue-500/40 bg-blue-600/70 backdrop-blur-sm text-white hover:bg-blue-500/80 transition-colors"
             >
               <BookOpen className="w-5 h-5" />
             </button>

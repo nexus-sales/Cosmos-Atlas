@@ -31,10 +31,11 @@ export interface CometLiveData {
 
 const SBDB_URL =
     'https://ssd-api.jpl.nasa.gov/sbdb_query.api' +
-    '?fields=pdes,full_name,epoch,e,q,i,om,w,tp,per,M1' +
-    '&sb-class=JF&sb-class=HT&sb-class=ET' +
+    '?fields=pdes,full_name,e,q,i,om,w,tp,per,M1' +
+    '&sb-kind=c' +           // kind=comet (replaces deprecated sb-class)
+    '&sb-cdata=1' +          // include comet-specific data
     '&limit=30' +
-    '&sort=tp&dir=desc' +
+    '&sort=tp&dir=desc' +    // most recent perihelion first
     '&full-prec=true';
 
 // Simple in-process cache: TTL 24 hours
@@ -122,8 +123,8 @@ export async function GET() {
     } catch (err) {
         console.error('[/api/comets] fetch error:', err);
         return NextResponse.json(
-            { ok: false, error: 'JPL fetch failed' },
-            { status: 502 }
+            { ok: false, error: 'JPL fetch failed', comets: [] },
+            { status: 200 }
         );
     }
 }
