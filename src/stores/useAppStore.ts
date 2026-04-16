@@ -72,6 +72,9 @@ interface AppState {
     setViewMode: (mode: 'vault' | 'camera') => void;
     followOrientation: boolean;
     setFollowOrientation: (v: boolean) => void;
+    compassCalibrationOffset: number;
+    setCompassCalibrationOffset: (v: number) => void;
+    zeroCompassCalibrationOffset: () => void;
     focusedConstellation: string | null;
     setFocusedConstellation: (name: string | null) => void;
     simbadObjects: Star[];
@@ -214,6 +217,11 @@ export const useAppStore = create<AppState>()(
                 })),
             followOrientation: false,
             setFollowOrientation: (followOrientation) => set({ followOrientation }),
+            compassCalibrationOffset: 0,
+            setCompassCalibrationOffset: (compassCalibrationOffset) => set({
+                compassCalibrationOffset: ((compassCalibrationOffset % 360) + 360) % 360,
+            }),
+            zeroCompassCalibrationOffset: () => set({ compassCalibrationOffset: 0 }),
             focusedConstellation: null,
             setFocusedConstellation: (focusedConstellation) => set({ focusedConstellation }),
             simbadObjects: [],
@@ -273,6 +281,7 @@ export const useAppStore = create<AppState>()(
                 observer: state.observer,
                 geolocation: state.geolocation,
                 arHealthHistory: state.arHealthHistory,
+                compassCalibrationOffset: state.compassCalibrationOffset,
                 foundChallenges: state.foundChallenges,
                 hasSeenOnboarding: state.hasSeenOnboarding,
                 favorites: state.favorites,

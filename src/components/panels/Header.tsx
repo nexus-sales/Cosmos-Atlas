@@ -58,7 +58,9 @@ export default function Header() {
         ? `GPS +/-${Math.round(geolocation.accuracyM ?? 0)}m`
         : geolocation.status === 'denied'
           ? 'GPS bloqueado'
-          : 'Ubicacion aprox.';
+          : geolocation.source === 'fallback'
+            ? `Fallback ${Math.abs(observer.lat).toFixed(1)}${latHemisphere}`
+            : 'Ubicacion aprox.';
 
     const arSummary = getArHealthSummary(arHealthHistory);
     const arBadgeClass = getArToneClasses(arSummary.tone);
@@ -117,7 +119,9 @@ export default function Header() {
                     >
                         {hasPreciseLocation
                             ? `GPS +/-${Math.round(geolocation.accuracyM ?? 0)}m`
-                            : 'Ubicacion aproximada'}
+                            : geolocation.source === 'fallback'
+                                ? `Fallback ${Math.abs(observer.lat).toFixed(1)}deg${latHemisphere}`
+                                : 'Ubicacion aproximada'}
                     </div>
                 </div>
 

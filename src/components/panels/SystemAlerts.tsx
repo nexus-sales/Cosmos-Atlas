@@ -30,6 +30,7 @@ export default function SystemAlerts() {
     const viewMode = useAppStore((state) => state.viewMode);
     const arHealthHistory = useAppStore((state) => state.arHealthHistory);
     const renderErrors = useAppStore((state) => state.renderErrors);
+    const observer = useAppStore((state) => state.observer);
 
     useEffect(() => {
         const timer = setInterval(() => setTick((value) => value + 1), 1200);
@@ -59,6 +60,14 @@ export default function SystemAlerts() {
                 tone: 'critical',
                 title: 'GPS bloqueado',
                 detail: 'La posicion usa fallback. Activa ubicacion precisa para alinear el cielo real.',
+                icon: MapPinned,
+            });
+        } else if (geolocation.source === 'fallback') {
+            nextAlerts.push({
+                id: 'gps-fallback',
+                tone: 'warning',
+                title: 'Ubicacion fallback',
+                detail: `Mostrando cielo para ${observer.lat.toFixed(1)}°, ${observer.lon.toFixed(1)}°. Polaris cambiara de altura hasta que entre tu GPS real.`,
                 icon: MapPinned,
             });
         } else if (geolocation.status === 'granted' && (geolocation.accuracyM ?? Infinity) > 1200) {
@@ -100,7 +109,7 @@ export default function SystemAlerts() {
         }
 
         return nextAlerts.slice(0, 2);
-    }, [arHealthHistory, followOrientation, geolocation.accuracyM, geolocation.status, renderErrors, tick, viewMode]);
+    }, [arHealthHistory, followOrientation, geolocation.accuracyM, geolocation.source, geolocation.status, observer.lat, observer.lon, renderErrors, tick, viewMode]);
 
     if (alerts.length === 0) return null;
 

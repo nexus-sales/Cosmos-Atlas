@@ -250,6 +250,7 @@ function CelestialGroup({ children }: { children: React.ReactNode }) {
 function OrientationDriver() {
     const { camera } = useThree();
     const followOrientation = useAppStore((s) => s.followOrientation);
+    const compassCalibrationOffset = useAppStore((s) => s.compassCalibrationOffset);
     const azRef   = useRef(0);
     const elRef   = useRef(45);
     const declRef        = useRef(0);
@@ -269,7 +270,7 @@ function OrientationDriver() {
         }
 
         const rawHeading = deviceOrientationRef.heading;
-        const trueHeading = ((rawHeading + declRef.current) % 360 + 360) % 360;
+        const trueHeading = ((rawHeading + declRef.current + compassCalibrationOffset) % 360 + 360) % 360;
         const elevation   = deviceOrientationRef.elevation;
 
         const dAz = ((trueHeading - azRef.current) % 360 + 540) % 360 - 180;
