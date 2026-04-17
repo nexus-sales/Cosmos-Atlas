@@ -5,13 +5,23 @@ import { Search, Loader2, Star, Globe, Crosshair, ExternalLink, History, Trash2 
 import { useAppStore } from '@/stores/useAppStore';
 import { resolveObjectName } from '@/lib/astronomy/sesame';
 import { STARS } from '@/data/stars';
-import type { Star as StarType } from '@/types/celestial';
+import { DSOS } from '@/data/dsos';
+import type { Star as StarType, DSO } from '@/types/celestial';
 
-interface SearchResult extends Partial<StarType> {
-    type: 'star' | 'dso' | 'error' | 'history';
+interface SearchResult {
+    resultType: 'star' | 'dso' | 'error' | 'history';
     source?: 'local' | 'simbad' | 'history';
     name?: string;
     constellation?: string;
+    ra?: number;
+    dec?: number;
+    mag?: number;
+    desc?: string;
+    color?: string;
+    baseSize?: number;
+    id?: string;
+    sizeArcmin?: number;
+    kind?: 'star' | 'dso' | 'planet';
 }
 
 export default function CelestialSearch() {
@@ -25,14 +35,12 @@ export default function CelestialSearch() {
     const setTargetedObject = useAppStore((state) => state.setTargetedObject);
     const addSimbadObject = useAppStore((state) => state.addSimbadObject);
 
-    // Load history from localStorage on mount
     useEffect(() => {
         const saved = localStorage.getItem('cosmos-search-history');
         if (saved) {
             try {
                 const parsed = JSON.parse(saved);
                 setHistory(parsed);
-                // Also add them to the 3D scene store so they appear
                 parsed.forEach((obj: StarType) => addSimbadObject(obj));
             } catch (e) {
                 console.error('Error loading history', e);
@@ -52,7 +60,6 @@ export default function CelestialSearch() {
         localStorage.removeItem('cosmos-search-history');
     };
 
-    // Click outside handler
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -66,9 +73,8 @@ export default function CelestialSearch() {
     const handleSearch = async (val: string) => {
         setQuery(val);
         if (val.length < 2) {
-            // Show history if query is short
             if (history.length > 0) {
-                setResults(history.map(h => ({ ...h, type: 'history' as const, source: 'history' as const })));
+                setResults(history.map(h => ({ ...h, resultType: 'history' as const, source: 'history' as const })));
                 setIsOpen(true);
             } else {
                 setResults([]);
@@ -76,19 +82,25 @@ export default function CelestialSearch() {
             return;
         }
 
-        // 1. Local Search (Stars)
-        const localMatches = STARS.filter(s =>
-            s.name.toLowerCase().includes(val.toLowerCase()) ||
-            s.constellation?.toLowerCase().includes(val.toLowerCase())
-        ).slice(0, 5).map(s => ({ ...s, type: 'star' as const, source: 'local' as const }));
+        const q = val.toLowerCase();
 
-        setResults(localMatches);
+        const starMatches: SearchResult[] = STARS.filter(s =>
+            s.name.toLowerCase().includes(q) ||
+            s.constellation?.toLowerCase().includes(q)
+        ).slice(0, 4).map(s => ({ ...s, resultType: 'star' as const, source: 'local' as const }));
+
+        const dsoMatches: SearchResult[] = DSOS.filter(d =>
+            d.name.toLowerCase().includes(q) ||
+            d.id?.toLowerCase().includes(q)
+        ).slice(0, 3).map(d => ({ ...d, resultType: 'dso' as const, source: 'local' as const }));
+
+        setResults([...starMatches, ...dsoMatches].slice(0, 6));
         setIsOpen(true);
     };
 
     const onKeyDown = (e: React.KeyboardEvent) => {
         if (e.key !== 'Enter') return;
-        if (results.length > 0 && results[0].type !== 'error' && results[0].type !== 'history') {
+        if (results.length > 0 && results[0].resultType !== 'error' && results[0].resultType !== 'history') {
             selectObject(results[0]);
             return;
         }
@@ -109,37 +121,34 @@ export default function CelestialSearch() {
                     dec: data.dec,
                     mag: data.mag || 10,
                     constellation: `SIMBAD: ${data.source}`,
-                    color: '#00f2ff', // Cyan para objetos externos
+                    color: '#00f2ff',
                     desc: `Objeto remoto recuperado vía Sesame/SIMBAD. Magnitud: ${data.mag || 'N/A'}.`,
                     baseSize: 1.0,
                 };
-                
-                // Añadir al store persistente de objetos
+
                 addSimbadObject(newObj);
                 saveToHistory(newObj);
-                
-                setResults([{
-                    ...newObj,
-                    type: 'dso' as const,
-                    source: 'simbad' as const
-                }]);
+
+                setResults([{ ...newObj, resultType: 'dso', source: 'simbad' }]);
             } else {
-                setResults([{ name: 'No encontrado en SIMBAD', type: 'error' as const }]);
+                setResults([{ name: 'No encontrado en SIMBAD', resultType: 'error' }]);
             }
         } catch (error) {
             console.error(error);
-            setResults([{ name: 'Error en conexión SIMBAD', type: 'error' as const }]);
+            setResults([{ name: 'Error en conexión SIMBAD', resultType: 'error' }]);
         } finally {
             setIsSearching(false);
         }
     };
 
     const selectObject = (obj: SearchResult) => {
-        if (obj.type === 'error') return;
-        const starObj = obj as StarType;
-        setTargetedObject(starObj);
-        if (obj.source === 'simbad') {
-            saveToHistory(starObj);
+        if (obj.resultType === 'error') return;
+        if (obj.resultType === 'dso' && obj.source === 'local') {
+            setTargetedObject(obj as unknown as DSO);
+        } else {
+            const starObj = obj as StarType;
+            setTargetedObject(starObj);
+            if (obj.source === 'simbad') saveToHistory(starObj);
         }
         setIsOpen(false);
         setQuery('');
@@ -156,7 +165,7 @@ export default function CelestialSearch() {
                     onKeyDown={onKeyDown}
                     onFocus={() => {
                         if (query.length < 2 && history.length > 0) {
-                            setResults(history.map(h => ({ ...h, type: 'history' as const, source: 'history' as const })));
+                            setResults(history.map(h => ({ ...h, resultType: 'history' as const, source: 'history' as const })));
                             setIsOpen(true);
                         } else if (query.length >= 2) {
                             setIsOpen(true);
@@ -171,12 +180,12 @@ export default function CelestialSearch() {
             {isOpen && (results.length > 0 || query.length > 2) && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-black/95 border border-white/10 rounded-xl backdrop-blur-2xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="p-1">
-                        {results.length > 0 && results[0].type === 'history' && (
+                        {results.length > 0 && results[0].resultType === 'history' && (
                             <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/5 mb-1">
                                 <span className="text-[8px] font-bold text-white/40 uppercase tracking-widest flex items-center gap-1.5">
                                     <History className="w-2.5 h-2.5" /> Recientes
                                 </span>
-                                <button 
+                                <button
                                     onClick={clearHistory}
                                     className="p-1 hover:bg-red-500/10 rounded group"
                                     title="Limpiar historial"
@@ -193,12 +202,12 @@ export default function CelestialSearch() {
                                 className="w-full flex items-center gap-3 px-3 py-2 hover:bg-white/5 transition-colors rounded-lg group text-left"
                             >
                                 <div className={`w-6 h-6 rounded-full flex items-center justify-center border transition-colors ${
-                                    res.source === 'simbad' ? 'bg-cyan-500/10 border-cyan-500/20' : 
+                                    res.source === 'simbad' ? 'bg-cyan-500/10 border-cyan-500/20' :
                                     res.source === 'history' ? 'bg-white/5 border-white/10' :
                                     'bg-blue-500/10 border-blue-500/20'
                                 }`}>
-                                    {res.type === 'star' ? <Star className="w-3 h-3 text-blue-400" /> : 
-                                     res.type === 'history' ? <History className="w-3 h-3 text-white/40" /> :
+                                    {res.resultType === 'star' ? <Star className="w-3 h-3 text-blue-400" /> :
+                                     res.resultType === 'history' ? <History className="w-3 h-3 text-white/40" /> :
                                      <Globe className="w-3 h-3 text-cyan-400" />}
                                 </div>
                                 <div className="flex-1 min-w-0">
