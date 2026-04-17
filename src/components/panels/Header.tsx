@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
-import { Stars, MapPin, Play, Square, ShieldCheck } from 'lucide-react';
+import { Stars, MapPin, Play, Square, ShieldCheck, Search, X } from 'lucide-react';
 import CelestialSearch from './CelestialSearch';
 import { cn } from '@/lib/utils';
 import { getArHealthSummary, getArToneClasses } from '@/lib/arHealth';
@@ -58,6 +58,7 @@ function Clock() {
 }
 
 export default function Header() {
+    const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const observer = useAppStore((state) => state.observer);
     const geolocation = useAppStore((state) => state.geolocation);
     const arHealthHistory = useAppStore((state) => state.arHealthHistory);
@@ -79,6 +80,7 @@ export default function Header() {
     const arBadgeClass = getArToneClasses(arSummary.tone);
 
     return (
+        <div className="flex flex-col">
         <header className="atlas-panel h-14 md:h-16 border-b border-white/10 flex items-center justify-between px-3 md:px-6 z-20 overflow-hidden shrink-0">
             <div className="flex items-center gap-2 md:gap-4">
                 <div className="relative flex items-center justify-center w-8 h-8 md:w-10 md:h-10 border border-blue-500/30 rounded-full bg-blue-500/5 group">
@@ -100,6 +102,19 @@ export default function Header() {
             </div>
 
             <div className="flex items-center gap-3 md:gap-6 font-mono">
+                {/* Botón de búsqueda — solo móvil */}
+                <button
+                    onClick={() => setMobileSearchOpen(v => !v)}
+                    aria-label="Buscar objeto celeste"
+                    className={cn(
+                        'sm:hidden flex items-center justify-center w-8 h-8 rounded-lg border transition-colors cursor-pointer',
+                        mobileSearchOpen
+                            ? 'border-blue-500/40 bg-blue-500/20 text-blue-400'
+                            : 'border-white/10 text-white/40 hover:text-white/70 hover:border-white/20'
+                    )}
+                >
+                    {mobileSearchOpen ? <X className="w-4 h-4" /> : <Search className="w-4 h-4" />}
+                </button>
                 <button
                     onClick={() => setIsTourActive(!isTourActive)}
                     aria-label={isTourActive ? 'Detener tour del cielo' : 'Iniciar tour cinematografico del cielo'}
@@ -172,5 +187,13 @@ export default function Header() {
                 </div>
             </div>
         </header>
+
+        {/* Barra de búsqueda móvil — se despliega bajo el header */}
+        {mobileSearchOpen && (
+            <div className="sm:hidden atlas-panel border-b border-white/10 px-4 py-2.5">
+                <CelestialSearch />
+            </div>
+        )}
+        </div>
     );
 }
