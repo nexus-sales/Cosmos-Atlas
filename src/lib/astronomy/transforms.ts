@@ -95,8 +95,8 @@ export function equToHor(ra: number, dec: number, lat: number, lon: number, date
  * on a sphere of a given radius.
  */
 export function equatorialTo3D(ra: number, dec: number, radius: number): [number, number, number] {
-    const phi = toRad(90 - dec);      // Colatitude
-    const theta = toRad(ra - 180);    // Longitude adjusted
+    const phi = toRad(90 - dec);   // Colatitude
+    const theta = toRad(90 - ra);  // RA creciente hacia el Este (+X) visto desde dentro
 
     return [
         radius * Math.sin(phi) * Math.cos(theta),
