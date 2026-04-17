@@ -113,7 +113,7 @@ export default function Header() {
                     )}
                 >
                     {isTourActive ? <Square className="w-3 h-3" /> : <Play className="w-3 h-3" />}
-                    {isTourActive ? 'Stop' : 'Tour'}
+                    {isTourActive ? 'Detener' : 'Tour'}
                 </button>
 
                 <div className="hidden lg:flex flex-col items-end text-right">

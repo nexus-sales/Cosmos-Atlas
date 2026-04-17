@@ -104,26 +104,26 @@ function PanelContent({
     });
 
     const tabs = [
-        { id: 'guide', label: 'GUIDE', icon: BookOpen },
-        { id: 'info', label: 'OBJECT', icon: Info },
-        { id: 'challenge', label: 'CHALLENGE', icon: Target },
-        { id: 'passport', label: 'PASSPORT', icon: Sparkles },
+        { id: 'guide', label: 'GUÍA', icon: BookOpen },
+        { id: 'info', label: 'OBJETO', icon: Info },
+        { id: 'challenge', label: 'RETO', icon: Target },
+        { id: 'passport', label: 'PASAPORTE', icon: Sparkles },
     ] as const;
 
     const layerToggles = [
-        { key: 'showGrid' as const, label: 'GRID', icon: Grid3X3, active: showGrid },
-        { key: 'showConstellations' as const, label: 'CONSTELL.', icon: Layers, active: showConstellations },
-        { key: 'showConstellationArt' as const, label: 'MYTH', icon: Sparkles, active: showConstellationArt },
-        { key: 'showMilkyWay' as const, label: 'MILKY WAY', icon: Layers, active: showMilkyWay },
-        { key: 'showEcliptic' as const, label: 'ECLIPTIC', icon: Layers, active: showEcliptic },
-        { key: 'nightMode' as const, label: 'NIGHT', icon: Moon, active: nightMode },
-        { key: 'showFOV' as const, label: 'FOV SIM', icon: Camera, active: showFOV },
-        { key: 'showSatellites' as const, label: 'SATELLITES', icon: Satellite, active: showSatellites },
+        { key: 'showGrid' as const, label: 'CUADRÍCULA', icon: Grid3X3, active: showGrid },
+        { key: 'showConstellations' as const, label: 'CONSTELAC.', icon: Layers, active: showConstellations },
+        { key: 'showConstellationArt' as const, label: 'MITOLOGÍA', icon: Sparkles, active: showConstellationArt },
+        { key: 'showMilkyWay' as const, label: 'VÍA LÁCTEA', icon: Layers, active: showMilkyWay },
+        { key: 'showEcliptic' as const, label: 'ECLÍPTICA', icon: Layers, active: showEcliptic },
+        { key: 'nightMode' as const, label: 'MODO NOCHE', icon: Moon, active: nightMode },
+        { key: 'showFOV' as const, label: 'CAMPO FOV', icon: Camera, active: showFOV },
+        { key: 'showSatellites' as const, label: 'SATÉLITES', icon: Satellite, active: showSatellites },
         { key: 'showStarlink' as const, label: 'STARLINK', icon: Globe, active: showStarlink },
-        { key: 'showDiagnostics' as const, label: 'DIAGNOSTIC', icon: Activity, active: showDiagnostics },
-        { key: 'telescopeMode' as const, label: 'TELESCOPE', icon: Camera, active: telescopeMode },
-        { key: 'followTarget' as const, label: 'FOLLOW', icon: Crosshair, active: followTarget },
-        { key: 'kidsMode' as const, label: 'KIDS MODE', icon: Sparkles, active: kidsMode },
+        { key: 'showDiagnostics' as const, label: 'DIAGNÓST.', icon: Activity, active: showDiagnostics },
+        { key: 'telescopeMode' as const, label: 'TELESCOPIO', icon: Camera, active: telescopeMode },
+        { key: 'followTarget' as const, label: 'SEGUIR', icon: Crosshair, active: followTarget },
+        { key: 'kidsMode' as const, label: 'MODO NIÑO', icon: Sparkles, active: kidsMode },
     ];
 
     const [layersOpen, setLayersOpen] = useState(false);
@@ -161,7 +161,7 @@ function PanelContent({
                         'flex items-center justify-center transition-colors shrink-0 border-l border-white/8 h-full cursor-pointer',
                         isMobile ? 'w-16 bg-white/5 hover:bg-red-500/30 text-white/60' : 'w-12 text-white/30 hover:text-white/60'
                     )}
-                    aria-label="Close panel"
+                    aria-label="Cerrar panel"
                 >
                     {isMobile ? <X className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
                 </button>
@@ -172,25 +172,25 @@ function PanelContent({
                     <div className="atlas-card mb-5 rounded-2xl p-4">
                         <div className="flex items-start justify-between gap-3">
                             <div>
-                                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/42">Observation Mode</p>
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/42">Modo Observación</p>
                                 <h2 className="mt-1 text-[18px] font-semibold tracking-[0.08em] text-white">
-                                    {viewMode === 'camera' ? 'AR Sky Lens' : 'Sky Vault'}
+                                    {viewMode === 'camera' ? 'Lente AR' : 'Bóveda Celeste'}
                                 </h2>
                                 <p className="mt-1 text-[12px] leading-5 text-white/58">
                                     {viewMode === 'camera'
-                                        ? 'Live calibration guidance and sensor health for field use.'
-                                        : 'Deep-sky exploration with overlays tuned for clarity.'}
+                                        ? 'Calibración en vivo y salud del sensor para uso en campo.'
+                                        : 'Exploración de cielo profundo con capas optimizadas.'}
                                 </p>
                             </div>
                             <div className={cn('rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em]', arHealthBadgeClass)}>
-                                {arSummary.score == null ? 'AR Pending' : `${arSummary.label} AR`}
+                                {arSummary.score == null ? 'AR Pendiente' : `AR ${arSummary.label}`}
                             </div>
                         </div>
 
                         <div className="mt-4 grid grid-cols-3 gap-2">
-                            <StatusMetric label="Layers" value={`${activeLayerCount}`} hint="active" />
-                            <StatusMetric label="GPS" value={satelliteInfo.visibleSpecial + satelliteInfo.visibleStarlink > 0 ? 'Live' : 'Standby'} hint="tracking" />
-                            <StatusMetric label="AR" value={arSummary.score == null ? 'N/A' : `${arSummary.score}`} hint="health" />
+                            <StatusMetric label="Capas" value={`${activeLayerCount}`} hint="activas" />
+                            <StatusMetric label="GPS" value={satelliteInfo.visibleSpecial + satelliteInfo.visibleStarlink > 0 ? 'Activo' : 'Standby'} hint="seguimiento" />
+                            <StatusMetric label="AR" value={arSummary.score == null ? 'N/A' : `${arSummary.score}`} hint="salud" />
                         </div>
                     </div>
 
@@ -203,7 +203,7 @@ function PanelContent({
                             )}
                         >
                             <Layers className="w-3.5 h-3.5" />
-                            VAULT
+                            BÓVEDA
                         </button>
                         <button
                             onClick={() => useAppStore.getState().setViewMode('camera')}
@@ -213,7 +213,7 @@ function PanelContent({
                             )}
                         >
                             <Camera className="w-3.5 h-3.5" />
-                            CAMERA
+                            CÁMARA
                         </button>
                     </div>
 
@@ -224,10 +224,10 @@ function PanelContent({
                 </div>
 
                 <div className="border-t border-white/8 divide-y divide-white/5">
-                    <AccordionSection title="Sky Layers" icon={<Settings2 className="w-4 h-4" />} isOpen={layersOpen} onToggle={() => setLayersOpen(!layersOpen)}>
+                    <AccordionSection title="Capas del Cielo" icon={<Settings2 className="w-4 h-4" />} isOpen={layersOpen} onToggle={() => setLayersOpen(!layersOpen)}>
                         <div className="mb-3 flex items-center justify-between rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-[10px] text-white/52">
-                            <span>Visible overlays curated for quick reading.</span>
-                            <span className="font-mono text-white/72">{activeLayerCount} on</span>
+                            <span>Capas visibles optimizadas para lectura rápida.</span>
+                            <span className="font-mono text-white/72">{activeLayerCount} activas</span>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                             {layerToggles.map(({ key, label, icon: Icon, active }) => (
@@ -253,10 +253,10 @@ function PanelContent({
                         </div>
                     </AccordionSection>
 
-                    <AccordionSection title={`Light Pollution: Bortle ${bortleScale}`} icon={<Mountain className="w-4 h-4" />} isOpen={bortleOpen} onToggle={() => setBortleOpen(!bortleOpen)}>
+                    <AccordionSection title={`Contaminación: Bortle ${bortleScale}`} icon={<Mountain className="w-4 h-4" />} isOpen={bortleOpen} onToggle={() => setBortleOpen(!bortleOpen)}>
                         <div className="space-y-3">
                             <div className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2.5 text-[11px] leading-5 text-white/60">
-                                {bortleScale <= 2 ? 'Pristine contrast for nebulae and Milky Way structure.' : bortleScale <= 4 ? 'Balanced rural sky with good deep-sky visibility.' : bortleScale <= 6 ? 'Moderate suburban glow. Bright targets still read well.' : 'Strong urban glow. Prioritise Moon, planets and brightest stars.'}
+                                {bortleScale <= 2 ? 'Contraste óptimo para nebulosas y la Vía Láctea.' : bortleScale <= 4 ? 'Cielo rural equilibrado con buena visibilidad de cielo profundo.' : bortleScale <= 6 ? 'Resplandor suburbano moderado. Los objetos brillantes son visibles.' : 'Fuerte resplandor urbano. Prioriza Luna, planetas y estrellas brillantes.'}
                             </div>
                             <div className="flex gap-1 justify-between">
                                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((val) => (
@@ -266,14 +266,14 @@ function PanelContent({
                                 ))}
                             </div>
                             <div className="text-[10px] text-blue-400/60 font-medium uppercase tracking-[0.1em] text-center bg-blue-500/5 py-1 rounded">
-                                {bortleScale <= 2 ? 'Pristine Sky' : bortleScale <= 4 ? 'Rural' : bortleScale <= 6 ? 'Suburban' : 'Bright City'}
+                                {bortleScale <= 2 ? 'Cielo Prístino' : bortleScale <= 4 ? 'Rural' : bortleScale <= 6 ? 'Suburbano' : 'Ciudad'}
                             </div>
                         </div>
                     </AccordionSection>
 
-                    <AccordionSection title="Satellites" icon={<Satellite className="w-4 h-4" />} isOpen={satellitesOpen} onToggle={() => setSatellitesOpen(!satellitesOpen)}>
+                    <AccordionSection title="Satélites" icon={<Satellite className="w-4 h-4" />} isOpen={satellitesOpen} onToggle={() => setSatellitesOpen(!satellitesOpen)}>
                         <div className="mb-3 rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2.5 text-[11px] leading-5 text-white/60">
-                            Quick glance at premium satellite traffic without opening a denser tracker view.
+                            Vista rápida del tráfico de satélites sin abrir el rastreador detallado.
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                             <div className="atlas-card rounded-xl p-3">
@@ -281,29 +281,29 @@ function PanelContent({
                                     <div className="w-2 h-2 rounded-full bg-white shadow-[0_0_6px_white]" /> ISS/HUBBLE
                                 </div>
                                 <div className="text-[18px] text-blue-200 font-mono">{satelliteInfo.visibleSpecial}</div>
-                                <div className="text-[10px] text-white/42 uppercase tracking-[0.16em]">visible now</div>
+                                <div className="text-[10px] text-white/42 uppercase tracking-[0.16em]">visible ahora</div>
                             </div>
                             <div className="atlas-card rounded-xl p-3">
                                 <div className="flex items-center gap-2 text-[10px] font-bold text-white/70 mb-1.5">
                                     <div className="w-2 h-2 rounded-full bg-[#88aaff] shadow-[0_0_6px_#88aaff]" /> STARLINK
                                 </div>
                                 <div className="text-[18px] text-blue-200 font-mono">{satelliteInfo.visibleStarlink}</div>
-                                <div className="text-[10px] text-white/42 uppercase tracking-[0.16em]">visible now</div>
+                                <div className="text-[10px] text-white/42 uppercase tracking-[0.16em]">visible ahora</div>
                             </div>
                         </div>
                     </AccordionSection>
 
-                    <AccordionSection title="AR Health" icon={<ShieldCheck className="w-4 h-4" />} isOpen={arHealthOpen} onToggle={() => setArHealthOpen(!arHealthOpen)}>
+                    <AccordionSection title="Salud AR" icon={<ShieldCheck className="w-4 h-4" />} isOpen={arHealthOpen} onToggle={() => setArHealthOpen(!arHealthOpen)}>
                         <div className="space-y-3">
                             <div className="atlas-card rounded-2xl p-3.5">
                                 <div className="flex items-center justify-between mb-2">
-                                    <div className="text-[11px] text-white/74">AR Health Score</div>
+                                    <div className="text-[11px] text-white/74">Puntuación Salud AR</div>
                                     <div className={cn('text-[10px] px-2.5 py-1 rounded-full border font-bold tracking-[0.16em] uppercase', arHealthBadgeClass)}>
                                         {arSummary.label}
                                     </div>
                                 </div>
                                 <div className="flex items-center justify-between text-[13px]">
-                                    <span className="text-white/40">Score</span>
+                                    <span className="text-white/40">Puntuación</span>
                                     <span className="text-blue-300 font-mono font-bold">
                                         {arSummary.score == null ? 'N/A' : `${arSummary.score}/100`}
                                     </span>
@@ -326,37 +326,37 @@ function PanelContent({
                                     />
                                 </div>
                                 <div className="mt-2 text-[10px] text-white/45">
-                                    Calibrations: <span className="text-white/75">{arHealthHistory.length}</span>
+                                    Calibraciones: <span className="text-white/75">{arHealthHistory.length}</span>
                                 </div>
                                 <div className="text-[10px] text-white/45">
-                                    Last status: <span className="text-white/75">{arSummary.lastSample?.success ? 'OK' : arHealthHistory.length > 0 ? 'Failed' : 'N/A'}</span>
+                                    Último estado: <span className="text-white/75">{arSummary.lastSample?.success ? 'OK' : arHealthHistory.length > 0 ? 'Fallido' : 'N/A'}</span>
                                 </div>
                                 <div className="text-[10px] text-white/45">
-                                    Avg jitter: <span className="text-white/75">{arSummary.avgJitter == null ? 'N/A' : `${arSummary.avgJitter}deg`}</span>
+                                    Jitter medio: <span className="text-white/75">{arSummary.avgJitter == null ? 'N/A' : `${arSummary.avgJitter}°`}</span>
                                 </div>
                                 <div className="text-[10px] text-white/45">
-                                    Avg stability: <span className="text-white/75">{arSummary.avgStability == null ? 'N/A' : `${arSummary.avgStability}%`}</span>
+                                    Estabilidad media: <span className="text-white/75">{arSummary.avgStability == null ? 'N/A' : `${arSummary.avgStability}%`}</span>
                                 </div>
                                 <p className="mt-2.5 text-[11px] leading-relaxed text-white/60">{arSummary.recommendation}</p>
                             </div>
 
                             <div className="rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 text-[10px] text-white/50">
                                 {arHealthHistory.length === 0
-                                    ? 'The system will keep a short internal calibration memory once you run AR.'
-                                    : `Short internal memory active with ${arHealthHistory.length} recent calibration sample${arHealthHistory.length > 1 ? 's' : ''}.`}
+                                    ? 'El sistema guardará una memoria de calibración interna una vez uses AR.'
+                                    : `Memoria interna activa con ${arHealthHistory.length} muestra${arHealthHistory.length > 1 ? 's' : ''} de calibración reciente.`}
                             </div>
                         </div>
                     </AccordionSection>
 
                     {showFOV && (
-                        <AccordionSection title="Capture Settings" icon={<Camera className="w-4 h-4" />} isOpen={fovOpen} onToggle={() => setFovOpen(!fovOpen)}>
+                        <AccordionSection title="Ajustes de Captura" icon={<Camera className="w-4 h-4" />} isOpen={fovOpen} onToggle={() => setFovOpen(!fovOpen)}>
                             <div className="space-y-4">
                                 <div className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2.5 text-[11px] leading-5 text-white/60">
-                                    Frame your target quickly with focal length and sensor preset tuned for astrophotography planning.
+                                    Encuadra tu objetivo con longitud focal y sensor preconfigurado para planificación de astrofotografía.
                                 </div>
                                 <div className="space-y-2">
                                     <div className="flex justify-between text-[10px] font-mono text-white/60">
-                                        <span>Focal Length</span>
+                                        <span>Longitud Focal</span>
                                         <span className="text-blue-400 font-bold">{focalLength}mm</span>
                                     </div>
                                     <input
@@ -379,11 +379,11 @@ function PanelContent({
                         </AccordionSection>
                     )}
 
-                    <AccordionSection title="Daily Events" icon={<Globe className="w-4 h-4" />} isOpen={eventsOpen} onToggle={() => setEventsOpen(!eventsOpen)}>
+                    <AccordionSection title="Eventos del Día" icon={<Globe className="w-4 h-4" />} isOpen={eventsOpen} onToggle={() => setEventsOpen(!eventsOpen)}>
                         <DailyEventsPanel />
                     </AccordionSection>
 
-                    <AccordionSection title="Meteors" icon={<CloudRain className="w-4 h-4" />} isOpen={meteorsOpen} onToggle={() => setMeteorsOpen(!meteorsOpen)}>
+                    <AccordionSection title="Meteoros" icon={<CloudRain className="w-4 h-4" />} isOpen={meteorsOpen} onToggle={() => setMeteorsOpen(!meteorsOpen)}>
                         <MeteorShowerInfo />
                     </AccordionSection>
                 </div>
@@ -391,9 +391,9 @@ function PanelContent({
 
             <div className="mt-auto border-t border-white/8 p-4 shrink-0 bg-black/40">
                 <div className="flex items-center justify-between text-[10px] font-bold tracking-[0.2em] uppercase">
-                    <span className="text-white/20">ATLAS SYSTEM</span>
+                    <span className="text-white/20">SISTEMA ATLAS</span>
                     <span className="flex items-center gap-1.5 text-emerald-500">
-                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" /> ONLINE
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" /> EN LÍNEA
                     </span>
                 </div>
             </div>
@@ -497,9 +497,9 @@ export default function SidePanel() {
     }
 
     const tabs = [
-        { id: 'challenge', label: 'CHALLENGE', icon: Target },
-        { id: 'info', label: 'OBJECT', icon: Info },
-        { id: 'guide', label: 'GUIDE', icon: BookOpen },
+        { id: 'challenge', label: 'RETO', icon: Target },
+        { id: 'info', label: 'OBJETO', icon: Info },
+        { id: 'guide', label: 'GUÍA', icon: BookOpen },
     ] as const;
 
     return (
@@ -516,8 +516,8 @@ export default function SidePanel() {
                     <button
                         onClick={() => setSidebarOpen(true)}
                         className="flex items-center justify-center h-12 w-full text-white/30 hover:text-blue-400 hover:bg-white/5 transition-colors border-b border-white/8 cursor-pointer mb-1"
-                        title="Open panel"
-                        aria-label="Open panel"
+                        title="Abrir panel"
+                        aria-label="Abrir panel"
                     >
                         <ChevronLeft className="w-4 h-4" />
                     </button>

@@ -38,10 +38,10 @@ import { computeMagneticDeclination } from '@/lib/astronomy/magneticDeclination'
 import { cn } from '@/lib/utils';
 
 /**
- * Zoom por FOV â€” rueda de ratÃ³n + pinch tÃ¡ctil.
+ * Zoom por FOV — rueda de ratón + pinch táctil.
  *
  * Para el pinch se usan pointer events (no touch events) porque R3F establece
- * `touch-action: none` en el canvas y OrbitControls tambiÃ©n usa pointer events,
+ * `touch-action: none` en el canvas y OrbitControls también usa pointer events,
  * lo que hace que los touchmove sean poco fiables. Al usar pointerdown/
  * pointermove en el mismo canvas los dos handlers conviven sin conflicto:
  * OrbitControls ignora el gesto de 2 dedos cuando enableZoom+enablePan=false
@@ -63,7 +63,7 @@ function FovZoom({
     const camFov = useAppStore((state) => state.camFov);
     const setCamFov = useAppStore((state) => state.setCamFov);
 
-    // Inercia del pinch: velocidad acumulada que se decae con fricciÃ³n
+    // Inercia del pinch: velocidad acumulada que se decae con fricción
     const pinchVelocityRef = useRef(0);
     const pinchActiveRef = useRef(false);
 
@@ -89,8 +89,8 @@ function FovZoom({
             cam.updateProjectionMatrix();
             setCamFov(next);
         }
-        // FricciÃ³n dinÃ¡mica: decaimiento mÃ¡s natural
-        // A mayor velocidad, mayor resistencia inicial (sensaciÃ³n de masa)
+        // Fricción dinámica: decaimiento más natural
+        // A mayor velocidad, mayor resistencia inicial (sensación de masa)
         const friction = Math.abs(vel) > 1.0 ? 0.92 : 0.85;
         pinchVelocityRef.current *= friction;
     });
@@ -99,7 +99,7 @@ function FovZoom({
         const canvas = gl.domElement;
         const cam = camera as THREE.PerspectiveCamera;
 
-        // â”€â”€ Rueda de ratÃ³n â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Rueda de ratón ──────────────────────────────────────────────────
         const onWheel = (e: WheelEvent) => {
             e.preventDefault();
             const delta = e.deltaY > 0 ? 3 : -3;
@@ -119,7 +119,7 @@ function FovZoom({
             setCamFov(fovRef.current);
         };
 
-        // â”€â”€ Pinch tÃ¡ctil con pointer events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Pinch táctil con pointer events ────────────────────────────────
         const ptrs = new Map<number, { x: number; y: number }>();
         let lastDist = 0;
 
@@ -189,7 +189,7 @@ function FovZoom({
             canvas.removeEventListener('pointercancel', onPointerUp);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [camera, gl, setCamFov]); // trackingRef/manualFovRef/manualFovHoldRef are refs â€” stable by design
+    }, [camera, gl, setCamFov]); // trackingRef/manualFovRef/manualFovHoldRef son refs — estables por diseño
 
     return null;
 }
@@ -208,7 +208,7 @@ function SetupRenderer() {
         // eslint-disable-next-line react-hooks/immutability
         gl.localClippingEnabled = true;
 
-        // Transparencia total en modo cÃ¡mara, negro en modo bÃ³veda
+        // Transparencia total en modo cámara, negro en modo bóveda
         if (viewMode === 'camera') {
             gl.setClearColor(0x000000, 0);
         } else {
@@ -228,9 +228,9 @@ function SetupRenderer() {
 /**
  * Rota toda la esfera celeste (coordenadas ecuatoriales) al sistema
  * horizontal local del observador:
- *   - rotation.x = 90 - lat   â†’ inclina el polo norte celeste
- *   - rotation.y = -LST        â†’ gira para la hora sidÃ©rea local
- * Con esto las estrellas se mueven correctamente segÃºn la ubicaciÃ³n
+ *   - rotation.x = 90 - lat   → inclina el polo norte celeste
+ *   - rotation.y = -LST        → gira para la hora sidérea local
+ * Con esto las estrellas se mueven correctamente según la ubicación
  * y la hora real, exactamente como en el cielo nocturno.
  */
 function CelestialGroup({ children }: { children: React.ReactNode }) {
@@ -330,7 +330,7 @@ export default function SkyCanvas() {
             "w-full h-full relative overflow-hidden transition-colors duration-1000",
             viewMode === 'camera' ? "bg-transparent" : "bg-black"
         )}>
-            {/* Fondo de CÃ¡mara para AR */}
+            {/* Fondo de Cámara para AR */}
             <CameraBackground />
 
             <Canvas
@@ -339,11 +339,10 @@ export default function SkyCanvas() {
                     antialias: true,
                     stencil: false,
                     powerPreference: 'high-performance',
-                    alpha: true // Permitir fondo transparente para ver la cÃ¡mara
+                    alpha: true
                 }}
                 camera={{ position: [0, 0, 0.01], fov: 60, near: 0.001, far: 200 }}
                 onCreated={({ gl }) => {
-                    // Asegurar que el fondo del canvas sea transparente
                     gl.setClearColor(0x000000, 0);
                 }}
             >
@@ -351,17 +350,16 @@ export default function SkyCanvas() {
                     <SetupRenderer />
                     <AdaptiveSoundscape />
 
-                    {/* IluminaciÃ³n para planetas y Luna (meshStandardMaterial) */}
+                    {/* Iluminación para planetas y Luna (meshStandardMaterial) */}
                     {/* Luz ambiental suave para el lado oscuro */}
                     <ambientLight intensity={0.15} />
-                    {/* Luz direccional que simula el Sol - viene desde +X (Este) */}
+                    {/* Luz direccional que simula el Sol */}
                     <directionalLight
                         position={[100, 0, 0]}
                         intensity={3.5}
                         color="#ffffff"
                     />
 
-                    {/* OrbitControls ya no usa key para evitar re-mounting que corta el drag */}
                     <OrbitControls
                         ref={controlsRef}
                         enableZoom={false}
@@ -382,16 +380,16 @@ export default function SkyCanvas() {
                         setIsMultitouch={setIsMultitouch}
                     />
 
-                    {/* Esfera AtmosfÃ©rica Pro â€” reemplaza a CelestialSphere */}
+                    {/* Esfera Atmosférica Pro */}
                     <CelestialSphere />
 
                     {/* Grupo rotado al sistema horizontal del observador */}
                     <CelestialGroup>
                         <ErrorBoundary label="BackgroundStars"><BackgroundStars /></ErrorBoundary>
                         {showMilkyWay && <ErrorBoundary label="MilkyWay"><MilkyWay /></ErrorBoundary>}
-                        {/* CatÃ¡logo Hipparcos â€” 14.984 estrellas hasta mag 7, carga asÃ­ncrona */}
+                        {/* Catálogo Hipparcos — 14.984 estrellas hasta mag 7, carga asíncrona */}
                         <ErrorBoundary label="HipparcosStars"><HipparcosStars /></ErrorBoundary>
-                        {/* Estrellas nombradas (355) con hitboxes e interacciÃ³n â€” encima del catÃ¡logo */}
+                        {/* Estrellas nombradas (355) con hitboxes e interacción — encima del catálogo */}
                         <ErrorBoundary label="Stars"><Stars /></ErrorBoundary>
                         <ErrorBoundary label="DeepSkyObjects"><DeepSkyObjects /></ErrorBoundary>
                         <ErrorBoundary label="Constellations"><Constellations /></ErrorBoundary>
@@ -401,12 +399,12 @@ export default function SkyCanvas() {
                         {showGrid && <ErrorBoundary label="CelestialGrid"><CelestialGrid /></ErrorBoundary>}
                         {showEcliptic && <ErrorBoundary label="Ecliptic"><Ecliptic /></ErrorBoundary>}
                         <ErrorBoundary label="TargetPointer"><TargetPointer /></ErrorBoundary>
-                        {/* Cometas con colas dinÃ¡micas (usan coordenadas ecuatoriales) */}
+                        {/* Cometas con colas dinámicas (usan coordenadas ecuatoriales) */}
                         <ErrorBoundary label="Comets"><Comets /></ErrorBoundary>
                         <ErrorBoundary label="SimbadOverlay"><SimbadOverlay /></ErrorBoundary>
                     </CelestialGroup>
 
-                    {/* SatÃ©lites en espacio mundo horizontal (Alt/Az), NO dentro del CelestialGroup */}
+                    {/* Satélites en espacio mundo horizontal (Alt/Az), NO dentro del CelestialGroup */}
                     <ErrorBoundary label="Satellites"><Satellites /></ErrorBoundary>
 
                     <CameraNavigator
@@ -428,13 +426,12 @@ export default function SkyCanvas() {
 
                     {/* FOVOverlay maneja su propio Html wrapper internamente */}
                     <FOVOverlay />
-                    {/* BrÃºjula con reset de orientaciÃ³n */}
+                    {/* Brújula con reset de orientación */}
                     <Compass />
                 </Suspense>
             </Canvas>
         </div>
     );
 }
-
 
 

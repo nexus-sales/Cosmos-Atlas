@@ -87,7 +87,12 @@ export default function CelestialSearch() {
     };
 
     const onKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && query.length > 2 && results.length === 0 && !isSearching) {
+        if (e.key !== 'Enter') return;
+        if (results.length > 0 && results[0].type !== 'error' && results[0].type !== 'history') {
+            selectObject(results[0]);
+            return;
+        }
+        if (query.length > 2 && !isSearching) {
             searchSimbad();
         }
     };
