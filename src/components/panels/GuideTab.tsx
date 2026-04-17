@@ -511,7 +511,7 @@ export default function GuideTab() {
                                     <span className="text-[14px] shrink-0 leading-none text-blue-400">&#x2727;</span>
                                     <div className="flex flex-col flex-1 min-w-0">
                                         <span className="text-[13px] font-bold truncate">{obj.name}</span>
-                                        <span className="text-[9px] text-blue-400/60 font-mono tracking-tighter uppercase">{remoteResult.type || 'Object'}</span>
+                                        <span className="text-[9px] text-blue-400/60 font-mono tracking-tighter uppercase">{remoteResult.type || 'Objeto'}</span>
                                     </div>
                                     <div suppressHydrationWarning title={alt > 0 ? `Visible \u00b7 Alt ${alt.toFixed(0)}\u00b0` : 'Bajo el horizonte'}
                                         className={cn('w-1.5 h-1.5 rounded-full shrink-0 ml-0.5', alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15')} />
