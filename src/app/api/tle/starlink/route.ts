@@ -1,19 +1,47 @@
 /**
  * API Route: GET /api/tle/starlink
  *
- * Proxy server-side para los TLE de la constelación Starlink.
- * Celestrak bloquea peticiones directas desde el browser (403/CORS).
- * Este proxy pasa la petición desde el servidor de Next.js y
- * cachea el resultado 4 horas (los TLE se actualizan 1-2 veces al día).
+ * Proxy server-side para TLEs de Starlink con cadena de fallback.
+ * CelesTrak a veces devuelve 502/403 — se intentan múltiples fuentes.
+ * Cache en proceso de 4 horas.
  */
 
 import { NextResponse } from 'next/server';
 
-const STARLINK_URL = 'https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle';
+const TLE_SOURCES = [
+    // CelesTrak GP API (primaria)
+    'https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle',
+    // CelesTrak dominio alternativo
+    'https://celestrak.com/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle',
+    // CelesTrak supplemental (datos más recientes de operadores)
+    'https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE=starlink&FORMAT=tle',
+];
 
 // Cache en proceso: TTL 4 horas
 let _cache: { ts: number; data: string } | null = null;
 const CACHE_TTL = 4 * 3600 * 1000;
+
+async function fetchTLE(url: string, timeoutMs = 12_000): Promise<string> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const res = await fetch(url, {
+            signal: controller.signal,
+            headers: { 'User-Agent': 'CosmosAtlas/1.0 (educational planetarium)' },
+        });
+        clearTimeout(timer);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const text = await res.text();
+        // Validate: a TLE file must have at least a few lines
+        if (text.split('\n').filter(l => l.trim()).length < 6) {
+            throw new Error('Response too short to be valid TLE data');
+        }
+        return text;
+    } catch (err) {
+        clearTimeout(timer);
+        throw err;
+    }
+}
 
 export async function GET() {
     if (_cache && Date.now() - _cache.ts < CACHE_TTL) {
@@ -22,29 +50,18 @@ export async function GET() {
         });
     }
 
-    try {
-        const controller = new AbortController();
-        // Starlink tiene ~6000 líneas — dar 15 s
-        const timer = setTimeout(() => controller.abort(), 15_000);
-
-        const res = await fetch(STARLINK_URL, {
-            signal: controller.signal,
-            headers: {
-                'User-Agent': 'CosmosAtlas/1.0 (educational planetarium)',
-            },
-        });
-        clearTimeout(timer);
-
-        if (!res.ok) throw new Error(`Celestrak Starlink HTTP ${res.status}`);
-
-        const text = await res.text();
-        _cache = { ts: Date.now(), data: text };
-
-        return new NextResponse(text, {
-            headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-        });
-    } catch (err) {
-        console.error('[/api/tle/starlink] fetch error:', err);
-        return NextResponse.json({ error: 'TLE fetch failed' }, { status: 502 });
+    for (const url of TLE_SOURCES) {
+        try {
+            const text = await fetchTLE(url);
+            _cache = { ts: Date.now(), data: text };
+            return new NextResponse(text, {
+                headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+            });
+        } catch (err) {
+            console.warn(`[/api/tle/starlink] failed ${url}:`, (err as Error).message);
+        }
     }
+
+    console.error('[/api/tle/starlink] all sources failed');
+    return NextResponse.json({ error: 'TLE fetch failed — all sources unavailable' }, { status: 502 });
 }

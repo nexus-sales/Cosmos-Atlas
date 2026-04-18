@@ -190,7 +190,7 @@ export default function GuideTab() {
     const targetedObject = useAppStore((s) => s.targetedObject);
     const setTargetedObject = useAppStore((s) => s.setTargetedObject);
     const observer = useAppStore((s) => s.observer);
-    const time = useAppStore((s) => s.time);
+    const time = useAppStore((s) => s.timeMinute);
 
     // --- Remote Search State ---
     const [remoteResult, setRemoteResult] = useState<SesameResolution | null>(null);

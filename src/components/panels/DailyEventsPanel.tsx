@@ -8,8 +8,8 @@ import { Eye, EyeOff, Clock3, CalendarDays, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function DailyEventsPanel() {
-    const dateKey = useAppStore((state) => state.time.toDateString());
-    const timeDisplay = useAppStore((state) => state.time);
+    const dateKey = useAppStore((state) => state.timeMinute.toDateString());
+    const timeDisplay = useAppStore((state) => state.timeMinute);
     const observer = useAppStore((state) => state.observer);
     const hour = timeDisplay.getHours();
     const timestamp = timeDisplay.getTime();

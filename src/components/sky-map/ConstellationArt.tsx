@@ -92,7 +92,7 @@ export default function ConstellationArt() {
                         ? (kidsMode ? '#44ccff' : '#f0b840') 
                         : (kidsMode ? '#226688' : '#c8961a'));
 
-                const fillOpacity = isFocused ? (kidsMode ? 0.30 : 0.18) : 0.12;
+                const fillOpacity = isFocused ? (kidsMode ? 0.18 : 0.10) : 0.05;
                 const lineOpacity = isFocused ? 0.80 : 0.50;
                 const lineWidth   = isFocused ? (kidsMode ? 3.0 : 1.6) : 1.1;
 

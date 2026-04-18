@@ -7,7 +7,7 @@ import { CloudRain, TrendingUp, Clock3, Eye, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function MeteorShowerInfo() {
-    const time = useAppStore((state) => state.time);
+    const time = useAppStore((state) => state.timeMinute);
 
     const { activeShowers, bestShower } = useMemo(() => {
         const date = new Date(time);

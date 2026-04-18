@@ -5,7 +5,7 @@ import { useAppStore } from '@/stores/useAppStore';
 import { equToHor } from '@/lib/astronomy/transforms';
 
 export function useCelestialVisibility(ra: number, dec: number) {
-    const time = useAppStore((state) => state.time);
+    const time = useAppStore((state) => state.timeMinute);
     const observer = useAppStore((state) => state.observer);
 
     const coords = useMemo(() => {

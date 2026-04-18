@@ -54,9 +54,11 @@ function FOVOverlayContent({ rectWidth = 0, rectHeight = 0, fovX = 0, fovY = 0, 
 export default function FOVOverlay() {
     const { camera, size } = useThree();
     const settings = useAppStore((state) => state.settings);
+    const viewMode = useAppStore((state) => state.viewMode);
     const { showFOV, focalLength, sensorWidth, sensorHeight } = settings;
 
-    if (!showFOV) return null;
+    // FOV overlay is meaningless in AR camera mode — hide it
+    if (!showFOV || viewMode === 'camera') return null;
 
     // Calcular FOV del sensor en grados
     const fovX = 2 * Math.atan(sensorWidth / (2 * focalLength)) * (180 / Math.PI);
