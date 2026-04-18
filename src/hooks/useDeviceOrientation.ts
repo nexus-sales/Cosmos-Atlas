@@ -71,7 +71,8 @@ function computeCompassHeading(alpha: number, beta: number, gamma: number): numb
     const vx = -cZ * sY - sZ * sX * cY;
     const vy = -sZ * sY + cZ * sX * cY;
 
-    return (Math.atan2(vx, vy) * (180 / Math.PI) + 360) % 360;
+    // Negate vx to convert from mathematical CCW angle to CW compass heading
+    return (Math.atan2(-vx, vy) * (180 / Math.PI) + 360) % 360;
 }
 
 function extractMagneticHeading(e: CompassCapableEvent, alpha: number, beta: number, gamma: number): number {

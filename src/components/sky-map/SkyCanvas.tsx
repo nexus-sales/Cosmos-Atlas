@@ -288,7 +288,7 @@ function OrientationDriver() {
         camera.position.set(
             -Math.sin(azRad) * Math.cos(elRad) * 0.01,
             -Math.sin(elRad) * 0.01,
-            Math.cos(azRad) * Math.cos(elRad) * 0.01,
+            -Math.cos(azRad) * Math.cos(elRad) * 0.01,
         );
     });
 

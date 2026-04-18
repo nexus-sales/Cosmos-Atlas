@@ -133,23 +133,25 @@ export default function Compass() {
                 >
                     <svg viewBox="0 0 100 100" className="w-14 h-14">
                         <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-                        {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((deg) => (
-                            <line
-                                key={deg}
-                                x1="50"
-                                y1="6"
-                                x2="50"
-                                y2={deg % 90 === 0 ? 12 : 9}
-                                stroke={deg % 90 === 0 ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.2)'}
-                                strokeWidth={deg % 90 === 0 ? 1.5 : 1}
-                                transform={`rotate(${deg}, 50, 50)`}
-                            />
-                        ))}
-                        <text x="50" y="20" textAnchor="middle" fill={followOrientation ? '#44aaff' : '#ff5555'} fontSize="11" fontWeight="bold" fontFamily="monospace">N</text>
-                        <text x="84" y="54" textAnchor="middle" fill="#99bbff" fontSize="9" fontFamily="monospace">E</text>
-                        <text x="50" y="88" textAnchor="middle" fill="#8888ff" fontSize="9" fontFamily="monospace">S</text>
-                        <text x="16" y="54" textAnchor="middle" fill="#99bbff" fontSize="9" fontFamily="monospace">O</text>
                         <g ref={needleGroupRef} transform="rotate(0, 50, 50)">
+                            {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((deg) => (
+                                <line
+                                    key={deg}
+                                    x1="50"
+                                    y1="6"
+                                    x2="50"
+                                    y2={deg % 90 === 0 ? 12 : 9}
+                                    stroke={deg % 90 === 0 ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.2)'}
+                                    strokeWidth={deg % 90 === 0 ? 1.5 : 1}
+                                    transform={`rotate(${deg}, 50, 50)`}
+                                />
+                            ))}
+                            <text x="50" y="20" textAnchor="middle" fill={followOrientation ? '#44aaff' : '#ff5555'} fontSize="11" fontWeight="bold" fontFamily="monospace">N</text>
+                            <text x="84" y="54" textAnchor="middle" fill="#99bbff" fontSize="9" fontFamily="monospace">E</text>
+                            <text x="50" y="88" textAnchor="middle" fill="#8888ff" fontSize="9" fontFamily="monospace">S</text>
+                            <text x="16" y="54" textAnchor="middle" fill="#99bbff" fontSize="9" fontFamily="monospace">O</text>
+                        </g>
+                        <g transform="rotate(0, 50, 50)">
                             <polygon points="50,24 46,50 50,44 54,50" fill={followOrientation ? '#44aaff' : '#ff5555'} />
                             <polygon points="50,76 46,50 50,56 54,50" fill="#666666" />
                         </g>
