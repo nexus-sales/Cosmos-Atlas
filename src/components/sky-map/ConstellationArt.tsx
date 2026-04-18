@@ -12,7 +12,7 @@ import { useAppStore } from '@/stores/useAppStore';
  *
  * Renders simplified mythological silhouettes on the celestial sphere:
  *   – Outline polylines tracing the figure's body contours
- *   – Semi-transparent filled silhouette areas (fan-triangulated from centroid)
+ *   – Semi-transparent filled silhouette areas (earcut triangulation via THREE.ShapeUtils)
  *
  * Visual style:
  *   – Warm amber (#c8961a) at low opacity — distinct from cyan stick lines
@@ -23,32 +23,35 @@ import { useAppStore } from '@/stores/useAppStore';
 const RADIUS = 91;
 
 /**
- * Fan-triangulates a closed polygon (RA/Dec) into a THREE.BufferGeometry.
- * Centroid is re-projected onto the sphere surface so the fill sits flush
- * with the celestial sphere (deviation < 0.1% for typical figure sizes).
+ * Triangulates a closed polygon (RA/Dec) using earcut (via THREE.ShapeUtils).
+ * Earcut handles concave shapes correctly — fan triangulation from centroid only
+ * works for convex polygons and produced Picasso-like artifacts on body shapes.
  */
 function createFillGeometry(fill: ArtPath): THREE.BufferGeometry {
-    const pts = fill.map(([ra, dec]) => equatorialTo3D(ra, dec, RADIUS));
-    const n = pts.length;
+    const pts3D = fill.map(([ra, dec]) => equatorialTo3D(ra, dec, RADIUS));
+    const n = pts3D.length;
     if (n < 3) return new THREE.BufferGeometry();
 
-    // Spherical centroid: average then re-normalize to sphere radius
-    let cx = 0, cy = 0, cz = 0;
-    for (const [x, y, z] of pts) { cx += x; cy += y; cz += z; }
-    const mag = Math.sqrt(cx * cx + cy * cy + cz * cz);
-    const r = Math.sqrt(pts[0][0] ** 2 + pts[0][1] ** 2 + pts[0][2] ** 2);
-    cx = cx / mag * r;
-    cy = cy / mag * r;
-    cz = cz / mag * r;
+    // Project to 2D (RA/Dec) for earcut winding — compensate RA for high declination
+    const decRad = (fill[0][1] + fill[Math.floor(n / 2)][1]) / 2 * (Math.PI / 180);
+    const cosD = Math.cos(decRad);
+    const pts2D = fill.map(([ra, dec]) => new THREE.Vector2(ra * cosD, dec));
 
-    // Fan triangulation from centroid
-    const verts = new Float32Array(n * 9);
-    for (let i = 0; i < n; i++) {
-        const j = (i + 1) % n;
-        const b = i * 9;
-        verts[b]     = cx;       verts[b + 1] = cy;       verts[b + 2] = cz;
-        verts[b + 3] = pts[i][0]; verts[b + 4] = pts[i][1]; verts[b + 5] = pts[i][2];
-        verts[b + 6] = pts[j][0]; verts[b + 7] = pts[j][1]; verts[b + 8] = pts[j][2];
+    // THREE.ShapeUtils.triangulateShape uses earcut and handles concave polygons
+    let indices: number[][];
+    try {
+        indices = THREE.ShapeUtils.triangulateShape(pts2D, []);
+    } catch {
+        return new THREE.BufferGeometry();
+    }
+
+    const verts = new Float32Array(indices.length * 9);
+    for (let i = 0; i < indices.length; i++) {
+        const [a, b, c] = indices[i];
+        const base = i * 9;
+        verts[base]     = pts3D[a][0]; verts[base + 1] = pts3D[a][1]; verts[base + 2] = pts3D[a][2];
+        verts[base + 3] = pts3D[b][0]; verts[base + 4] = pts3D[b][1]; verts[base + 5] = pts3D[b][2];
+        verts[base + 6] = pts3D[c][0]; verts[base + 7] = pts3D[c][1]; verts[base + 8] = pts3D[c][2];
     }
 
     const geom = new THREE.BufferGeometry();
