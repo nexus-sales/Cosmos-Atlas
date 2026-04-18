@@ -339,9 +339,9 @@ export default function SkyCanvas() {
             <CameraBackground />
 
             <Canvas
-                shadows={{ type: THREE.PCFShadowMap }}
+                dpr={[1, 1.5]}
                 gl={{
-                    antialias: true,
+                    antialias: false,
                     stencil: false,
                     powerPreference: 'high-performance',
                     alpha: true
