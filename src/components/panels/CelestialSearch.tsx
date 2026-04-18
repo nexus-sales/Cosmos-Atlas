@@ -7,6 +7,26 @@ import { resolveObjectName } from '@/lib/astronomy/sesame';
 import { STARS } from '@/data/stars';
 import { DSOS } from '@/data/dsos';
 import type { Star as StarType, DSO } from '@/types/celestial';
+import * as Astronomy from 'astronomy-engine';
+
+const PLANET_CATALOG: { name: string; body: Astronomy.Body; color: string; desc: string }[] = [
+    { name: 'Mercurio', body: Astronomy.Body.Mercury, color: '#b0b0b0', desc: 'Planeta más cercano al Sol.' },
+    { name: 'Venus',    body: Astronomy.Body.Venus,   color: '#f0e6c0', desc: 'El lucero del alba.' },
+    { name: 'Marte',    body: Astronomy.Body.Mars,    color: '#c1440e', desc: 'El planeta rojo.' },
+    { name: 'Júpiter',  body: Astronomy.Body.Jupiter, color: '#c88b3a', desc: 'El gigante gaseoso.' },
+    { name: 'Saturno',  body: Astronomy.Body.Saturn,  color: '#e8d890', desc: 'El señor de los anillos.' },
+    { name: 'Urano',    body: Astronomy.Body.Uranus,  color: '#7de8e8', desc: 'Gigante helado.' },
+    { name: 'Neptuno',  body: Astronomy.Body.Neptune, color: '#3f54ba', desc: 'El planeta más lejano.' },
+    { name: 'Luna',     body: Astronomy.Body.Moon,    color: '#dddddd', desc: 'Nuestro satélite natural.' },
+    { name: 'Sol',      body: Astronomy.Body.Sun,     color: '#fff5a0', desc: 'Nuestra estrella.' },
+];
+
+function getPlanetPosition(body: Astronomy.Body): { ra: number; dec: number } {
+    const time = Astronomy.MakeTime(new Date());
+    const vec = Astronomy.GeoVector(body, time, true);
+    const equ = Astronomy.EquatorFromVector(vec);
+    return { ra: equ.ra * 15, dec: equ.dec }; // hours → degrees
+}
 
 interface SearchResult {
     resultType: 'star' | 'dso' | 'error' | 'history';
@@ -87,14 +107,33 @@ export default function CelestialSearch() {
         const starMatches: SearchResult[] = STARS.filter(s =>
             s.name.toLowerCase().includes(q) ||
             s.constellation?.toLowerCase().includes(q)
-        ).slice(0, 4).map(s => ({ ...s, resultType: 'star' as const, source: 'local' as const }));
+        ).slice(0, 3).map(s => ({ ...s, resultType: 'star' as const, source: 'local' as const }));
 
         const dsoMatches: SearchResult[] = DSOS.filter(d =>
             d.name.toLowerCase().includes(q) ||
             d.id?.toLowerCase().includes(q)
-        ).slice(0, 3).map(d => ({ ...d, resultType: 'dso' as const, source: 'local' as const }));
+        ).slice(0, 2).map(d => ({ ...d, resultType: 'dso' as const, source: 'local' as const }));
 
-        setResults([...starMatches, ...dsoMatches].slice(0, 6));
+        const planetMatches: SearchResult[] = PLANET_CATALOG.filter(p =>
+            p.name.toLowerCase().includes(q)
+        ).slice(0, 2).map(p => {
+            const pos = getPlanetPosition(p.body);
+            return {
+                resultType: 'star' as const,
+                source: 'local' as const,
+                name: p.name,
+                ra: pos.ra,
+                dec: pos.dec,
+                mag: 0,
+                constellation: 'Planeta del Sistema Solar',
+                color: p.color,
+                desc: p.desc,
+                baseSize: 1.5,
+                kind: 'planet' as const,
+            };
+        });
+
+        setResults([...planetMatches, ...starMatches, ...dsoMatches].slice(0, 6));
         setIsOpen(true);
     };
 

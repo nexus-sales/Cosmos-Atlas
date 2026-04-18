@@ -274,8 +274,13 @@ function OrientationDriver() {
         const elevation   = deviceOrientationRef.elevation;
 
         const dAz = ((trueHeading - azRef.current) % 360 + 540) % 360 - 180;
-        azRef.current = (azRef.current + dAz * 0.05 + 360) % 360;
-        elRef.current += (elevation - elRef.current) * 0.05;
+        if (Math.abs(dAz) > 0.25) {
+            azRef.current = (azRef.current + dAz * 0.12 + 360) % 360;
+        }
+        const dEl = elevation - elRef.current;
+        if (Math.abs(dEl) > 0.25) {
+            elRef.current += dEl * 0.12;
+        }
 
         const elRad = THREE.MathUtils.degToRad(elRef.current);
         const azRad = THREE.MathUtils.degToRad(azRef.current);

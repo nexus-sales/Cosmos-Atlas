@@ -124,7 +124,16 @@ export function useDeviceOrientation() {
         deviceOrientationRef.magneticQuality = 'unknown';
         deviceOrientationRef.needsCalibration = false;
 
+        // Track whether absolute events are available (Chrome Android 66+).
+        // Absolute events have e.absolute=true and give North-relative alpha.
+        // If both event types fire, we ignore the non-absolute ones to avoid
+        // processing the same physical motion twice with different reliability.
+        let absoluteAvailable = false;
+
         const handler = (e: DeviceOrientationEvent) => {
+            if (e.absolute) absoluteAvailable = true;
+            // Skip non-absolute events once absolute ones are flowing
+            if (absoluteAvailable && !e.absolute) return;
             const rawAlpha = e.alpha ?? 0;
             const rawBeta = e.beta ?? 0;
             const rawGamma = e.gamma ?? 0;
@@ -200,12 +209,16 @@ export function useDeviceOrientation() {
             prevHeadingRef.current = correctedHeading;
         };
         listenerRef.current = handler;
+        // Chrome Android 66+: absolute events give North-relative heading
+        window.addEventListener('deviceorientationabsolute', handler, true);
+        // iOS (webkitCompassHeading) and fallback for other browsers
         window.addEventListener('deviceorientation', handler, true);
         deviceOrientationRef.active = true;
     }, []);
 
     const stop = useCallback(() => {
         if (listenerRef.current) {
+            window.removeEventListener('deviceorientationabsolute', listenerRef.current, true);
             window.removeEventListener('deviceorientation', listenerRef.current, true);
             listenerRef.current = null;
         }
@@ -252,6 +265,7 @@ export function useDeviceOrientation() {
     useEffect(() => {
         return () => {
             if (listenerRef.current) {
+                window.removeEventListener('deviceorientationabsolute', listenerRef.current, true);
                 window.removeEventListener('deviceorientation', listenerRef.current, true);
                 listenerRef.current = null;
             }
