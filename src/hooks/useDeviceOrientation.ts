@@ -80,11 +80,7 @@ function extractMagneticHeading(e: CompassCapableEvent, alpha: number, beta: num
         return (e.webkitCompassHeading + 360) % 360;
     }
 
-    if (e.absolute) {
-        return computeCompassHeading(alpha, beta, gamma);
-    }
-
-    return (360 - alpha + 360) % 360;
+    return computeCompassHeading(alpha, beta, gamma);
 }
 
 /**
@@ -139,47 +135,50 @@ export function useDeviceOrientation() {
             const rawBeta = e.beta ?? 0;
             const rawGamma = e.gamma ?? 0;
 
-            if (!filterInitialized.current) {
-                deviceOrientationRef.alpha = rawAlpha;
-                deviceOrientationRef.beta = rawBeta;
-                deviceOrientationRef.gamma = rawGamma;
-                filterInitialized.current = true;
-                return;
-            }
-
-            // Filtro EMA sobre los valores raw
-            deviceOrientationRef.alpha = applyAlphaFilter(deviceOrientationRef.alpha, rawAlpha, FILTER_ALPHA);
-            deviceOrientationRef.beta  = applyComplementaryFilter(deviceOrientationRef.beta,  rawBeta,  FILTER_ALPHA);
-            deviceOrientationRef.gamma = applyComplementaryFilter(deviceOrientationRef.gamma, rawGamma, FILTER_ALPHA);
+            // Almacenamos raw para diagnóstico y uso futuro
+            deviceOrientationRef.alpha = rawAlpha;
+            deviceOrientationRef.beta = rawBeta;
+            deviceOrientationRef.gamma = rawGamma;
 
             // ── Compensación de orientación de pantalla ──────────────────────
-            // DeviceOrientationEvent da los ángulos relativos al dispositivo físico,
-            // pero la orientación de pantalla cambia los ejes de referencia del usuario.
-            // screen.orientation.angle: 0=portrait, 90=landscape-left, 270=landscape-right
+            // 0=portrait, 90=landscape-left, 270=landscape-right
             const screenAngle: number =
                 (typeof screen !== 'undefined' && screen.orientation?.angle != null)
                     ? screen.orientation.angle
-                    : 0;
+                    : (window.orientation || 0) as number;
 
-            // Rotar (beta, gamma) por el ángulo de pantalla para obtener
-            // la inclinación real del dispositivo en el marco del usuario.
+            // Norte magnético desde los ángulos crudos de dispositivo físico, 
+            // no sobre iterados suavizados (evita gimbal lock)
+            const magneticHeading = extractMagneticHeading(
+                e as CompassCapableEvent,
+                rawAlpha,
+                rawBeta,
+                rawGamma,
+            );
+            
+            // La cámara 'gira' con la pantalla. Hay que sumar screenAngle.
+            const correctedHeading = ((magneticHeading + screenAngle) % 360 + 360) % 360;
+
             const screenRad = (screenAngle * Math.PI) / 180;
             const cosOrient = Math.cos(screenRad);
             const sinOrient = Math.sin(screenRad);
-            const adjustedBeta = deviceOrientationRef.beta * cosOrient
-                                - deviceOrientationRef.gamma * sinOrient;
+            // Inclinación real del dispositivo en el marco del usuario
+            const adjustedBeta = rawAlpha !== 0 || rawGamma !== 0 // Si tenemos giroscopio
+                ? rawBeta * cosOrient - rawGamma * sinOrient
+                : rawBeta;
+            const rawElevation = Math.max(-90, Math.min(90, 90 - adjustedBeta));
 
-            // Heading: el norte magnético se ajusta por la rotación de pantalla
-            const magneticHeading = extractMagneticHeading(
-                e as CompassCapableEvent,
-                deviceOrientationRef.alpha,
-                deviceOrientationRef.beta,
-                deviceOrientationRef.gamma,
-            );
-            const correctedHeading = ((magneticHeading - screenAngle) % 360 + 360) % 360;
-            deviceOrientationRef.heading = correctedHeading;
-            // Elevación: 90° − beta_ajustado. Clampeada a [-90, 90]
-            deviceOrientationRef.elevation = Math.max(-90, Math.min(90, 90 - adjustedBeta));
+            if (!filterInitialized.current) {
+                deviceOrientationRef.heading = correctedHeading;
+                deviceOrientationRef.elevation = rawElevation;
+                filterInitialized.current = true;
+                prevHeadingRef.current = correctedHeading;
+                return;
+            }
+
+            // EMA Smoothing AL FINAL de la computación
+            deviceOrientationRef.heading = applyAlphaFilter(deviceOrientationRef.heading, correctedHeading, FILTER_ALPHA);
+            deviceOrientationRef.elevation = applyComplementaryFilter(deviceOrientationRef.elevation, rawElevation, FILTER_ALPHA);
 
             // Diagnóstico de estabilidad magnética:
             // si hay saltos grandes de heading sin movimiento relevante del teléfono,

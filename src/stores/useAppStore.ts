@@ -135,7 +135,12 @@ export const useAppStore = create<AppState>()(
             selectedObject: null,
             setSelectedObject: (obj) => set({ selectedObject: obj }),
             targetedObject: null,
-            setTargetedObject: (obj) => set({ targetedObject: obj }),
+            setTargetedObject: (obj) => set((state) => ({
+                targetedObject: obj,
+                // Si seleccionamos un objetivo desde la guía/busqueda, desactivamos el seguimiento de brújula
+                // para que la cámara pueda "volar" hacia el objeto automáticamente.
+                followOrientation: obj ? false : state.followOrientation
+            })),
             time: new Date(),
             timeMinute: new Date(),
             setTime: (time) => set((state) => {

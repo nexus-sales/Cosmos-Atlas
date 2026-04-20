@@ -33,33 +33,44 @@ export default function AIAstronoma() {
         };
     }, []);
 
+    const normalizeTextForSpeech = (text: string) => {
+        return text
+            .replace(/\bal\./gi, 'años luz')
+            .replace(/\bal\b/gi, 'años luz')
+            .replace(/\bmag\b/gi, 'magnitud')
+            .replace(/\bkm\/h\b/gi, 'kilómetros por hora')
+            .replace(/\bkm\b/gi, 'kilómetros')
+            .replace(/\bms\b/gi, 'milisegundos')
+            .replace(/\bau\b/gi, 'unidades astronómicas')
+            .replace(/\bua\b/gi, 'unidades astronómicas')
+            .replace(/&middot;/g, 'punto')
+            .replace(/&deg;/g, 'grados')
+            .replace(/\bh\b/gi, 'horas');
+    };
+
     const speak = useCallback((text: string) => {
         if (!synthRef.current || muted) return;
         
         synthRef.current.cancel();
         
-        // Algunos navegadores pausan el habla si no hay actividad, forzar resume
         if (synthRef.current.paused) {
             synthRef.current.resume();
         }
 
-        const utterance = new SpeechSynthesisUtterance(text);
+        // Normalizamos el texto para que la voz no diga "al" o "mag"
+        const cleanText = normalizeTextForSpeech(text);
+        const utterance = new SpeechSynthesisUtterance(cleanText);
         
-        // Buscar la mejor voz disponible en español
         const voices = synthRef.current.getVoices();
         const spanishVoice = voices.find(v => v.lang.startsWith('es') && v.name.includes('Google')) 
                           || voices.find(v => v.lang.startsWith('es') && v.name.includes('Helena'))
                           || voices.find(v => v.lang.startsWith('es'));
         
         if (spanishVoice) utterance.voice = spanishVoice;
-        
         utterance.lang = 'es-ES';
         
-        // Ajustes para que no dé miedo:
-        // - Modo Kids: Tono más alto (1.4) y ritmo más alegre (1.0)
-        // - Modo Normal: Tono cálido (1.1) y ritmo pausado (0.9)
-        utterance.pitch = kidsMode ? 1.3 : 1.15;
-        utterance.rate = kidsMode ? 1.05 : 0.95;
+        utterance.pitch = kidsMode ? 1.25 : 1.1;
+        utterance.rate = kidsMode ? 1.0 : 0.92;
 
         utterance.onstart = () => setIsSpeaking(true);
         utterance.onend = () => {

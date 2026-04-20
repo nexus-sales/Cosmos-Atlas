@@ -18,22 +18,12 @@ export default function SimbadOverlay() {
     // Filter visible objects and calculate their local horizontal positions
     const visibleObjects = useMemo(() => {
         return simbadObjects.map(obj => {
-            const { alt, az } = equToHor(obj.ra, obj.dec, observer.lat, observer.lon, time);
-            
-            // Only if above horizon
-            if (alt > -1) {
-                const phi = (90 - alt) * (Math.PI / 180);
-                const theta = (az + 180) * (Math.PI / 180); // 180 deg offset because our Z- is North
-
-                const x = RADIUS * Math.sin(phi) * Math.sin(theta);
-                const y = RADIUS * Math.cos(phi);
-                const z = RADIUS * Math.sin(phi) * Math.cos(theta);
-
-                return { ...obj, pos: [x, y, z] as [number, number, number], alt };
-            }
-            return null;
-        }).filter((obj): obj is NonNullable<typeof obj> => obj !== null);
-    }, [simbadObjects, observer, time]);
+            // Usamos coordenadas ecuatoriales directamente ya que el componente
+            // está dentro de CelestialGroup (que ya aplica la rotación horaria).
+            const pos = equatorialTo3D(obj.ra, obj.dec, RADIUS);
+            return { ...obj, pos };
+        });
+    }, [simbadObjects]);
 
     if (visibleObjects.length === 0) return null;
 

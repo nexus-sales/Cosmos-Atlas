@@ -43,14 +43,14 @@ const vertexShader = `
 
     float depthFactor = 1.0 - distanceFactor * 0.2;
 
-    float twinkleSpeed = 1.8 + airmass * 0.25;
-    float twinkleAmp = 0.12 + airmass * 0.08;
+    float twinkleSpeed = 1.2 + airmass * 0.15;
+    float twinkleAmp = 0.04 + airmass * 0.02; // Very subtle for background stars
     float noise = sin(uTime * twinkleSpeed + position.x * 47.0) * 0.6
                 + sin(uTime * twinkleSpeed * 0.71 + position.y * 53.0) * 0.4;
     vOpacity = depthFactor * ((1.0 - twinkleAmp) + twinkleAmp * noise);
 
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-    gl_PointSize = size * 1.4 * (vOpacity * 0.3 + 0.7) * (1000.0 / -mvPosition.z);
+    gl_PointSize = size * 0.8 * (vOpacity * 0.2 + 0.8) * (1000.0 / -mvPosition.z);
     gl_Position = projectionMatrix * mvPosition;
   }
 `;
@@ -71,10 +71,10 @@ const fragmentShader = `
         baseColor = vec3(lum * 1.8, 0.0, 0.0);
     }
 
-    float core = exp(-r * 9.0) * 1.8;
-    float halo = exp(-r * 18.0) * 0.3;
+    float core = exp(-r * 9.0) * 1.2;
+    float halo = exp(-r * 15.0) * 0.1;
     float finalAlpha = (core + halo) * vOpacity;
-    vec3 finalColor = mix(baseColor, vec3(1.0), core * 0.4);
+    vec3 finalColor = mix(baseColor, vec3(1.0), core * 0.3);
 
     gl_FragColor = vec4(finalColor, clamp(finalAlpha, 0.0, 1.0));
   }

@@ -8,75 +8,105 @@ import { useAppStore } from '@/stores/useAppStore';
 /**
  * Horizonte en espacio MUNDO (sin rotación con el cielo).
  */
+/**
+ * Horizonte Premium: 
+ * Reemplaza la línea simple por un gradiente atmosférico y un suelo con más estilo.
+ */
 export default function Horizon() {
     const viewMode = useAppStore(s => s.viewMode);
+    const nightMode = useAppStore(s => s.settings.nightMode);
 
     if (viewMode === 'camera') return null;
 
+    const accentColor = nightMode ? '#ff3333' : '#1a3a5a';
+
     return (
         <group>
-            {/* ── Suelo opaco — oculta estrellas bajo el horizonte ─── */}
+            {/* ── Suelo Profundo ─── */}
             <mesh
-                position={[0, -0.3, 0]}
+                position={[0, -0.5, 0]}
                 rotation={[-Math.PI / 2, 0, 0]}
                 renderOrder={2}
             >
-                <circleGeometry args={[110, 72]} />
+                <circleGeometry args={[120, 64]} />
                 <meshBasicMaterial
-                    color="#04091a"
+                    color="#02040a"
                     side={THREE.FrontSide}
                     depthWrite={true}
                 />
             </mesh>
 
-            {/* ── Línea del horizonte ───────────────────────────────── */}
+            {/* ── Calima / Haze Atmosférico (Gradiente en el horizonte) ─── */}
             <mesh
-                position={[0, -0.25, 0]}
+                position={[0, -0.45, 0]}
                 rotation={[-Math.PI / 2, 0, 0]}
                 renderOrder={3}
             >
-                <ringGeometry args={[89.5, 90.5, 128]} />
-                <meshBasicMaterial color="#1a3a5a" transparent opacity={0.5} />
+                <ringGeometry args={[85, 105, 128]} />
+                <meshBasicMaterial 
+                    color={accentColor} 
+                    transparent 
+                    opacity={0.3} 
+                    side={THREE.DoubleSide}
+                    blending={THREE.AdditiveBlending}
+                />
             </mesh>
 
-            {/* ── Puntos cardinales (espacio mundo: N = −Z) ────────── */}
-            <CardinalPoint label="N" az={0} color="#ff5555" />
-            <CardinalPoint label="NE" az={45} color="#7799cc" />
-            <CardinalPoint label="E" az={90} color="#99bbff" />
-            <CardinalPoint label="SE" az={135} color="#7799cc" />
-            <CardinalPoint label="S" az={180} color="#8888ff" />
-            <CardinalPoint label="SO" az={225} color="#7799cc" />
-            <CardinalPoint label="O" az={270} color="#99bbff" />
-            <CardinalPoint label="NO" az={315} color="#7799cc" />
+            {/* ── Glow Fino del Borde ─── */}
+            <mesh
+                position={[0, -0.42, 0]}
+                rotation={[-Math.PI / 2, 0, 0]}
+                renderOrder={4}
+            >
+                <ringGeometry args={[89.8, 90.2, 128]} />
+                <meshBasicMaterial color={accentColor} transparent opacity={0.6} />
+            </mesh>
+
+            {/* ── Puntos cardinales mejorados ────────── */}
+            <CardinalPoint label="N" az={0} color={nightMode ? "#ff4444" : "#ff5555"} isNorth />
+            <CardinalPoint label="NE" az={45} color="#6688aa" />
+            <CardinalPoint label="E" az={90} color="#88aaee" />
+            <CardinalPoint label="SE" az={135} color="#6688aa" />
+            <CardinalPoint label="S" az={180} color="#7777ee" />
+            <CardinalPoint label="SO" az={225} color="#6688aa" />
+            <CardinalPoint label="O" az={270} color="#88aaee" />
+            <CardinalPoint label="NO" az={315} color="#6688aa" />
         </group>
     );
 }
 
-/**
- * Punto cardinal: az en grados (0=Norte, 90=Este, sentido horario).
- * En espacio mundo, Norte geográfico = −Z.
- */
-function CardinalPoint({ label, az, color }: { label: string; az: number; color: string }) {
+function CardinalPoint({ label, az, color, isNorth }: { label: string; az: number; color: string; isNorth?: boolean }) {
     const rad = THREE.MathUtils.degToRad(az);
-    const r = 90;
+    const r = 92;
     const x = r * Math.sin(rad);
     const z = -r * Math.cos(rad);
     const isMain = label.length === 1;
+    
     return (
-        <Html position={[x, isMain ? 2.5 : 1.2, z]} zIndexRange={[10, 0]}>
-            <div style={{
-                color,
-                fontSize: isMain ? '14px' : '10px',
-                fontFamily: "'Courier New', monospace",
-                fontWeight: 'bold',
-                letterSpacing: isMain ? '2px' : '1px',
-                textShadow: `0 0 10px ${color}`,
-                pointerEvents: 'none',
-                userSelect: 'none',
-                transform: 'translateX(-50%)',
-                opacity: isMain ? 0.9 : 0.55,
-            }}>
-                {label}
+        <Html position={[x, isMain ? 1.8 : 0.8, z]} center zIndexRange={[10, 0]}>
+            <div 
+                className="flex flex-col items-center pointer-events-none select-none transition-all duration-500"
+                style={{
+                    color,
+                    opacity: isMain ? 0.9 : 0.4,
+                    transform: `scale(${isMain ? 1 : 0.85})`,
+                }}
+            >
+                <div style={{
+                    fontSize: isMain ? '18px' : '11px',
+                    fontFamily: "'Outfit', sans-serif",
+                    fontWeight: isNorth ? '900' : '600',
+                    letterSpacing: '0.1em',
+                    textShadow: `0 0 15px ${color}66, 0 0 30px ${color}33`,
+                }}>
+                    {label}
+                </div>
+                {isMain && (
+                    <div 
+                        className="w-1 h-1 rounded-full mt-1" 
+                        style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}` }} 
+                    />
+                )}
             </div>
         </Html>
     );

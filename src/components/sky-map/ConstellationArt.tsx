@@ -87,18 +87,18 @@ export default function ConstellationArt() {
                 const isFocused = name === focusedConstellation;
 
                 const color = nightMode
-                    ? (isFocused ? '#ff6644' : '#661100')
+                    ? (isFocused ? '#ff4422' : '#661100')
                     : (isFocused 
-                        ? (kidsMode ? '#44ccff' : '#f0b840') 
-                        : (kidsMode ? '#226688' : '#c8961a'));
+                        ? (kidsMode ? '#44ccff' : '#f0c050') 
+                        : (kidsMode ? '#114466' : '#8a6510'));
 
-                const fillOpacity = isFocused ? (kidsMode ? 0.18 : 0.10) : 0.05;
-                const lineOpacity = isFocused ? 0.80 : 0.50;
-                const lineWidth   = isFocused ? (kidsMode ? 3.0 : 1.6) : 1.1;
+                const fillOpacity = isFocused ? (kidsMode ? 0.25 : 0.15) : 0.04;
+                const lineOpacity = isFocused ? 0.90 : 0.40;
+                const lineWidth   = isFocused ? (kidsMode ? 3.5 : 2.0) : 1.0;
 
                 return (
                     <group key={name}>
-                        {/* Filled silhouette areas */}
+                        {/* Ethereal Dusting (Fill) */}
                         {fillGeometries.map((geom, i) => (
                             <mesh key={`fill-${i}`} geometry={geom} renderOrder={1}>
                                 <meshBasicMaterial
@@ -108,25 +108,36 @@ export default function ConstellationArt() {
                                     side={THREE.DoubleSide}
                                     depthTest={false}
                                     depthWrite={false}
+                                    blending={THREE.AdditiveBlending}
                                 />
                             </mesh>
                         ))}
 
-                        {/* Glow pass for focused figure */}
+                        {/* High-Fidelity Glow Pass */}
                         {isFocused && polylines.map((points, i) => (
-                            <Line
-                                key={`glow-${i}`}
-                                points={points}
-                                color={color}
-                                lineWidth={lineWidth * 8}
-                                transparent
-                                opacity={0.08}
-                                depthTest={false}
-                                depthWrite={false}
-                            />
+                            <group key={`glow-group-${i}`}>
+                                <Line
+                                    points={points}
+                                    color={color}
+                                    lineWidth={lineWidth * 12}
+                                    transparent
+                                    opacity={0.05}
+                                    depthTest={false}
+                                    depthWrite={false}
+                                />
+                                <Line
+                                    points={points}
+                                    color={color}
+                                    lineWidth={lineWidth * 6}
+                                    transparent
+                                    opacity={0.12}
+                                    depthTest={false}
+                                    depthWrite={false}
+                                />
+                            </group>
                         ))}
 
-                        {/* Main outline lines */}
+                        {/* Main Mythological Outline */}
                         {polylines.map((points, i) => (
                             <Line
                                 key={i}

@@ -39,15 +39,15 @@ const starVertexShader = `
 
     float depthFactor = 1.0 - distanceFactor * 0.2;
 
-    float twinkleSpeed = 2.0 + airmass * 0.3;
-    float twinkleAmp = 0.15 + airmass * 0.1;
+    float twinkleSpeed = 1.5 + airmass * 0.2;
+    float twinkleAmp = 0.05 + airmass * 0.03; // Much subtle twinkling
     float noise = sin(uTime * twinkleSpeed + position.x * 50.0) * 0.6
                 + sin(uTime * twinkleSpeed * 0.7 + position.y * 50.0) * 0.4;
     vOpacity = varFactor * depthFactor * ((1.0 - twinkleAmp) + twinkleAmp * noise);
     vAirmass = airmass;
 
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-    gl_PointSize = size * 1.5 * (vOpacity * 0.3 + 0.7) * (1000.0 / -mvPosition.z);
+    gl_PointSize = size * 0.9 * (vOpacity * 0.2 + 0.8) * (1000.0 / -mvPosition.z);
     gl_Position = projectionMatrix * mvPosition;
   }
 `;
@@ -69,17 +69,12 @@ const starFragmentShader = `
         baseColor = vec3(lum * 2.0, 0.0, 0.0);
     }
 
-    float core = exp(-r * 8.0) * 2.0;
-    float halo = exp(-r * 15.0) * 0.4;
+    // Realistic core and subtle halo, NO SPIKES
+    float core = exp(-r * 8.0) * 1.5;
+    float halo = exp(-r * 12.0) * 0.2;
 
-    vec2 centered = gl_PointCoord - vec2(0.5);
-    float spikeX = exp(-abs(centered.x) * 60.0) * exp(-abs(centered.y) * 4.0);
-    float spikeY = exp(-abs(centered.y) * 60.0) * exp(-abs(centered.x) * 4.0);
-    float brightFactor = smoothstep(4.0, 9.0, vSize);
-    float spikes = (spikeX + spikeY) * 0.15 * brightFactor;
-
-    float finalAlpha = (core + halo + spikes) * vOpacity;
-    vec3 finalColor = mix(baseColor, vec3(1.0), core * 0.5);
+    float finalAlpha = (core + halo) * vOpacity;
+    vec3 finalColor = mix(baseColor, vec3(1.0), core * 0.4);
 
     gl_FragColor = vec4(finalColor, clamp(finalAlpha, 0.0, 1.0));
   }

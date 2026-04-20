@@ -60,7 +60,7 @@ export default function CameraNavigator({
             const { time, observer } = useAppStore.getState();
             const lst = getLST(time, observer.lon);
             const euler = new THREE.Euler(
-                THREE.MathUtils.degToRad(90 - observer.lat),
+                THREE.MathUtils.degToRad(observer.lat - 90),
                 THREE.MathUtils.degToRad(-lst),
                 0,
                 'XYZ',
@@ -124,7 +124,7 @@ export default function CameraNavigator({
             const { time, observer } = useAppStore.getState();
             const lst = getLST(time, observer.lon);
             const euler = new THREE.Euler(
-                THREE.MathUtils.degToRad(90 - observer.lat),
+                THREE.MathUtils.degToRad(observer.lat - 90),
                 THREE.MathUtils.degToRad(-lst), 0, 'XYZ',
             );
             const rotMatrix = new THREE.Matrix4().makeRotationFromEuler(euler);

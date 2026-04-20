@@ -3,7 +3,7 @@
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { Suspense, useEffect, useRef, useState } from 'react';
-import CelestialSphere from '@/components/sky-map/CelestialSphere';
+import AtmosphericSky from '@/components/sky-map/AtmosphericSky';
 import Stars from '@/components/sky-map/Stars';
 import DeepSkyObjects from '@/components/sky-map/DeepSkyObjects';
 import Constellations from '@/components/sky-map/Constellations';
@@ -18,8 +18,6 @@ import TargetPointer from '@/components/sky-map/TargetPointer';
 import FOVOverlay from '@/components/sky-map/FOVOverlay';
 import Compass from '@/components/panels/Compass';
 import Satellites from '@/components/sky-map/Satellites';
-import MeteorShower from '@/components/effects/MeteorShower';
-import Comets from '@/components/sky-map/Comets';
 import SimbadOverlay from '@/components/sky-map/SimbadOverlay';
 import TelescopeEffect from '@/components/sky-map/TelescopeEffect';
 import CameraNavigator from '@/components/sky-map/CameraNavigator';
@@ -288,7 +286,7 @@ function OrientationDriver() {
         camera.position.set(
             -Math.sin(azRad) * Math.cos(elRad) * 0.01,
             -Math.sin(elRad) * 0.01,
-            -Math.cos(azRad) * Math.cos(elRad) * 0.01,
+            Math.cos(azRad) * Math.cos(elRad) * 0.01,
         );
     });
 
@@ -386,7 +384,7 @@ export default function SkyCanvas() {
                     />
 
                     {/* Esfera Atmosférica Pro */}
-                    <CelestialSphere />
+                    <AtmosphericSky />
 
                     {/* Grupo rotado al sistema horizontal del observador */}
                     <CelestialGroup>
@@ -404,8 +402,6 @@ export default function SkyCanvas() {
                         {showGrid && <ErrorBoundary label="CelestialGrid"><CelestialGrid /></ErrorBoundary>}
                         {showEcliptic && <ErrorBoundary label="Ecliptic"><Ecliptic /></ErrorBoundary>}
                         <ErrorBoundary label="TargetPointer"><TargetPointer /></ErrorBoundary>
-                        {/* Cometas con colas dinámicas (usan coordenadas ecuatoriales) */}
-                        <ErrorBoundary label="Comets"><Comets /></ErrorBoundary>
                         <ErrorBoundary label="SimbadOverlay"><SimbadOverlay /></ErrorBoundary>
                     </CelestialGroup>
 
@@ -421,9 +417,6 @@ export default function SkyCanvas() {
 
                     {/* Horizonte en espacio mundo (plano horizontal fijo) */}
                     <ErrorBoundary label="Horizon"><Horizon /></ErrorBoundary>
-
-                    {/* Lluvia de meteoros real */}
-                    <ErrorBoundary label="MeteorShower"><MeteorShower /></ErrorBoundary>
 
                     <CinematicTour />
                     <SeeingJitter />
