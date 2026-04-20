@@ -16,7 +16,10 @@ export default function AIAstronoma() {
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [muted, setMuted] = useState(false);
     const [showBubble, setShowBubble] = useState(false);
+    // message local para la burbuja, pero sincronizado con el store
     const [message, setMessage] = useState('');
+    const globalAiMessage = useAppStore((s) => s.aiMessage);
+    const setAiMessage = useAppStore((s) => s.setAiMessage);
     const synthRef = useRef<SpeechSynthesis | null>(null);
 
     useEffect(() => {
@@ -45,6 +48,7 @@ export default function AIAstronoma() {
             .replace(/\bua\b/gi, 'unidades astronómicas')
             .replace(/&middot;/g, 'punto')
             .replace(/&deg;/g, 'grados')
+            .replace(/\bmessier\b/gi, 'Messier') // Asegurar capitalización para TTS
             .replace(/\bh\b/gi, 'horas');
     };
 
@@ -143,13 +147,22 @@ export default function AIAstronoma() {
         }
 
         if (celebration) {
-            setMessage(celebration);
-            setShowBubble(true);
-            speak(celebration);
+            setAiMessage(celebration);
         }
         
         prevAchievementsRef.current = achievements;
-    }, [achievements, speak]);
+    }, [achievements, setAiMessage]);
+
+    // Escuchar el mensaje global de la IA para hablar
+    useEffect(() => {
+        if (globalAiMessage) {
+            setMessage(globalAiMessage);
+            setShowBubble(true);
+            speak(globalAiMessage);
+            // Opcional: limpiar el mensaje global después de hablar para evitar re-lecturas
+            // aunque canse, mantenemos por ahora para que la burbuja se quede.
+        }
+    }, [globalAiMessage, speak]);
 
     // Reaccionar a cambios de selección, objetivos o enfoque de constelaciones
     useEffect(() => {

@@ -12,12 +12,12 @@ export default function PassportTab() {
     const visited = useAppStore((s) => s.visited);
     const achievements = useAppStore((s) => s.achievements);
     const setTargetedObject = useAppStore((s) => s.setTargetedObject);
-    const setMessage = useAppStore((s) => s.setMessage);
+    const setAiMessage = useAppStore((s) => s.setAiMessage);
 
     // Bienvenida por voz al pasaporte
     useEffect(() => {
-        setMessage("Bienvenido a tu Pasaporte Estelar. Aquí guardo tus descubrimientos. Recuerda que para ganar logros, debes localizar y pulsar sobre los objetos en el firmamento.");
-    }, [setMessage]);
+        setAiMessage("Bienvenido a tu Pasaporte Estelar. Aquí guardo tus descubrimientos. Recuerda que para ganar logros, debes localizar y pulsar sobre los objetos en el firmamento.");
+    }, [setAiMessage]);
 
     const favoriteObjects = [
         ...STARS.filter(s => favorites.includes(s.name)),

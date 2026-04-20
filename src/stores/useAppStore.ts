@@ -167,6 +167,8 @@ export const useAppStore = create<AppState>()(
                     };
                 }
             }),
+            aiMessage: '',
+            setAiMessage: (aiMessage) => set({ aiMessage }),
             settings: {
                 showConstellations: true,
                 showConstellationArt: false,
