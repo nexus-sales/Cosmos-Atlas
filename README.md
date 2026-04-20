@@ -7,9 +7,29 @@ Totalmente responsive e instalable como PWA.
 
 ---
 
-## Registro de mejoras (auditoría técnica 2026-04)
+### Registro de mejoras (auditoría técnica 2026-04)
 
-### Rendimiento y re-renders
+#### Interacción y Guía Galáctica
+- **IA Astrónoma Humanizada** — Reescritura del motor de voz para una narración fluida y natural. Se eliminó el lenguaje robótico sustituyendo siglas técnicas por frases completas (ej: "Mag -8.1" → "magnitud de menos ocho punto uno").
+- **Detección de Repeticiones** — Implementado `lastMessageRef` para evitar que la IA repita el mismo dato varias veces seguidas ante actualizaciones de estado rápidas.
+- **Interactividad Total en el Mapa** — Ahora el Sol, la Luna y todos los planetas son objetos clicables. Al pulsar sobre ellos, la IA reacciona inmediatamente con datos científicos específicos.
+- **Etiquetas de Constelaciones Activas** — Las etiquetas de texto ahora actúan como disparadores: al pulsarlas, se selecciona la constelación y la IA narra su mitología.
+
+#### Datos Científicos en Tiempo Real
+- **Cálculo de Distancias Dinámicas** — Integración con `astronomy-engine` para reportar la distancia actual entre el usuario y cada planeta (en millones de km o UA) y la Luna (en km detallados).
+- **Normalización de Unidades** — Conversión automática de porcentajes de iluminación y fases lunares a lenguaje hablado fluido ("16% iluminada" → "dieciséis por ciento de iluminación").
+- **Conocimiento Profundo (Guía)** — Sustitución de datos simples por descripciones astrofísicas de alta calidad en todo el catálogo de planetas y satélites.
+
+#### Visuales y Navegación
+- **Cuadrícula Celeste de Alta Visibilidad** — Rediseño total de la cuadrícula ecuatorial: líneas cada 15 grados, mayor contraste visual y resaltado del ecuador. Adaptación dinámica de color según el modo (azul tecnológico / rojo nocturno).
+- **Corrección de Hemisferio y Zenit** — Refinado el `CameraNavigator` para corregir la inversión de coordenadas en la navegación asistida, asegurando que la cámara apunte exactamente al objeto seleccionado sin importar la latitud.
+- **SimbadOverlay 2.0** — Proyección directa de objetos remotos mediante transformación ecuatorial pura, eliminando el desplazamiento errático al cambiar la hora del sistema.
+
+#### Rendimiento y Código
+- **Tipado Estricto (Celestial V2)** — Actualizadas las interfaces de TypeScript para soportar las nuevas métricas (distancias, símbolos) eliminando errores de compilación y asegurando la integridad de los datos.
+- **Optimización de Re-renders** — El componente `AIAstronoma` ahora escucha de forma inteligente tanto `selectedObject` como `targetedObject` y `focusedConstellation`, reaccionando solo cuando hay cambios significativos de contexto.
+
+### Rendimiento y re-renders (Continuación)
 - **[PERFORMANCE 120 FPS] Octree de Alto Rendimiento** — Motor de culling espacial optimizado en `HipparcosStars`. Solo se renderiza lo que el usuario está mirando, permitiendo escalar hasta 20.000 estrellas sin penalización.
 - **Sistema de tiempo dual** — `timeMinute` en Zustand: los cálculos astronómicos pesados bajan drásticamente su frecuencia de actualización mientras la UI permanece fluida.
 - **Eliminación del Re-render Bomb** — El reloj central ha sido aislado en un componente local; el bucle de React ya no se dispara globalmente cada segundo, eliminando el stuttering visual.

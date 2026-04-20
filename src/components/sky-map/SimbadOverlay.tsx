@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { Html } from '@react-three/drei';
 import { useAppStore } from '@/stores/useAppStore';
-import { equToHor } from '@/lib/astronomy/transforms';
+import { equToHor, equatorialTo3D } from '@/lib/astronomy/transforms';
 
 const RADIUS = 98; // Ligeramente por encima de las estrellas normales (95)
 

@@ -84,31 +84,84 @@ export default function AIAstronoma() {
         synthRef.current.speak(utterance);
     }, [incrementMythologyBuff, muted, kidsMode]);
 
-    // Reaccionar a cambios de selección
-    useEffect(() => {
-        if (selected && !muted) {
-            const isStar = 'constellation' in selected;
-            const isPlanet = 'kind' in selected && selected.kind === 'planet';
-            
-            const kidFact = kidsMode ? getKidFact(selected.name, isStar, isPlanet) : null;
-            const intro = kidFact 
-                ? `¡Hola explorador! Has encontrado a ${selected.name}. ${kidFact}` 
-                : `Has seleccionado ${selected.name}. ${selected.desc}`;
-                
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setMessage(intro);
-            setShowBubble(true);
-            
-            // Auto-speak after a small delay
-            const timer = setTimeout(() => speak(intro), 800);
-            return () => clearTimeout(timer);
+    const targetedObject = useAppStore((s) => s.targetedObject);
+    const focusedConstellation = useAppStore((s) => s.focusedConstellation);
+    const lastMessageRef = useRef<string>('');
+
+    const formatNarration = (obj: any) => {
+        const isPlanet = 'kind' in obj && obj.kind === 'planet';
+        const isDSO = 'type' in obj;
+        
+        let text = `Estás viendo ${obj.name}. `;
+        
+        // Humanizar descripción técnica
+        if (isPlanet) {
+            let desc = obj.desc || '';
+            desc = desc.replace(/—/g, ', con un');
+            desc = desc.replace(/(\d+)%/g, '$1 por ciento');
+            text = `Observas ${obj.name}. ${desc}`;
+
+            if (obj.dist) {
+                const auToKm = 149597870.7;
+                const km = obj.dist * auToKm;
+                if (obj.name === 'Luna') {
+                    text += ` Se encuentra a unos ${Math.round(km / 100) * 100} kilómetros de nosotros.`;
+                } else if (km > 1000000) {
+                    text += ` Está a una distancia de ${(km / 1000000).toFixed(1)} millones de kilómetros.`;
+                } else {
+                    text += ` Se encuentra a ${(obj.dist).toFixed(3)} unidades astronómicas.`;
+                }
+            }
+
+            if (obj.mag) {
+                const magVal = obj.mag < 0 ? `menos ${Math.abs(obj.mag).toFixed(1)}` : obj.mag.toFixed(1);
+                text += ` Actualmente brilla con una magnitud de ${magVal}.`;
+            }
+        } else if (isDSO) {
+            text = `Has localizado ${obj.name}, un objeto de tipo ${obj.type}. ${obj.desc}`;
         } else {
+            text = `Has centrado tu visor en ${obj.name}. ${obj.desc || ''}`;
+        }
+
+        return text;
+    };
+
+    // Reaccionar a cambios de selección, objetivos o enfoque de constelaciones
+    useEffect(() => {
+        const currentSelection = selected || targetedObject;
+        let newIntro = '';
+
+        if (currentSelection && !muted) {
+            const isStar = 'constellation' in currentSelection;
+            const isPlanet = 'kind' in currentSelection && currentSelection.kind === 'planet';
+            
+            const kidFact = kidsMode ? getKidFact(currentSelection.name, isStar, isPlanet) : null;
+            if (kidFact) {
+                newIntro = `¡Hola explorador! Has encontrado a ${currentSelection.name}. ${kidFact}`;
+            } else {
+                newIntro = formatNarration(currentSelection);
+            }
+        } else if (focusedConstellation && !muted) {
+            const name = focusedConstellation;
+            const kidFact = kidsMode ? getKidFact(name, false, false) : null;
+            newIntro = kidFact
+                ? `Mira esa figura: es la constelación de ${name}. ${kidFact}`
+                : `La constelación de ${name} está ahora centrada en tu visor nocturno.`;
+        }
+
+        if (newIntro && newIntro !== lastMessageRef.current) {
+            lastMessageRef.current = newIntro;
+            setMessage(newIntro);
+            setShowBubble(true);
+            const timer = setTimeout(() => speak(newIntro), 1000);
+            return () => clearTimeout(timer);
+        } else if (!newIntro) {
             setShowBubble(false);
-            // SILENCIO DE SEGURIDAD: Si no hay selección, cortamos el habla
+            lastMessageRef.current = '';
             synthRef.current?.cancel();
             setIsSpeaking(false);
         }
-    }, [selected, muted, speak, kidsMode]);
+    }, [selected, targetedObject, focusedConstellation, muted, speak, kidsMode]);
 
     return (
         <div className={cn(

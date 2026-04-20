@@ -6,6 +6,7 @@ export interface Planet {
     ra: number;
     dec: number;
     mag: number;
+    dist?: number;
     desc: string;
     color: string;
     symbol: string;

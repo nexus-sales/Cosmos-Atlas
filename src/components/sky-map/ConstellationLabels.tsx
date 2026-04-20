@@ -87,6 +87,7 @@ export default function ConstellationLabels() {
         }
     });
 
+    const setSelectedObject = useAppStore(state => state.setSelectedObject);
     const scaleFactor = THREE.MathUtils.mapLinear(camFov, 120, 10, 0.8, 1.6);
 
     // Fade de los labels no-focused:
@@ -124,6 +125,13 @@ export default function ConstellationLabels() {
                             onClick={(e) => {
                                 e.stopPropagation();
                                 setFocusedConstellation(name);
+                                // Set as selected so IA talks about it
+                                setSelectedObject({
+                                    name: name,
+                                    ra: 0, dec: 90, // Position irrelevant for IA
+                                    desc: `La constelación de ${getConstellationDisplayName(name)}.`,
+                                    kind: 'planet' // We reuse the type check for IA
+                                } as any);
                             }}
                             className={cn(
                                 "flex flex-col items-center pointer-events-auto cursor-pointer select-none",

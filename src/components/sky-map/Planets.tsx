@@ -229,6 +229,8 @@ function SunMesh({ pos }: { pos: [number, number, number] }) {
         uOpacity: { value: 0 }
     }), []);
 
+    const setSelectedObject = useAppStore(state => state.setSelectedObject);
+
     useFrame((state) => {
         if (meshRef.current) {
             const material = meshRef.current.material as THREE.ShaderMaterial;
@@ -244,7 +246,20 @@ function SunMesh({ pos }: { pos: [number, number, number] }) {
 
     return (
         <group position={pos} visible={opacity > 0.01}>
-            <mesh ref={meshRef}>
+            <mesh 
+                ref={meshRef}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedObject({
+                        name: 'Sol',
+                        ra: 0, dec: 0, mag: -26.7,
+                        desc: "Nuestra estrella, una enana amarilla centro del Sistema Solar.",
+                        color: '#ffaa44',
+                        symbol: '☉',
+                        kind: 'planet'
+                    });
+                }}
+            >
                 <sphereGeometry args={[0.5, 64, 64]} />
                 <shaderMaterial
                     vertexShader={SUN_VERTEX_SHADER}
@@ -268,8 +283,9 @@ function SunMesh({ pos }: { pos: [number, number, number] }) {
     );
 }
 
-function MoonMesh({ planet, phase, opacity }: { planet: { pos: [number, number, number] }, phase: number, opacity: number }) {
+function MoonMesh({ planet, phase, opacity }: { planet: { pos: [number, number, number], dist: number }, phase: number, opacity: number }) {
     const meshRef = useRef<THREE.Mesh>(null);
+    const setSelectedObject = useAppStore(state => state.setSelectedObject);
     // time y observer se leen en useFrame desde getState() — sin re-renders innecesarios
     const texture = usePlanetTexture('moon');
     
@@ -304,7 +320,21 @@ function MoonMesh({ planet, phase, opacity }: { planet: { pos: [number, number, 
 
     return (
         <group position={planet.pos} visible={opacity > 0.01}>
-            <mesh ref={meshRef}>
+            <mesh 
+                ref={meshRef}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedObject({
+                        name: 'Luna',
+                        ra: 0, dec: 0, mag: -12.7,
+                        dist: planet.dist,
+                        desc: "Satélite natural de la Tierra.",
+                        color: '#ffffff',
+                        symbol: '☾',
+                        kind: 'planet'
+                    });
+                }}
+            >
                 <sphereGeometry args={[0.4, 64, 64]} />
                 <shaderMaterial
                     vertexShader={PLANET_VERTEX_SHADER}
@@ -328,11 +358,13 @@ interface PlanetData {
     textureKey: string;
     ra: number;
     dec: number;
+    dist: number;
 }
 
 function PlanetMesh({ planet }: { planet: PlanetData }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const camFov = useAppStore(state => state.camFov);
+    const setSelectedObject = useAppStore(state => state.setSelectedObject);
     // time y observer se leen en useFrame desde getState() — sin re-renders innecesarios
     const texture = usePlanetTexture(planet.textureKey);
     
@@ -379,7 +411,24 @@ function PlanetMesh({ planet }: { planet: PlanetData }) {
     return (
         <group position={planet.pos} visible={opacity > 0.01}>
             <Float speed={1.5} rotationIntensity={0.2} floatIntensity={0.2}>
-                <mesh ref={meshRef}>
+                <mesh 
+                    ref={meshRef} 
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        // Pasamos un objeto con el formato esperado (Planet)
+                        setSelectedObject({
+                            name: planet.name,
+                            ra: planet.ra,
+                            dec: planet.dec,
+                            mag: 0,
+                            dist: planet.dist,
+                            desc: `Planeta ${planet.name} del Sistema Solar.`,
+                            color: '#ffffff',
+                            symbol: '●',
+                            kind: 'planet'
+                        });
+                    }}
+                >
                     <sphereGeometry args={[scale, 64, 64]} />
                     <shaderMaterial
                         vertexShader={PLANET_VERTEX_SHADER}
@@ -458,6 +507,7 @@ export default function Planets() {
                     ...cfg,
                     ra: eq.ra * 15,
                     dec: eq.dec,
+                    dist: eq.dist,
                     pos: equatorialTo3D(eq.ra * 15, eq.dec, PLANET_RADIUS) as [number, number, number],
                 } as PlanetData;
             } catch { return null; }
@@ -468,7 +518,11 @@ export default function Planets() {
             const eq = Astronomy.Equator(Astronomy.Body.Moon, time, bs, true, true);
             const phase = Astronomy.MoonPhase(time);
             moon = {
-                planet: { name: 'Luna', pos: equatorialTo3D(eq.ra * 15, eq.dec, PLANET_RADIUS) as [number, number, number] },
+                planet: { 
+                    name: 'Luna', 
+                    pos: equatorialTo3D(eq.ra * 15, eq.dec, PLANET_RADIUS) as [number, number, number],
+                    dist: eq.dist
+                },
                 phase
             };
         } catch (err) { console.warn('[Planets] Luna no calculada:', err); }

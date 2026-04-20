@@ -67,6 +67,7 @@ function buildPlanet(cfg: PlanetCfg, date: Date, lat: number, lon: number): (Pla
         const illum = Astronomy.Illumination(cfg.body, date);
         const ra = eq.ra * 15;
         const dec = eq.dec;
+        const dist = eq.dist; // Distancia al observador en AU
         const { alt } = equToHor(ra, dec, lat, lon, date);
 
         // For the Moon, enrich description with phase info
@@ -77,7 +78,17 @@ function buildPlanet(cfg: PlanetCfg, date: Date, lat: number, lon: number): (Pla
             desc = `${getMoonPhaseName(moonPhase)} \u2014 ${pct}% iluminada. ${desc}`;
         }
 
-        return { name: cfg.name, symbol: cfg.symbol, ra, dec, mag: illum.mag, color: cfg.color, desc, kind: 'planet', alt };
+        return { 
+            name: cfg.name, 
+            symbol: cfg.symbol, 
+            ra, dec, 
+            mag: illum.mag, 
+            dist, // Inyectamos distancia
+            color: cfg.color, 
+            desc, 
+            kind: 'planet', 
+            alt 
+        };
     } catch {
         return null;
     }

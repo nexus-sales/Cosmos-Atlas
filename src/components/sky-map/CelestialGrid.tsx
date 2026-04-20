@@ -3,15 +3,16 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
+import { useAppStore } from '@/stores/useAppStore';
 
 export default function CelestialGrid() {
-    const RADIUS = 90;
+    const RADIUS = 92; // Just inside the stars and labels
 
     const lineGeometries = useMemo(() => {
         const results: THREE.BufferGeometry[] = [];
 
-        // Círculos de declinación (paralelos)
-        for (let dec = -60; dec <= 60; dec += 30) {
+        // Círculos de declinación (paralelos) - Cada 15 grados
+        for (let dec = -75; dec <= 75; dec += 15) {
             const pts: number[] = [];
             for (let ra = 0; ra <= 360; ra += 5) {
                 const p = equatorialTo3D(ra, dec, RADIUS);
@@ -22,8 +23,8 @@ export default function CelestialGrid() {
             results.push(geom);
         }
 
-        // Meridianos (líneas de ascensión recta)
-        for (let ra = 0; ra < 360; ra += 30) {
+        // Meridianos (líneas de ascensión recta) - Cada 15 grados
+        for (let ra = 0; ra < 360; ra += 15) {
             const pts: number[] = [];
             for (let dec = -90; dec <= 90; dec += 5) {
                 const p = equatorialTo3D(ra, dec, RADIUS);
@@ -37,14 +38,27 @@ export default function CelestialGrid() {
         return results;
     }, []);
 
+    const nightMode = useAppStore(state => state.settings.nightMode);
+    const color = nightMode ? '#661111' : '#4d88ff';
+    const opacity = nightMode ? 0.2 : 0.25;
+
     return (
-        <group>
-            {lineGeometries.map((geom, i) => (
-                <line key={i}>
-                    <primitive object={geom} attach="geometry" />
-                    <lineBasicMaterial color="#3a5a8a" transparent opacity={0.1} />
-                </line>
-            ))}
+        <group name="CelestialGrid">
+            {lineGeometries.map((geom, i) => {
+                const isEquator = i === 5; // Aproximadamente el ecuador en el primer loop
+                return (
+                    <line key={i}>
+                        <primitive object={geom} attach="geometry" />
+                        <lineBasicMaterial 
+                            color={color} 
+                            transparent 
+                            opacity={isEquator ? opacity * 2 : opacity} 
+                            depthTest={true}
+                            depthWrite={false}
+                        />
+                    </line>
+                );
+            })}
         </group>
     );
 }
