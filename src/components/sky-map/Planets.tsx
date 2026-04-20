@@ -230,6 +230,7 @@ function SunMesh({ pos }: { pos: [number, number, number] }) {
     }), []);
 
     const setSelectedObject = useAppStore(state => state.setSelectedObject);
+    const markAsVisited = useAppStore(state => state.markAsVisited);
 
     useFrame((state) => {
         if (meshRef.current) {
@@ -258,6 +259,7 @@ function SunMesh({ pos }: { pos: [number, number, number] }) {
                         symbol: '☉',
                         kind: 'planet'
                     });
+                    markAsVisited('Sol');
                 }}
             >
                 <sphereGeometry args={[0.5, 64, 64]} />
@@ -286,6 +288,7 @@ function SunMesh({ pos }: { pos: [number, number, number] }) {
 function MoonMesh({ planet, phase, opacity }: { planet: { pos: [number, number, number], dist: number }, phase: number, opacity: number }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const setSelectedObject = useAppStore(state => state.setSelectedObject);
+    const markAsVisited = useAppStore(state => state.markAsVisited);
     // time y observer se leen en useFrame desde getState() — sin re-renders innecesarios
     const texture = usePlanetTexture('moon');
     
@@ -333,6 +336,7 @@ function MoonMesh({ planet, phase, opacity }: { planet: { pos: [number, number, 
                         symbol: '☾',
                         kind: 'planet'
                     });
+                    markAsVisited('Luna');
                 }}
             >
                 <sphereGeometry args={[0.4, 64, 64]} />
@@ -365,6 +369,7 @@ function PlanetMesh({ planet }: { planet: PlanetData }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const camFov = useAppStore(state => state.camFov);
     const setSelectedObject = useAppStore(state => state.setSelectedObject);
+    const markAsVisited = useAppStore(state => state.markAsVisited);
     // time y observer se leen en useFrame desde getState() — sin re-renders innecesarios
     const texture = usePlanetTexture(planet.textureKey);
     
@@ -427,6 +432,7 @@ function PlanetMesh({ planet }: { planet: PlanetData }) {
                             symbol: '●',
                             kind: 'planet'
                         });
+                        markAsVisited(planet.name);
                     }}
                 >
                     <sphereGeometry args={[scale, 64, 64]} />

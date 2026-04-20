@@ -5,13 +5,17 @@ import * as THREE from 'three';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { useAppStore } from '@/stores/useAppStore';
 
+/**
+ * Celestial Grid (RA/Dec)
+ * Dense (15-degree increments), high-visibility, professional look.
+ */
 export default function CelestialGrid() {
-    const RADIUS = 92; // Just inside the stars and labels
+    const RADIUS = 92;
 
     const lineGeometries = useMemo(() => {
         const results: THREE.BufferGeometry[] = [];
 
-        // Círculos de declinación (paralelos) - Cada 15 grados
+        // Circles of declination (every 15 degrees)
         for (let dec = -75; dec <= 75; dec += 15) {
             const pts: number[] = [];
             for (let ra = 0; ra <= 360; ra += 5) {
@@ -23,7 +27,7 @@ export default function CelestialGrid() {
             results.push(geom);
         }
 
-        // Meridianos (líneas de ascensión recta) - Cada 15 grados
+        // Meridians (every 15 degrees)
         for (let ra = 0; ra < 360; ra += 15) {
             const pts: number[] = [];
             for (let dec = -90; dec <= 90; dec += 5) {
@@ -38,21 +42,21 @@ export default function CelestialGrid() {
         return results;
     }, []);
 
-    const nightMode = useAppStore(state => state.settings.nightMode);
-    const color = nightMode ? '#661111' : '#4d88ff';
-    const opacity = nightMode ? 0.2 : 0.25;
+    const nightMode = useAppStore((state) => state.settings.nightMode);
+    const gridColor = nightMode ? '#661111' : '#4d88ff';
+    const gridOpacity = nightMode ? 0.2 : 0.25;
 
     return (
         <group name="CelestialGrid">
             {lineGeometries.map((geom, i) => {
-                const isEquator = i === 5; // Aproximadamente el ecuador en el primer loop
+                const isEquator = i === 5;
                 return (
                     <line key={i}>
                         <primitive object={geom} attach="geometry" />
                         <lineBasicMaterial 
-                            color={color} 
+                            color={gridColor} 
                             transparent 
-                            opacity={isEquator ? opacity * 2 : opacity} 
+                            opacity={isEquator ? gridOpacity * 2 : gridOpacity} 
                             depthTest={true}
                             depthWrite={false}
                         />
@@ -62,4 +66,3 @@ export default function CelestialGrid() {
         </group>
     );
 }
-

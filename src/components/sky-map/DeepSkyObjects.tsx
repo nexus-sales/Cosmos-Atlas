@@ -157,6 +157,7 @@ interface DSOData extends DSO {
 function DSOItem({ dso }: { dso: DSOData }) {
     const [hovered, setHovered] = useState(false);
     const setSelectedObject = useAppStore((state) => state.setSelectedObject);
+    const markAsVisited = useAppStore((state) => state.markAsVisited);
     const nightMode = useAppStore((state) => state.settings.nightMode);
     const camFov = useAppStore((state) => state.camFov);
     const texture = useDSOTexture(dso);
@@ -171,7 +172,11 @@ function DSOItem({ dso }: { dso: DSOData }) {
         <group position={dso.pos}>
             {/* Hitbox invisible para hover */}
             <mesh
-                onClick={(e) => { e.stopPropagation(); setSelectedObject(dso); }}
+                onClick={(e) => { 
+                    e.stopPropagation(); 
+                    setSelectedObject(dso); 
+                    markAsVisited(dso.id);
+                }}
                 onPointerOver={() => { setHovered(true); document.body.style.cursor = 'pointer'; }}
                 onPointerOut={() => { setHovered(false); document.body.style.cursor = 'default'; }}
             >

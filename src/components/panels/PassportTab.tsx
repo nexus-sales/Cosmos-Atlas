@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
 import { Trophy, Star, Heart, Map as MapIcon, CheckCircle2, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -11,6 +12,12 @@ export default function PassportTab() {
     const visited = useAppStore((s) => s.visited);
     const achievements = useAppStore((s) => s.achievements);
     const setTargetedObject = useAppStore((s) => s.setTargetedObject);
+    const setMessage = useAppStore((s) => s.setMessage);
+
+    // Bienvenida por voz al pasaporte
+    useEffect(() => {
+        setMessage("Bienvenido a tu Pasaporte Estelar. Aquí guardo tus descubrimientos. Recuerda que para ganar logros, debes localizar y pulsar sobre los objetos en el firmamento.");
+    }, [setMessage]);
 
     const favoriteObjects = [
         ...STARS.filter(s => favorites.includes(s.name)),
@@ -24,6 +31,21 @@ export default function PassportTab() {
 
     return (
         <div className="space-y-6 pb-6 animate-in fade-in duration-500">
+            {/* GUÍA DE LOGROS (EXPLICACIÓN) */}
+            <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 relative overflow-hidden group">
+                <div className="flex gap-4 items-start relative z-10">
+                    <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
+                        <MapIcon className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <div className="space-y-1">
+                        <h3 className="text-[14px] font-bold text-blue-100">Guía de Campo</h3>
+                        <p className="text-[11px] text-blue-200/60 leading-normal italic">
+                            "Para registrar un hallazgo en tu pasaporte, localiza el objeto en el mapa estelar y interactúa con él. La IA Astrónoma documentará tu progreso automáticamente."
+                        </p>
+                    </div>
+                </div>
+            </div>
+
             {/* LOGROS */}
             <section className="space-y-3">
                 <div className="flex items-center gap-2 px-1">

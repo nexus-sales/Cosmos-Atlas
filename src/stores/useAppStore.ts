@@ -257,9 +257,27 @@ export const useAppStore = create<AppState>()(
                     ? s.favorites.filter(x => x !== id) 
                     : [...s.favorites, id]
             })),
-            markAsVisited: (id) => set((s) => ({
-                visited: s.visited.includes(id) ? s.visited : [...s.visited, id]
-            })),
+            markAsVisited: (id) => set((s) => {
+                const nextVisited = s.visited.includes(id) ? s.visited : [...s.visited, id];
+                
+                // --- Logro: Explorador de Planetas ---
+                const planets = ['Mercurio', 'Venus', 'Marte', 'Júpiter', 'Saturno', 'Urano', 'Neptuno', 'Luna'];
+                const visitedPlanets = planets.filter(p => nextVisited.includes(p));
+                const planetHunter = visitedPlanets.length >= 8;
+
+                // --- Logro: Maratón Messier ---
+                // Si el ID empieza por 'M' y tiene un número después, es un Messier.
+                const messierCount = nextVisited.filter(v => /^M\d+/.test(v)).length;
+
+                return { 
+                    visited: nextVisited,
+                    achievements: {
+                        ...s.achievements,
+                        planetHunter: planetHunter || s.achievements.planetHunter,
+                        messierMarathon: messierCount
+                    }
+                };
+            }),
             updateAchievement: (key, value) => set((s) => ({
                 achievements: { ...s.achievements, [key]: value }
             })),

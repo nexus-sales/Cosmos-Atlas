@@ -126,6 +126,31 @@ export default function AIAstronoma() {
         return text;
     };
 
+    const achievements = useAppStore((s) => s.achievements);
+    const prevAchievementsRef = useRef(achievements);
+
+    // Celebrar logros
+    useEffect(() => {
+        const prev = prevAchievementsRef.current;
+        let celebration = '';
+
+        if (achievements.planetHunter && !prev.planetHunter) {
+            celebration = "¡Increíble! Te has convertido en un verdadero Explorador de Planetas. Has visitado todos los mundos de nuestro sistema.";
+        } else if (achievements.messierMarathon > prev.messierMarathon) {
+            celebration = `¡Buen trabajo! Has registrado un nuevo objeto Messier. Llevas ${achievements.messierMarathon} de ciento diez.`;
+        } else if (achievements.mythologyBuff > prev.mythologyBuff) {
+            celebration = "Tu conocimiento de la mitología estelar está creciendo. ¡Sigue escuchando las historias del cosmos!";
+        }
+
+        if (celebration) {
+            setMessage(celebration);
+            setShowBubble(true);
+            speak(celebration);
+        }
+        
+        prevAchievementsRef.current = achievements;
+    }, [achievements, speak]);
+
     // Reaccionar a cambios de selección, objetivos o enfoque de constelaciones
     useEffect(() => {
         const currentSelection = selected || targetedObject;
