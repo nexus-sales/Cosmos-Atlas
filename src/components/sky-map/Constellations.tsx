@@ -49,11 +49,11 @@ export default function Constellations() {
                 // Estética dinámica: 
                 // La enfocada es brillante y nítida. El resto son "fantasmas" sutiles.
                 const color = nightMode
-                    ? (isFocused ? '#ff3333' : '#661111')
-                    : (isFocused ? '#ffffff' : '#a8c4e8');
+                    ? (isFocused ? '#ff3333' : '#441111')
+                    : (isFocused ? '#ffffff' : '#4a6da0');
 
-                const opacity = isFocused ? 0.9 : 0.4;
-                const lineWidth = isFocused ? 2.0 : 1.1;
+                const opacity = isFocused ? 0.9 : 0.15;
+                const lineWidth = isFocused ? 2.2 : 0.8;
 
                 return (
                     <group key={name}>

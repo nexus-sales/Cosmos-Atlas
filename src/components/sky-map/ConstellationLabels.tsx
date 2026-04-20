@@ -72,11 +72,11 @@ export default function ConstellationLabels() {
         const lookDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
 
         let bestName = null;
-        let bestDot = -1;
+        let bestDot = 0.94; // Umbral más estricto (~20 grados)
 
         labels.forEach(({ name, vector }) => {
             const dot = lookDir.dot(vector);
-            if (dot > 0.82 && dot > bestDot) {
+            if (dot > bestDot) {
                 bestDot = dot;
                 bestName = name;
             }
