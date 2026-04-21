@@ -3,141 +3,116 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
 import { Line } from '@react-three/drei';
-import { CONSTELLATION_ART, type ArtPath } from '@/data/constellationArt';
+import { CONSTELLATION_ART } from '@/data/constellationArt';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { useAppStore } from '@/stores/useAppStore';
 
-/**
- * ConstellationArt — mythological figure overlays.
- *
- * Renders simplified mythological silhouettes on the celestial sphere:
- *   – Outline polylines tracing the figure's body contours
- *   – Semi-transparent filled silhouette areas (earcut triangulation via THREE.ShapeUtils)
- *
- * Visual style:
- *   – Warm amber (#c8961a) at low opacity — distinct from cyan stick lines
- *   – Focused constellation: brightens + glow pass highlights the active figure
- *   – Night mode: deep red to preserve dark adaptation
- */
+type Point3 = [number, number, number];
 
 const RADIUS = 91;
 
-/**
- * Triangulates a closed polygon (RA/Dec) using earcut (via THREE.ShapeUtils).
- * Earcut handles concave shapes correctly — fan triangulation from centroid only
- * works for convex polygons and produced Picasso-like artifacts on body shapes.
- */
-function createFillGeometry(fill: ArtPath): THREE.BufferGeometry {
-    const pts3D = fill.map(([ra, dec]) => equatorialTo3D(ra, dec, RADIUS));
-    const n = pts3D.length;
-    if (n < 3) return new THREE.BufferGeometry();
-
-    // Project to 2D (RA/Dec) for earcut winding — compensate RA for high declination
-    const decRad = (fill[0][1] + fill[Math.floor(n / 2)][1]) / 2 * (Math.PI / 180);
-    const cosD = Math.cos(decRad);
-    const pts2D = fill.map(([ra, dec]) => new THREE.Vector2(ra * cosD, dec));
-
-    // THREE.ShapeUtils.triangulateShape uses earcut and handles concave polygons
-    let indices: number[][];
-    try {
-        indices = THREE.ShapeUtils.triangulateShape(pts2D, []);
-    } catch {
-        return new THREE.BufferGeometry();
-    }
-
-    const verts = new Float32Array(indices.length * 9);
-    for (let i = 0; i < indices.length; i++) {
-        const [a, b, c] = indices[i];
-        const base = i * 9;
-        verts[base]     = pts3D[a][0]; verts[base + 1] = pts3D[a][1]; verts[base + 2] = pts3D[a][2];
-        verts[base + 3] = pts3D[b][0]; verts[base + 4] = pts3D[b][1]; verts[base + 5] = pts3D[b][2];
-        verts[base + 6] = pts3D[c][0]; verts[base + 7] = pts3D[c][1]; verts[base + 8] = pts3D[c][2];
-    }
-
-    const geom = new THREE.BufferGeometry();
-    geom.setAttribute('position', new THREE.BufferAttribute(verts, 3));
-    return geom;
+function smoothPolyline(points: Point3[], closed: boolean) {
+    if (points.length < 4) return points;
+    const vectors = points.map(([x, y, z]) => new THREE.Vector3(x, y, z));
+    const curve = new THREE.CatmullRomCurve3(vectors, closed, 'centripetal', 0.5);
+    const target = Math.min(220, Math.max(40, points.length * 10));
+    return curve.getPoints(target).map((v) => [v.x, v.y, v.z] as Point3);
 }
 
 export default function ConstellationArt() {
-    const showConstellationArt = useAppStore(
-        (state) => state.settings.showConstellationArt
-    );
-    const focusedConstellation = useAppStore(
-        (state) => state.focusedConstellation
-    );
+    const showConstellationArt = useAppStore((state) => state.settings.showConstellationArt);
+    const focusedConstellation = useAppStore((state) => state.focusedConstellation);
     const nightMode = useAppStore((state) => state.settings.nightMode);
-    const kidsMode  = useAppStore((state) => state.settings.kidsMode);
+    const kidsMode = useAppStore((state) => state.settings.kidsMode);
+    const camFov = useAppStore((state) => state.camFov);
 
     const figures = useMemo(() => {
         return CONSTELLATION_ART.map((figure) => ({
             name: figure.name,
-            polylines: figure.paths.map((path) =>
-                path.map(([ra, dec]) => equatorialTo3D(ra, dec, RADIUS))
-            ),
-            fillGeometries: (figure.fills ?? []).map(createFillGeometry),
+            polylines: figure.paths.map((path) => {
+                const pts = path.map(([ra, dec]) => equatorialTo3D(ra, dec, RADIUS));
+                const closed = pts.length >= 3 &&
+                    pts[0][0] === pts[pts.length - 1][0] &&
+                    pts[0][1] === pts[pts.length - 1][1] &&
+                    pts[0][2] === pts[pts.length - 1][2];
+                return smoothPolyline(pts, closed);
+            }),
+            fillOutlines: (figure.fills ?? []).map((fill) => {
+                const pts = fill.map(([ra, dec]) => equatorialTo3D(ra, dec, RADIUS));
+                const closedPts = pts.length > 2 ? [...pts, pts[0]] : pts;
+                return smoothPolyline(closedPts, true);
+            }),
         }));
     }, []);
 
-    if (!showConstellationArt) return null;
+    // Auto behavior: if the user zooms in and a constellation is focused, show only that figure.
+    const autoFigure = !showConstellationArt && !!focusedConstellation && camFov <= 32;
+    const shouldRender = showConstellationArt || autoFigure;
+    if (!shouldRender) return null;
+
+    // Fade-in for the auto mode so it doesn't pop on/off.
+    const autoPresence = autoFigure
+        ? THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 40, 24, 0.0, 1.0), 0.0, 1.0)
+        : 1.0;
 
     return (
         <group renderOrder={2}>
-            {figures.map(({ name, polylines, fillGeometries }) => {
+            {figures.map(({ name, polylines, fillOutlines }) => {
                 const isFocused = name === focusedConstellation;
+                if (autoFigure && !isFocused) return null;
 
                 const color = nightMode
                     ? (isFocused ? '#ff4422' : '#661100')
-                    : (isFocused 
-                        ? (kidsMode ? '#44ccff' : '#f0c050') 
+                    : (isFocused
+                        ? (kidsMode ? '#44ccff' : '#e7c36a')
                         : (kidsMode ? '#114466' : '#8a6510'));
 
-                const fillOpacity = isFocused ? (kidsMode ? 0.25 : 0.15) : 0.04;
-                const lineOpacity = isFocused ? 0.90 : 0.40;
-                const lineWidth   = isFocused ? (kidsMode ? 3.5 : 2.0) : 1.0;
+                // Avoid the old filled silhouettes: they read like cardboard cutouts.
+                // Keep the mythology as subtle engraving-like line art.
+                const outlineOpacity = (isFocused ? (kidsMode ? 0.55 : 0.28) : 0.08) * autoPresence;
+                const lineOpacity = (isFocused ? (kidsMode ? 0.70 : 0.35) : 0.10) * autoPresence;
+                const lineWidth = isFocused ? (kidsMode ? 2.6 : 1.5) : 0.8;
+
+                if (Math.max(outlineOpacity, lineOpacity) < 0.01) return null;
 
                 return (
                     <group key={name}>
-                        {/* Ethereal Dusting (Fill) */}
-                        {fillGeometries.map((geom, i) => (
-                            <mesh key={`fill-${i}`} geometry={geom} renderOrder={1}>
-                                <meshBasicMaterial
-                                    color={color}
-                                    transparent
-                                    opacity={fillOpacity}
-                                    side={THREE.DoubleSide}
-                                    depthTest={false}
-                                    depthWrite={false}
-                                    blending={THREE.AdditiveBlending}
-                                />
-                            </mesh>
+                        {fillOutlines.map((points, i) => (
+                            <Line
+                                key={`fill-outline-${i}`}
+                                points={points}
+                                color={color}
+                                lineWidth={lineWidth * 0.9}
+                                transparent
+                                opacity={outlineOpacity}
+                                depthTest={false}
+                                depthWrite={false}
+                            />
                         ))}
 
-                        {/* High-Fidelity Glow Pass */}
                         {isFocused && polylines.map((points, i) => (
                             <group key={`glow-group-${i}`}>
                                 <Line
                                     points={points}
                                     color={color}
-                                    lineWidth={lineWidth * 12}
+                                    lineWidth={lineWidth * 10}
                                     transparent
-                                    opacity={0.05}
+                                    opacity={0.04 * autoPresence}
                                     depthTest={false}
                                     depthWrite={false}
                                 />
                                 <Line
                                     points={points}
                                     color={color}
-                                    lineWidth={lineWidth * 6}
+                                    lineWidth={lineWidth * 5}
                                     transparent
-                                    opacity={0.12}
+                                    opacity={0.10 * autoPresence}
                                     depthTest={false}
                                     depthWrite={false}
                                 />
                             </group>
                         ))}
 
-                        {/* Main Mythological Outline */}
                         {polylines.map((points, i) => (
                             <Line
                                 key={i}
@@ -156,3 +131,4 @@ export default function ConstellationArt() {
         </group>
     );
 }
+
