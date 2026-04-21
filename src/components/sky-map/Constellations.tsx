@@ -124,9 +124,9 @@ export default function Constellations() {
 
                 const opacity = isFocused
                     ? 1.0 * overallPresence
-                    : 0.15 * overallPresence * nonFocusedVisibility;
+                    : 0.25 * overallPresence * nonFocusedVisibility;
 
-                const lineWidth = isFocused ? 2.8 : 0.8;
+                const lineWidth = isFocused ? 2.8 : 0.9;
 
                 if (opacity < 0.01) return null;
 

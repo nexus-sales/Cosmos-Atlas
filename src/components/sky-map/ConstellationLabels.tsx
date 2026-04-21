@@ -110,35 +110,42 @@ export default function ConstellationLabels() {
         // --- VISIBILITY CALCULATION ---
         const nextVisible = new Set<string>();
 
-        // 1. Always show the focused one
-        if (focusedConstellation) nextVisible.add(focusedConstellation);
+        // 3. Plus some neighbors for decluttering (radius based)
+        const sortedLabels = labels
+            .map((l) => ({ ...l, dot: camDir.dot(l.vector.clone().normalize()) }))
+            .sort((a, b) => b.dot - a.dot);
 
-        // 2. Always show the selected one (if it's a constellation)
+        // ALWAYS show at least the top N closest to center to allow interaction
+        // If FOV is very narrow, we show fewer to avoid clutter.
+        const maxToShow = camFov < 30 ? 3 : (camFov < 60 ? 6 : 10);
+        
+        sortedLabels.slice(0, maxToShow).forEach(l => {
+            if (l.dot > (camFov > 70 ? 0.3 : 0.6)) {
+                nextVisible.add(l.name);
+            }
+        });
+
+        // 4. Force focused and selected
+        if (focusedConstellation) nextVisible.add(focusedConstellation);
         if (selectedObject && CONSTELLATIONS[selectedObject.name]) {
             nextVisible.add(selectedObject.name);
         }
 
-        // 3. Show nearby labels at wide FOV to allow exploration
-        if (camFov > 70) {
-            const dotThreshold = 0.92;
-            labels.forEach(({ name, vector }) => {
-                const dot = lookDir.dot(vector);
-                if (dot >= dotThreshold) nextVisible.add(name);
-            });
-        }
-
-        // 4. Force at least the best name if we are looking at something
-        if (bestName) nextVisible.add(bestName);
-
-        const nowMs = performance.now();
+        const nowMs = Date.now();
         if (visibleRef.current.size === 0 || nowMs - lastVisibilityUpdateRef.current >= VISIBILITY_THROTTLE_MS) {
             const prev = visibleRef.current;
+            
+            // Compare sets
             let changed = prev.size !== nextVisible.size;
             if (!changed) {
-                for (const name of nextVisible) {
-                    if (!prev.has(name)) { changed = true; break; }
+                for (const item of nextVisible) {
+                    if (!prev.has(item)) {
+                        changed = true;
+                        break;
+                    }
                 }
             }
+
             if (changed) {
                 visibleRef.current = nextVisible;
                 lastVisibilityUpdateRef.current = nowMs;
