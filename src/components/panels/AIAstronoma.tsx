@@ -165,15 +165,25 @@ export default function AIAstronoma() {
 
     // Reaccionar a cambios de selección, objetivos o enfoque de constelaciones
     useEffect(() => {
+        // Prioridad 1: Mensajes globales (Logros, Bienvenida, etc.)
         if (globalAiMessage) {
+            setMessage(globalAiMessage);
+            setShowBubble(true);
+            speak(globalAiMessage);
+
+            // Auto-limpieza de mensajes globales para que no se queden fijos
+            // Calculamos duración: mínimo 8s, o proporcional a la longitud (aprox 15 chars/seg)
+            const duration = Math.max(8000, (globalAiMessage.length / 15) * 1000);
             const timer = setTimeout(() => {
-                setMessage(globalAiMessage);
-                setShowBubble(true);
-                speak(globalAiMessage);
-            }, 0);
+                setShowBubble(false);
+                // Esperamos a que termine la animación de salida para limpiar el estado global
+                setTimeout(() => setAiMessage(''), 500);
+            }, duration);
+
             return () => clearTimeout(timer);
         }
 
+        // Prioridad 2: Narración automática basada en lo que el usuario ve
         if (!narratorReadyRef.current) return;
         const currentSelection = selected || targetedObject;
         let newIntro = '';
@@ -213,7 +223,7 @@ export default function AIAstronoma() {
             }, 0);
             return () => clearTimeout(timer);
         }
-    }, [selected, targetedObject, focusedConstellation, muted, speak, kidsMode, globalAiMessage]);
+    }, [selected, targetedObject, focusedConstellation, muted, speak, kidsMode, globalAiMessage, setAiMessage]);
 
     return (
         <div className={cn(
@@ -230,7 +240,13 @@ export default function AIAstronoma() {
                         initial={{ opacity: 0, scale: 0.8, y: 10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.8, y: 10 }}
-                        className="pointer-events-auto max-w-[280px] bg-black/80 backdrop-blur-xl border border-blue-500/30 p-4 rounded-2xl rounded-br-none shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
+                        onClick={() => {
+                            setShowBubble(false);
+                            if (globalAiMessage) setAiMessage('');
+                            synthRef.current?.cancel();
+                            setIsSpeaking(false);
+                        }}
+                        className="pointer-events-auto cursor-pointer max-w-[280px] bg-black/80 backdrop-blur-xl border border-blue-500/30 p-4 rounded-2xl rounded-br-none shadow-[0_10px_40px_rgba(0,0,0,0.5)] active:scale-95 transition-transform"
                     >
                         <div className="flex gap-2 items-start mb-2">
                             <Sparkles className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
@@ -239,6 +255,9 @@ export default function AIAstronoma() {
                         <p className="text-[12px] text-white/80 leading-relaxed italic">
                             &laquo;{message}&raquo;
                         </p>
+                        <div className="mt-2 pt-2 border-t border-white/5 flex justify-end">
+                            <span className="text-[8px] text-white/20 uppercase tracking-widest font-bold">Cerrar</span>
+                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>
