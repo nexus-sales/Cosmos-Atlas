@@ -38,6 +38,7 @@ export default function ConstellationLabels() {
     const selectedObject = useAppStore((state) => state.selectedObject);
     const setSelectedObject = useAppStore((state) => state.setSelectedObject);
     const setTargetedObject = useAppStore((state) => state.setTargetedObject);
+    const groupRef = useRef<THREE.Group>(null);
 
     // Mouse hover should override camera-based focusing.
     const hoveredRef = useRef<string | null>(null);
@@ -89,14 +90,21 @@ export default function ConstellationLabels() {
             }
         }
 
-        const lookDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
+        // 1. Camera direction in World Space
+        const camWorldDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+
+        // 2. Transform that direction to Local Space of the celestial group
+        // This is critical because the group rotates with the sky!
+        const groupQuat = groupRef.current ? groupRef.current.getWorldQuaternion(new THREE.Quaternion()) : new THREE.Quaternion();
+        const localLookDir = camWorldDir.clone()
+            .applyQuaternion(groupQuat.invert())
+            .normalize();
 
         let bestName: string | null = null;
-        // Relaxed threshold: ~30 degrees instead of 20
         let bestDot = 0.86; 
 
         labels.forEach(({ name, vector }) => {
-            const dot = lookDir.dot(vector);
+            const dot = localLookDir.dot(vector.clone().normalize());
             if (dot > bestDot) {
                 bestDot = dot;
                 bestName = name;
@@ -110,9 +118,8 @@ export default function ConstellationLabels() {
         // --- VISIBILITY CALCULATION ---
         const nextVisible = new Set<string>();
 
-        // 3. Plus some neighbors for decluttering (radius based)
         const sortedLabels = labels
-            .map((l) => ({ ...l, dot: camDir.dot(l.vector.clone().normalize()) }))
+            .map((l) => ({ ...l, dot: localLookDir.dot(l.vector.clone().normalize()) }))
             .sort((a, b) => b.dot - a.dot);
 
         // ALWAYS show at least the top N closest to center to allow interaction
@@ -120,12 +127,11 @@ export default function ConstellationLabels() {
         const maxToShow = camFov < 30 ? 3 : (camFov < 60 ? 6 : 10);
         
         sortedLabels.slice(0, maxToShow).forEach(l => {
-            if (l.dot > (camFov > 70 ? 0.3 : 0.6)) {
+            if (l.dot > (camFov > 70 ? 0.2 : 0.45)) {
                 nextVisible.add(l.name);
             }
         });
 
-        // 4. Force focused and selected
         if (focusedConstellation) nextVisible.add(focusedConstellation);
         if (selectedObject && CONSTELLATIONS[selectedObject.name]) {
             nextVisible.add(selectedObject.name);
@@ -134,15 +140,10 @@ export default function ConstellationLabels() {
         const nowMs = Date.now();
         if (visibleRef.current.size === 0 || nowMs - lastVisibilityUpdateRef.current >= VISIBILITY_THROTTLE_MS) {
             const prev = visibleRef.current;
-            
-            // Compare sets
             let changed = prev.size !== nextVisible.size;
             if (!changed) {
                 for (const item of nextVisible) {
-                    if (!prev.has(item)) {
-                        changed = true;
-                        break;
-                    }
+                    if (!prev.has(item)) { changed = true; break; }
                 }
             }
 
@@ -159,7 +160,7 @@ export default function ConstellationLabels() {
     const zoomFade = clamp01(THREE.MathUtils.mapLinear(camFov, 45, 80, 0.0, 1.0));
 
     return (
-        <group renderOrder={100}>
+        <group ref={groupRef} renderOrder={100}>
             {labels.map(({ name, label, pos, vector }) => {
                 const isFocused = name === focusedConstellation;
                 const isSelected = selectedObject?.name === name;

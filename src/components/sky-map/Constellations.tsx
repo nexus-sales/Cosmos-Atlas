@@ -120,11 +120,11 @@ export default function Constellations() {
 
                 const color = nightMode
                     ? (isFocused ? '#ff4444' : '#441111')
-                    : (isFocused ? '#60a5fa' : '#4a6da0');
+                    : (isFocused ? '#4fd1ff' : '#ffffff');
 
                 const opacity = isFocused
                     ? 1.0 * overallPresence
-                    : 0.25 * overallPresence * nonFocusedVisibility;
+                    : 0.35 * overallPresence * nonFocusedVisibility;
 
                 const lineWidth = isFocused ? 2.8 : 0.9;
 
