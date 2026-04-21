@@ -15,6 +15,7 @@ import type { Planet } from '@/types/celestial';
 const STAR_MAP = new Map(STARS.map((s) => [s.name, s]));
 const PIN_MS = 8000;
 const VISIBILITY_THROTTLE_MS = 180;
+const CONSTELLATION_SYMBOL = '\u2726';
 
 function clamp01(v: number) {
     return Math.max(0, Math.min(1, v));
@@ -34,6 +35,7 @@ export default function ConstellationLabels() {
     const camFov = useAppStore((state) => state.camFov);
     const focusedConstellation = useAppStore((state) => state.focusedConstellation);
     const setFocusedConstellation = useAppStore((state) => state.setFocusedConstellation);
+    const selectedObject = useAppStore((state) => state.selectedObject);
     const setSelectedObject = useAppStore((state) => state.setSelectedObject);
     const setTargetedObject = useAppStore((state) => state.setTargetedObject);
 
@@ -78,7 +80,6 @@ export default function ConstellationLabels() {
         const pinned = pinnedRef.current;
         if (pinned && pinned.until > now) {
             if (pinned.name !== focusedConstellation) setFocusedConstellation(pinned.name);
-            // Keep the pin, but do not collapse visibility to a single label.
         }
         if (pinned && pinned.until <= now) pinnedRef.current = null;
 
@@ -86,13 +87,13 @@ export default function ConstellationLabels() {
             if (hoveredRef.current !== focusedConstellation) {
                 setFocusedConstellation(hoveredRef.current);
             }
-            // Hover should override focus, but not nuke other labels.
         }
 
         const lookDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
 
         let bestName: string | null = null;
-        let bestDot = 0.94; // ~20 deg threshold
+        // Relaxed threshold: ~30 degrees instead of 20
+        let bestDot = 0.86; 
 
         labels.forEach(({ name, vector }) => {
             const dot = lookDir.dot(vector);
@@ -102,48 +103,32 @@ export default function ConstellationLabels() {
             }
         });
 
-        if (bestName !== focusedConstellation) setFocusedConstellation(bestName);
+        if (bestName !== focusedConstellation && !pinnedRef.current && !hoveredRef.current) {
+            setFocusedConstellation(bestName);
+        }
 
-        // Declutter: show only the most relevant labels (closest to center) as you zoom out.
-        // As you zoom in, allow more labels.
-        const maxLabels = Math.round(
-            THREE.MathUtils.clamp(
-                THREE.MathUtils.mapLinear(camFov, 120, 60, 8, 16),
-                8,
-                16
-            )
-        );
-        const dotThreshold = THREE.MathUtils.clamp(
-            THREE.MathUtils.mapLinear(camFov, 120, 40, 0.95, 0.90),
-            0.90,
-            0.98
-        );
-
-        const candidates: Array<{ name: string; dot: number }> = [];
-        labels.forEach(({ name, vector }) => {
-            const dot = lookDir.dot(vector);
-            if (dot >= dotThreshold) candidates.push({ name, dot });
-        });
-        candidates.sort((a, b) => b.dot - a.dot);
-
+        // --- VISIBILITY CALCULATION ---
         const nextVisible = new Set<string>();
-        for (const item of candidates) {
-            nextVisible.add(item.name);
-            if (nextVisible.size >= maxLabels) break;
-        }
-        // Always keep these visible.
-        if (bestName) nextVisible.add(bestName);
-        if (pinned?.name) nextVisible.add(pinned.name);
-        if (hoveredRef.current) nextVisible.add(hoveredRef.current);
 
-        // Safety: if the threshold yields nothing, take the top by dot.
-        if (nextVisible.size === 0) {
-            const ranked = labels
-                .map(({ name, vector }) => ({ name, dot: lookDir.dot(vector) }))
-                .sort((a, b) => b.dot - a.dot)
-                .slice(0, Math.max(6, Math.floor(maxLabels / 2)));
-            ranked.forEach((r) => nextVisible.add(r.name));
+        // 1. Always show the focused one
+        if (focusedConstellation) nextVisible.add(focusedConstellation);
+
+        // 2. Always show the selected one (if it's a constellation)
+        if (selectedObject && CONSTELLATIONS[selectedObject.name]) {
+            nextVisible.add(selectedObject.name);
         }
+
+        // 3. Show nearby labels at wide FOV to allow exploration
+        if (camFov > 70) {
+            const dotThreshold = 0.92;
+            labels.forEach(({ name, vector }) => {
+                const dot = lookDir.dot(vector);
+                if (dot >= dotThreshold) nextVisible.add(name);
+            });
+        }
+
+        // 4. Force at least the best name if we are looking at something
+        if (bestName) nextVisible.add(bestName);
 
         const nowMs = performance.now();
         if (visibleRef.current.size === 0 || nowMs - lastVisibilityUpdateRef.current >= VISIBILITY_THROTTLE_MS) {
@@ -163,19 +148,23 @@ export default function ConstellationLabels() {
     });
 
     const scaleFactor = THREE.MathUtils.mapLinear(camFov, 120, 10, 0.6, 1.35);
-    // Labels appear as you zoom in; at very wide FOV they mostly stay hidden.
-    const zoomPresence = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 120, 70, 0.35, 1.0), 0.2, 1.0);
-    const nonFocusedFade = clamp01(THREE.MathUtils.mapLinear(camFov, 35, 70, 0.0, 1.0));
+    // Labels fade out as you zoom in UNLESS focused/selected
+    const zoomFade = clamp01(THREE.MathUtils.mapLinear(camFov, 45, 80, 0.0, 1.0));
 
     return (
         <group renderOrder={100}>
             {labels.map(({ name, label, pos, vector }) => {
                 const isFocused = name === focusedConstellation;
-                const isVisible = isFocused || visibleRef.current.has(name);
+                const isSelected = selectedObject?.name === name;
+                const isVisible = isFocused || isSelected || visibleRef.current.has(name);
+                
                 if (!isVisible) return null;
 
-                const opacity = isFocused ? 1.0 : 0.82 * nonFocusedFade * zoomPresence;
-                if (opacity < 0.01 && !isFocused) return null;
+                // Priority: focused/selected are always fully opaque.
+                // Others fade out as we zoom in (declutter).
+                const opacity = (isFocused || isSelected) ? 1.0 : 0.8 * zoomFade;
+                
+                if (opacity < 0.01) return null;
 
                 return (
                     <Html
@@ -198,7 +187,6 @@ export default function ConstellationLabels() {
                                 const { ra, dec } = vectorToRaDec(vector);
                                 const display = getConstellationDisplayName(name);
 
-                                // Select + target so the camera flies to the constellation center and the IA reacts.
                                 const constellationTarget = {
                                     name,
                                     ra,
@@ -206,7 +194,7 @@ export default function ConstellationLabels() {
                                     desc: `La constelacion de ${display}.`,
                                     color: '#60a5fa',
                                     mag: 0,
-                                    symbol: '\u2726',
+                                    symbol: CONSTELLATION_SYMBOL,
                                     kind: 'planet',
                                 } satisfies Planet;
 
@@ -216,19 +204,19 @@ export default function ConstellationLabels() {
                             className={cn(
                                 'flex flex-col items-center pointer-events-auto cursor-pointer select-none',
                                 'transition-all duration-500 transform-gpu',
-                                isFocused ? 'scale-105' : 'scale-90'
+                                (isFocused || isSelected) ? 'scale-105' : 'scale-90'
                             )}
                             style={{
                                 opacity,
-                                transform: `scale(${scaleFactor * (isFocused ? 1.0 : 0.92)})`,
-                                transition: 'opacity 0.4s ease',
+                                transform: `scale(${scaleFactor * ((isFocused || isSelected) ? 1.0 : 0.92)})`,
+                                transition: 'opacity 0.4s, transform 0.4s ease',
                             }}
                         >
                             <div
                                 className={cn(
-                                    'w-1 h-1 rounded-full mb-1.5 transition-all duration-500',
-                                    isFocused
-                                        ? (nightMode ? 'bg-red-400 shadow-[0_0_8px_#ff4444]' : 'bg-blue-400 shadow-[0_0_8px_#3b82f6]')
+                                    'w-1.5 h-1.5 rounded-full mb-1.5 transition-all duration-500',
+                                    (isFocused || isSelected)
+                                        ? (nightMode ? 'bg-red-400 shadow-[0_0_10px_#ff4444]' : 'bg-blue-400 shadow-[0_0_10px_#3b82f6]')
                                         : 'bg-white/40'
                                 )}
                             />
@@ -237,9 +225,9 @@ export default function ConstellationLabels() {
                                 className={cn(
                                     'px-4 py-1.5 rounded-full text-[12px] font-black tracking-widest whitespace-nowrap',
                                     'transition-all duration-500 border-2',
-                                    isFocused
+                                    (isFocused || isSelected)
                                         ? (nightMode
-                                            ? 'text-red-400 bg-red-950/90 border-red-500/80'
+                                            ? 'text-red-400 bg-red-950/90 border-red-500/80 shadow-[0_0_20px_rgba(248,113,113,0.4)]'
                                             : 'text-white bg-blue-700/80 border-blue-300 shadow-[0_0_30px_rgba(59,130,246,0.5)]')
                                         : (nightMode
                                             ? 'text-red-900 bg-black/60 border-red-900/40'
@@ -255,3 +243,4 @@ export default function ConstellationLabels() {
         </group>
     );
 }
+

@@ -22,6 +22,7 @@ function smoothPolyline(points: Point3[], closed: boolean) {
 export default function ConstellationArt() {
     const showConstellationArt = useAppStore((state) => state.settings.showConstellationArt);
     const focusedConstellation = useAppStore((state) => state.focusedConstellation);
+    const selectedObject = useAppStore((state) => state.selectedObject);
     const nightMode = useAppStore((state) => state.settings.nightMode);
     const kidsMode = useAppStore((state) => state.settings.kidsMode);
     const camFov = useAppStore((state) => state.camFov);
@@ -48,7 +49,8 @@ export default function ConstellationArt() {
     // Auto behavior: if the user zooms in and a constellation is focused, show only that figure.
     // Auto: show line-art mythology for the focused constellation when you zoom in,
     // even if the toggle is off. Threshold is intentionally not extreme.
-    const autoFigure = !showConstellationArt && !!focusedConstellation && camFov <= 60;
+    const activeConstellation = focusedConstellation || (selectedObject && CONSTELLATION_ART.some(a => a.name === selectedObject.name) ? selectedObject.name : null);
+    const autoFigure = !showConstellationArt && !!activeConstellation && camFov <= 60;
     const shouldRender = showConstellationArt || autoFigure;
     if (!shouldRender) return null;
 
@@ -60,7 +62,7 @@ export default function ConstellationArt() {
     return (
         <group renderOrder={2}>
             {figures.map(({ name, polylines, fillOutlines }) => {
-                const isFocused = name === focusedConstellation;
+                const isFocused = name === activeConstellation;
                 if (autoFigure && !isFocused) return null;
 
                 const color = nightMode

@@ -31,6 +31,7 @@ export default function Constellations() {
     const nightMode = useAppStore((state) => state.settings.nightMode);
     const camFov = useAppStore((state) => state.camFov);
     const focusedConstellation = useAppStore((state) => state.focusedConstellation);
+    const selectedObject = useAppStore((state) => state.selectedObject);
     const RADIUS = 92;
     const [drawT, setDrawT] = useState(1);
     const rafRef = useRef<number | null>(null);
@@ -102,12 +103,12 @@ export default function Constellations() {
     // Never go to zero: at wide FOV we still want the stick figures visible.
     const overallPresence = THREE.MathUtils.clamp(
         THREE.MathUtils.mapLinear(camFov, 120, 60, 0.35, 1.0),
-        0.25,
+        0.30,
         1.0
     );
 
     const nonFocusedVisibility = THREE.MathUtils.clamp(
-        THREE.MathUtils.mapLinear(camFov, 35, 70, 0.0, 1.0),
+        THREE.MathUtils.mapLinear(camFov, 25, 75, 0.0, 1.0),
         0.0,
         1.0
     );
@@ -115,17 +116,17 @@ export default function Constellations() {
     return (
         <group renderOrder={3}>
             {constellationsData.map(({ name, pointsList }) => {
-                const isFocused = name === focusedConstellation;
+                const isFocused = name === focusedConstellation || selectedObject?.name === name;
 
                 const color = nightMode
-                    ? (isFocused ? '#ff3333' : '#441111')
-                    : (isFocused ? '#ffffff' : '#4a6da0');
+                    ? (isFocused ? '#ff4444' : '#441111')
+                    : (isFocused ? '#60a5fa' : '#4a6da0');
 
                 const opacity = isFocused
-                    ? 0.9 * overallPresence
+                    ? 1.0 * overallPresence
                     : 0.15 * overallPresence * nonFocusedVisibility;
 
-                const lineWidth = isFocused ? 2.2 : 0.8;
+                const lineWidth = isFocused ? 2.8 : 0.8;
 
                 if (opacity < 0.01) return null;
 
@@ -158,16 +159,26 @@ export default function Constellations() {
                 return (
                     <group key={name}>
                         {isFocused && pointsToRender.map((points, i) => (
-                            <Line
-                                key={`glow-${i}`}
-                                points={points}
-                                color={color}
-                                lineWidth={lineWidth * 6}
-                                transparent
-                                opacity={0.15}
-                                depthTest={false}
-                                depthWrite={false}
-                            />
+                            <group key={`glow-layers-${i}`}>
+                                <Line
+                                    points={points}
+                                    color={color}
+                                    lineWidth={lineWidth * 8}
+                                    transparent
+                                    opacity={0.12 * overallPresence}
+                                    depthTest={false}
+                                    depthWrite={false}
+                                />
+                                <Line
+                                    points={points}
+                                    color={color}
+                                    lineWidth={lineWidth * 4}
+                                    transparent
+                                    opacity={0.25 * overallPresence}
+                                    depthTest={false}
+                                    depthWrite={false}
+                                />
+                            </group>
                         ))}
 
                         {pointsToRender.map((points, i) => (
