@@ -166,18 +166,23 @@ export default function AIAstronoma() {
     // Reaccionar a cambios de selección, objetivos o enfoque de constelaciones
     useEffect(() => {
         // Prioridad 1: Mensajes globales (Logros, Bienvenida, etc.)
+        // Los consumimos inmediatamente para no bloquear el flujo de narración normal
         if (globalAiMessage) {
-            setMessage(globalAiMessage);
+            const msg = globalAiMessage;
+            setAiMessage(''); // Limpiar el store inmediatamente para permitir interrupciones
+            
+            setMessage(msg);
             setShowBubble(true);
-            speak(globalAiMessage);
+            speak(msg);
+            
+            // Reset de la memoria de narración para que al terminar el logro 
+            // se pueda volver a narrar el objeto actual si se desea
+            lastMessageRef.current = '';
 
-            // Auto-limpieza de mensajes globales para que no se queden fijos
-            // Calculamos duración: mínimo 8s, o proporcional a la longitud (aprox 15 chars/seg)
-            const duration = Math.max(8000, (globalAiMessage.length / 15) * 1000);
+            // Auto-limpieza local de la burbuja
+            const duration = Math.max(8000, (msg.length / 15) * 1000);
             const timer = setTimeout(() => {
                 setShowBubble(false);
-                // Esperamos a que termine la animación de salida para limpiar el estado global
-                setTimeout(() => setAiMessage(''), 500);
             }, duration);
 
             return () => clearTimeout(timer);
@@ -214,13 +219,14 @@ export default function AIAstronoma() {
                 speak(newIntro);
             }, 1000);
             return () => clearTimeout(timer);
-        } else if (!newIntro) {
+        } else if (!newIntro && lastMessageRef.current) {
+            // Si no hay nada que narrar pero antes había algo, limpiamos tras un breve delay
             const timer = setTimeout(() => {
                 setShowBubble(false);
                 lastMessageRef.current = '';
                 synthRef.current?.cancel();
                 setIsSpeaking(false);
-            }, 0);
+            }, 500);
             return () => clearTimeout(timer);
         }
     }, [selected, targetedObject, focusedConstellation, muted, speak, kidsMode, globalAiMessage, setAiMessage]);
