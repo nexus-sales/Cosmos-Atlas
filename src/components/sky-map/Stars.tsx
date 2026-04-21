@@ -70,11 +70,11 @@ const starFragmentShader = `
     }
 
     // Realistic core and subtle halo, NO SPIKES
-    float core = exp(-r * 8.0) * 1.5;
-    float halo = exp(-r * 12.0) * 0.2;
+    float core = exp(-r * 18.0) * 1.8;
+    float halo = exp(-r * 25.0) * 0.1;
 
     float finalAlpha = (core + halo) * vOpacity;
-    vec3 finalColor = mix(baseColor, vec3(1.0), core * 0.4);
+    vec3 finalColor = mix(baseColor, vec3(1.0), core * 0.5);
 
     gl_FragColor = vec4(finalColor, clamp(finalAlpha, 0.0, 1.0));
   }
@@ -102,6 +102,7 @@ function DynamicStarLabels({
 }) {
     const camFov   = useAppStore(s => s.camFov);
     const nightMode = useAppStore(s => s.settings.nightMode);
+    const focusedConstellation = useAppStore(s => s.focusedConstellation);
 
     const overallOpacity = THREE.MathUtils.clamp(
         THREE.MathUtils.mapLinear(camFov, 80, 50, 0, 1), 0.1, 1
@@ -110,14 +111,18 @@ function DynamicStarLabels({
     return (
         <group renderOrder={50}>
             {visibleStars.map((star, i) => {
-                const magThreshold = THREE.MathUtils.mapLinear(camFov, 75, 20, 1.2, 5.0);
+                const isFromFocused = focusedConstellation === star.constellation;
+                // Boost mag threshold for focused stars so labels appear earlier
+                const baseThreshold = THREE.MathUtils.mapLinear(camFov, 75, 20, 1.2, 5.0);
+                const magThreshold = isFromFocused ? Math.max(6.0, baseThreshold + 3.0) : baseThreshold;
+                
                 if (star.mag > magThreshold) return null;
 
                 const pos     = starPositions[i];
-                const color   = nightMode ? '#ff4444' : '#e0e8ff';
+                const color   = nightMode ? '#ff4444' : (isFromFocused ? '#ffffff' : '#e0e8ff');
                 const opacity = THREE.MathUtils.clamp(
                     THREE.MathUtils.mapLinear(magThreshold - star.mag, 0, 1.0, 0, 1), 0, 1
-                ) * overallOpacity;
+                ) * (isFromFocused ? 1.0 : overallOpacity);
 
                 return (
                     <Html key={star.name} position={pos} center distanceFactor={15} zIndexRange={[150, 50]}>
@@ -142,12 +147,13 @@ export default function Stars() {
     const bortleScale = useAppStore(s => s.settings.bortleScale);
     const nightMode   = useAppStore(s => s.settings.nightMode);
     const camFov      = useAppStore(s => s.camFov);
+    const focusedConstellation = useAppStore(s => s.focusedConstellation);
     const setSelectedObject = useAppStore(s => s.setSelectedObject);
     const { raycaster } = useThree();
 
     // Zona de fade: 0.8 mag por encima del límite las estrellas empiezan a desaparecer
     const FADE_RANGE = 0.8;
-    const limitingMag = 8.0 - (bortleScale - 1) * 0.55;
+    const limitingMag = 9.5 - (bortleScale - 1) * 0.55;
 
     // Estado del tooltip hover — una sola instancia para toda la nube de puntos
     const [hovered, setHovered] = useState<{
@@ -187,7 +193,14 @@ export default function Stars() {
             const fadeFactor = star.mag > (limitingMag - FADE_RANGE)
                 ? Math.max(0, (limitingMag - star.mag) / FADE_RANGE)
                 : 1.0;
-            sz[i]          = (0.8 + Math.pow(normB, 0.4) * 7.0) * fadeFactor;
+            
+            // Highlight stars of the focused constellation (subtle floor)
+            const isFromFocused = focusedConstellation === star.constellation;
+            const focusBoost = isFromFocused ? 1.8 : 1.0;
+            
+            const baseSize = (0.5 + Math.pow(normB, 0.4) * 4.5) * fadeFactor;
+            sz[i] = isFromFocused ? Math.max(3.2, baseSize * focusBoost) : baseSize;
+            
             distFactArr[i] = Math.min(1.0, Math.max(0.0, (star.mag + 1.5) / 7.5));
         });
 
@@ -213,7 +226,7 @@ export default function Stars() {
         });
 
         return [geom, mat, filteredStars, positions3D];
-    }, [limitingMag]);
+    }, [limitingMag, focusedConstellation]);
 
     useFrame((state) => {
         const mat     = material as THREE.ShaderMaterial;

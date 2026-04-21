@@ -71,10 +71,10 @@ const fragmentShader = `
         baseColor = vec3(lum * 1.8, 0.0, 0.0);
     }
 
-    float core = exp(-r * 9.0) * 1.2;
-    float halo = exp(-r * 15.0) * 0.1;
+    float core = exp(-r * 18.0) * 1.5;
+    float halo = exp(-r * 25.0) * 0.1;
     float finalAlpha = (core + halo) * vOpacity;
-    vec3 finalColor = mix(baseColor, vec3(1.0), core * 0.3);
+    vec3 finalColor = mix(baseColor, vec3(1.0), core * 0.4);
 
     gl_FragColor = vec4(finalColor, clamp(finalAlpha, 0.0, 1.0));
   }
@@ -123,7 +123,7 @@ export default function HipparcosStars() {
 
             const brightness = Math.pow(2.512, refMag - s.mag);
             const normB      = Math.min(1.0, brightness);
-            sz[i]            = 0.5 + Math.pow(normB, 0.45) * 5.5;
+            sz[i]            = 0.4 + Math.pow(normB, 0.45) * 4.2;
             mags[i]          = s.mag;
             dFac[i]          = Math.min(1.0, Math.max(0.0, (s.mag + 1.5) / 8.5));
         }
@@ -166,8 +166,8 @@ export default function HipparcosStars() {
         const visibleIndices: number[] = [];
         octree.search(frustum, visibleIndices);
 
-        const limitingMag = 8.0 - (bortleScale - 1) * 0.55;
-        const FADE_RANGE  = 0.8; // mag: zona de transición suave
+        const limitingMag = 10.5 - (bortleScale - 1) * 0.65;
+        const FADE_RANGE  = 1.2; // mag: zona de transición suave
 
         const posAttr  = geometry.getAttribute('position')       as THREE.BufferAttribute;
         const colAttr  = geometry.getAttribute('color')          as THREE.BufferAttribute;
