@@ -46,13 +46,15 @@ export default function ConstellationArt() {
     }, []);
 
     // Auto behavior: if the user zooms in and a constellation is focused, show only that figure.
-    const autoFigure = !showConstellationArt && !!focusedConstellation && camFov <= 32;
+    // Auto: show line-art mythology for the focused constellation when you zoom in,
+    // even if the toggle is off. Threshold is intentionally not extreme.
+    const autoFigure = !showConstellationArt && !!focusedConstellation && camFov <= 60;
     const shouldRender = showConstellationArt || autoFigure;
     if (!shouldRender) return null;
 
     // Fade-in for the auto mode so it doesn't pop on/off.
     const autoPresence = autoFigure
-        ? THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 40, 24, 0.0, 1.0), 0.0, 1.0)
+        ? THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 70, 35, 0.0, 1.0), 0.0, 1.0)
         : 1.0;
 
     return (
@@ -131,4 +133,3 @@ export default function ConstellationArt() {
         </group>
     );
 }
-

@@ -55,7 +55,9 @@ export default function Constellations() {
         });
     }, []);
 
-    const shouldAnimateDraw = !!focusedConstellation && camFov <= 55;
+    // Animate when the focused constellation changes (usually via click/pin).
+    // Do not tie restart to FOV or it will feel broken while zooming.
+    const shouldAnimateDraw = !!focusedConstellation;
 
     useEffect(() => {
         if (rafRef.current != null) {
@@ -72,7 +74,7 @@ export default function Constellations() {
             return () => clearTimeout(timer);
         }
 
-        const key = `${focusedConstellation ?? ''}:${Math.round(camFov)}`;
+        const key = `${focusedConstellation ?? ''}`;
         if (key === lastKeyRef.current) return;
         lastKeyRef.current = key;
 
@@ -97,9 +99,10 @@ export default function Constellations() {
 
     if (!showLines) return null;
 
+    // Never go to zero: at wide FOV we still want the stick figures visible.
     const overallPresence = THREE.MathUtils.clamp(
-        THREE.MathUtils.mapLinear(camFov, 95, 55, 0.0, 1.0),
-        0.0,
+        THREE.MathUtils.mapLinear(camFov, 120, 60, 0.35, 1.0),
+        0.25,
         1.0
     );
 

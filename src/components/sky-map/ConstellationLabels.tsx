@@ -78,12 +78,7 @@ export default function ConstellationLabels() {
         const pinned = pinnedRef.current;
         if (pinned && pinned.until > now) {
             if (pinned.name !== focusedConstellation) setFocusedConstellation(pinned.name);
-            // Keep the pinned label visible.
-            if (!visibleRef.current.has(pinned.name)) {
-                visibleRef.current = new Set([pinned.name]);
-                forceRender((v) => v + 1);
-            }
-            return;
+            // Keep the pin, but do not collapse visibility to a single label.
         }
         if (pinned && pinned.until <= now) pinnedRef.current = null;
 
@@ -91,12 +86,7 @@ export default function ConstellationLabels() {
             if (hoveredRef.current !== focusedConstellation) {
                 setFocusedConstellation(hoveredRef.current);
             }
-            // Keep hovered label visible even if we are culling.
-            if (!visibleRef.current.has(hoveredRef.current)) {
-                visibleRef.current = new Set([hoveredRef.current]);
-                forceRender((v) => v + 1);
-            }
-            return;
+            // Hover should override focus, but not nuke other labels.
         }
 
         const lookDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
@@ -118,13 +108,13 @@ export default function ConstellationLabels() {
         // As you zoom in, allow more labels.
         const maxLabels = Math.round(
             THREE.MathUtils.clamp(
-                THREE.MathUtils.mapLinear(camFov, 120, 60, 4, 12),
-                4,
-                12
+                THREE.MathUtils.mapLinear(camFov, 120, 60, 8, 16),
+                8,
+                16
             )
         );
         const dotThreshold = THREE.MathUtils.clamp(
-            THREE.MathUtils.mapLinear(camFov, 120, 40, 0.975, 0.92),
+            THREE.MathUtils.mapLinear(camFov, 120, 40, 0.95, 0.90),
             0.90,
             0.98
         );
@@ -141,10 +131,22 @@ export default function ConstellationLabels() {
             nextVisible.add(item.name);
             if (nextVisible.size >= maxLabels) break;
         }
+        // Always keep these visible.
         if (bestName) nextVisible.add(bestName);
+        if (pinned?.name) nextVisible.add(pinned.name);
+        if (hoveredRef.current) nextVisible.add(hoveredRef.current);
+
+        // Safety: if the threshold yields nothing, take the top by dot.
+        if (nextVisible.size === 0) {
+            const ranked = labels
+                .map(({ name, vector }) => ({ name, dot: lookDir.dot(vector) }))
+                .sort((a, b) => b.dot - a.dot)
+                .slice(0, Math.max(6, Math.floor(maxLabels / 2)));
+            ranked.forEach((r) => nextVisible.add(r.name));
+        }
 
         const nowMs = performance.now();
-        if (nowMs - lastVisibilityUpdateRef.current >= VISIBILITY_THROTTLE_MS) {
+        if (visibleRef.current.size === 0 || nowMs - lastVisibilityUpdateRef.current >= VISIBILITY_THROTTLE_MS) {
             const prev = visibleRef.current;
             let changed = prev.size !== nextVisible.size;
             if (!changed) {
@@ -162,7 +164,7 @@ export default function ConstellationLabels() {
 
     const scaleFactor = THREE.MathUtils.mapLinear(camFov, 120, 10, 0.6, 1.35);
     // Labels appear as you zoom in; at very wide FOV they mostly stay hidden.
-    const zoomPresence = clamp01(THREE.MathUtils.mapLinear(camFov, 120, 65, 0.0, 1.0));
+    const zoomPresence = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 120, 70, 0.35, 1.0), 0.2, 1.0);
     const nonFocusedFade = clamp01(THREE.MathUtils.mapLinear(camFov, 35, 70, 0.0, 1.0));
 
     return (
