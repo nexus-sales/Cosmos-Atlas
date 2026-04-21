@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Line } from '@react-three/drei';
 import { CONSTELLATIONS } from '@/data/constellations';
@@ -32,6 +32,9 @@ export default function Constellations() {
     const camFov = useAppStore((state) => state.camFov);
     const focusedConstellation = useAppStore((state) => state.focusedConstellation);
     const RADIUS = 92;
+    const [drawT, setDrawT] = useState(1);
+    const rafRef = useRef<number | null>(null);
+    const lastKeyRef = useRef<string>('');
 
     const constellationsData = useMemo(() => {
         const starMap = new Map<string, (typeof STARS)[number]>();
@@ -52,6 +55,46 @@ export default function Constellations() {
         });
     }, []);
 
+    const shouldAnimateDraw = !!focusedConstellation && camFov <= 55;
+
+    useEffect(() => {
+        if (rafRef.current != null) {
+            cancelAnimationFrame(rafRef.current);
+            rafRef.current = null;
+        }
+
+        if (!shouldAnimateDraw) {
+            // Defer state update to avoid setState-in-effect lint.
+            const timer = setTimeout(() => {
+                setDrawT(1);
+                lastKeyRef.current = '';
+            }, 0);
+            return () => clearTimeout(timer);
+        }
+
+        const key = `${focusedConstellation ?? ''}:${Math.round(camFov)}`;
+        if (key === lastKeyRef.current) return;
+        lastKeyRef.current = key;
+
+        const kick = setTimeout(() => setDrawT(0), 0);
+        const start = performance.now();
+        const durationMs = 650;
+
+        const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+        const tick = (now: number) => {
+            const t = Math.min(1, (now - start) / durationMs);
+            setDrawT(easeOutCubic(t));
+            if (t < 1) rafRef.current = requestAnimationFrame(tick);
+        };
+
+        rafRef.current = requestAnimationFrame(tick);
+        return () => {
+            clearTimeout(kick);
+            if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+            rafRef.current = null;
+        };
+    }, [focusedConstellation, camFov, shouldAnimateDraw]);
+
     if (!showLines) return null;
 
     const overallPresence = THREE.MathUtils.clamp(
@@ -62,12 +105,6 @@ export default function Constellations() {
 
     const nonFocusedVisibility = THREE.MathUtils.clamp(
         THREE.MathUtils.mapLinear(camFov, 35, 70, 0.0, 1.0),
-        0.0,
-        1.0
-    );
-
-    const focusedDrawProgress = THREE.MathUtils.clamp(
-        THREE.MathUtils.mapLinear(camFov, 55, 20, 0.0, 1.0),
         0.0,
         1.0
     );
@@ -91,9 +128,11 @@ export default function Constellations() {
 
                 let pointsToRender: Point3[][] = pointsList;
 
-                if (isFocused && pointsList.length > 0) {
+                // Important: never hide the focused constellation at wide FOV.
+                // The draw-in effect only activates when zoomed in.
+                if (isFocused && shouldAnimateDraw && pointsList.length > 0) {
                     const segmentCount = pointsList.length;
-                    const rawSegments = focusedDrawProgress * segmentCount;
+                    const rawSegments = THREE.MathUtils.clamp(drawT, 0, 1) * segmentCount;
                     const fullSegments = Math.floor(rawSegments);
                     const partialT = rawSegments - fullSegments;
 
@@ -108,6 +147,9 @@ export default function Constellations() {
                             })()
                             : []),
                     ];
+
+                    // Always show at least something while animating.
+                    if (pointsToRender.length === 0) pointsToRender = [pointsList[0]];
                 }
 
                 return (
@@ -143,4 +185,3 @@ export default function Constellations() {
         </group>
     );
 }
-
