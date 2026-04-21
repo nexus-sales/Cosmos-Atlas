@@ -55,7 +55,11 @@ function Clock() {
     );
 }
 
-export default function Header() {
+interface HeaderProps {
+    onRequestLocation: () => void;
+}
+
+export default function Header({ onRequestLocation }: HeaderProps) {
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const observer = useAppStore((state) => state.observer);
     const geolocation = useAppStore((state) => state.geolocation);
@@ -149,6 +153,14 @@ export default function Header() {
                                 ? `Fallback ${Math.abs(observer.lat).toFixed(1)}deg${latHemisphere}`
                                 : 'Ubicacion aproximada'}
                     </div>
+                    {!hasPreciseLocation && geolocation.status !== 'denied' && (
+                        <button
+                            onClick={onRequestLocation}
+                            className="mt-1 text-[9px] font-bold uppercase tracking-[0.16em] text-cyan-300/75 hover:text-cyan-200"
+                        >
+                            Activar GPS
+                        </button>
+                    )}
                 </div>
 
                 <div
@@ -171,7 +183,14 @@ export default function Header() {
                             : 'text-amber-300/80 border-amber-400/30 bg-amber-500/10'
                     )}
                 >
-                    {mobileLocationLabel}
+                    <button
+                        onClick={!hasPreciseLocation && geolocation.status !== 'denied' ? onRequestLocation : undefined}
+                        disabled={hasPreciseLocation || geolocation.status === 'denied'}
+                        className="disabled:cursor-default"
+                        title={hasPreciseLocation ? 'GPS activo' : 'Activar ubicacion precisa'}
+                    >
+                        {mobileLocationLabel}
+                    </button>
                 </div>
 
                 <div

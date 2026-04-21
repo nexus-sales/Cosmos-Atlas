@@ -1,5 +1,20 @@
 # Cosmos Atlas
 
+## Auditoria extrema 2026-04-21
+
+Esta ronda deja Cosmos Atlas mas cerca de una app de astronomia seria, no una demo: IA astronomica real opcional, modo local sin coste, privacidad de ubicacion, endpoints protegidos, calculos de visibilidad y verificacion completa.
+
+- **IA Astronoma profesional** - `AIAstronoma` genera briefings con altitud, acimut, magnitud, Bortle, contexto fisico, consejos de observacion y ventana aproximada de salida/transito/puesta.
+- **Doble modo de asistente** - Selector `IA real` / `Local`. OpenAI se usa solo desde el servidor; el modo local permite seguir usando la app si hay limite, cortes o se quiere ahorrar credito.
+- **Endpoint `/api/astronomer`** - Ruta server-side con `OPENAI_API_KEY`, `OPENAI_MODEL`, `store:false`, timeout, fallback local, `Cache-Control: no-store`, sanitizacion de contexto, limite de payload y rate limit en memoria.
+- **Eventos de visibilidad** - Nuevo modulo `visibilityEvents.ts` para estimar salida, transito y puesta de objetos con RA/Dec, cubierto con tests unitarios.
+- **Privacidad GPS** - La app ya no pide ubicacion precisa automaticamente si el permiso no estaba concedido. Arranca con ubicacion manual/fallback y deja activar GPS desde la cabecera.
+- **Alertas de sistema refinadas** - Se distinguen ubicacion manual, fallback por error, GPS bloqueado, GPS impreciso y estado AR.
+- **Historial SIMBAD endurecido** - El historial en `localStorage` valida forma, RA/Dec, color, tamano, duplicados y limite de bytes antes de rehidratar objetos.
+- **Seguridad HTTP** - Headers reforzados: `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Cross-Origin-Opener-Policy`, `Permissions-Policy`, HSTS en produccion y CSP en modo `Report-Only`.
+- **Dependencias y auditoria** - Next.js actualizado a `16.2.4`; auditoria de produccion queda en `0` vulnerabilidades.
+- **Verificacion** - Ultima tanda validada con `npm run lint`, `npm run test`, `npm run build` y `npm audit --omit=dev --json`.
+
 Planetario interactivo en tiempo real renderizado en 3D en el navegador.
 Muestra una bóveda celeste precisa a tu posición geográfica y hora actual,
 con estrellas, constelaciones, planetas, objetos de cielo profundo, Vía Láctea y satélites.
@@ -85,7 +100,7 @@ Totalmente responsive e instalable como PWA.
 
 | Tecnología | Versión | Uso |
 |---|---|---|
-| Next.js | 16.1.6 | Framework principal (App Router) |
+| Next.js | 16.2.4 | Framework principal (App Router) |
 | React | 19.2.3 | UI |
 | TypeScript | — | Tipado estático |
 | React Three Fiber | ^9.5.0 | Renderizado 3D en canvas |
@@ -112,7 +127,7 @@ npm install
 npm run dev
 ```
 
-Abre <http://localhost:3000> en el navegador.
+Abre <http://localhost:5174> en el navegador.
 
 ```bash
 # Build de producción

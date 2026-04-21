@@ -31,7 +31,7 @@ export default function Home() {
   const setSidebarOpen = useAppStore((state) => state.setSidebarOpen);
   const nightMode = useAppStore((state) => state.settings.nightMode);
   const setDeviceQuality = useAppStore((state) => state.setDeviceQuality);
-  useGeolocation();
+  const { requestLocation } = useGeolocation();
 
   // Detectar tier de GPU/CPU una sola vez al montar
   useEffect(() => {
@@ -54,7 +54,7 @@ export default function Home() {
         
         {/* Header con padding superior para Notch */}
         <div className="pointer-events-auto" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-          <Header />
+          <Header onRequestLocation={requestLocation} />
         </div>
 
         <div className="flex flex-1 overflow-hidden relative">

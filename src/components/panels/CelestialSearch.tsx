@@ -21,6 +21,10 @@ const PLANET_CATALOG: { name: string; body: Astronomy.Body; color: string; desc:
     { name: 'Sol',      body: Astronomy.Body.Sun,     color: '#fff5a0', desc: 'Nuestra estrella.' },
 ];
 
+const SEARCH_HISTORY_KEY = 'cosmos-search-history';
+const MAX_HISTORY_ITEMS = 5;
+const MAX_HISTORY_BYTES = 10_000;
+
 function getPlanetPosition(body: Astronomy.Body): { ra: number; dec: number } {
     const time = Astronomy.MakeTime(new Date());
     const vec = Astronomy.GeoVector(body, time, true);
@@ -44,6 +48,41 @@ interface SearchResult {
     kind?: 'star' | 'dso' | 'planet';
 }
 
+function sanitizeHistoryItem(value: unknown): StarType | null {
+    if (!value || typeof value !== 'object') return null;
+    const item = value as Partial<StarType>;
+    if (typeof item.name !== 'string' || item.name.trim().length < 1 || item.name.length > 120) return null;
+    if (typeof item.ra !== 'number' || !Number.isFinite(item.ra) || item.ra < 0 || item.ra >= 360) return null;
+    if (typeof item.dec !== 'number' || !Number.isFinite(item.dec) || item.dec < -90 || item.dec > 90) return null;
+
+    return {
+        name: item.name.trim(),
+        ra: item.ra,
+        dec: item.dec,
+        mag: typeof item.mag === 'number' && Number.isFinite(item.mag) ? item.mag : 10,
+        constellation: typeof item.constellation === 'string' ? item.constellation.slice(0, 120) : 'SIMBAD',
+        color: typeof item.color === 'string' && /^#[0-9a-f]{6}$/i.test(item.color) ? item.color : '#00f2ff',
+        desc: typeof item.desc === 'string' ? item.desc.slice(0, 240) : 'Objeto recuperado desde historial local.',
+        baseSize: typeof item.baseSize === 'number' && Number.isFinite(item.baseSize) ? item.baseSize : 1,
+    };
+}
+
+function loadSearchHistory(): StarType[] {
+    const saved = localStorage.getItem(SEARCH_HISTORY_KEY);
+    if (!saved || saved.length > MAX_HISTORY_BYTES) return [];
+    const parsed = JSON.parse(saved);
+    if (!Array.isArray(parsed)) return [];
+
+    const unique = new Map<string, StarType>();
+    for (const rawItem of parsed) {
+        const item = sanitizeHistoryItem(rawItem);
+        if (!item || unique.has(item.name)) continue;
+        unique.set(item.name, item);
+        if (unique.size >= MAX_HISTORY_ITEMS) break;
+    }
+    return [...unique.values()];
+}
+
 export default function CelestialSearch() {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<SearchResult[]>([]);
@@ -56,28 +95,28 @@ export default function CelestialSearch() {
     const addSimbadObject = useAppStore((state) => state.addSimbadObject);
 
     useEffect(() => {
-        const saved = localStorage.getItem('cosmos-search-history');
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                setHistory(parsed);
-                parsed.forEach((obj: StarType) => addSimbadObject(obj));
-            } catch (e) {
-                console.error('Error loading history', e);
-            }
+        try {
+            const parsed = loadSearchHistory();
+            setHistory(parsed);
+            parsed.forEach((obj) => addSimbadObject(obj));
+        } catch (e) {
+            console.error('Error loading history', e);
+            localStorage.removeItem(SEARCH_HISTORY_KEY);
         }
     }, [addSimbadObject]);
 
     const saveToHistory = (obj: StarType) => {
-        const newHistory = [obj, ...history.filter(h => h.name !== obj.name)].slice(0, 5);
+        const safeObject = sanitizeHistoryItem(obj);
+        if (!safeObject) return;
+        const newHistory = [safeObject, ...history.filter(h => h.name !== safeObject.name)].slice(0, MAX_HISTORY_ITEMS);
         setHistory(newHistory);
-        localStorage.setItem('cosmos-search-history', JSON.stringify(newHistory));
+        localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(newHistory));
     };
 
     const clearHistory = (e: React.MouseEvent) => {
         e.stopPropagation();
         setHistory([]);
-        localStorage.removeItem('cosmos-search-history');
+        localStorage.removeItem(SEARCH_HISTORY_KEY);
     };
 
     useEffect(() => {

@@ -49,7 +49,7 @@ export default function SystemAlerts() {
                 id: `render-error-${latest.label}`,
                 tone: 'critical',
                 title: `Fallo en ${latest.label}`,
-                detail: latest.message || 'Se desactivó un módulo para mantener la sesión estable.',
+                detail: latest.message || 'Se desactivo un modulo para mantener la sesion estable.',
                 icon: AlertTriangle,
             });
         }
@@ -59,15 +59,17 @@ export default function SystemAlerts() {
                 id: 'gps-denied',
                 tone: 'critical',
                 title: 'GPS bloqueado',
-                detail: 'La posicion usa fallback. Activa ubicacion precisa para alinear el cielo real.',
+                detail: 'La posicion usa fallback. Activa ubicacion precisa en el navegador para alinear el cielo real.',
                 icon: MapPinned,
             });
         } else if (geolocation.source === 'fallback') {
             nextAlerts.push({
                 id: 'gps-fallback',
-                tone: 'warning',
-                title: 'Ubicacion fallback',
-                detail: `Mostrando cielo para ${observer.lat.toFixed(1)}°, ${observer.lon.toFixed(1)}°. Polaris cambiara de altura hasta que entre tu GPS real.`,
+                tone: geolocation.status === 'idle' ? 'ok' : 'warning',
+                title: geolocation.status === 'idle' ? 'Ubicacion manual' : 'Ubicacion fallback',
+                detail: geolocation.status === 'idle'
+                    ? `Cielo calculado para ${observer.lat.toFixed(1)} deg, ${observer.lon.toFixed(1)} deg. Activa GPS solo si quieres alinear con tu posicion real.`
+                    : `Mostrando cielo para ${observer.lat.toFixed(1)} deg, ${observer.lon.toFixed(1)} deg. Polaris cambiara de altura hasta que entre tu GPS real.`,
                 icon: MapPinned,
             });
         } else if (geolocation.status === 'granted' && (geolocation.accuracyM ?? Infinity) > 1200) {
@@ -94,7 +96,7 @@ export default function SystemAlerts() {
                     id: 'ar-drift',
                     tone: arSummary.score != null && arSummary.score < 45 ? 'critical' : 'warning',
                     title: 'Deriva magnetica',
-                    detail: `Jitter ${Math.round(deviceOrientationRef.headingJitter)}deg. Recalibra lejos de metal para recuperar precision.`,
+                    detail: `Jitter ${Math.round(deviceOrientationRef.headingJitter)} deg. Recalibra lejos de metal para recuperar precision.`,
                     icon: AlertTriangle,
                 });
             } else {
@@ -102,7 +104,7 @@ export default function SystemAlerts() {
                     id: 'ar-ok',
                     tone: 'ok',
                     title: 'AR estable',
-                    detail: `Seguimiento activo con jitter ${Math.round(deviceOrientationRef.headingJitter)}deg.`,
+                    detail: `Seguimiento activo con jitter ${Math.round(deviceOrientationRef.headingJitter)} deg.`,
                     icon: CheckCircle2,
                 });
             }

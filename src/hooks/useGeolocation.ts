@@ -1,16 +1,23 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
 
 export function useGeolocation() {
     const [error, setError] = useState<string | null>(null);
+    const watcherIdRef = useRef<number | null>(null);
     const setObserver = useAppStore((state) => state.setObserver);
     const setGeolocation = useAppStore((state) => state.setGeolocation);
 
-    useEffect(() => {
+    const stopWatching = useCallback(() => {
+        if (watcherIdRef.current !== null && navigator.geolocation) {
+            navigator.geolocation.clearWatch(watcherIdRef.current);
+            watcherIdRef.current = null;
+        }
+    }, []);
+
+    const requestLocation = useCallback(() => {
         if (!navigator.geolocation) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
             setError('Geolocation not supported');
             setGeolocation({
                 status: 'error',
@@ -19,8 +26,6 @@ export function useGeolocation() {
             });
             return;
         }
-
-        let watcherId: number | null = null;
 
         const success = (pos: GeolocationPosition) => {
             setObserver({
@@ -44,62 +49,87 @@ export function useGeolocation() {
                 source: 'fallback',
                 message: err.message,
             });
-            // Fallback already set in store (Tenerife)
         };
 
-        // Primer fix rápido de posición.
-        navigator.geolocation.getCurrentPosition(
-            success,
-            failure,
-            {
-                enableHighAccuracy: true,
-                timeout: 12000,
-                maximumAge: 30000,
-            }
-        );
+        stopWatching();
+        setGeolocation({
+            status: 'idle',
+            source: 'fallback',
+            message: 'Solicitando ubicacion precisa',
+        });
 
-        // Seguimiento para mantener el cielo real si el usuario se mueve.
-        watcherId = navigator.geolocation.watchPosition(
-            success,
-            failure,
-            {
-                enableHighAccuracy: true,
-                timeout: 15000,
-                maximumAge: 45000,
-            }
-        );
+        navigator.geolocation.getCurrentPosition(success, failure, {
+            enableHighAccuracy: true,
+            timeout: 12000,
+            maximumAge: 30000,
+        });
 
-        return () => {
-            if (watcherId !== null) {
-                navigator.geolocation.clearWatch(watcherId);
-            }
-        };
-    }, [setObserver, setGeolocation]);
+        watcherIdRef.current = navigator.geolocation.watchPosition(success, failure, {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 45000,
+        });
+    }, [setGeolocation, setObserver, stopWatching]);
 
     useEffect(() => {
-        if (!navigator.permissions?.query) return;
+        if (!navigator.geolocation) {
+            const timer = setTimeout(() => {
+                setError('Geolocation not supported');
+                setGeolocation({
+                    status: 'error',
+                    source: 'fallback',
+                    message: 'Geolocation not supported',
+                });
+            }, 0);
+            return () => clearTimeout(timer);
+        }
+
+        if (!navigator.permissions?.query) {
+            const timer = setTimeout(() => {
+                setGeolocation({
+                    status: 'idle',
+                    source: 'fallback',
+                    message: 'Ubicacion precisa disponible bajo solicitud',
+                });
+            }, 0);
+            return () => clearTimeout(timer);
+        }
 
         let mounted = true;
         navigator.permissions
             .query({ name: 'geolocation' })
             .then((result) => {
                 if (!mounted) return;
-                if (result.state === 'denied') {
+
+                if (result.state === 'granted') {
+                    requestLocation();
+                } else if (result.state === 'denied') {
                     setGeolocation({
                         status: 'denied',
                         source: 'fallback',
-                        message: 'Permiso de ubicación denegado',
+                        message: 'Permiso de ubicacion denegado',
+                    });
+                } else {
+                    setGeolocation({
+                        status: 'idle',
+                        source: 'fallback',
+                        message: 'Pulsa activar GPS para alinear el cielo real',
                     });
                 }
             })
             .catch(() => {
-                // Silencioso: permisos no soportados en algunos navegadores
+                setGeolocation({
+                    status: 'idle',
+                    source: 'fallback',
+                    message: 'Ubicacion precisa disponible bajo solicitud',
+                });
             });
 
         return () => {
             mounted = false;
+            stopWatching();
         };
-    }, [setGeolocation]);
+    }, [requestLocation, setGeolocation, stopWatching]);
 
-    return { error };
+    return { error, requestLocation };
 }
