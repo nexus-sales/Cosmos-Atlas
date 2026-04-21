@@ -91,6 +91,13 @@ export default function AIAstronoma() {
     const targetedObject = useAppStore((s) => s.targetedObject);
     const focusedConstellation = useAppStore((s) => s.focusedConstellation);
     const lastMessageRef = useRef<string>('');
+    // Silence auto-narrator for the first 4s after mount so the initial
+    // camera position doesn't trigger "Virgo is now centered" on every load.
+    const narratorReadyRef = useRef(false);
+    useEffect(() => {
+        const t = setTimeout(() => { narratorReadyRef.current = true; }, 4000);
+        return () => clearTimeout(t);
+    }, []);
 
     const formatNarration = (obj: any) => {
         const isPlanet = 'kind' in obj && obj.kind === 'planet';
@@ -166,6 +173,7 @@ export default function AIAstronoma() {
 
     // Reaccionar a cambios de selección, objetivos o enfoque de constelaciones
     useEffect(() => {
+        if (!narratorReadyRef.current) return;
         const currentSelection = selected || targetedObject;
         let newIntro = '';
 
