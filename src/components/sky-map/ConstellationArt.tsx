@@ -68,14 +68,14 @@ export default function ConstellationArt() {
                 const color = nightMode
                     ? (isFocused ? '#ff4422' : '#661100')
                     : (isFocused
-                        ? (kidsMode ? '#44ccff' : '#e7c36a')
+                        ? (kidsMode ? '#44ccff' : '#d4af37') // Replaced with a more classic Gold (Metallic)
                         : (kidsMode ? '#114466' : '#8a6510'));
 
                 // Avoid the old filled silhouettes: they read like cardboard cutouts.
                 // Keep the mythology as subtle engraving-like line art.
-                const outlineOpacity = (isFocused ? (kidsMode ? 0.55 : 0.28) : 0.08) * autoPresence;
-                const lineOpacity = (isFocused ? (kidsMode ? 0.70 : 0.35) : 0.10) * autoPresence;
-                const lineWidth = isFocused ? (kidsMode ? 2.6 : 1.5) : 0.8;
+                const outlineOpacity = (isFocused ? (kidsMode ? 0.35 : 0.15) : 0.04) * autoPresence;
+                const lineOpacity = (isFocused ? (kidsMode ? 0.50 : 0.25) : 0.06) * autoPresence;
+                const lineWidth = isFocused ? (kidsMode ? 2.0 : 0.9) : 0.6;
 
                 if (Math.max(outlineOpacity, lineOpacity) < 0.01) return null;
 
