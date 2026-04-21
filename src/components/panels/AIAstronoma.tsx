@@ -2,87 +2,278 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
-import { Volume2, VolumeX, Sparkles, MessageSquare } from 'lucide-react';
+import { Volume2, VolumeX, Sparkles, MessageSquare, Eye, Telescope, Gauge, Send, Loader2, X, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { getKidFact } from '@/data/kidFacts';
+import { getConstellationDisplayName } from '@/data/constellationNames';
+import { equToHor } from '@/lib/astronomy/transforms';
+import { calculateVisibilityEvents, formatVisibilityEvents } from '@/lib/astronomy/visibilityEvents';
 import type { DSO, Planet, Star } from '@/types/celestial';
 
 type NarratableObject = Star | DSO | Planet;
+type ObjectKind = 'star' | 'planet' | 'dso' | 'constellation';
+type AstronomerMode = 'openai' | 'local';
+
+interface NarrationBrief {
+    title: string;
+    subtitle: string;
+    message: string;
+    voice: string;
+    tags: string[];
+    visible: boolean;
+    observing: string;
+    events: string;
+}
+
+interface ChatMessage {
+    role: 'user' | 'assistant';
+    text: string;
+    source?: 'openai' | 'local';
+}
+
+const AU_TO_KM = 149_597_870.7;
+const CONSTELLATION_SYMBOL = '\u2726';
+const QUICK_QUESTIONS = [
+    'Como lo observo mejor?',
+    'Que significa su magnitud?',
+    'Por que es importante?',
+    'Cuando conviene verlo?',
+];
+
+function isDso(obj: NarratableObject): obj is DSO {
+    return 'type' in obj;
+}
+
+function isPlanet(obj: NarratableObject): obj is Planet {
+    return 'kind' in obj && obj.kind === 'planet';
+}
+
+function isStar(obj: NarratableObject): obj is Star {
+    return 'constellation' in obj;
+}
+
+function isConstellationTarget(obj: NarratableObject): obj is Planet {
+    return isPlanet(obj) && obj.symbol === CONSTELLATION_SYMBOL;
+}
+
+function getObjectKind(obj: NarratableObject): ObjectKind {
+    if (isConstellationTarget(obj)) return 'constellation';
+    if (isDso(obj)) return 'dso';
+    if (isPlanet(obj)) return 'planet';
+    return 'star';
+}
+
+function formatMagnitude(mag: number | undefined): string {
+    if (mag == null || !Number.isFinite(mag)) return 'mag desconocida';
+    const value = mag < 0 ? `-${Math.abs(mag).toFixed(1)}` : `+${mag.toFixed(1)}`;
+    if (mag <= 0) return `${value}, extremadamente brillante`;
+    if (mag <= 2) return `${value}, visible con contaminacion luminica`;
+    if (mag <= 5.8) return `${value}, simple vista con buen cielo`;
+    if (mag <= 9) return `${value}, mejor con prismaticos`;
+    return `${value}, objetivo telescopico`;
+}
+
+function formatDistanceAu(dist: number | undefined): string | null {
+    if (!dist || !Number.isFinite(dist)) return null;
+    const km = dist * AU_TO_KM;
+    if (km < 1_000_000) return `${Math.round(km / 100) * 100} km`;
+    return `${(km / 1_000_000).toFixed(1)} millones de km`;
+}
+
+function cardinalFromAzimuth(az: number): string {
+    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
+    return directions[Math.round((((az % 360) + 360) % 360) / 45) % 8];
+}
+
+function visibilityText(alt: number): string {
+    if (alt < 0) return `bajo el horizonte (${alt.toFixed(1)} deg)`;
+    if (alt < 12) return `muy bajo (${alt.toFixed(1)} deg)`;
+    if (alt < 30) return `observable bajo (${alt.toFixed(1)} deg)`;
+    if (alt < 65) return `bien situado (${alt.toFixed(1)} deg)`;
+    return `muy alto (${alt.toFixed(1)} deg)`;
+}
+
+function observingAdvice(kind: ObjectKind, obj: NarratableObject, alt: number, bortleScale: number): string {
+    if (alt < 0) return 'No es observable ahora desde tu ubicacion; espera a que ascienda o cambia la hora.';
+    if (alt < 12) return 'Esta demasiado cerca del horizonte: la atmosfera introduce extincion, turbulencia y color.';
+
+    if (kind === 'planet') {
+        if (obj.name === 'Luna') return 'Usa aumentos moderados: el terminador lunar revela relieve, crateres y sombras con mucho contraste.';
+        if (obj.name === 'Saturno') return 'Prioriza noches estables; los anillos sufren mucho con turbulencia atmosferica.';
+        if (obj.name === 'Jupiter' || obj.name === 'Júpiter') return 'Busca bandas ecuatoriales y satelites galileanos; la escena cambia en minutos.';
+        if (obj.name === 'Venus') return 'Observa su fase: es brillante, pero su atmosfera oculta la superficie.';
+        return 'Buen objetivo planetario: sube aumentos solo si la imagen permanece estable.';
+    }
+
+    if (kind === 'dso' && isDso(obj)) {
+        if (bortleScale >= 7) return 'Con este Bortle, conviene un cielo mas oscuro: la luz urbana borra contraste en objetos difusos.';
+        if (obj.type === 'galaxy') return 'Las galaxias premian la vision lateral y cielos oscuros; busca nucleo, orientacion y forma.';
+        if (obj.type === 'nebula') return 'En nebulosas, un filtro UHC u OIII puede marcar una diferencia enorme con telescopio.';
+        return 'En cumulos, prueba aumentos medios para separar estrellas sin perder el campo completo.';
+    }
+
+    if (kind === 'star') return 'En estrellas, compara color, estabilidad y brillo; ahi aparecen temperatura, multiplicidad y evolucion.';
+    return 'Usa la figura como mapa: identifica primero estrellas guia y despues salta a objetos profundos cercanos.';
+}
+
+function scienceContext(kind: ObjectKind, obj: NarratableObject): string {
+    if (kind === 'constellation') {
+        return 'No es un objeto fisico unico: es una region aparente del cielo. Sus estrellas pueden estar a distancias muy distintas.';
+    }
+    if (kind === 'planet') {
+        const dist = formatDistanceAu((obj as Planet).dist);
+        return dist
+            ? `Es un cuerpo del Sistema Solar; hoy lo tienes a unos ${dist} de distancia.`
+            : 'Es un cuerpo del Sistema Solar, asi que su posicion cambia noche a noche frente al fondo de estrellas.';
+    }
+    if (kind === 'dso' && isDso(obj)) {
+        if (obj.type === 'galaxy') return 'Estas mirando una estructura extragalactica: miles de millones de estrellas fuera de la Via Lactea.';
+        if (obj.type === 'nebula') return 'Es gas y polvo interestelar: una region de formacion estelar, un remanente o material expulsado por una estrella.';
+        return 'Es una agrupacion estelar: sus estrellas comparten origen o quedan ligadas por gravedad.';
+    }
+    if (isStar(obj)) {
+        return `Es una estrella de ${getConstellationDisplayName(obj.constellation)}; su color aparente da pistas sobre temperatura superficial. ${obj.desc}`;
+    }
+    return obj.desc;
+}
+
+function buildNarrationBrief(
+    obj: NarratableObject,
+    observer: { lat: number; lon: number },
+    time: Date,
+    bortleScale: number,
+): NarrationBrief {
+    const kind = getObjectKind(obj);
+    const coords = equToHor(obj.ra, obj.dec, observer.lat, observer.lon, time);
+    const events = formatVisibilityEvents(calculateVisibilityEvents(obj.ra, obj.dec, observer, time));
+    const visible = coords.alt > 0;
+    const azCardinal = cardinalFromAzimuth(coords.az);
+    const magnitude = formatMagnitude(obj.mag);
+    const observing = observingAdvice(kind, obj, coords.alt, bortleScale);
+    const context = scienceContext(kind, obj);
+    const title = kind === 'constellation' ? getConstellationDisplayName(obj.name) : obj.name;
+    const typeLabel =
+        kind === 'planet' ? 'Sistema Solar'
+            : kind === 'star' ? 'Estrella'
+                : kind === 'constellation' ? 'Constelacion'
+                    : isDso(obj) ? obj.type.toUpperCase() : 'Objeto';
+
+    const subtitle = `${typeLabel} | ${visibilityText(coords.alt)} | Az ${coords.az.toFixed(0)} deg ${azCardinal}`;
+    const tags = [
+        magnitude,
+        `RA ${(obj.ra / 15).toFixed(2)} h`,
+        `Dec ${obj.dec >= 0 ? '+' : ''}${obj.dec.toFixed(1)} deg`,
+        `Bortle ${bortleScale}`,
+    ];
+
+    const message = [
+        context,
+        visible
+            ? `Ahora esta a ${coords.alt.toFixed(1)} grados de altura, hacia ${azCardinal}; es una posicion ${coords.alt > 30 ? 'comoda' : 'exigente'} para observar.`
+            : `Desde tu posicion aun no ha salido: su altura es ${coords.alt.toFixed(1)} grados.`,
+        `Ventana aproximada: ${events}.`,
+        observing,
+    ].join(' ');
+
+    return {
+        title,
+        subtitle,
+        message,
+        voice: `${title}. ${message}`,
+        tags,
+        visible,
+        observing,
+        events,
+    };
+}
+
+function normalizeTextForSpeech(text: string) {
+    return text
+        .replace(/\bal\./gi, 'anos luz')
+        .replace(/\bal\b/gi, 'anos luz')
+        .replace(/\bmag\b/gi, 'magnitud')
+        .replace(/\bkm\/h\b/gi, 'kilometros por hora')
+        .replace(/\bkm\b/gi, 'kilometros')
+        .replace(/\bms\b/gi, 'milisegundos')
+        .replace(/\bau\b/gi, 'unidades astronomicas')
+        .replace(/\bua\b/gi, 'unidades astronomicas')
+        .replace(/&middot;/g, 'punto')
+        .replace(/&deg;/g, 'grados')
+        .replace(/\bmessier\b/gi, 'Messier')
+        .replace(/\bh\b/gi, 'horas');
+}
 
 export default function AIAstronoma() {
     const selected = useAppStore((s) => s.selectedObject);
     const incrementMythologyBuff = useAppStore((s) => s.incrementMythologyBuff);
     const kidsMode = useAppStore((s) => s.settings.kidsMode);
+    const bortleScale = useAppStore((s) => s.settings.bortleScale);
     const sidebarOpen = useAppStore((s) => s.sidebarOpen);
-    
+    const observer = useAppStore((s) => s.observer);
+    const time = useAppStore((s) => s.timeMinute);
+    const targetedObject = useAppStore((s) => s.targetedObject);
+    const focusedConstellation = useAppStore((s) => s.focusedConstellation);
+    const globalAiMessage = useAppStore((s) => s.aiMessage);
+    const setAiMessage = useAppStore((s) => s.setAiMessage);
+
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [muted, setMuted] = useState(false);
     const [showBubble, setShowBubble] = useState(false);
-    // message local para la burbuja, pero sincronizado con el store
     const [message, setMessage] = useState('');
-    const globalAiMessage = useAppStore((s) => s.aiMessage);
-    const setAiMessage = useAppStore((s) => s.setAiMessage);
+    const [brief, setBrief] = useState<NarrationBrief | null>(null);
+    const [chatOpen, setChatOpen] = useState(false);
+    const [question, setQuestion] = useState('');
+    const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+    const [chatLoading, setChatLoading] = useState(false);
+    const [chatError, setChatError] = useState<string | null>(null);
+    const [astronomerMode, setAstronomerMode] = useState<AstronomerMode>('openai');
+
     const synthRef = useRef<SpeechSynthesis | null>(null);
+    const lastMessageRef = useRef<string>('');
+    const narratorReadyRef = useRef(false);
+    const chatEndRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         synthRef.current = window.speechSynthesis;
         const loadVoices = () => {
-            if (synthRef.current) synthRef.current.getVoices();
+            synthRef.current?.getVoices();
         };
         loadVoices();
         if (window.speechSynthesis.onvoiceschanged !== undefined) {
-          window.speechSynthesis.onvoiceschanged = loadVoices;
+            window.speechSynthesis.onvoiceschanged = loadVoices;
         }
         return () => {
             synthRef.current?.cancel();
         };
     }, []);
 
-    const normalizeTextForSpeech = (text: string) => {
-        return text
-            .replace(/\bal\./gi, 'años luz')
-            .replace(/\bal\b/gi, 'años luz')
-            .replace(/\bmag\b/gi, 'magnitud')
-            .replace(/\bkm\/h\b/gi, 'kilómetros por hora')
-            .replace(/\bkm\b/gi, 'kilómetros')
-            .replace(/\bms\b/gi, 'milisegundos')
-            .replace(/\bau\b/gi, 'unidades astronómicas')
-            .replace(/\bua\b/gi, 'unidades astronómicas')
-            .replace(/&middot;/g, 'punto')
-            .replace(/&deg;/g, 'grados')
-            .replace(/\bmessier\b/gi, 'Messier') // Asegurar capitalización para TTS
-            .replace(/\bh\b/gi, 'horas');
-    };
+    useEffect(() => {
+        const timer = setTimeout(() => { narratorReadyRef.current = true; }, 4000);
+        return () => clearTimeout(timer);
+    }, []);
 
     const speak = useCallback((text: string) => {
         if (!synthRef.current || muted) return;
-        
-        synthRef.current.cancel();
-        
-        if (synthRef.current.paused) {
-            synthRef.current.resume();
-        }
 
-        // Normalizamos el texto para que la voz no diga "al" o "mag"
-        const cleanText = normalizeTextForSpeech(text);
-        const utterance = new SpeechSynthesisUtterance(cleanText);
-        
+        synthRef.current.cancel();
+        if (synthRef.current.paused) synthRef.current.resume();
+
+        const utterance = new SpeechSynthesisUtterance(normalizeTextForSpeech(text));
         const voices = synthRef.current.getVoices();
-        const spanishVoice = voices.find(v => v.lang.startsWith('es') && v.name.includes('Google')) 
-                          || voices.find(v => v.lang.startsWith('es') && v.name.includes('Helena'))
-                          || voices.find(v => v.lang.startsWith('es'));
-        
+        const spanishVoice = voices.find(v => v.lang.startsWith('es') && v.name.includes('Google'))
+            || voices.find(v => v.lang.startsWith('es') && v.name.includes('Helena'))
+            || voices.find(v => v.lang.startsWith('es'));
+
         if (spanishVoice) utterance.voice = spanishVoice;
         utterance.lang = 'es-ES';
-        
-        utterance.pitch = kidsMode ? 1.25 : 1.1;
-        utterance.rate = kidsMode ? 1.0 : 0.92;
+        utterance.pitch = kidsMode ? 1.18 : 0.98;
+        utterance.rate = kidsMode ? 1.0 : 0.9;
 
         utterance.onstart = () => setIsSpeaking(true);
         utterance.onend = () => {
             setIsSpeaking(false);
-            if (text.length > 50) {
+            if (text.toLowerCase().includes('mitolog')) {
                 incrementMythologyBuff();
             }
         };
@@ -91,155 +282,306 @@ export default function AIAstronoma() {
         synthRef.current.speak(utterance);
     }, [incrementMythologyBuff, muted, kidsMode]);
 
-    const targetedObject = useAppStore((s) => s.targetedObject);
-    const focusedConstellation = useAppStore((s) => s.focusedConstellation);
-    const lastMessageRef = useRef<string>('');
-    // Silence auto-narrator for the first 4s after mount so the initial
-    // camera position doesn't trigger "Virgo is now centered" on every load.
-    const narratorReadyRef = useRef(false);
     useEffect(() => {
-        const t = setTimeout(() => { narratorReadyRef.current = true; }, 4000);
-        return () => clearTimeout(t);
-    }, []);
+        if (!chatOpen) return;
+        chatEndRef.current?.scrollIntoView({ block: 'end' });
+    }, [chatOpen, chatMessages, chatLoading]);
 
-    const formatNarration = (obj: NarratableObject) => {
-        const isPlanet = 'kind' in obj && obj.kind === 'planet';
-        const isDSO = 'type' in obj;
-        
-        let text = `Estás viendo ${obj.name}. `;
-        
-        // Humanizar descripción técnica
-        if (isPlanet) {
-            let desc = obj.desc || '';
-            desc = desc.replace(/—/g, ', con un');
-            desc = desc.replace(/(\d+)%/g, '$1 por ciento');
-            text = `Observas ${obj.name}. ${desc}`;
+    const buildChatContext = useCallback(() => {
+        const currentSelection = selected || targetedObject;
+        const computedBrief = currentSelection
+            ? buildNarrationBrief(currentSelection, observer, time, bortleScale)
+            : brief;
 
-            if (obj.dist) {
-                const auToKm = 149597870.7;
-                const km = obj.dist * auToKm;
-                if (obj.name === 'Luna') {
-                    text += ` Se encuentra a unos ${Math.round(km / 100) * 100} kilómetros de nosotros.`;
-                } else if (km > 1000000) {
-                    text += ` Está a una distancia de ${(km / 1000000).toFixed(1)} millones de kilómetros.`;
-                } else {
-                    text += ` Se encuentra a ${(obj.dist).toFixed(3)} unidades astronómicas.`;
-                }
+        return {
+            objectName: computedBrief?.title,
+            objectType: computedBrief?.subtitle.split('|')[0]?.trim(),
+            visibility: computedBrief?.subtitle,
+            magnitude: computedBrief?.tags.find((tag) => tag.includes('+') || tag.includes('-') || tag.includes('mag')),
+            coordinates: computedBrief?.tags.filter((tag) => tag.startsWith('RA') || tag.startsWith('Dec')).join(' | '),
+            bortleScale,
+            observer,
+            time: time.toISOString(),
+            summary: computedBrief?.message,
+            observingAdvice: computedBrief?.observing,
+            visibilityWindow: computedBrief?.events,
+        };
+    }, [selected, targetedObject, observer, time, bortleScale, brief]);
+
+    const askAstronomer = useCallback(async (rawQuestion?: string) => {
+        const text = (rawQuestion ?? question).trim();
+        if (!text || chatLoading) return;
+
+        setQuestion('');
+        setChatError(null);
+        setChatOpen(true);
+        setChatMessages((prev) => [...prev, { role: 'user', text }]);
+        setChatLoading(true);
+
+        try {
+            const res = await fetch('/api/astronomer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    question: text,
+                    context: buildChatContext(),
+                    mode: astronomerMode,
+                }),
+            });
+            const data = await res.json() as {
+                answer?: string;
+                source?: 'openai' | 'local';
+                error?: string;
+            };
+            if (!res.ok || !data.answer) {
+                throw new Error(data.error || 'No se pudo consultar la IA astronomica');
             }
-
-            if (obj.mag) {
-                const magVal = obj.mag < 0 ? `menos ${Math.abs(obj.mag).toFixed(1)}` : obj.mag.toFixed(1);
-                text += ` Actualmente brilla con una magnitud de ${magVal}.`;
-            }
-        } else if (isDSO) {
-            text = `Has localizado ${obj.name}, un objeto de tipo ${obj.type}. ${obj.desc}`;
-        } else {
-            text = `Has centrado tu visor en ${obj.name}. ${obj.desc || ''}`;
+            setChatMessages((prev) => [...prev, {
+                role: 'assistant',
+                text: data.answer ?? '',
+                source: data.source,
+            }]);
+            setMessage(data.answer);
+            setBrief(null);
+            setShowBubble(false);
+        } catch (error) {
+            const msg = error instanceof Error ? error.message : 'No se pudo consultar la IA astronomica';
+            setChatError(msg);
+            setChatMessages((prev) => [...prev, {
+                role: 'assistant',
+                text: 'No he podido consultar el asistente remoto. Cambio mentalmente a modo local: puedo seguir con tecnica de observacion, magnitud y contexto basico sin gastar API.',
+                source: 'local',
+            }]);
+        } finally {
+            setChatLoading(false);
         }
-
-        return text;
-    };
+    }, [question, chatLoading, buildChatContext, astronomerMode]);
 
     const achievements = useAppStore((s) => s.achievements);
     const prevAchievementsRef = useRef(achievements);
 
-    // Celebrar logros
     useEffect(() => {
         const prev = prevAchievementsRef.current;
         let celebration = '';
 
         if (achievements.planetHunter && !prev.planetHunter) {
-            celebration = "¡Increíble! Te has convertido en un verdadero Explorador de Planetas. Has visitado todos los mundos de nuestro sistema.";
+            celebration = 'Logro desbloqueado: Explorador de Planetas. Has visitado todos los mundos principales del Sistema Solar disponibles en el atlas.';
         } else if (achievements.messierMarathon > prev.messierMarathon) {
-            celebration = `¡Buen trabajo! Has registrado un nuevo objeto Messier. Llevas ${achievements.messierMarathon} de ciento diez.`;
+            celebration = `Nuevo objeto Messier registrado. Llevas ${achievements.messierMarathon} de 110; estas construyendo una ruta de cielo profundo muy seria.`;
         } else if (achievements.mythologyBuff > prev.mythologyBuff) {
-            celebration = "Tu conocimiento de la mitología estelar está creciendo. ¡Sigue escuchando las historias del cosmos!";
+            celebration = 'Archivo de mitologia ampliado. Las constelaciones son historia cultural proyectada sobre fisica estelar real.';
         }
 
-        if (celebration) {
-            setAiMessage(celebration);
-        }
-        
+        if (celebration) setAiMessage(celebration);
         prevAchievementsRef.current = achievements;
     }, [achievements, setAiMessage]);
 
-    // Reaccionar a cambios de selección, objetivos o enfoque de constelaciones
     useEffect(() => {
-        // Prioridad 1: Mensajes globales (Logros, Bienvenida, etc.)
-        // Los consumimos inmediatamente para no bloquear el flujo de narración normal
         if (globalAiMessage) {
             const msg = globalAiMessage;
-            setAiMessage(''); // Limpiar el store inmediatamente para permitir interrupciones
-            
-            setMessage(msg);
-            setShowBubble(true);
-            speak(msg);
-            
-            // Reset de la memoria de narración para que al terminar el logro 
-            // se pueda volver a narrar el objeto actual si se desea
-            lastMessageRef.current = '';
-
-            // Auto-limpieza local de la burbuja
-            const duration = Math.max(8000, (msg.length / 15) * 1000);
+            setAiMessage('');
             const timer = setTimeout(() => {
-                setShowBubble(false);
-            }, duration);
-
-            return () => clearTimeout(timer);
+                setBrief(null);
+                setMessage(msg);
+                setShowBubble(true);
+                speak(msg);
+                lastMessageRef.current = '';
+            }, 0);
+            const hideTimer = setTimeout(() => setShowBubble(false), Math.max(8000, (msg.length / 15) * 1000));
+            return () => {
+                clearTimeout(timer);
+                clearTimeout(hideTimer);
+            };
         }
 
-        // Prioridad 2: Narración automática basada en lo que el usuario ve
         if (!narratorReadyRef.current) return;
+
         const currentSelection = selected || targetedObject;
-        let newIntro = '';
+        let nextMessage = '';
+        let nextBrief: NarrationBrief | null = null;
 
         if (currentSelection && !muted) {
-            const isStar = 'constellation' in currentSelection;
-            const isPlanet = 'kind' in currentSelection && currentSelection.kind === 'planet';
-            
-            const kidFact = kidsMode ? getKidFact(currentSelection.name, isStar, isPlanet) : null;
+            const kidFact = kidsMode
+                ? getKidFact(currentSelection.name, isStar(currentSelection), isPlanet(currentSelection))
+                : null;
+
             if (kidFact) {
-                newIntro = `¡Hola explorador! Has encontrado a ${currentSelection.name}. ${kidFact}`;
+                nextMessage = `Has encontrado ${currentSelection.name}. ${kidFact}`;
             } else {
-                newIntro = formatNarration(currentSelection);
+                nextBrief = buildNarrationBrief(currentSelection, observer, time, bortleScale);
+                nextMessage = nextBrief.voice;
             }
         } else if (focusedConstellation && !muted) {
-            const name = focusedConstellation;
-            const kidFact = kidsMode ? getKidFact(name, false, false) : null;
-            newIntro = kidFact
-                ? `Mira esa figura: es la constelación de ${name}. ${kidFact}`
-                : `La constelación de ${name} está ahora centrada en tu visor nocturno.`;
+            const name = getConstellationDisplayName(focusedConstellation);
+            const kidFact = kidsMode ? getKidFact(focusedConstellation, false, false) : null;
+            nextMessage = kidFact
+                ? `Mira esa figura: es la constelacion de ${name}. ${kidFact}`
+                : `Constelacion de ${name}. No es un objeto fisico unico: es una region aparente del cielo, util para orientarse y saltar a objetos profundos cercanos.`;
         }
 
-        if (newIntro && newIntro !== lastMessageRef.current) {
-            lastMessageRef.current = newIntro;
+        if (nextMessage && nextMessage !== lastMessageRef.current) {
+            lastMessageRef.current = nextMessage;
             const timer = setTimeout(() => {
-                setMessage(newIntro);
+                setBrief(nextBrief);
+                setMessage(nextBrief ? nextBrief.message : nextMessage);
                 setShowBubble(true);
-                speak(newIntro);
-            }, 1000);
+                speak(nextMessage);
+            }, 800);
             return () => clearTimeout(timer);
-        } else if (!newIntro && lastMessageRef.current) {
-            // Si no hay nada que narrar pero antes había algo, limpiamos tras un breve delay
+        }
+
+        if (!nextMessage && lastMessageRef.current) {
             const timer = setTimeout(() => {
                 setShowBubble(false);
+                setBrief(null);
                 lastMessageRef.current = '';
                 synthRef.current?.cancel();
                 setIsSpeaking(false);
             }, 500);
             return () => clearTimeout(timer);
         }
-    }, [selected, targetedObject, focusedConstellation, muted, speak, kidsMode, globalAiMessage, setAiMessage]);
+    }, [
+        selected,
+        targetedObject,
+        focusedConstellation,
+        muted,
+        speak,
+        kidsMode,
+        globalAiMessage,
+        setAiMessage,
+        observer,
+        time,
+        bortleScale,
+    ]);
 
     return (
         <div className={cn(
-            "fixed z-[60] flex flex-col items-end gap-3 pointer-events-none",
-            // Desktop: bottom-right corner
-            "md:bottom-24 md:right-6",
-            // Mobile: above the FAB (bottom-40), hidden when bottom sheet is open
-            sidebarOpen ? "hidden md:flex" : "bottom-40 right-4"
+            'fixed z-[60] flex flex-col items-end gap-3 pointer-events-none',
+            'md:bottom-24 md:right-6',
+            sidebarOpen ? 'hidden md:flex' : 'bottom-40 right-4'
         )}>
-            {/* Bocadillo de texto */}
+            <AnimatePresence>
+                {chatOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 12, scale: 0.96 }}
+                        className="pointer-events-auto w-[min(420px,calc(100vw-2rem))] rounded-2xl border border-cyan-400/20 bg-black/90 p-3 shadow-[0_16px_50px_rgba(0,0,0,0.55)] backdrop-blur-xl"
+                    >
+                        <div className="mb-3 flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                                <div className="text-[10px] font-bold uppercase tracking-widest text-cyan-300">
+                                    Consulta Astronomica
+                                </div>
+                                <div className="truncate font-mono text-[9px] text-white/35">
+                                    {brief?.title || selected?.name || targetedObject?.name || 'Contexto del cielo actual'}
+                                </div>
+                            </div>
+                            <div className="flex shrink-0 items-center rounded-full border border-white/10 bg-white/[0.04] p-0.5">
+                                {(['openai', 'local'] as const).map((mode) => (
+                                    <button
+                                        key={mode}
+                                        type="button"
+                                        onClick={() => setAstronomerMode(mode)}
+                                        className={cn(
+                                            'rounded-full px-2 py-1 text-[8px] font-bold uppercase tracking-widest transition-colors',
+                                            astronomerMode === mode
+                                                ? 'bg-cyan-400/18 text-cyan-100'
+                                                : 'text-white/30 hover:text-white/60'
+                                        )}
+                                        aria-pressed={astronomerMode === mode}
+                                    >
+                                        {mode === 'openai' ? 'IA real' : 'Local'}
+                                    </button>
+                                ))}
+                            </div>
+                            <button
+                                onClick={() => setChatOpen(false)}
+                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/10 text-white/35 hover:bg-white/10 hover:text-white/70"
+                                aria-label="Cerrar consulta astronomica"
+                            >
+                                <X className="h-3.5 w-3.5" />
+                            </button>
+                        </div>
+
+                        <div className="mb-3 flex max-h-[320px] flex-col gap-2 overflow-y-auto pr-1">
+                            {chatMessages.length === 0 && (
+                                <div className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-3 text-[11px] leading-relaxed text-white/55">
+                                    {astronomerMode === 'openai'
+                                        ? 'Modo IA real: razonamiento remoto con el contexto actual del cielo, mas rico y flexible.'
+                                        : 'Modo local: respuestas instantaneas sin gastar API, utiles si hay limite, cortes o quieres ahorrar credito.'}
+                                </div>
+                            )}
+                            {chatMessages.map((item, idx) => (
+                                <div
+                                    key={`${item.role}-${idx}`}
+                                    className={cn(
+                                        'rounded-xl px-3 py-2 text-[11px] leading-relaxed',
+                                        item.role === 'user'
+                                            ? 'ml-8 bg-blue-500/18 text-blue-50 border border-blue-400/20'
+                                            : 'mr-8 bg-white/[0.05] text-white/78 border border-white/10'
+                                    )}
+                                >
+                                    <p className="whitespace-pre-wrap">{item.text}</p>
+                                    {item.role === 'assistant' && item.source && (
+                                        <div className="mt-2 border-t border-white/5 pt-1.5 font-mono text-[8px] uppercase tracking-widest text-white/25">
+                                            {item.source === 'openai' ? 'Respuesta IA' : 'Respuesta local'}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                            {chatLoading && (
+                                <div className="mr-8 flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2 text-[10px] text-white/50">
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-cyan-300" />
+                                    Analizando contexto astronomico...
+                                </div>
+                            )}
+                            <div ref={chatEndRef} />
+                        </div>
+
+                        <div className="mb-2 flex flex-wrap gap-1.5">
+                            {QUICK_QUESTIONS.map((item) => (
+                                <button
+                                    key={item}
+                                    onClick={() => { void askAstronomer(item); }}
+                                    disabled={chatLoading}
+                                    className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide text-white/45 transition-colors hover:border-cyan-400/30 hover:text-cyan-200 disabled:opacity-50"
+                                >
+                                    {item}
+                                </button>
+                            ))}
+                        </div>
+
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                void askAstronomer();
+                            }}
+                            className="flex items-center gap-2"
+                        >
+                            <input
+                                value={question}
+                                onChange={(e) => setQuestion(e.target.value)}
+                                maxLength={600}
+                                placeholder="Pregunta sobre el objeto o la observacion..."
+                                className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-[11px] text-white/80 outline-none placeholder:text-white/25 focus:border-cyan-400/35"
+                            />
+                            <button
+                                type="submit"
+                                disabled={chatLoading || question.trim().length < 2}
+                                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-500/15 text-cyan-100 transition-colors hover:bg-cyan-500/25 disabled:cursor-not-allowed disabled:opacity-45"
+                                aria-label="Enviar pregunta"
+                            >
+                                {chatLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                            </button>
+                        </form>
+                        {chatError && (
+                            <div className="mt-2 text-[9px] text-red-300/70">{chatError}</div>
+                        )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             <AnimatePresence>
                 {showBubble && message && (
                     <motion.div
@@ -248,27 +590,76 @@ export default function AIAstronoma() {
                         exit={{ opacity: 0, scale: 0.8, y: 10 }}
                         onClick={() => {
                             setShowBubble(false);
-                            if (globalAiMessage) setAiMessage('');
+                            setAiMessage('');
                             synthRef.current?.cancel();
                             setIsSpeaking(false);
                         }}
-                        className="pointer-events-auto cursor-pointer max-w-[280px] bg-black/80 backdrop-blur-xl border border-blue-500/30 p-4 rounded-2xl rounded-br-none shadow-[0_10px_40px_rgba(0,0,0,0.5)] active:scale-95 transition-transform"
+                        className="pointer-events-auto w-[min(360px,calc(100vw-2rem))] cursor-pointer rounded-2xl rounded-br-none border border-blue-500/30 bg-black/85 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl transition-transform active:scale-95"
                     >
-                        <div className="flex gap-2 items-start mb-2">
-                            <Sparkles className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
-                            <span className="text-[10px] font-bold tracking-widest text-blue-400 uppercase">Guía Galáctica</span>
+                        <div className="mb-2 flex items-start gap-2">
+                            <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-400" />
+                            <div className="min-w-0">
+                                <span className="block text-[10px] font-bold uppercase tracking-widest text-blue-400">
+                                    Asistente Astronomico
+                                </span>
+                                {brief && (
+                                    <span className="mt-1 block truncate font-mono text-[9px] text-white/35">
+                                        {brief.subtitle}
+                                    </span>
+                                )}
+                            </div>
                         </div>
-                        <p className="text-[12px] text-white/80 leading-relaxed italic">
-                            &laquo;{message}&raquo;
+
+                        {brief && (
+                            <div className="mb-3 grid grid-cols-2 gap-2">
+                                <BriefMetric
+                                    icon={<Eye className="h-3 w-3" />}
+                                    label="Visibilidad"
+                                    value={brief.visible ? 'Visible' : 'No visible'}
+                                    tone={brief.visible ? 'good' : 'bad'}
+                                />
+                                <BriefMetric
+                                    icon={<Gauge className="h-3 w-3" />}
+                                    label="Lectura"
+                                    value={brief.title}
+                                />
+                                <div className="col-span-2">
+                                    <BriefMetric
+                                        icon={<Clock className="h-3 w-3" />}
+                                        label="Ventana"
+                                        value={brief.events}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        <p className="text-[12px] leading-relaxed text-white/82">
+                            {message}
                         </p>
-                        <div className="mt-2 pt-2 border-t border-white/5 flex justify-end">
-                            <span className="text-[8px] text-white/20 uppercase tracking-widest font-bold">Cerrar</span>
+
+                        {brief && (
+                            <>
+                                <div className="mt-3 flex flex-wrap gap-1.5">
+                                    {brief.tags.map((tag) => (
+                                        <span key={tag} className="rounded border border-white/10 bg-white/5 px-2 py-1 font-mono text-[9px] text-white/50">
+                                            {tag}
+                                        </span>
+                                    ))}
+                                </div>
+                                <div className="mt-3 flex gap-2 rounded-lg border border-cyan-400/15 bg-cyan-400/10 px-3 py-2">
+                                    <Telescope className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-300/80" />
+                                    <p className="text-[10px] leading-relaxed text-cyan-50/65">{brief.observing}</p>
+                                </div>
+                            </>
+                        )}
+
+                        <div className="mt-2 flex justify-end border-t border-white/5 pt-2">
+                            <span className="text-[8px] font-bold uppercase tracking-widest text-white/20">Cerrar</span>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* Botón Flotante — wrapper relativo para que el botón de mute sea hermano */}
             <div className="pointer-events-auto relative">
                 <motion.button
                     whileHover={{ scale: 1.05 }}
@@ -277,17 +668,22 @@ export default function AIAstronoma() {
                         if (isSpeaking) {
                             synthRef.current?.cancel();
                             setIsSpeaking(false);
+                        } else if (!chatOpen) {
+                            setChatOpen(true);
+                        } else if (brief) {
+                            speak(brief.voice);
                         } else if (message) {
                             speak(message);
                         }
                         setMuted(false);
                     }}
                     className={cn(
-                        "w-14 h-14 rounded-full flex items-center justify-center border transition-all duration-500",
+                        'flex h-14 w-14 items-center justify-center rounded-full border transition-all duration-500',
                         isSpeaking
-                            ? "bg-blue-600 border-blue-400 shadow-[0_0_30px_rgba(37,99,235,0.6)]"
-                            : "bg-black/40 backdrop-blur-md border-white/10 hover:border-blue-500/50"
+                            ? 'border-blue-400 bg-blue-600 shadow-[0_0_30px_rgba(37,99,235,0.6)]'
+                            : 'border-white/10 bg-black/40 backdrop-blur-md hover:border-blue-500/50'
                     )}
+                    aria-label={isSpeaking ? 'Detener narracion' : 'Repetir narracion astronomica'}
                 >
                     {isSpeaking ? (
                         <div className="flex items-center gap-1">
@@ -296,27 +692,54 @@ export default function AIAstronoma() {
                                     key={i}
                                     animate={{ height: [8, 20, 8] }}
                                     transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.1 }}
-                                    className="w-1 bg-white rounded-full"
+                                    className="w-1 rounded-full bg-white"
                                 />
                             ))}
                         </div>
                     ) : (
-                        <MessageSquare className="w-6 h-6 text-white/40" />
+                        <MessageSquare className="h-6 w-6 text-white/40" />
                     )}
                 </motion.button>
 
-                {/* Indicador de Silencio — hermano del botón principal, no hijo */}
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
                         setMuted(!muted);
                         if (!muted) synthRef.current?.cancel();
                     }}
-                    className="absolute -top-1 -right-1 w-6 h-6 bg-black border border-white/10 rounded-full flex items-center justify-center hover:bg-white/10"
+                    className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full border border-white/10 bg-black hover:bg-white/10"
+                    aria-label={muted ? 'Activar voz' : 'Silenciar voz'}
                 >
-                    {muted ? <VolumeX className="w-3 h-3 text-red-400" /> : <Volume2 className="w-3 h-3 text-white/50" />}
+                    {muted ? <VolumeX className="h-3 w-3 text-red-400" /> : <Volume2 className="h-3 w-3 text-white/50" />}
                 </button>
             </div>
+        </div>
+    );
+}
+
+function BriefMetric({
+    icon,
+    label,
+    value,
+    tone = 'neutral',
+}: {
+    icon: React.ReactNode;
+    label: string;
+    value: string;
+    tone?: 'good' | 'bad' | 'neutral';
+}) {
+    return (
+        <div className={cn(
+            'rounded-lg border px-2.5 py-2',
+            tone === 'good' && 'border-emerald-400/20 bg-emerald-400/10',
+            tone === 'bad' && 'border-red-400/20 bg-red-400/10',
+            tone === 'neutral' && 'border-white/10 bg-white/5'
+        )}>
+            <div className="mb-1 flex items-center gap-1.5 text-white/35">
+                {icon}
+                <span className="text-[8px] font-bold uppercase tracking-widest">{label}</span>
+            </div>
+            <div className="text-[11px] font-bold leading-snug text-white/80">{value}</div>
         </div>
     );
 }
