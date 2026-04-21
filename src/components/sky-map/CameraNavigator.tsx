@@ -84,7 +84,17 @@ export default function CameraNavigator({
 
             const isPlanet = 'kind' in targetedObject && targetedObject.kind === 'planet';
             const isDSO = 'type' in targetedObject;
-            targetFov.current = (isPlanet || isDSO) ? 22 : 60;
+            const isConstel = 'kind' in targetedObject && (targetedObject as any).kind === 'constellation';
+
+            if (isConstel) {
+                // Focus on the constellation with enough margin
+                targetFov.current = (targetedObject as any).angularSize || 45;
+            } else if (isPlanet || isDSO) {
+                targetFov.current = 22;
+            } else {
+                targetFov.current = 60;
+            }
+            
             prevTarget.current = targetedObject;
         }
 

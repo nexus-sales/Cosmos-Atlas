@@ -98,7 +98,40 @@ export default function Constellations() {
         };
     }, [focusedConstellation, camFov, shouldAnimateDraw]);
 
+    const bortleScale = useAppStore((state) => state.settings.bortleScale);
+    const pulseRef = useRef(0);
+
+    // Continuous pulse for the focused one
+    const [pulse, setPulse] = useState(1);
+    
+    // We use a small optimization here: only pulse if something is focused
+    useEffect(() => {
+        if (!focusedConstellation && !selectedObject) {
+            setPulse(1);
+            return;
+        }
+        
+        let alive = true;
+        const tick = () => {
+            if (!alive) return;
+            const time = Date.now() / 1000;
+            // Gentle 0.5Hz sine wave between 0.8 and 1.2
+            setPulse(1 + Math.sin(time * 3) * 0.15);
+            requestAnimationFrame(tick);
+        };
+        const raf = requestAnimationFrame(tick);
+        return () => {
+            alive = false;
+            cancelAnimationFrame(raf);
+        };
+    }, [focusedConstellation, selectedObject]);
+
     if (!showLines) return null;
+
+    // --- ASTRONOMICAL VISIBILITY LAW ---
+    // At Bortle 9 (City), eyes see only the brightest stars, and constellations are hard to trace.
+    // At Bortle 1 (Pristine), they are crisp.
+    const bortleFactor = THREE.MathUtils.mapLinear(bortleScale, 1, 9, 1.0, 0.25);
 
     // Never go to zero: at wide FOV we still want the stick figures visible.
     const overallPresence = THREE.MathUtils.clamp(
@@ -111,7 +144,7 @@ export default function Constellations() {
         THREE.MathUtils.mapLinear(camFov, 25, 75, 0.0, 1.0),
         0.0,
         1.0
-    );
+    ) * bortleFactor;
 
     return (
         <group renderOrder={3}>
@@ -122,11 +155,14 @@ export default function Constellations() {
                     ? (isFocused ? '#ff4444' : '#441111')
                     : (isFocused ? '#4fd1ff' : '#ffffff');
 
+                // Apply pulse and bortle to the final opacity
                 const opacity = isFocused
-                    ? 1.0 * overallPresence
+                    ? 1.0 * overallPresence * (isFocused ? pulse : 1.0)
                     : 0.35 * overallPresence * nonFocusedVisibility;
 
-                const lineWidth = isFocused ? 2.8 : 0.9;
+                const lineWidth = isFocused 
+                    ? 2.8 * (isFocused ? pulse : 1.0) 
+                    : 0.9;
 
                 if (opacity < 0.01) return null;
 

@@ -194,17 +194,32 @@ export default function ConstellationLabels() {
 
                                 const { ra, dec } = vectorToRaDec(vector);
                                 const display = getConstellationDisplayName(name);
+                                
+                                // Approximate angular sizes for some major constellations
+                                // to allow the camera to fit them properly.
+                                const sizes: Record<string, number> = {
+                                    'Orion': 25,
+                                    'Ursa Major': 40,
+                                    'Cassiopeia': 18,
+                                    'Leo': 30,
+                                    'Scorpius': 35,
+                                    'Crux': 12,
+                                    'Lyra': 15,
+                                    'Cygnus': 30,
+                                };
+                                const angularSize = sizes[name] || 35;
 
                                 const constellationTarget = {
                                     name,
                                     ra,
                                     dec,
-                                    desc: `La constelacion de ${display}.`,
+                                    desc: `La constelación de ${display}.`,
                                     color: '#60a5fa',
                                     mag: 0,
                                     symbol: CONSTELLATION_SYMBOL,
-                                    kind: 'planet',
-                                } satisfies Planet;
+                                    kind: 'constellation',
+                                    angularSize,
+                                } as any;
 
                                 setSelectedObject(constellationTarget);
                                 setTargetedObject(constellationTarget);
