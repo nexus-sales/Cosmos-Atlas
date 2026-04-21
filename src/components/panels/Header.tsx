@@ -13,8 +13,6 @@ function Clock() {
     const [time, setTime] = useState<Date | null>(null);
 
     useEffect(() => {
-        // Set immediately on mount so there's no perceptible delay
-        setTime(new Date());
         const timer = setInterval(() => setTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);

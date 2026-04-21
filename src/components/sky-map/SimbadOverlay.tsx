@@ -3,15 +3,12 @@
 import { useMemo } from 'react';
 import { Html } from '@react-three/drei';
 import { useAppStore } from '@/stores/useAppStore';
-import { equToHor, equatorialTo3D } from '@/lib/astronomy/transforms';
+import { equatorialTo3D } from '@/lib/astronomy/transforms';
 
 const RADIUS = 98; // Ligeramente por encima de las estrellas normales (95)
 
 export default function SimbadOverlay() {
     const simbadObjects = useAppStore((state) => state.simbadObjects);
-    const observer = useAppStore((state) => state.observer);
-    // timeMinute solo cambia 1x/min — SIMBAD objects no requieren precisión de segundo
-    const time = useAppStore((state) => state.timeMinute);
     const setTargetedObject = useAppStore((state) => state.setTargetedObject);
     const targetedObject = useAppStore((state) => state.targetedObject);
 

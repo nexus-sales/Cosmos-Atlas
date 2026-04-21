@@ -20,6 +20,10 @@ const TLE_SOURCES = [
 // Cache en proceso: TTL 4 horas
 let _cache: { ts: number; data: string } | null = null;
 const CACHE_TTL = 4 * 3600 * 1000;
+const TLE_HEADERS = {
+    'Content-Type': 'text/plain; charset=utf-8',
+    'Cache-Control': 'public, s-maxage=14400, stale-while-revalidate=7200',
+};
 
 async function fetchTLE(url: string, timeoutMs = 12_000): Promise<string> {
     const controller = new AbortController();
@@ -46,7 +50,7 @@ async function fetchTLE(url: string, timeoutMs = 12_000): Promise<string> {
 export async function GET() {
     if (_cache && Date.now() - _cache.ts < CACHE_TTL) {
         return new NextResponse(_cache.data, {
-            headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+            headers: TLE_HEADERS,
         });
     }
 
@@ -55,7 +59,7 @@ export async function GET() {
             const text = await fetchTLE(url);
             _cache = { ts: Date.now(), data: text };
             return new NextResponse(text, {
-                headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+                headers: TLE_HEADERS,
             });
         } catch (err) {
             console.warn(`[/api/tle/starlink] failed ${url}:`, (err as Error).message);

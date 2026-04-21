@@ -89,6 +89,8 @@ interface AppState {
     setHasSeenOnboarding: (v: boolean) => void;
     isTourActive: boolean;
     setIsTourActive: (v: boolean) => void;
+    aiMessage: string;
+    setAiMessage: (msg: string) => void;
     // --- STELLAR PASSPORT ---
     favorites: string[];
     visited: string[];
@@ -300,11 +302,11 @@ export const useAppStore = create<AppState>()(
         }),
         {
             name: 'cosmos-atlas-storage',
+            version: 2,
             storage: createJSONStorage(() => localStorage),
             partialize: (state) => ({
                 settings: state.settings,
                 observer: state.observer,
-                geolocation: state.geolocation,
                 arHealthHistory: state.arHealthHistory,
                 compassCalibrationOffset: state.compassCalibrationOffset,
                 foundChallenges: state.foundChallenges,
@@ -314,6 +316,12 @@ export const useAppStore = create<AppState>()(
                 achievements: state.achievements,
                 // deviceQuality excluido — se detecta en cada sesión
             }),
+            migrate: (persisted) => {
+                if (!persisted || typeof persisted !== 'object') return persisted;
+                const safeState = { ...(persisted as Record<string, unknown>) };
+                delete safeState.geolocation;
+                return safeState;
+            },
         }
     )
 );

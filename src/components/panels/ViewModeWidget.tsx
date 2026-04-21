@@ -41,6 +41,11 @@ export default function ViewModeWidget() {
         timersRef.current.clearStatusId = null;
     }, []);
 
+    const scheduleCollapse = useCallback((delay = 3500) => {
+        if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
+        collapseTimerRef.current = setTimeout(() => setCollapsed(true), delay);
+    }, []);
+
     const calibrateAR = useCallback(async () => {
         clearCalibrationTimers();
         setCalibrationPhase('running');
@@ -100,12 +105,7 @@ export default function ViewModeWidget() {
                 scheduleCollapse(1500); // Auto-hide widget un poco después de terminar
             }, 2400);
         }, durationMs + 80);
-    }, [addArHealthSample, clearCalibrationTimers, requestAndStart, setFollowOrientation, stop]);
-
-    const scheduleCollapse = useCallback((delay = 3500) => {
-        if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
-        collapseTimerRef.current = setTimeout(() => setCollapsed(true), delay);
-    }, []);
+    }, [addArHealthSample, clearCalibrationTimers, requestAndStart, scheduleCollapse, setFollowOrientation, stop]);
 
     const handleActivateCameraMode = useCallback(() => {
         setViewMode('camera');
@@ -126,7 +126,7 @@ export default function ViewModeWidget() {
             if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current); // No colapsar mientras calibra
             await calibrateAR();
         }
-    }, [calibrateAR, followOrientation, setFollowOrientation, stop]);
+    }, [calibrateAR, followOrientation, scheduleCollapse, setFollowOrientation, stop]);
 
     useEffect(() => {
         const timer = setInterval(() => setUiTick((v) => v + 1), 800);

@@ -61,7 +61,6 @@ function computeCompassHeading(alpha: number, beta: number, gamma: number): numb
     const y = gamma * degToRad;
     const z = alpha * degToRad;
 
-    const cX = Math.cos(x);
     const cY = Math.cos(y);
     const cZ = Math.cos(z);
     const sX = Math.sin(x);

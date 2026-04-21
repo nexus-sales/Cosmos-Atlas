@@ -40,7 +40,7 @@ export default function PassportTab() {
                     <div className="space-y-1">
                         <h3 className="text-[14px] font-bold text-blue-100">Guía de Campo</h3>
                         <p className="text-[11px] text-blue-200/60 leading-normal italic">
-                            "Para registrar un hallazgo en tu pasaporte, localiza el objeto en el mapa estelar y interactúa con él. La IA Astrónoma documentará tu progreso automáticamente."
+                            &ldquo;Para registrar un hallazgo en tu pasaporte, localiza el objeto en el mapa estelar y interactúa con él. La IA Astrónoma documentará tu progreso automáticamente.&rdquo;
                         </p>
                     </div>
                 </div>

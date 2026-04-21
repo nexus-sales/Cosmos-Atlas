@@ -10,6 +10,7 @@ import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { useAppStore } from '@/stores/useAppStore';
 import { useFrame } from '@react-three/fiber';
 import { cn } from '@/lib/utils';
+import type { Planet } from '@/types/celestial';
 
 const STAR_MAP = new Map(STARS.map((s) => [s.name, s]));
 
@@ -130,8 +131,11 @@ export default function ConstellationLabels() {
                                     name: name,
                                     ra: 0, dec: 90, // Position irrelevant for IA
                                     desc: `La constelación de ${getConstellationDisplayName(name)}.`,
+                                    color: '#60a5fa',
+                                    mag: 0,
+                                    symbol: '✦',
                                     kind: 'planet' // We reuse the type check for IA
-                                } as any);
+                                } satisfies Planet);
                             }}
                             className={cn(
                                 "flex flex-col items-center pointer-events-auto cursor-pointer select-none",

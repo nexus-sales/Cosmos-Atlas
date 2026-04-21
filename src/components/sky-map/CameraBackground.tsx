@@ -15,22 +15,33 @@ export default function CameraBackground() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
+        const video = videoRef.current;
+        const stopStream = (stream: MediaStream | null) => {
+            stream?.getTracks().forEach(track => track.stop());
+        };
+
         // Solo intentamos activar la cámara si estamos en modo 'camera'
         if (viewMode !== 'camera') {
-            if (videoRef.current?.srcObject) {
-                const stream = videoRef.current.srcObject as MediaStream;
-                stream.getTracks().forEach(track => track.stop());
-                videoRef.current.srcObject = null;
+            if (video?.srcObject) {
+                const stream = video.srcObject as MediaStream;
+                stopStream(stream);
+                video.srcObject = null;
             }
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setStreamActive(false);
+            setError(null);
             return;
         }
 
         let currentStream: MediaStream | null = null;
+        let cancelled = false;
 
         async function startCamera() {
             try {
+                if (!navigator.mediaDevices?.getUserMedia) {
+                    setError('Cámara no disponible');
+                    return;
+                }
                 // Pedimos cámara trasera preferentemente (environment)
                 const stream = await navigator.mediaDevices.getUserMedia({
                     video: { 
@@ -40,12 +51,17 @@ export default function CameraBackground() {
                     },
                     audio: false
                 });
-                
-                if (videoRef.current) {
-                    videoRef.current.srcObject = stream;
+
+                if (cancelled) {
+                    stopStream(stream);
+                    return;
+                }
+
+                if (video) {
+                    video.srcObject = stream;
                     currentStream = stream;
                     // El video puede tardar un poco en cargar los metadatos y empezar a reproducir
-                    videoRef.current.onloadedmetadata = () => {
+                    video.onloadedmetadata = () => {
                         setStreamActive(true);
                     };
                 }
@@ -59,9 +75,12 @@ export default function CameraBackground() {
         startCamera();
 
         return () => {
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
+            cancelled = true;
+            if (video) {
+                video.onloadedmetadata = null;
+                video.srcObject = null;
             }
+            stopStream(currentStream);
         };
     }, [viewMode]);
 

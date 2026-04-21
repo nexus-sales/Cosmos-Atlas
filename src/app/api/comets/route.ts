@@ -41,6 +41,9 @@ const SBDB_URL =
 // Simple in-process cache: TTL 24 hours
 let _cache: { ts: number; data: CometLiveData[] } | null = null;
 const CACHE_TTL = 24 * 3600 * 1000;
+const CACHE_HEADERS = {
+    'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=43200',
+};
 
 function parseField(v: string | null | undefined, fallback = 0): number {
     if (v == null) return fallback;
@@ -64,7 +67,7 @@ function mapName(pdes: string, fullName: string): string {
 export async function GET() {
     // Serve from cache if fresh
     if (_cache && Date.now() - _cache.ts < CACHE_TTL) {
-        return NextResponse.json({ ok: true, comets: _cache.data });
+        return NextResponse.json({ ok: true, comets: _cache.data }, { headers: CACHE_HEADERS });
     }
 
     try {
@@ -119,12 +122,18 @@ export async function GET() {
             .filter((c) => c.tp > 0 && c.q > 0 && c.e > 0);
 
         _cache = { ts: Date.now(), data: comets };
-        return NextResponse.json({ ok: true, comets });
+        return NextResponse.json({ ok: true, comets }, { headers: CACHE_HEADERS });
     } catch (err) {
         console.error('[/api/comets] fetch error:', err);
+        if (_cache) {
+            return NextResponse.json(
+                { ok: true, comets: _cache.data, stale: true },
+                { headers: CACHE_HEADERS }
+            );
+        }
         return NextResponse.json(
             { ok: false, error: 'JPL fetch failed', comets: [] },
-            { status: 200 }
+            { status: 502 }
         );
     }
 }

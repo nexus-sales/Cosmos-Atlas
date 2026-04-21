@@ -15,6 +15,10 @@ const ISS_SOURCES = [
 
 let _cache: { ts: number; data: string } | null = null;
 const CACHE_TTL = 2 * 3600 * 1000;
+const TLE_HEADERS = {
+    'Content-Type': 'text/plain; charset=utf-8',
+    'Cache-Control': 'public, s-maxage=7200, stale-while-revalidate=3600',
+};
 
 async function fetchTLE(url: string): Promise<string> {
     const controller = new AbortController();
@@ -26,7 +30,11 @@ async function fetchTLE(url: string): Promise<string> {
         });
         clearTimeout(timer);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.text();
+        const text = await res.text();
+        if (text.split('\n').filter(l => l.trim()).length < 3) {
+            throw new Error('Response too short to be valid TLE data');
+        }
+        return text;
     } catch (err) {
         clearTimeout(timer);
         throw err;
@@ -36,7 +44,7 @@ async function fetchTLE(url: string): Promise<string> {
 export async function GET() {
     if (_cache && Date.now() - _cache.ts < CACHE_TTL) {
         return new NextResponse(_cache.data, {
-            headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+            headers: TLE_HEADERS,
         });
     }
 
@@ -45,7 +53,7 @@ export async function GET() {
             const text = await fetchTLE(url);
             _cache = { ts: Date.now(), data: text };
             return new NextResponse(text, {
-                headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+                headers: TLE_HEADERS,
             });
         } catch (err) {
             console.warn(`[/api/tle/iss] failed ${url}:`, (err as Error).message);

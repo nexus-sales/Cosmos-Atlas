@@ -6,6 +6,9 @@ import { Volume2, VolumeX, Sparkles, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { getKidFact } from '@/data/kidFacts';
+import type { DSO, Planet, Star } from '@/types/celestial';
+
+type NarratableObject = Star | DSO | Planet;
 
 export default function AIAstronoma() {
     const selected = useAppStore((s) => s.selectedObject);
@@ -99,7 +102,7 @@ export default function AIAstronoma() {
         return () => clearTimeout(t);
     }, []);
 
-    const formatNarration = (obj: any) => {
+    const formatNarration = (obj: NarratableObject) => {
         const isPlanet = 'kind' in obj && obj.kind === 'planet';
         const isDSO = 'type' in obj;
         
@@ -160,19 +163,17 @@ export default function AIAstronoma() {
         prevAchievementsRef.current = achievements;
     }, [achievements, setAiMessage]);
 
-    // Escuchar el mensaje global de la IA para hablar
-    useEffect(() => {
-        if (globalAiMessage) {
-            setMessage(globalAiMessage);
-            setShowBubble(true);
-            speak(globalAiMessage);
-            // Opcional: limpiar el mensaje global después de hablar para evitar re-lecturas
-            // aunque canse, mantenemos por ahora para que la burbuja se quede.
-        }
-    }, [globalAiMessage, speak]);
-
     // Reaccionar a cambios de selección, objetivos o enfoque de constelaciones
     useEffect(() => {
+        if (globalAiMessage) {
+            const timer = setTimeout(() => {
+                setMessage(globalAiMessage);
+                setShowBubble(true);
+                speak(globalAiMessage);
+            }, 0);
+            return () => clearTimeout(timer);
+        }
+
         if (!narratorReadyRef.current) return;
         const currentSelection = selected || targetedObject;
         let newIntro = '';
@@ -197,17 +198,22 @@ export default function AIAstronoma() {
 
         if (newIntro && newIntro !== lastMessageRef.current) {
             lastMessageRef.current = newIntro;
-            setMessage(newIntro);
-            setShowBubble(true);
-            const timer = setTimeout(() => speak(newIntro), 1000);
+            const timer = setTimeout(() => {
+                setMessage(newIntro);
+                setShowBubble(true);
+                speak(newIntro);
+            }, 1000);
             return () => clearTimeout(timer);
         } else if (!newIntro) {
-            setShowBubble(false);
-            lastMessageRef.current = '';
-            synthRef.current?.cancel();
-            setIsSpeaking(false);
+            const timer = setTimeout(() => {
+                setShowBubble(false);
+                lastMessageRef.current = '';
+                synthRef.current?.cancel();
+                setIsSpeaking(false);
+            }, 0);
+            return () => clearTimeout(timer);
         }
-    }, [selected, targetedObject, focusedConstellation, muted, speak, kidsMode]);
+    }, [selected, targetedObject, focusedConstellation, muted, speak, kidsMode, globalAiMessage]);
 
     return (
         <div className={cn(
