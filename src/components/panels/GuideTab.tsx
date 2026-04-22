@@ -49,6 +49,18 @@ function getMoonPhaseName(phase: number): string {
     return 'Creciente menguante';
 }
 
+function getMoonPhaseSymbol(phase: number): string {
+    const p = ((phase % 360) + 360) % 360;
+    if (p < 22.5 || p >= 337.5) return '🌑';
+    if (p < 67.5) return '🌒';
+    if (p < 112.5) return '🌓';
+    if (p < 157.5) return '🌔';
+    if (p < 202.5) return '🌕';
+    if (p < 247.5) return '🌖';
+    if (p < 292.5) return '🌗';
+    return '🌘';
+}
+
 const PLANET_GUIDE_CONFIGS: PlanetCfg[] = [
     { body: Astronomy.Body.Moon, name: 'Luna', symbol: '\u263d', color: '#d8d6c0', desc: (m) => `Sat\u00e9lite natural de la Tierra. Mag ${m.toFixed(1)}.` },
     { body: Astronomy.Body.Venus, name: 'Venus', symbol: '\u2640', color: '#fff8d4', desc: (m) => `Planeta m\u00e1s brillante del cielo. Mag ${m.toFixed(1)}.` },
@@ -60,7 +72,7 @@ const PLANET_GUIDE_CONFIGS: PlanetCfg[] = [
     { body: Astronomy.Body.Neptune, name: 'Neptuno', symbol: '\u2646', color: '#4060ff', desc: (m) => `El gigante azul. Mag ${m.toFixed(1)}.` },
 ];
 
-function buildPlanet(cfg: PlanetCfg, date: Date, lat: number, lon: number): (Planet & { alt: number }) | null {
+function buildPlanet(cfg: PlanetCfg, date: Date, lat: number, lon: number): (Planet & { alt: number; phaseInfo?: string }) | null {
     try {
         const obs = new Astronomy.Observer(lat, lon, 0);
         const eq = Astronomy.Equator(cfg.body, date, obs, true, true);
@@ -72,22 +84,29 @@ function buildPlanet(cfg: PlanetCfg, date: Date, lat: number, lon: number): (Pla
 
         // For the Moon, enrich description with phase info
         let desc = cfg.desc(illum.mag);
+        let symbol = cfg.symbol;
+        let phaseInfo: string | undefined = undefined;
+
         if (cfg.body === Astronomy.Body.Moon) {
             const moonPhase = Astronomy.MoonPhase(date);
             const pct = (illum.phase_fraction * 100).toFixed(0);
-            desc = `${getMoonPhaseName(moonPhase)} \u2014 ${pct}% iluminada. ${desc}`;
+            const phaseName = getMoonPhaseName(moonPhase);
+            desc = `${phaseName} \u2014 ${pct}% iluminada. ${desc}`;
+            symbol = getMoonPhaseSymbol(moonPhase);
+            phaseInfo = `${phaseName} (${pct}%)`;
         }
 
         return { 
             name: cfg.name, 
-            symbol: cfg.symbol, 
+            symbol, 
             ra, dec, 
             mag: illum.mag, 
             dist, // Inyectamos distancia
             color: cfg.color, 
             desc, 
             kind: 'planet', 
-            alt 
+            alt,
+            phaseInfo
         };
     } catch {
         return null;
@@ -197,6 +216,7 @@ const MAX_PER_SECTION = 40;
 export default function GuideTab() {
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState<Filter>('all');
+    const [sortBy, setSortBy] = useState<'magnitude' | 'altitude'>('magnitude');
 
     const targetedObject = useAppStore((s) => s.targetedObject);
     const setTargetedObject = useAppStore((s) => s.setTargetedObject);
@@ -222,26 +242,34 @@ export default function GuideTab() {
             d.name.toLowerCase().includes(q) || d.id.toLowerCase().includes(q);
         const matchName = (n: string) => n.toLowerCase().includes(q);
 
+        const sortFn = (a: { mag: number; alt: number }, b: { mag: number; alt: number }) => {
+            if (sortBy === 'altitude') return b.alt - a.alt;
+            return a.mag - b.mag;
+        };
+
         // All objects matching the query
         const allStars = [...STARS]
             .filter(matchStar)
             .map(s => ({ ...s, alt: equToHor(s.ra, s.dec, observer.lat, observer.lon, time).alt }))
-            .sort((a, b) => a.mag - b.mag);
+            .sort(sortFn);
 
         const allDSOs = DSOS
             .filter(matchDSO)
             .map(d => ({ ...d, alt: equToHor(d.ra, d.dec, observer.lat, observer.lon, time).alt }))
-            .sort((a, b) => a.mag - b.mag);
+            .sort(sortFn);
 
         const allPlanets = PLANET_GUIDE_CONFIGS
             .map(cfg => buildPlanet(cfg, time, observer.lat, observer.lon))
-            .filter((p): p is Planet & { alt: number } => p !== null && matchName(p.name))
-            .sort((a, b) => a.mag - b.mag);
+            .filter((p): p is Planet & { alt: number; phaseInfo?: string } => p !== null && matchName(p.name))
+            .sort(sortFn);
 
         const allConsts = CONSTELLATION_TARGETS
             .filter(c => matchName(c.name) || matchName(getConstellationDisplayName(c.name)))
             .map(c => ({ ...c, alt: equToHor(c.ra, c.dec, observer.lat, observer.lon, time).alt }))
-            .sort((a, b) => getConstellationDisplayName(a.name).localeCompare(getConstellationDisplayName(b.name)));
+            .sort((a, b) => {
+                if (sortBy === 'altitude') return b.alt - a.alt;
+                return getConstellationDisplayName(a.name).localeCompare(getConstellationDisplayName(b.name));
+            });
 
         // Categorized DSOs for counts
         const galaxies = allDSOs.filter(d => d.type === 'galaxy');
@@ -260,7 +288,7 @@ export default function GuideTab() {
             clusterTotal: clusters.length,
             constellationTotal: allConsts.length,
         };
-    }, [q, observer, time, limit]);
+    }, [q, observer, time, limit, sortBy]);
 
     // --- Debounced Remote Search ---
     useEffect(() => {
@@ -325,21 +353,46 @@ export default function GuideTab() {
             )}
 
             {/* Filtros */}
-            <div className="flex flex-wrap gap-1.5">
-                {FILTERS.map(({ id, label, activeClass }) => (
+            <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap gap-1.5">
+                    {FILTERS.map(({ id, label, activeClass }) => (
+                        <button
+                            key={id}
+                            onClick={() => setFilter(id)}
+                            className={cn(
+                                'px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wider border transition-all',
+                                filter === id
+                                    ? activeClass
+                                    : 'text-white/40 border-white/12 hover:text-white/65 hover:border-white/20'
+                            )}
+                        >
+                            {label}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="flex items-center rounded-lg border border-white/10 bg-white/[0.04] p-0.5">
                     <button
-                        key={id}
-                        onClick={() => setFilter(id)}
+                        onClick={() => setSortBy('magnitude')}
                         className={cn(
-                            'px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider border transition-all',
-                            filter === id
-                                ? activeClass
-                                : 'text-white/40 border-white/12 hover:text-white/65 hover:border-white/20'
+                            'px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest rounded-md transition-all',
+                            sortBy === 'magnitude' ? 'bg-blue-500/20 text-blue-300' : 'text-white/30 hover:text-white/60'
                         )}
+                        title="Ordenar por brillo"
                     >
-                        {label}
+                        Brillo
                     </button>
-                ))}
+                    <button
+                        onClick={() => setSortBy('altitude')}
+                        className={cn(
+                            'px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest rounded-md transition-all',
+                            sortBy === 'altitude' ? 'bg-emerald-500/20 text-emerald-300' : 'text-white/30 hover:text-white/60'
+                        )}
+                        title="Ordenar por altura (observabilidad)"
+                    >
+                        Altura
+                    </button>
+                </div>
             </div>
 
             {/* Objetivo activo */}
@@ -381,7 +434,24 @@ export default function GuideTab() {
                                             >
                                                 {planet.symbol}
                                             </span>
-                                            <span className="text-[13px] font-semibold flex-1 truncate">{planet.name}</span>
+                                            <div className="flex flex-col flex-1 min-w-0">
+                                                <span className="text-[13px] font-semibold truncate">{planet.name}</span>
+                                                {planet.phaseInfo && (
+                                                    <span className="text-[9px] text-amber-200/80 font-bold tracking-wide">
+                                                        {planet.phaseInfo}
+                                                    </span>
+                                                )}
+                                                {planet.dist && planet.name !== 'Luna' && (
+                                                    <span className="text-[9px] text-white/30 font-mono">
+                                                        {(planet.dist * 149.6).toFixed(1)}M km
+                                                    </span>
+                                                )}
+                                                {planet.name === 'Luna' && planet.dist && (
+                                                    <span className="text-[9px] text-white/30 font-mono">
+                                                        {(planet.dist * 149597870 / 1000).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ".")} km
+                                                    </span>
+                                                )}
+                                            </div>
                                             <span className="text-[10px] text-white/40 shrink-0 font-mono">{planet.mag.toFixed(1)}</span>
                                             <div suppressHydrationWarning title={planet.alt > 0 ? `Visible · Alt ${planet.alt.toFixed(0)}°` : 'Bajo el horizonte'}
                                                 className={cn('w-1.5 h-1.5 rounded-full shrink-0 ml-0.5', planet.alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15')} />

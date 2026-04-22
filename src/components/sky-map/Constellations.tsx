@@ -199,18 +199,18 @@ export default function Constellations() {
                                 <Line
                                     points={points}
                                     color={color}
-                                    lineWidth={lineWidth * 8}
+                                    lineWidth={lineWidth * 12}
                                     transparent
-                                    opacity={0.12 * overallPresence}
+                                    opacity={0.18 * overallPresence}
                                     depthTest={false}
                                     depthWrite={false}
                                 />
                                 <Line
                                     points={points}
                                     color={color}
-                                    lineWidth={lineWidth * 4}
+                                    lineWidth={lineWidth * 6}
                                     transparent
-                                    opacity={0.25 * overallPresence}
+                                    opacity={0.35 * overallPresence}
                                     depthTest={false}
                                     depthWrite={false}
                                 />

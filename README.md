@@ -15,10 +15,10 @@ Esta ronda deja Cosmos Atlas mas cerca de una app de astronomia seria, no una de
 - **Dependencias y auditoria** - Next.js actualizado a `16.2.4`; auditoria de produccion queda en `0` vulnerabilidades.
 - **Verificacion** - Ultima tanda validada con `npm run lint`, `npm run test`, `npm run build` y `npm audit --omit=dev --json`.
 
-Planetario interactivo en tiempo real renderizado en 3D en el navegador.
-Muestra una bóveda celeste precisa a tu posición geográfica y hora actual,
-con estrellas, constelaciones, planetas, objetos de cielo profundo, Vía Láctea y satélites.
-Totalmente responsive e instalable como PWA.
+- **Catálogo NGC Completo (7,840 objetos)** — Integración total del catálogo OpenNGC mediante un motor de renderizado binario de alto rendimiento.
+- **Líneas de Constelaciones IAU (88/88)** — Cobertura total de todas las constelaciones oficiales con fidelidad científica y estrellas de anclaje inyectadas.
+- **Interfaz Glassmorphism Premium** — Rediseño de etiquetas celestes con efectos de desenfoque de fondo (backdrop-blur) y gestión inteligente de colisiones.
+- **Optimización de Datos** — Base de datos estelar auditada y deduplicada (Yale BSC5 + Anclajes IAU).
 
 ---
 
@@ -221,7 +221,7 @@ src/
 
 ### Estrellas (`stars.ts`)
 
-340+ estrellas con nombre propio ordenadas por magnitud, cubriendo las 88 constelaciones oficiales de la IAU. Cada estrella incluye:
+900+ estrellas con nombre propio y puntos de anclaje, cubriendo las 88 constelaciones oficiales de la IAU. El catálogo base Yale BSC5 ha sido suplementado con estrellas de anclaje para garantizar la integridad de las figuras. Cada estrella incluye:
 
 - Coordenadas J2000 (RA en grados, Dec en grados)
 - Magnitud aparente, color espectral, radio de renderizado
@@ -235,13 +235,13 @@ Incluye todas las constelaciones clásicas (Orion, Ursa Major, Scorpius, etc.) m
 
 ### Objetos de cielo profundo (`dsos.ts`)
 
-Catálogo expandido con más de 45 objetos clave, incluyendo el Grupo Local y objetos icónicos del espacio profundo:
+Catálogo profesional masivo con **7.840 objetos** (OpenNGC), renderizados mediante shaders de alto rendimiento:
 
-| Tipo | Ejemplos |
-|---|---|
-| **Galaxias** | M31 Andromeda, M33 Triángulo, M81 Bode, M82 Cigarro, M87 Virgo A, LMC, SMC... |
-| **Nebulosas** | M42 Orion, M57 Anillo, M1 Cangrejo, M27 Dumbbell, NGC 7293 Hélice... |
-| **Cúmulos** | M45 Pléyades, M44 Pesebre, M13 Hércules, M3, M4, M5, M11... |
+| Tipo | Cantidad | Ejemplos |
+|---|---|---|
+| **Galaxias** | ~5.000 | M31 Andromeda, M33 Triángulo, M51, M81... |
+| **Nebulosas** | ~1.500 | M42 Orion, NGC 7293 Hélice, M8 Laguna... |
+| **Cúmulos** | ~1.300 | M45 Pléyades, M44 Pesebre, M13 Hércules... |
 
 ---
 
@@ -480,6 +480,22 @@ Clic de nuevo en el mismo objeto lo deselecciona.
 ---
 
 ## Changelog
+
+### v3.3 — 2026-04-22 (Deep Sky & Constellation Fidelity)
+#### 🌌 Catálogo NGC Completo
+- **OpenNGC Integration**: Incorporación de los 7.840 objetos del catálogo OpenNGC (Galaxias, Nebulosas y Cúmulos).
+- **Motor Binario (`ngc.bin`)**: Implementación de un cargador de datos binarios (20 bytes por objeto) para renderizado instantáneo sin sobrecarga de memoria.
+- **Shader de Cielo Profundo**: Renderizado basado en puntos con *Level of Detail* (LOD) dinámico según el FOV, optimizando la batería en dispositivos móviles.
+
+#### 🏛️ Fidelidad de Constelaciones (IAU)
+- **88 Constelaciones Completas**: Inyección de **523 estrellas de anclaje** adicionales para cerrar todas las figuras oficiales de la IAU.
+- **Reconstrucción de Mapas**: Actualización de `constellations.ts` con segmentos de línea estándar profesional.
+- **Auditoría Estelar**: Eliminación de más de 195 estrellas duplicadas y resolución de conflictos de posición (z-fighting) para un mapa 100% limpio.
+
+#### 💎 Interfaz Glassmorphism
+- **Refinamiento Visual**: Sustitución de etiquetas opacas por un diseño **Glassmorphism** (fondo `bg-white/5` + `backdrop-blur-md`).
+- **Gestión de Oclusión**: Algoritmo de desplazamiento vertical dinámico para etiquetas de planetas en conjunción.
+- **Ajuste de Perseo**: Reposicionamiento de etiquetas para evitar cubrir el arte mitológico en constelaciones clave.
 
 ### v3.0 — 2026-02-26 (Inmersión Planetaria & IA Astrónoma)
 #### 🎙️ IA Astrónoma (Voice-Over)

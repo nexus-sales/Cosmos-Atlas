@@ -338,10 +338,15 @@ export function AdaptiveSoundscape() {
         return () => {
             if (audioRef.current) {
                 const { oscillators, lfo, noiseNode, ctx } = audioRef.current;
-                oscillators.forEach((osc) => osc.stop());
-                if (lfo) lfo.stop();
-                if (noiseNode) noiseNode.stop();
-                ctx.close();
+                oscillators.forEach((osc) => { try { osc.stop(); } catch (e) {} });
+                if (lfo) { try { lfo.stop(); } catch (e) {} }
+                if (noiseNode) { try { noiseNode.stop(); } catch (e) {} }
+                
+                if (ctx.state !== 'closed') {
+                    ctx.close().catch(() => {});
+                }
+                audioRef.current = null;
+                isInitializedRef.current = false;
             }
         };
     }, []);

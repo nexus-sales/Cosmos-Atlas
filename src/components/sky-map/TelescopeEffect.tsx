@@ -34,10 +34,10 @@ export default function TelescopeEffect() {
             {/* Bloom calibrado: solo objetos muy brillantes (Sol, Venus, Sirio).
                 threshold alto evita el efecto "filtro Instagram" en estrellas tenues. */}
             <Bloom
-                intensity={0.4}
-                luminanceThreshold={0.7}
+                intensity={0.15}
+                luminanceThreshold={0.85}
                 mipmapBlur
-                radius={0.3}
+                radius={0.1}
             />
             {telescopeMode ? (
                 <>

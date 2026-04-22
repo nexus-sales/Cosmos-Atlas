@@ -246,16 +246,20 @@ export default function ConstellationLabels() {
 
                             <span
                                 className={cn(
-                                    'px-4 py-1.5 rounded-full text-[12px] font-black tracking-widest whitespace-nowrap',
-                                    'transition-all duration-500 border-2',
+                                    'px-3 py-1 rounded-full text-[11px] font-semibold tracking-[0.2em] whitespace-nowrap',
+                                    'transition-all duration-500 border',
                                     (isFocused || isSelected)
                                         ? (nightMode
-                                            ? 'text-red-400 bg-red-950/90 border-red-500/80 shadow-[0_0_20px_rgba(248,113,113,0.4)]'
-                                            : 'text-white bg-blue-700/80 border-blue-300 shadow-[0_0_30px_rgba(59,130,246,0.5)]')
+                                            ? 'text-red-400 bg-red-950/60 border-red-500/50 shadow-[0_0_20px_rgba(248,113,113,0.3)] backdrop-blur-md'
+                                            : 'text-white bg-blue-600/40 border-blue-400/50 shadow-[0_0_30px_rgba(59,130,246,0.3)] backdrop-blur-md')
                                         : (nightMode
-                                            ? 'text-red-900 bg-black/60 border-red-900/40'
-                                            : 'text-white/90 bg-black/80 border-white/20')
+                                            ? 'text-red-900/40 bg-black/20 border-red-900/10'
+                                            : 'text-white/40 bg-white/5 border-white/5 backdrop-blur-[2px]')
                                 )}
+                                style={{
+                                    // Ajuste dinámico para Perseo y otras que tapen el arte
+                                    transform: name === 'Perseus' ? 'translateY(60px)' : (name === 'Orion' ? 'translateY(80px)' : 'none')
+                                }}
                             >
                                 {label}
                             </span>

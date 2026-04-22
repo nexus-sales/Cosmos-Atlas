@@ -261,14 +261,17 @@ export default function AIAstronoma() {
 
         const utterance = new SpeechSynthesisUtterance(normalizeTextForSpeech(text));
         const voices = synthRef.current.getVoices();
-        const spanishVoice = voices.find(v => v.lang.startsWith('es') && v.name.includes('Google'))
-            || voices.find(v => v.lang.startsWith('es') && v.name.includes('Helena'))
-            || voices.find(v => v.lang.startsWith('es'));
+        // Priorizar voces "Natural" o "Google" que suenan mucho más humanas
+        const spanishVoice = 
+            voices.find(v => v.lang.startsWith('es') && v.name.includes('Natural')) ||
+            voices.find(v => v.lang.startsWith('es') && v.name.includes('Google')) ||
+            voices.find(v => v.lang.startsWith('es') && v.name.includes('Helena')) ||
+            voices.find(v => v.lang.startsWith('es'));
 
         if (spanishVoice) utterance.voice = spanishVoice;
         utterance.lang = 'es-ES';
-        utterance.pitch = kidsMode ? 1.18 : 0.98;
-        utterance.rate = kidsMode ? 1.0 : 0.9;
+        utterance.pitch = kidsMode ? 1.1 : 1.0; 
+        utterance.rate = kidsMode ? 1.0 : 0.95; // Un poco más lento para que sea más elegante
 
         utterance.onstart = () => setIsSpeaking(true);
         utterance.onend = () => {

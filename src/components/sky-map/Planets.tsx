@@ -8,6 +8,7 @@ import { useFrame } from '@react-three/fiber';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { useAppStore } from '@/stores/useAppStore';
 import * as Astronomy from 'astronomy-engine';
+import { cn } from '@/lib/utils';
 
 
 // ── Texturas procedurales — sin dependencias externas ────────────────────────
@@ -348,8 +349,23 @@ function MoonMesh({ planet, phase, opacity }: { planet: { pos: [number, number, 
                 />
             </mesh>
             <Html distanceFactor={120} zIndexRange={[90, 0]}>
-                <div className="pointer-events-none whitespace-nowrap rounded-lg border-2 border-white/30 bg-black/90 px-3 py-1.5 text-[14px] font-black font-mono text-white -translate-x-1/2 -translate-y-10 shadow-lg transition-all">
-                    LUNA ({phase.toFixed(0)}°)
+                <div 
+                    className="pointer-events-auto cursor-pointer whitespace-nowrap rounded-full border border-white/20 bg-white/5 backdrop-blur-md px-3 py-1 text-[11px] font-semibold tracking-wider text-white -translate-x-1/2 -translate-y-10 shadow-2xl transition-all hover:bg-white/20 hover:border-white/40"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedObject({
+                            name: 'Luna',
+                            ra: 0, dec: 0, mag: -12.7,
+                            dist: planet.dist,
+                            desc: "Satélite natural de la Tierra.",
+                            color: '#ffffff',
+                            symbol: '☾',
+                            kind: 'planet'
+                        });
+                        markAsVisited('Luna');
+                    }}
+                >
+                    LUNA • {phase.toFixed(0)}°
                 </div>
             </Html>
         </group>
@@ -458,7 +474,28 @@ function PlanetMesh({ planet }: { planet: PlanetData }) {
                 )}
             </Float>
             <Html distanceFactor={150}>
-                <div className="pointer-events-none whitespace-nowrap rounded-lg border-2 border-white/30 bg-black/90 px-3 py-1.5 text-[14px] font-black font-mono text-white -translate-x-1/2 -translate-y-14 shadow-xl transition-all">
+                <div 
+                    className={cn(
+                        "pointer-events-auto cursor-pointer whitespace-nowrap rounded-full border border-white/20 bg-white/5 backdrop-blur-md px-3 py-1 text-[11px] font-semibold tracking-wider text-white -translate-x-1/2 shadow-2xl transition-all hover:bg-white/20 hover:border-white/40",
+                        // Pequeño ajuste vertical dinámico para evitar solapamientos directos en conjunciones
+                        ["Urano", "Júpiter", "Neptuno"].includes(planet.name) ? "-translate-y-16" : "-translate-y-12"
+                    )}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedObject({
+                            name: planet.name,
+                            ra: planet.ra,
+                            dec: planet.dec,
+                            mag: 0,
+                            dist: planet.dist,
+                            desc: `Planeta ${planet.name} del Sistema Solar.`,
+                            color: '#ffffff',
+                            symbol: '●',
+                            kind: 'planet'
+                        });
+                        markAsVisited(planet.name);
+                    }}
+                >
                     {planet.name.toUpperCase()}
                 </div>
             </Html>

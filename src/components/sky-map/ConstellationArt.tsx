@@ -28,8 +28,8 @@ function ConstellationTexture({ name, activePresence }: { name: string; activePr
     const config = useMemo(() => {
         const mapping: Record<string, { ra: number, dec: number, size: number, rot: number, op?: number }> = {
             'leo': { ra: 164, dec: 15, size: 52, rot: 0.15 },
-            'perseus': { ra: 48.0, dec: 42.5, size: 50, rot: -0.1 },
-            'orion': { ra: 85.5, dec: 2.5, size: 46, rot: -0.18, op: 0.35 },
+            'perseus': { ra: 49.5, dec: 44.5, size: 52, rot: -0.05 },
+            'orion': { ra: 84.0, dec: 0.0, size: 42, rot: -0.10, op: 0.35 },
         };
         return mapping[name.toLowerCase()] || { ra: 0, dec: 0, size: 40, rot: 0 };
     }, [name]);
@@ -104,10 +104,10 @@ export default function ConstellationArt() {
                 const isFocused = name === activeConstellation;
                 if (autoFigure && !isFocused) return null;
 
-                // Priority: Use texture if available
-                if (isFocused && texturesAvailable.includes(name.toLowerCase())) {
-                    return <ConstellationTexture key={`tex-${name}`} name={name} activePresence={autoPresence} />;
-                }
+                // Use texture if available AND lines
+                const textureEl = (isFocused && texturesAvailable.includes(name.toLowerCase())) 
+                    ? <ConstellationTexture key={`tex-${name}`} name={name} activePresence={autoPresence} />
+                    : null;
 
                 const color = nightMode
                     ? (isFocused ? '#ff4422' : '#661100')
@@ -123,54 +123,7 @@ export default function ConstellationArt() {
 
                 return (
                     <group key={name}>
-                        {fillOutlines.map((points, i) => (
-                            <Line
-                                key={`fill-outline-${i}`}
-                                points={points}
-                                color={color}
-                                lineWidth={lineWidth * 0.9}
-                                transparent
-                                opacity={outlineOpacity}
-                                depthTest={false}
-                                depthWrite={false}
-                            />
-                        ))}
-
-                        {isFocused && polylines.map((points, i) => (
-                            <group key={`glow-group-${i}`}>
-                                <Line
-                                    points={points}
-                                    color={color}
-                                    lineWidth={lineWidth * 10}
-                                    transparent
-                                    opacity={0.04 * autoPresence}
-                                    depthTest={false}
-                                    depthWrite={false}
-                                />
-                                <Line
-                                    points={points}
-                                    color={color}
-                                    lineWidth={lineWidth * 5}
-                                    transparent
-                                    opacity={0.10 * autoPresence}
-                                    depthTest={false}
-                                    depthWrite={false}
-                                />
-                            </group>
-                        ))}
-
-                        {polylines.map((points, i) => (
-                            <Line
-                                key={i}
-                                points={points}
-                                color={color}
-                                lineWidth={lineWidth}
-                                transparent
-                                opacity={lineOpacity}
-                                depthTest={false}
-                                depthWrite={false}
-                            />
-                        ))}
+                        {textureEl}
                     </group>
                 );
             })}
