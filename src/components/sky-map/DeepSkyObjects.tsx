@@ -207,19 +207,25 @@ function DSOItem({ dso }: { dso: DSOData }) {
 
             {/* Label progresivo: aparece si estamos cerca (FOV < 35) o si hacemos hover */}
             {(hovered || (camFov < 35 && dso.mag < 8.5)) && (
-                <Html distanceFactor={15} zIndexRange={[100, 0]}>
+                <Html zIndexRange={[100, 0]}>
                     <div 
-                        className="text-[14px] font-mono pointer-events-none whitespace-nowrap bg-black/80 px-3 py-1.5 rounded-lg border-2 -translate-y-7 font-black transition-all"
+                        className="pointer-events-none whitespace-nowrap flex flex-col items-center -translate-y-6 transition-opacity duration-300"
                         style={{
-                            color: displayColor,
-                            textShadow: `0 0 12px ${displayColor}, 0 0 4px black`,
-                            borderColor: `${displayColor}aa`,
+                            opacity: hovered ? 1 : 0.6
                         }}
                     >
-                        {dso.name}
-                        <div className="text-[11px] opacity-80 mt-1">
-                            {dso.id} · mag {dso.mag.toFixed(1)}
-                        </div>
+                        <span className="text-[13px] font-semibold tracking-wider" style={{
+                            color: nightMode ? '#fca5a5' : '#e2e8f0',
+                            textShadow: nightMode ? '0 0 4px #000, 0 0 2px #000' : '0 0 4px #000, 0 0 2px #000'
+                        }}>
+                            {dso.name}
+                        </span>
+                        <span className="text-[10px] font-mono mt-0.5" style={{
+                            color: nightMode ? '#ef4444' : displayColor,
+                            textShadow: '0 0 4px #000, 0 0 2px #000'
+                        }}>
+                            {dso.id}
+                        </span>
                     </div>
                 </Html>
             )}

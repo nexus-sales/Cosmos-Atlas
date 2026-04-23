@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
@@ -24,6 +24,7 @@ import {
     Sparkles,
     Activity,
     ShieldCheck,
+    Volume2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChallengeTab from '@/components/panels/ChallengeTab';
@@ -81,6 +82,7 @@ function PanelContent({
     const setFOVParams = useAppStore((state) => state.setFOVParams);
     const toggleSetting = useAppStore((state) => state.toggleSetting);
     const kidsMode = useAppStore((state) => state.settings.kidsMode);
+    const soundscape = useAppStore((state) => state.settings.soundscape);
     const satelliteInfo = useAppStore((state) => state.satelliteInfo);
     const viewMode = useAppStore((state) => state.viewMode);
     const arHealthHistory = useAppStore((state) => state.arHealthHistory);
@@ -101,6 +103,7 @@ function PanelContent({
         telescopeMode,
         followTarget,
         kidsMode,
+        soundscape,
     });
 
     const tabs = [
@@ -120,6 +123,7 @@ function PanelContent({
         { key: 'showFOV' as const, label: 'CAMPO FOV', icon: Camera, active: showFOV },
         { key: 'showSatellites' as const, label: 'SATÉLITES', icon: Satellite, active: showSatellites },
         { key: 'showStarlink' as const, label: 'STARLINK', icon: Globe, active: showStarlink },
+        { key: 'soundscape' as const, label: 'SONIDO AMB.', icon: Volume2, active: soundscape },
         { key: 'showDiagnostics' as const, label: 'DIAGNÓST.', icon: Activity, active: showDiagnostics },
         { key: 'telescopeMode' as const, label: 'TELESCOPIO', icon: Camera, active: telescopeMode },
         { key: 'followTarget' as const, label: 'SEGUIR', icon: Crosshair, active: followTarget },
@@ -605,6 +609,7 @@ function layerTogglesCount(settings: {
     telescopeMode: boolean;
     followTarget: boolean;
     kidsMode: boolean;
+    soundscape: boolean;
 }) {
     return Object.values(settings).filter(Boolean).length;
 }

@@ -28,6 +28,7 @@ import ConstellationArt from '@/components/sky-map/ConstellationArt';
 import { AdaptiveSoundscape } from '@/components/audio/AdaptiveSoundscape';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import NGCObjects from '@/components/sky-map/NGCObjects';
+import Meteors from '@/components/sky-map/Meteors';
 import { useAppStore } from '@/stores/useAppStore';
 import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
@@ -343,7 +344,8 @@ export default function SkyCanvas() {
                     antialias: false,
                     stencil: false,
                     powerPreference: 'high-performance',
-                    alpha: true
+                    alpha: true,
+                    preserveDrawingBuffer: true
                 }}
                 camera={{ position: [0, 0, 0.01], fov: 60, near: 0.001, far: 200 }}
                 onCreated={({ gl }) => {
@@ -400,6 +402,7 @@ export default function SkyCanvas() {
                         <ErrorBoundary label="ConstellationArt"><ConstellationArt /></ErrorBoundary>
                         <ErrorBoundary label="ConstellationLabels"><ConstellationLabels /></ErrorBoundary>
                         <ErrorBoundary label="NGCObjects"><NGCObjects /></ErrorBoundary>
+                        <ErrorBoundary label="Meteors"><Meteors /></ErrorBoundary>
                         <ErrorBoundary label="Planets"><Planets /></ErrorBoundary>
                         {showGrid && <ErrorBoundary label="CelestialGrid"><CelestialGrid /></ErrorBoundary>}
                         {showEcliptic && <ErrorBoundary label="Ecliptic"><Ecliptic /></ErrorBoundary>}

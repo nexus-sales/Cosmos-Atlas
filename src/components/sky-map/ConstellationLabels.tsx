@@ -179,7 +179,6 @@ export default function ConstellationLabels() {
                         key={name}
                         position={pos}
                         center
-                        distanceFactor={130}
                         zIndexRange={[100, 50]}
                         pointerEvents="auto"
                     >
@@ -195,8 +194,6 @@ export default function ConstellationLabels() {
                                 const { ra, dec } = vectorToRaDec(vector);
                                 const display = getConstellationDisplayName(name);
                                 
-                                // Approximate angular sizes for some major constellations
-                                // to allow the camera to fit them properly.
                                 const sizes: Record<string, number> = {
                                     'Orion': 25,
                                     'Ursa Major': 40,
@@ -226,38 +223,29 @@ export default function ConstellationLabels() {
                             }}
                             className={cn(
                                 'flex flex-col items-center pointer-events-auto cursor-pointer select-none',
-                                'transition-all duration-500 transform-gpu',
-                                (isFocused || isSelected) ? 'scale-105' : 'scale-90'
+                                'transition-opacity duration-500 transform-gpu'
                             )}
                             style={{
                                 opacity,
-                                transform: `scale(${scaleFactor * ((isFocused || isSelected) ? 1.0 : 0.92)})`,
-                                transition: 'opacity 0.4s, transform 0.4s ease',
+                                transition: 'opacity 0.4s ease',
                             }}
                         >
-                            <div
-                                className={cn(
-                                    'w-1.5 h-1.5 rounded-full mb-1.5 transition-all duration-500',
-                                    (isFocused || isSelected)
-                                        ? (nightMode ? 'bg-red-400 shadow-[0_0_10px_#ff4444]' : 'bg-blue-400 shadow-[0_0_10px_#3b82f6]')
-                                        : 'bg-white/40'
-                                )}
-                            />
-
                             <span
                                 className={cn(
-                                    'px-3 py-1 rounded-full text-[11px] font-semibold tracking-[0.2em] whitespace-nowrap',
-                                    'transition-all duration-500 border',
+                                    'text-[14px] font-medium tracking-[0.25em] whitespace-nowrap',
+                                    'transition-all duration-500',
                                     (isFocused || isSelected)
                                         ? (nightMode
-                                            ? 'text-red-400 bg-red-950/60 border-red-500/50 shadow-[0_0_20px_rgba(248,113,113,0.3)] backdrop-blur-md'
-                                            : 'text-white bg-blue-600/40 border-blue-400/50 shadow-[0_0_30px_rgba(59,130,246,0.3)] backdrop-blur-md')
+                                            ? 'text-red-400 font-bold'
+                                            : 'text-white font-bold')
                                         : (nightMode
-                                            ? 'text-red-900/40 bg-black/20 border-red-900/10'
-                                            : 'text-white/40 bg-white/5 border-white/5 backdrop-blur-[2px]')
+                                            ? 'text-red-900/70'
+                                            : 'text-white/60')
                                 )}
                                 style={{
-                                    // Ajuste dinámico para Perseo y otras que tapen el arte
+                                    textShadow: nightMode 
+                                        ? '0 0 6px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,0.8)' 
+                                        : '0 0 6px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,0.8)',
                                     transform: name === 'Perseus' ? 'translateY(60px)' : (name === 'Orion' ? 'translateY(80px)' : 'none')
                                 }}
                             >

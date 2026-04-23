@@ -17,8 +17,10 @@ Esta ronda deja Cosmos Atlas mas cerca de una app de astronomia seria, no una de
 
 - **Catálogo NGC Completo (7,840 objetos)** — Integración total del catálogo OpenNGC mediante un motor de renderizado binario de alto rendimiento.
 - **Líneas de Constelaciones IAU (88/88)** — Cobertura total de todas las constelaciones oficiales con fidelidad científica y estrellas de anclaje inyectadas.
-- **Interfaz Glassmorphism Premium** — Rediseño de etiquetas celestes con efectos de desenfoque de fondo (backdrop-blur) y gestión inteligente de colisiones.
-- **Optimización de Datos** — Base de datos estelar auditada y deduplicada (Yale BSC5 + Anclajes IAU).
+- **Minimalismo UI (Pure Text Labels)** — Erradicación del escalado 3D en etiquetas de texto; ahora todas las constelaciones, objetos de cielo profundo, lunas y planetas usan una tipografía limpia y minimalista libre de cajas o fondos invasivos, con text-shadow calibrado.
+- **Atmósfera Realista y Meteoros** — Implementación de un Horizon Glow físico (*Rayleigh scattering*) y un sistema de estrellas fugaces (Meteors) optimizado con *InstancedMesh* direccionales.
+- **Modo Astrofotografía (Polaroid)** — Integración de captura real en el Canvas (`preserveDrawingBuffer`) que permite tomar fotografías instantáneas del cielo con metadatos superpuestos (AR/Dec, LST, Lat/Lon) listas para guardar.
+- **Máquina del Tiempo (Time Travel)** — Despliegue visual e interactivo de los controles de tiempo temporales, permitiendo navegar hacia el pasado o futuro a velocidades aceleradas (x1h/s, x1d/s, etc.).
 
 ---
 

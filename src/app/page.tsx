@@ -6,6 +6,7 @@ import SidePanel from '@/components/panels/SidePanel';
 import AIAstronoma from '@/components/panels/AIAstronoma';
 import TimeTravelControls from '@/components/panels/TimeTravelControls';
 import ViewModeWidget from '@/components/panels/ViewModeWidget';
+import SnapshotButton from '@/components/panels/SnapshotButton';
 import DiagnosticsOverlay from '@/components/panels/DiagnosticsOverlay';
 import SystemAlerts from '@/components/panels/SystemAlerts';
 import Onboarding from '@/components/Onboarding';
@@ -67,6 +68,7 @@ export default function Home() {
           <div className="flex-1 relative min-w-0 pointer-events-none">
             <TimeTravelControls />
             <ViewModeWidget />
+            <SnapshotButton />
           </div>
 
           {/* Sidebar/BottomSheet Layer */}

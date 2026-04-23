@@ -42,24 +42,29 @@ export default function Horizon() {
                 rotation={[-Math.PI / 2, 0, 0]}
                 renderOrder={3}
             >
-                <ringGeometry args={[85, 105, 128]} />
+                <ringGeometry args={[82, 110, 128]} />
                 <meshBasicMaterial 
                     color={accentColor} 
                     transparent 
-                    opacity={0.3} 
+                    opacity={0.4} 
                     side={THREE.DoubleSide}
                     blending={THREE.AdditiveBlending}
                 />
             </mesh>
 
-            {/* ── Glow Fino del Borde ─── */}
+            {/* ── Capa de dispersión secundaria (Rayleigh) ─── */}
             <mesh
                 position={[0, -0.42, 0]}
                 rotation={[-Math.PI / 2, 0, 0]}
                 renderOrder={4}
             >
-                <ringGeometry args={[89.8, 90.2, 128]} />
-                <meshBasicMaterial color={accentColor} transparent opacity={0.6} />
+                <ringGeometry args={[88, 92, 128]} />
+                <meshBasicMaterial 
+                    color={nightMode ? '#ff1111' : '#4ba3e3'} 
+                    transparent 
+                    opacity={0.5} 
+                    blending={THREE.AdditiveBlending} 
+                />
             </mesh>
 
             {/* ── Puntos cardinales mejorados ────────── */}

@@ -31,9 +31,9 @@ const SOUND_PROFILES: Record<SoundProfile, {
     lfoDepth: number;
 }> = {
     deep_space: {
-        masterVolume: 0.08,
+        masterVolume: 0.18, // Aumentado para mejor inmersión
         lowPassFreq: 400,
-        noiseVolume: 0.03,
+        noiseVolume: 0.04,
         oscConfig: [
             { freq: 60, type: 'sine', gain: 0.02 },
             { freq: 80, type: 'sine', gain: 0.015 },
@@ -42,9 +42,9 @@ const SOUND_PROFILES: Record<SoundProfile, {
         lfoDepth: 0.005,
     },
     sun: {
-        masterVolume: 0.15,
+        masterVolume: 0.35, // El Sol debe sonar potente
         lowPassFreq: 800,
-        noiseVolume: 0.06,
+        noiseVolume: 0.08,
         oscConfig: [
             { freq: 100, type: 'sawtooth', gain: 0.03 },
             { freq: 150, type: 'sine', gain: 0.04 },
@@ -54,9 +54,9 @@ const SOUND_PROFILES: Record<SoundProfile, {
         lfoDepth: 0.015,
     },
     planet: {
-        masterVolume: 0.1,
+        masterVolume: 0.22,
         lowPassFreq: 600,
-        noiseVolume: 0.04,
+        noiseVolume: 0.05,
         oscConfig: [
             { freq: 80, type: 'sine', gain: 0.025 },
             { freq: 120, type: 'triangle', gain: 0.02 },
@@ -65,9 +65,9 @@ const SOUND_PROFILES: Record<SoundProfile, {
         lfoDepth: 0.01,
     },
     horizon_wind: {
-        masterVolume: 0.12,
+        masterVolume: 0.25,
         lowPassFreq: 1200,
-        noiseVolume: 0.1,
+        noiseVolume: 0.12,
         oscConfig: [
             { freq: 200, type: 'sine', gain: 0.01 },
         ],
@@ -75,9 +75,9 @@ const SOUND_PROFILES: Record<SoundProfile, {
         lfoDepth: 0.02,
     },
     constellation: {
-        masterVolume: 0.09,
+        masterVolume: 0.20,
         lowPassFreq: 500,
-        noiseVolume: 0.035,
+        noiseVolume: 0.045,
         oscConfig: [
             { freq: 220, type: 'sine', gain: 0.015 },
             { freq: 330, type: 'sine', gain: 0.01 },
@@ -256,17 +256,19 @@ export function AdaptiveSoundscape() {
         };
     }, [targetedObject]);
 
-    // Ajuste por modo nocturno
+    // Ajuste por modo nocturno y toggle principal de sonido
     useEffect(() => {
         if (!audioRef.current || !isInitializedRef.current) return;
         const profile = SOUND_PROFILES[currentProfile.current];
         const reduction = settings.nightMode ? 0.5 : 1.0;
+        const active = settings.soundscape ? 1.0 : 0.0;
+        
         targetParams.current = {
-            masterVolume: profile.masterVolume * reduction,
+            masterVolume: profile.masterVolume * reduction * active,
             lowPassFreq: profile.lowPassFreq,
-            noiseVolume: profile.noiseVolume * reduction,
+            noiseVolume: profile.noiseVolume * reduction * active,
         };
-    }, [settings.nightMode]);
+    }, [settings.nightMode, settings.soundscape, currentProfile.current]);
 
     // Ajuste por Bortle scale
     useEffect(() => {

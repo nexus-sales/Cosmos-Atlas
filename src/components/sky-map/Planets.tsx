@@ -348,9 +348,12 @@ function MoonMesh({ planet, phase, opacity }: { planet: { pos: [number, number, 
                     transparent
                 />
             </mesh>
-            <Html distanceFactor={120} zIndexRange={[90, 0]}>
+            <Html zIndexRange={[90, 0]}>
                 <div 
-                    className="pointer-events-auto cursor-pointer whitespace-nowrap rounded-full border border-white/20 bg-white/5 backdrop-blur-md px-3 py-1 text-[11px] font-semibold tracking-wider text-white -translate-x-1/2 -translate-y-10 shadow-2xl transition-all hover:bg-white/20 hover:border-white/40"
+                    className="pointer-events-auto cursor-pointer whitespace-nowrap px-2 py-1 text-[13px] font-semibold tracking-wider text-white -translate-x-1/2 -translate-y-8 transition-opacity hover:opacity-80"
+                    style={{
+                        textShadow: '0 0 4px #000, 0 0 2px #000'
+                    }}
                     onClick={(e) => {
                         e.stopPropagation();
                         setSelectedObject({
@@ -473,13 +476,15 @@ function PlanetMesh({ planet }: { planet: PlanetData }) {
                     </mesh>
                 )}
             </Float>
-            <Html distanceFactor={150}>
+            <Html>
                 <div 
                     className={cn(
-                        "pointer-events-auto cursor-pointer whitespace-nowrap rounded-full border border-white/20 bg-white/5 backdrop-blur-md px-3 py-1 text-[11px] font-semibold tracking-wider text-white -translate-x-1/2 shadow-2xl transition-all hover:bg-white/20 hover:border-white/40",
-                        // Pequeño ajuste vertical dinámico para evitar solapamientos directos en conjunciones
-                        ["Urano", "Júpiter", "Neptuno"].includes(planet.name) ? "-translate-y-16" : "-translate-y-12"
+                        "pointer-events-auto cursor-pointer whitespace-nowrap px-2 py-1 text-[12px] font-semibold tracking-widest text-white -translate-x-1/2 transition-opacity hover:opacity-80",
+                        ["Urano", "Júpiter", "Neptuno"].includes(planet.name) ? "-translate-y-10" : "-translate-y-8"
                     )}
+                    style={{
+                        textShadow: '0 0 6px #000, 0 0 2px #000'
+                    }}
                     onClick={(e) => {
                         e.stopPropagation();
                         setSelectedObject({
@@ -522,11 +527,14 @@ function JupiterMoonMesh({ moon }: { moon: MoonData }) {
                 <sphereGeometry args={[0.08, 32, 32]} />
                 <meshBasicMaterial color={moon.color} />
             </mesh>
-            <Html distanceFactor={80}>
+            <Html>
                 <div 
                     role="presentation" 
-                    className="pointer-events-none whitespace-nowrap text-[14px] font-bold font-mono opacity-100 bg-black/80 px-2 py-0.5 rounded border border-white/20 shadow-sm" 
-                    style={{ color: moon.color } as CSSProperties}
+                    className="pointer-events-none whitespace-nowrap text-[11px] font-medium tracking-wider px-2" 
+                    style={{ 
+                        color: moon.color,
+                        textShadow: '0 0 4px #000, 0 0 2px #000'
+                    }}
                 >
                     {moon.name}
                 </div>
