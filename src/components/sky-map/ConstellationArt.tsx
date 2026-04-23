@@ -17,47 +17,7 @@ function smoothPolyline(points: Point3[], closed: boolean) {
     return curve.getPoints(target).map((v) => [v.x, v.y, v.z] as Point3);
 }
 
-/**
- * Texture-based art for constellations that have premium images.
- */
-function ConstellationTexture({ name, activePresence }: { name: string; activePresence: number }) {
-    const fileName = name.toLowerCase().replace(' ', '_');
-    const path = `/textures/constellations/${fileName}.png`;
-    const texture = useTexture(path);
-    
-    const config = useMemo(() => {
-        const mapping: Record<string, { ra: number, dec: number, size: number, rot: number, op?: number }> = {
-            'leo': { ra: 164, dec: 15, size: 52, rot: 0.15 },
-            'perseus': { ra: 49.5, dec: 44.5, size: 52, rot: -0.05 },
-            'orion': { ra: 84.0, dec: 0.0, size: 42, rot: -0.10, op: 0.35 },
-        };
-        return mapping[name.toLowerCase()] || { ra: 0, dec: 0, size: 40, rot: 0 };
-    }, [name]);
 
-    const pos = useMemo(() => equatorialTo3D(config.ra, config.dec, RADIUS - 0.95), [config]);
-    const lookAtPos = new THREE.Vector3(0, 0, 0);
-
-    return (
-        <mesh 
-            position={pos} 
-            onUpdate={(self) => {
-                self.lookAt(lookAtPos);
-                self.rotateZ(config.rot); 
-            }}
-        >
-            <planeGeometry args={[config.size, config.size]} />
-            <meshBasicMaterial 
-                map={texture} 
-                transparent 
-                opacity={(config.op ?? 0.42) * activePresence}
-                blending={THREE.AdditiveBlending}
-                depthTest={false}
-                depthWrite={false}
-                side={THREE.DoubleSide}
-            />
-        </mesh>
-    );
-}
 
 export default function ConstellationArt() {
     const showConstellationArt = useAppStore((state) => state.settings.showConstellationArt);
@@ -67,8 +27,7 @@ export default function ConstellationArt() {
     const kidsMode = useAppStore((state) => state.settings.kidsMode);
     const camFov = useAppStore((state) => state.camFov);
 
-    // Track which constellations have textures already deployed
-    const [texturesAvailable] = useState(['leo', 'perseus', 'orion']);
+
 
     const figures = useMemo(() => {
         return CONSTELLATION_ART.map((figure) => ({
@@ -104,11 +63,6 @@ export default function ConstellationArt() {
                 const isFocused = name === activeConstellation;
                 if (autoFigure && !isFocused) return null;
 
-                // Use texture if available AND lines
-                const textureEl = (isFocused && texturesAvailable.includes(name.toLowerCase())) 
-                    ? <ConstellationTexture key={`tex-${name}`} name={name} activePresence={autoPresence} />
-                    : null;
-
                 const color = nightMode
                     ? (isFocused ? '#ff4422' : '#661100')
                     : (isFocused
@@ -121,11 +75,9 @@ export default function ConstellationArt() {
 
                 if (Math.max(outlineOpacity, lineOpacity) < 0.01) return null;
 
-                return (
-                    <group key={name}>
-                        {textureEl}
-                    </group>
-                );
+                // Removed the 'Picasso' vector polylines.
+                // We will rely purely on the elegant star-connecting stick figures from Constellations.tsx
+                return null;
             })}
         </group>
     );

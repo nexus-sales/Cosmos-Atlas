@@ -155,13 +155,12 @@ export default function Constellations() {
                     ? (isFocused ? '#ff4444' : '#441111')
                     : (isFocused ? '#4fd1ff' : '#ffffff');
 
-                // Apply pulse and bortle to the final opacity
                 const opacity = isFocused
                     ? 1.0 * overallPresence * (isFocused ? pulse : 1.0)
                     : 0.35 * overallPresence * nonFocusedVisibility;
 
                 const lineWidth = isFocused 
-                    ? 2.8 * (isFocused ? pulse : 1.0) 
+                    ? 1.8 * (isFocused ? pulse : 1.0) 
                     : 0.9;
 
                 if (opacity < 0.01) return null;
@@ -199,18 +198,18 @@ export default function Constellations() {
                                 <Line
                                     points={points}
                                     color={color}
-                                    lineWidth={lineWidth * 12}
+                                    lineWidth={lineWidth * 4}
                                     transparent
-                                    opacity={0.18 * overallPresence}
+                                    opacity={0.1 * overallPresence}
                                     depthTest={false}
                                     depthWrite={false}
                                 />
                                 <Line
                                     points={points}
                                     color={color}
-                                    lineWidth={lineWidth * 6}
+                                    lineWidth={lineWidth * 2.5}
                                     transparent
-                                    opacity={0.35 * overallPresence}
+                                    opacity={0.2 * overallPresence}
                                     depthTest={false}
                                     depthWrite={false}
                                 />

@@ -481,6 +481,13 @@ Clic de nuevo en el mismo objeto lo deselecciona.
 
 ## Changelog
 
+### v3.4 — 2026-04-23 (Refinamiento Estético de Constelaciones)
+#### 🏛️ Minimalismo y Elegancia Clásica
+- **Eliminación del Arte Vectorial "Picasso"**: Se ha retirado el renderizado de figuras mitológicas en formato de polilíneas complejas que sobrecargaban visualmente el mapa y causaban confusión.
+- **Líneas Estructurales Limpias**: El sistema ahora confía puramente en los clásicos trazos geométricos que conectan las estrellas principales de cada constelación (stick-figures), garantizando un aspecto mucho más profesional, ordenado y fiel a los mapas estelares tradicionales.
+- **Cero Consumo de Texturas**: Se ha erradicado la dependencia de texturas premium pesadas para el arte de constelaciones, ahorrando tokens en su generación, liberando valiosa memoria VRAM en móviles y mejorando el rendimiento.
+- **Ajuste de Resplandor ("Glow")**: Se ha reducido drásticamente el grosor y la opacidad del aura de neón en la constelación seleccionada. Se corrigió el efecto de "algodón de azúcar", logrando un resalte sutil y nítido.
+
 ### v3.3 — 2026-04-22 (Deep Sky & Constellation Fidelity)
 #### 🌌 Catálogo NGC Completo
 - **OpenNGC Integration**: Incorporación de los 7.840 objetos del catálogo OpenNGC (Galaxias, Nebulosas y Cúmulos).

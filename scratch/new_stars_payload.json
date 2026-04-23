@@ -1,0 +1,3140 @@
+[
+  {
+    "name": "And-St1",
+    "ra": 9.832,
+    "dec": 30.861,
+    "constellation": "And"
+  },
+  {
+    "name": "And-St2",
+    "ra": 14.3017,
+    "dec": 23.4176,
+    "constellation": "And"
+  },
+  {
+    "name": "And-St3",
+    "ra": 11.8347,
+    "dec": 24.2672,
+    "constellation": "And"
+  },
+  {
+    "name": "And-St4",
+    "ra": 9.6389,
+    "dec": 29.3118,
+    "constellation": "And"
+  },
+  {
+    "name": "And-St5",
+    "ra": 9.2202,
+    "dec": 33.7193,
+    "constellation": "And"
+  },
+  {
+    "name": "And-St6",
+    "ra": 354.5342,
+    "dec": 43.2681,
+    "constellation": "And"
+  },
+  {
+    "name": "And-St7",
+    "ra": 345.4803,
+    "dec": 42.326,
+    "constellation": "And"
+  },
+  {
+    "name": "And-St8",
+    "ra": 355.1021,
+    "dec": 44.3339,
+    "constellation": "And"
+  },
+  {
+    "name": "And-St9",
+    "ra": 354.391,
+    "dec": 46.4582,
+    "constellation": "And"
+  },
+  {
+    "name": "And-St10",
+    "ra": 14.1884,
+    "dec": 38.4993,
+    "constellation": "And"
+  },
+  {
+    "name": "And-St11",
+    "ra": 12.4535,
+    "dec": 41.0789,
+    "constellation": "And"
+  },
+  {
+    "name": "And-St12",
+    "ra": 17.3755,
+    "dec": 47.2418,
+    "constellation": "And"
+  },
+  {
+    "name": "And-St13",
+    "ra": 24.4982,
+    "dec": 48.6282,
+    "constellation": "And"
+  },
+  {
+    "name": "And-St14",
+    "ra": 356.5085,
+    "dec": 46.4203,
+    "constellation": "And"
+  },
+  {
+    "name": "Ant-St15",
+    "ra": 142.3113,
+    "dec": -35.9513,
+    "constellation": "Ant"
+  },
+  {
+    "name": "Ant-St16",
+    "ra": 164.1794,
+    "dec": -37.1378,
+    "constellation": "Ant"
+  },
+  {
+    "name": "Aps-St17",
+    "ra": 221.9655,
+    "dec": -79.0448,
+    "constellation": "Aps"
+  },
+  {
+    "name": "Aps-St18",
+    "ra": 245.0867,
+    "dec": -78.6957,
+    "constellation": "Aps"
+  },
+  {
+    "name": "Aps-St19",
+    "ra": 250.76940000000002,
+    "dec": -77.5174,
+    "constellation": "Aps"
+  },
+  {
+    "name": "Aps-St20",
+    "ra": 248.3628,
+    "dec": -78.8971,
+    "constellation": "Aps"
+  },
+  {
+    "name": "Aqr-St21",
+    "ra": 311.919,
+    "dec": -9.4958,
+    "constellation": "Aqr"
+  },
+  {
+    "name": "Aqr-St22",
+    "ra": 313.1635,
+    "dec": -8.9833,
+    "constellation": "Aqr"
+  },
+  {
+    "name": "Aqr-St23",
+    "ra": 335.4141,
+    "dec": -1.3873,
+    "constellation": "Aqr"
+  },
+  {
+    "name": "Aqr-St24",
+    "ra": 337.20799999999997,
+    "dec": -0.02,
+    "constellation": "Aqr"
+  },
+  {
+    "name": "Aqr-St25",
+    "ra": 338.8391,
+    "dec": -0.1175,
+    "constellation": "Aqr"
+  },
+  {
+    "name": "Aqr-St26",
+    "ra": 343.1536,
+    "dec": -7.5796,
+    "constellation": "Aqr"
+  },
+  {
+    "name": "Aqr-St27",
+    "ra": 349.4759,
+    "dec": -9.1825,
+    "constellation": "Aqr"
+  },
+  {
+    "name": "Aqr-St28",
+    "ra": 347.3617,
+    "dec": -21.1724,
+    "constellation": "Aqr"
+  },
+  {
+    "name": "Aqr-St29",
+    "ra": 331.6093,
+    "dec": -13.8697,
+    "constellation": "Aqr"
+  },
+  {
+    "name": "Aqr-St30",
+    "ra": 334.2085,
+    "dec": -7.7833,
+    "constellation": "Aqr"
+  },
+  {
+    "name": "Aqr-St31",
+    "ra": 336.3193,
+    "dec": 1.3774,
+    "constellation": "Aqr"
+  },
+  {
+    "name": "Aqr-St32",
+    "ra": 350.7426,
+    "dec": -20.1006,
+    "constellation": "Aqr"
+  },
+  {
+    "name": "Aqr-St33",
+    "ra": 355.4409,
+    "dec": -17.8165,
+    "constellation": "Aqr"
+  },
+  {
+    "name": "Aql-St34",
+    "ra": 296.5649,
+    "dec": 10.6133,
+    "constellation": "Aql"
+  },
+  {
+    "name": "Aql-St35",
+    "ra": 302.8262,
+    "dec": -0.8215,
+    "constellation": "Aql"
+  },
+  {
+    "name": "Aql-St36",
+    "ra": 298.1182,
+    "dec": 1.0057,
+    "constellation": "Aql"
+  },
+  {
+    "name": "Aql-St37",
+    "ra": 291.3746,
+    "dec": 3.1148,
+    "constellation": "Aql"
+  },
+  {
+    "name": "Aql-St38",
+    "ra": 286.3525,
+    "dec": 13.8635,
+    "constellation": "Aql"
+  },
+  {
+    "name": "Aql-St39",
+    "ra": 286.5622,
+    "dec": -4.8826,
+    "constellation": "Aql"
+  },
+  {
+    "name": "Ara-St40",
+    "ra": 261.34860000000003,
+    "dec": -56.3777,
+    "constellation": "Ara"
+  },
+  {
+    "name": "Ara-St41",
+    "ra": 252.44650000000001,
+    "dec": -59.0414,
+    "constellation": "Ara"
+  },
+  {
+    "name": "Ara-St42",
+    "ra": 254.89600000000002,
+    "dec": -53.1604,
+    "constellation": "Ara"
+  },
+  {
+    "name": "Ari-St43",
+    "ra": 42.496,
+    "dec": 27.2605,
+    "constellation": "Ari"
+  },
+  {
+    "name": "Ari-St44",
+    "ra": 28.3826,
+    "dec": 19.2939,
+    "constellation": "Ari"
+  },
+  {
+    "name": "Aur-St45",
+    "ra": 76.6287,
+    "dec": 41.2345,
+    "constellation": "Aur"
+  },
+  {
+    "name": "Aur-St46",
+    "ra": 89.9303,
+    "dec": 37.2126,
+    "constellation": "Aur"
+  },
+  {
+    "name": "Aur-St47",
+    "ra": 89.8818,
+    "dec": 54.2847,
+    "constellation": "Aur"
+  },
+  {
+    "name": "Aur-St48",
+    "ra": 75.4922,
+    "dec": 43.8233,
+    "constellation": "Aur"
+  },
+  {
+    "name": "Aur-St49",
+    "ra": 75.6195,
+    "dec": 41.0758,
+    "constellation": "Aur"
+  },
+  {
+    "name": "Boo-St50",
+    "ra": 206.8156,
+    "dec": 17.4569,
+    "constellation": "Boo"
+  },
+  {
+    "name": "Boo-St51",
+    "ra": 208.6712,
+    "dec": 18.3977,
+    "constellation": "Boo"
+  },
+  {
+    "name": "Boo-St52",
+    "ra": 217.9575,
+    "dec": 30.3714,
+    "constellation": "Boo"
+  },
+  {
+    "name": "Boo-St53",
+    "ra": 218.0195,
+    "dec": 38.3083,
+    "constellation": "Boo"
+  },
+  {
+    "name": "Boo-St54",
+    "ra": 225.4865,
+    "dec": 40.3906,
+    "constellation": "Boo"
+  },
+  {
+    "name": "Boo-St55",
+    "ra": 228.8757,
+    "dec": 33.3148,
+    "constellation": "Boo"
+  },
+  {
+    "name": "Boo-St56",
+    "ra": 220.2873,
+    "dec": 13.7283,
+    "constellation": "Boo"
+  },
+  {
+    "name": "Boo-St57",
+    "ra": 214.0959,
+    "dec": 46.0883,
+    "constellation": "Boo"
+  },
+  {
+    "name": "Boo-St58",
+    "ra": 213.3659,
+    "dec": 51.7879,
+    "constellation": "Boo"
+  },
+  {
+    "name": "Boo-St59",
+    "ra": 216.2992,
+    "dec": 51.8507,
+    "constellation": "Boo"
+  },
+  {
+    "name": "Cae-St60",
+    "ra": 67.7087,
+    "dec": -44.9537,
+    "constellation": "Cae"
+  },
+  {
+    "name": "Cae-St61",
+    "ra": 70.5145,
+    "dec": -37.1443,
+    "constellation": "Cae"
+  },
+  {
+    "name": "Cae-St62",
+    "ra": 76.1017,
+    "dec": -35.483,
+    "constellation": "Cae"
+  },
+  {
+    "name": "Cam-St63",
+    "ra": 74.3217,
+    "dec": 53.7521,
+    "constellation": "Cam"
+  },
+  {
+    "name": "Cam-St64",
+    "ra": 73.5125,
+    "dec": 66.3427,
+    "constellation": "Cam"
+  },
+  {
+    "name": "Cam-St65",
+    "ra": 57.5896,
+    "dec": 71.3323,
+    "constellation": "Cam"
+  },
+  {
+    "name": "Cam-St66",
+    "ra": 57.3803,
+    "dec": 65.526,
+    "constellation": "Cam"
+  },
+  {
+    "name": "Cam-St67",
+    "ra": 52.2672,
+    "dec": 59.9403,
+    "constellation": "Cam"
+  },
+  {
+    "name": "Cam-St68",
+    "ra": 94.7116,
+    "dec": 69.3198,
+    "constellation": "Cam"
+  },
+  {
+    "name": "Cam-St69",
+    "ra": 105.0168,
+    "dec": 76.9774,
+    "constellation": "Cam"
+  },
+  {
+    "name": "Cnc-St70",
+    "ra": 130.8214,
+    "dec": 21.4685,
+    "constellation": "Cnc"
+  },
+  {
+    "name": "Cnc-St71",
+    "ra": 131.6666,
+    "dec": 28.7651,
+    "constellation": "Cnc"
+  },
+  {
+    "name": "Cnc-St72",
+    "ra": 124.1288,
+    "dec": 9.1855,
+    "constellation": "Cnc"
+  },
+  {
+    "name": "CMa-St73",
+    "ra": 105.7561,
+    "dec": -23.8333,
+    "constellation": "CMa"
+  },
+  {
+    "name": "CMa-St74",
+    "ra": 105.4298,
+    "dec": -27.9348,
+    "constellation": "CMa"
+  },
+  {
+    "name": "CMa-St75",
+    "ra": 95.0783,
+    "dec": -30.0634,
+    "constellation": "CMa"
+  },
+  {
+    "name": "CMa-St76",
+    "ra": 104.0343,
+    "dec": -17.0542,
+    "constellation": "CMa"
+  },
+  {
+    "name": "CMa-St77",
+    "ra": 105.9396,
+    "dec": -15.6333,
+    "constellation": "CMa"
+  },
+  {
+    "name": "CMa-St78",
+    "ra": 103.5475,
+    "dec": -12.0386,
+    "constellation": "CMa"
+  },
+  {
+    "name": "Cap-St79",
+    "ra": 304.412,
+    "dec": -12.5082,
+    "constellation": "Cap"
+  },
+  {
+    "name": "Cap-St80",
+    "ra": 307.2151,
+    "dec": -17.8137,
+    "constellation": "Cap"
+  },
+  {
+    "name": "Cap-St81",
+    "ra": 311.5239,
+    "dec": -25.2709,
+    "constellation": "Cap"
+  },
+  {
+    "name": "Cap-St82",
+    "ra": 312.9554,
+    "dec": -26.9191,
+    "constellation": "Cap"
+  },
+  {
+    "name": "Cap-St83",
+    "ra": 321.6668,
+    "dec": -22.4113,
+    "constellation": "Cap"
+  },
+  {
+    "name": "Cap-St84",
+    "ra": 325.0227,
+    "dec": -16.6623,
+    "constellation": "Cap"
+  },
+  {
+    "name": "Cap-St85",
+    "ra": 320.5617,
+    "dec": -16.8345,
+    "constellation": "Cap"
+  },
+  {
+    "name": "Cap-St86",
+    "ra": 316.4868,
+    "dec": -17.2329,
+    "constellation": "Cap"
+  },
+  {
+    "name": "Car-St87",
+    "ra": 99.4403,
+    "dec": -43.1959,
+    "constellation": "Car"
+  },
+  {
+    "name": "Car-St88",
+    "ra": 153.4342,
+    "dec": -70.0379,
+    "constellation": "Car"
+  },
+  {
+    "name": "Car-St89",
+    "ra": 158.0061,
+    "dec": -61.6853,
+    "constellation": "Car"
+  },
+  {
+    "name": "Car-St90",
+    "ra": 154.2707,
+    "dec": -61.3323,
+    "constellation": "Car"
+  },
+  {
+    "name": "Car-St91",
+    "ra": 119.1946,
+    "dec": -52.9824,
+    "constellation": "Car"
+  },
+  {
+    "name": "Car-St92",
+    "ra": 166.6351,
+    "dec": -62.4241,
+    "constellation": "Car"
+  },
+  {
+    "name": "Car-St93",
+    "ra": 167.1417,
+    "dec": -61.9472,
+    "constellation": "Car"
+  },
+  {
+    "name": "Car-St94",
+    "ra": 168.1501,
+    "dec": -60.3176,
+    "constellation": "Car"
+  },
+  {
+    "name": "Car-St95",
+    "ra": 167.1475,
+    "dec": -58.975,
+    "constellation": "Car"
+  },
+  {
+    "name": "Car-St96",
+    "ra": 163.3736,
+    "dec": -58.8532,
+    "constellation": "Car"
+  },
+  {
+    "name": "Cen-St97",
+    "ra": 170.2517,
+    "dec": -54.491,
+    "constellation": "Cen"
+  },
+  {
+    "name": "Cen-St98",
+    "ra": 182.0896,
+    "dec": -50.7224,
+    "constellation": "Cen"
+  },
+  {
+    "name": "Cen-St99",
+    "ra": 187.0099,
+    "dec": -50.2306,
+    "constellation": "Cen"
+  },
+  {
+    "name": "Cen-St100",
+    "ra": 204.9719,
+    "dec": -53.4664,
+    "constellation": "Cen"
+  },
+  {
+    "name": "Cen-St101",
+    "ra": 208.8849,
+    "dec": -47.2884,
+    "constellation": "Cen"
+  },
+  {
+    "name": "Cen-St102",
+    "ra": 207.4041,
+    "dec": -42.4737,
+    "constellation": "Cen"
+  },
+  {
+    "name": "Cen-St103",
+    "ra": 207.3762,
+    "dec": -41.6877,
+    "constellation": "Cen"
+  },
+  {
+    "name": "Cen-St104",
+    "ra": 224.7904,
+    "dec": -42.1042,
+    "constellation": "Cen"
+  },
+  {
+    "name": "Cen-St105",
+    "ra": 200.1492,
+    "dec": -36.7123,
+    "constellation": "Cen"
+  },
+  {
+    "name": "Cen-St106",
+    "ra": 182.913,
+    "dec": -52.3685,
+    "constellation": "Cen"
+  },
+  {
+    "name": "Cen-St107",
+    "ra": 172.942,
+    "dec": -59.4421,
+    "constellation": "Cen"
+  },
+  {
+    "name": "Cep-St108",
+    "ra": 307.3954,
+    "dec": 62.9941,
+    "constellation": "Cep"
+  },
+  {
+    "name": "Cep-St109",
+    "ra": 311.3224,
+    "dec": 61.8388,
+    "constellation": "Cep"
+  },
+  {
+    "name": "Cep-St110",
+    "ra": 325.8769,
+    "dec": 58.78,
+    "constellation": "Cep"
+  },
+  {
+    "name": "Cep-St111",
+    "ra": 333.7591,
+    "dec": 57.0436,
+    "constellation": "Cep"
+  },
+  {
+    "name": "Cep-St112",
+    "ra": 332.7137,
+    "dec": 58.2013,
+    "constellation": "Cep"
+  },
+  {
+    "name": "Cep-St113",
+    "ra": 337.2928,
+    "dec": 58.4152,
+    "constellation": "Cep"
+  },
+  {
+    "name": "Cep-St114",
+    "ra": 342.4201,
+    "dec": 66.2004,
+    "constellation": "Cep"
+  },
+  {
+    "name": "Cet-St115",
+    "ra": 40.8252,
+    "dec": 3.2358,
+    "constellation": "Cet"
+  },
+  {
+    "name": "Cet-St116",
+    "ra": 38.9686,
+    "dec": 5.5932,
+    "constellation": "Cet"
+  },
+  {
+    "name": "Cet-St117",
+    "ra": 37.0398,
+    "dec": 8.4601,
+    "constellation": "Cet"
+  },
+  {
+    "name": "Cet-St118",
+    "ra": 41.2356,
+    "dec": 10.1141,
+    "constellation": "Cet"
+  },
+  {
+    "name": "Cet-St119",
+    "ra": 44.9288,
+    "dec": 8.9074,
+    "constellation": "Cet"
+  },
+  {
+    "name": "Cet-St120",
+    "ra": 39.8707,
+    "dec": 0.3285,
+    "constellation": "Cet"
+  },
+  {
+    "name": "Cet-St121",
+    "ra": 4.857,
+    "dec": -8.8239,
+    "constellation": "Cet"
+  },
+  {
+    "name": "Cet-St122",
+    "ra": 17.1475,
+    "dec": -10.1823,
+    "constellation": "Cet"
+  },
+  {
+    "name": "Cet-St123",
+    "ra": 21.0059,
+    "dec": -8.1833,
+    "constellation": "Cet"
+  },
+  {
+    "name": "Cha-St124",
+    "ra": 158.8671,
+    "dec": -78.6078,
+    "constellation": "Cha"
+  },
+  {
+    "name": "Cha-St125",
+    "ra": 161.318,
+    "dec": -80.4696,
+    "constellation": "Cha"
+  },
+  {
+    "name": "Cha-St126",
+    "ra": 184.5868,
+    "dec": -79.3122,
+    "constellation": "Cha"
+  },
+  {
+    "name": "Cha-St127",
+    "ra": 179.9066,
+    "dec": -78.2218,
+    "constellation": "Cha"
+  },
+  {
+    "name": "Cir-St128",
+    "ra": 229.3785,
+    "dec": -58.8012,
+    "constellation": "Cir"
+  },
+  {
+    "name": "Cir-St129",
+    "ra": 220.6267,
+    "dec": -64.9751,
+    "constellation": "Cir"
+  },
+  {
+    "name": "Cir-St130",
+    "ra": 230.8444,
+    "dec": -59.3208,
+    "constellation": "Cir"
+  },
+  {
+    "name": "Col-St131",
+    "ra": 82.8031,
+    "dec": -35.4705,
+    "constellation": "Col"
+  },
+  {
+    "name": "Col-St132",
+    "ra": 89.7867,
+    "dec": -42.8151,
+    "constellation": "Col"
+  },
+  {
+    "name": "Com-St133",
+    "ra": 197.9683,
+    "dec": 27.8782,
+    "constellation": "Com"
+  },
+  {
+    "name": "Com-St134",
+    "ra": 186.7345,
+    "dec": 28.2684,
+    "constellation": "Com"
+  },
+  {
+    "name": "CrA-St135",
+    "ra": 284.6807,
+    "dec": -37.1074,
+    "constellation": "CrA"
+  },
+  {
+    "name": "CrA-St136",
+    "ra": 286.6046,
+    "dec": -37.0634,
+    "constellation": "CrA"
+  },
+  {
+    "name": "CrA-St137",
+    "ra": 287.0874,
+    "dec": -40.4967,
+    "constellation": "CrA"
+  },
+  {
+    "name": "CrA-St138",
+    "ra": 285.7787,
+    "dec": -42.0951,
+    "constellation": "CrA"
+  },
+  {
+    "name": "CrA-St139",
+    "ra": 282.3958,
+    "dec": -43.4341,
+    "constellation": "CrA"
+  },
+  {
+    "name": "CrA-St140",
+    "ra": 278.3758,
+    "dec": -42.3125,
+    "constellation": "CrA"
+  },
+  {
+    "name": "CrB-St141",
+    "ra": 233.23239999999998,
+    "dec": 31.3591,
+    "constellation": "CrB"
+  },
+  {
+    "name": "CrB-St142",
+    "ra": 235.6857,
+    "dec": 26.2956,
+    "constellation": "CrB"
+  },
+  {
+    "name": "CrB-St143",
+    "ra": 237.3985,
+    "dec": 26.0684,
+    "constellation": "CrB"
+  },
+  {
+    "name": "CrB-St144",
+    "ra": 239.39690000000002,
+    "dec": 26.8779,
+    "constellation": "CrB"
+  },
+  {
+    "name": "CrB-St145",
+    "ra": 240.3607,
+    "dec": 29.8511,
+    "constellation": "CrB"
+  },
+  {
+    "name": "Crv-St146",
+    "ra": 182.1034,
+    "dec": -24.7289,
+    "constellation": "Crv"
+  },
+  {
+    "name": "Crv-St147",
+    "ra": 182.5312,
+    "dec": -22.6198,
+    "constellation": "Crv"
+  },
+  {
+    "name": "Crt-St148",
+    "ra": 174.1705,
+    "dec": -9.8022,
+    "constellation": "Crt"
+  },
+  {
+    "name": "Crt-St149",
+    "ra": 171.1525,
+    "dec": -10.8593,
+    "constellation": "Crt"
+  },
+  {
+    "name": "Crt-St150",
+    "ra": 170.8412,
+    "dec": -18.78,
+    "constellation": "Crt"
+  },
+  {
+    "name": "Crt-St151",
+    "ra": 176.1907,
+    "dec": -18.3507,
+    "constellation": "Crt"
+  },
+  {
+    "name": "Crt-St152",
+    "ra": 179.004,
+    "dec": -17.1508,
+    "constellation": "Crt"
+  },
+  {
+    "name": "Cyg-St153",
+    "ra": 318.2341,
+    "dec": 30.2269,
+    "constellation": "Cyg"
+  },
+  {
+    "name": "Cyg-St154",
+    "ra": 296.2437,
+    "dec": 45.1308,
+    "constellation": "Cyg"
+  },
+  {
+    "name": "Cyg-St155",
+    "ra": 292.42650000000003,
+    "dec": 51.7298,
+    "constellation": "Cyg"
+  },
+  {
+    "name": "Cyg-St156",
+    "ra": 289.27570000000003,
+    "dec": 53.3685,
+    "constellation": "Cyg"
+  },
+  {
+    "name": "Cyg-St157",
+    "ra": 299.0765,
+    "dec": 35.0834,
+    "constellation": "Cyg"
+  },
+  {
+    "name": "Del-St158",
+    "ra": 308.3032,
+    "dec": 11.3033,
+    "constellation": "Del"
+  },
+  {
+    "name": "Del-St159",
+    "ra": 309.9095,
+    "dec": 15.9121,
+    "constellation": "Del"
+  },
+  {
+    "name": "Del-St160",
+    "ra": 311.6619,
+    "dec": 16.1241,
+    "constellation": "Del"
+  },
+  {
+    "name": "Del-St161",
+    "ra": 310.86469999999997,
+    "dec": 15.0746,
+    "constellation": "Del"
+  },
+  {
+    "name": "Dor-St162",
+    "ra": 64.0066,
+    "dec": -51.4866,
+    "constellation": "Dor"
+  },
+  {
+    "name": "Dor-St163",
+    "ra": 86.1932,
+    "dec": -65.7355,
+    "constellation": "Dor"
+  },
+  {
+    "name": "Dor-St164",
+    "ra": 88.5252,
+    "dec": -63.0896,
+    "constellation": "Dor"
+  },
+  {
+    "name": "Dor-St165",
+    "ra": 76.3777,
+    "dec": -57.4727,
+    "constellation": "Dor"
+  },
+  {
+    "name": "Dra-St166",
+    "ra": 263.0668,
+    "dec": 55.173,
+    "constellation": "Dra"
+  },
+  {
+    "name": "Dra-St167",
+    "ra": 288.1388,
+    "dec": 67.6615,
+    "constellation": "Dra"
+  },
+  {
+    "name": "Dra-St168",
+    "ra": 275.1893,
+    "dec": 71.3378,
+    "constellation": "Dra"
+  },
+  {
+    "name": "Dra-St169",
+    "ra": 257.1966,
+    "dec": 65.7147,
+    "constellation": "Dra"
+  },
+  {
+    "name": "Dra-St170",
+    "ra": 240.47230000000002,
+    "dec": 58.5653,
+    "constellation": "Dra"
+  },
+  {
+    "name": "Dra-St171",
+    "ra": 188.3706,
+    "dec": 69.7882,
+    "constellation": "Dra"
+  },
+  {
+    "name": "Dra-St172",
+    "ra": 275.2641,
+    "dec": 72.7328,
+    "constellation": "Dra"
+  },
+  {
+    "name": "Dra-St173",
+    "ra": 297.0431,
+    "dec": 70.2679,
+    "constellation": "Dra"
+  },
+  {
+    "name": "Equ-St174",
+    "ra": 318.6201,
+    "dec": 10.007,
+    "constellation": "Equ"
+  },
+  {
+    "name": "Equ-St175",
+    "ra": 317.5854,
+    "dec": 10.1316,
+    "constellation": "Equ"
+  },
+  {
+    "name": "Eri-St176",
+    "ra": 71.3756,
+    "dec": -3.2547,
+    "constellation": "Eri"
+  },
+  {
+    "name": "Eri-St177",
+    "ra": 69.0798,
+    "dec": -3.3525,
+    "constellation": "Eri"
+  },
+  {
+    "name": "Eri-St178",
+    "ra": 62.9664,
+    "dec": -6.8376,
+    "constellation": "Eri"
+  },
+  {
+    "name": "Eri-St179",
+    "ra": 56.5356,
+    "dec": -12.1016,
+    "constellation": "Eri"
+  },
+  {
+    "name": "Eri-St180",
+    "ra": 55.8121,
+    "dec": -9.7634,
+    "constellation": "Eri"
+  },
+  {
+    "name": "Eri-St181",
+    "ra": 41.0306,
+    "dec": -13.8587,
+    "constellation": "Eri"
+  },
+  {
+    "name": "Eri-St182",
+    "ra": 41.2758,
+    "dec": -18.5726,
+    "constellation": "Eri"
+  },
+  {
+    "name": "Eri-St183",
+    "ra": 45.5979,
+    "dec": -23.6245,
+    "constellation": "Eri"
+  },
+  {
+    "name": "Eri-St184",
+    "ra": 49.8792,
+    "dec": -21.7579,
+    "constellation": "Eri"
+  },
+  {
+    "name": "Eri-St185",
+    "ra": 53.447,
+    "dec": -21.6329,
+    "constellation": "Eri"
+  },
+  {
+    "name": "Eri-St186",
+    "ra": 56.712,
+    "dec": -23.2497,
+    "constellation": "Eri"
+  },
+  {
+    "name": "Eri-St187",
+    "ra": 68.8877,
+    "dec": -30.5623,
+    "constellation": "Eri"
+  },
+  {
+    "name": "Eri-St188",
+    "ra": 66.0092,
+    "dec": -34.0168,
+    "constellation": "Eri"
+  },
+  {
+    "name": "Eri-St189",
+    "ra": 64.4736,
+    "dec": -33.7983,
+    "constellation": "Eri"
+  },
+  {
+    "name": "Eri-St190",
+    "ra": 57.3635,
+    "dec": -36.2003,
+    "constellation": "Eri"
+  },
+  {
+    "name": "Eri-St191",
+    "ra": 54.2737,
+    "dec": -40.2745,
+    "constellation": "Eri"
+  },
+  {
+    "name": "Eri-St192",
+    "ra": 49.9819,
+    "dec": -43.0698,
+    "constellation": "Eri"
+  },
+  {
+    "name": "Eri-St193",
+    "ra": 40.1668,
+    "dec": -39.8554,
+    "constellation": "Eri"
+  },
+  {
+    "name": "Eri-St194",
+    "ra": 36.7463,
+    "dec": -47.7038,
+    "constellation": "Eri"
+  },
+  {
+    "name": "Eri-St195",
+    "ra": 34.1274,
+    "dec": -51.5122,
+    "constellation": "Eri"
+  },
+  {
+    "name": "Eri-St196",
+    "ra": 28.9895,
+    "dec": -51.6089,
+    "constellation": "Eri"
+  },
+  {
+    "name": "For-St197",
+    "ra": 42.2726,
+    "dec": -32.4059,
+    "constellation": "For"
+  },
+  {
+    "name": "For-St198",
+    "ra": 31.1227,
+    "dec": -29.2968,
+    "constellation": "For"
+  },
+  {
+    "name": "Gem-St199",
+    "ra": 100.983,
+    "dec": 25.1311,
+    "constellation": "Gem"
+  },
+  {
+    "name": "Gem-St200",
+    "ra": 107.7849,
+    "dec": 30.2452,
+    "constellation": "Gem"
+  },
+  {
+    "name": "Gem-St201",
+    "ra": 113.9806,
+    "dec": 26.8957,
+    "constellation": "Gem"
+  },
+  {
+    "name": "Gem-St202",
+    "ra": 109.5232,
+    "dec": 16.5404,
+    "constellation": "Gem"
+  },
+  {
+    "name": "Gru-St203",
+    "ra": 345.22,
+    "dec": -52.7541,
+    "constellation": "Gru"
+  },
+  {
+    "name": "Gru-St204",
+    "ra": 342.1387,
+    "dec": -51.3169,
+    "constellation": "Gru"
+  },
+  {
+    "name": "Gru-St205",
+    "ra": 337.4393,
+    "dec": -43.7492,
+    "constellation": "Gru"
+  },
+  {
+    "name": "Gru-St206",
+    "ra": 337.3174,
+    "dec": -43.4956,
+    "constellation": "Gru"
+  },
+  {
+    "name": "Gru-St207",
+    "ra": 333.9038,
+    "dec": -41.3467,
+    "constellation": "Gru"
+  },
+  {
+    "name": "Gru-St208",
+    "ra": 331.5287,
+    "dec": -39.5434,
+    "constellation": "Gru"
+  },
+  {
+    "name": "Gru-St209",
+    "ra": 328.4822,
+    "dec": -37.3649,
+    "constellation": "Gru"
+  },
+  {
+    "name": "Her-St210",
+    "ra": 245.4801,
+    "dec": 19.1531,
+    "constellation": "Her"
+  },
+  {
+    "name": "Her-St211",
+    "ra": 250.32150000000001,
+    "dec": 31.6027,
+    "constellation": "Her"
+  },
+  {
+    "name": "Her-St212",
+    "ra": 250.724,
+    "dec": 38.9223,
+    "constellation": "Her"
+  },
+  {
+    "name": "Her-St213",
+    "ra": 248.5258,
+    "dec": 42.437,
+    "constellation": "Her"
+  },
+  {
+    "name": "Her-St214",
+    "ra": 244.9352,
+    "dec": 46.3134,
+    "constellation": "Her"
+  },
+  {
+    "name": "Her-St215",
+    "ra": 242.19240000000002,
+    "dec": 44.9349,
+    "constellation": "Her"
+  },
+  {
+    "name": "Her-St216",
+    "ra": 238.1689,
+    "dec": 42.4515,
+    "constellation": "Her"
+  },
+  {
+    "name": "Her-St217",
+    "ra": 255.07240000000002,
+    "dec": 30.9264,
+    "constellation": "Her"
+  },
+  {
+    "name": "Her-St218",
+    "ra": 258.7618,
+    "dec": 36.8092,
+    "constellation": "Her"
+  },
+  {
+    "name": "Her-St219",
+    "ra": 269.0633,
+    "dec": 37.2505,
+    "constellation": "Her"
+  },
+  {
+    "name": "Her-St220",
+    "ra": 260.9206,
+    "dec": 37.1459,
+    "constellation": "Her"
+  },
+  {
+    "name": "Her-St221",
+    "ra": 258.758,
+    "dec": 24.8392,
+    "constellation": "Her"
+  },
+  {
+    "name": "Her-St222",
+    "ra": 266.61469999999997,
+    "dec": 27.7207,
+    "constellation": "Her"
+  },
+  {
+    "name": "Her-St223",
+    "ra": 269.4412,
+    "dec": 29.2479,
+    "constellation": "Her"
+  },
+  {
+    "name": "Her-St224",
+    "ra": 271.8856,
+    "dec": 28.7625,
+    "constellation": "Her"
+  },
+  {
+    "name": "Hor-St225",
+    "ra": 40.6394,
+    "dec": -50.8003,
+    "constellation": "Hor"
+  },
+  {
+    "name": "Hor-St226",
+    "ra": 39.3515,
+    "dec": -52.5431,
+    "constellation": "Hor"
+  },
+  {
+    "name": "Hor-St227",
+    "ra": 40.1651,
+    "dec": -54.5499,
+    "constellation": "Hor"
+  },
+  {
+    "name": "Hor-St228",
+    "ra": 45.9034,
+    "dec": -59.7378,
+    "constellation": "Hor"
+  },
+  {
+    "name": "Hor-St229",
+    "ra": 44.6992,
+    "dec": -64.0713,
+    "constellation": "Hor"
+  },
+  {
+    "name": "Hya-St230",
+    "ra": 131.6938,
+    "dec": 6.4188,
+    "constellation": "Hya"
+  },
+  {
+    "name": "Hya-St231",
+    "ra": 132.1082,
+    "dec": 5.8378,
+    "constellation": "Hya"
+  },
+  {
+    "name": "Hya-St232",
+    "ra": 130.8061,
+    "dec": 3.3987,
+    "constellation": "Hya"
+  },
+  {
+    "name": "Hya-St233",
+    "ra": 129.414,
+    "dec": 5.7038,
+    "constellation": "Hya"
+  },
+  {
+    "name": "Hya-St234",
+    "ra": 133.8484,
+    "dec": 5.9456,
+    "constellation": "Hya"
+  },
+  {
+    "name": "Hya-St235",
+    "ra": 138.5911,
+    "dec": 2.3143,
+    "constellation": "Hya"
+  },
+  {
+    "name": "Hya-St236",
+    "ra": 144.964,
+    "dec": -1.1428,
+    "constellation": "Hya"
+  },
+  {
+    "name": "Hya-St237",
+    "ra": 147.8696,
+    "dec": -14.8466,
+    "constellation": "Hya"
+  },
+  {
+    "name": "Hya-St238",
+    "ra": 152.647,
+    "dec": -12.3541,
+    "constellation": "Hya"
+  },
+  {
+    "name": "Hya-St239",
+    "ra": 156.5226,
+    "dec": -16.8363,
+    "constellation": "Hya"
+  },
+  {
+    "name": "Hya-St240",
+    "ra": 162.4062,
+    "dec": -16.1936,
+    "constellation": "Hya"
+  },
+  {
+    "name": "Hya-St241",
+    "ra": 173.2505,
+    "dec": -31.8576,
+    "constellation": "Hya"
+  },
+  {
+    "name": "Hya-St242",
+    "ra": 178.2272,
+    "dec": -33.9081,
+    "constellation": "Hya"
+  },
+  {
+    "name": "Hya-St243",
+    "ra": 199.7304,
+    "dec": -23.1715,
+    "constellation": "Hya"
+  },
+  {
+    "name": "Hya-St244",
+    "ra": 211.5929,
+    "dec": -26.6824,
+    "constellation": "Hya"
+  },
+  {
+    "name": "Hya-St245",
+    "ra": 222.5721,
+    "dec": -27.9604,
+    "constellation": "Hya"
+  },
+  {
+    "name": "Hyi-St246",
+    "ra": 56.8098,
+    "dec": -74.239,
+    "constellation": "Hyi"
+  },
+  {
+    "name": "Hyi-St247",
+    "ra": 39.8973,
+    "dec": -68.2669,
+    "constellation": "Hyi"
+  },
+  {
+    "name": "Hyi-St248",
+    "ra": 35.4373,
+    "dec": -68.6594,
+    "constellation": "Hyi"
+  },
+  {
+    "name": "Hyi-St249",
+    "ra": 28.7339,
+    "dec": -67.6473,
+    "constellation": "Hyi"
+  },
+  {
+    "name": "Ind-St250",
+    "ra": 311.0097,
+    "dec": -51.921,
+    "constellation": "Ind"
+  },
+  {
+    "name": "Ind-St251",
+    "ra": 329.47950000000003,
+    "dec": -54.9926,
+    "constellation": "Ind"
+  },
+  {
+    "name": "Ind-St252",
+    "ra": 319.96659999999997,
+    "dec": -53.4494,
+    "constellation": "Ind"
+  },
+  {
+    "name": "Lac-St253",
+    "ra": 335.8901,
+    "dec": 52.229,
+    "constellation": "Lac"
+  },
+  {
+    "name": "Lac-St254",
+    "ra": 337.3826,
+    "dec": 47.7069,
+    "constellation": "Lac"
+  },
+  {
+    "name": "Lac-St255",
+    "ra": 335.2564,
+    "dec": 46.5366,
+    "constellation": "Lac"
+  },
+  {
+    "name": "Lac-St256",
+    "ra": 337.6219,
+    "dec": 43.1234,
+    "constellation": "Lac"
+  },
+  {
+    "name": "Lac-St257",
+    "ra": 340.1286,
+    "dec": 44.2763,
+    "constellation": "Lac"
+  },
+  {
+    "name": "Lac-St258",
+    "ra": 336.1291,
+    "dec": 49.4764,
+    "constellation": "Lac"
+  },
+  {
+    "name": "Lac-St259",
+    "ra": 333.4697,
+    "dec": 39.7149,
+    "constellation": "Lac"
+  },
+  {
+    "name": "Lac-St260",
+    "ra": 333.9924,
+    "dec": 37.7487,
+    "constellation": "Lac"
+  },
+  {
+    "name": "Leo-St261",
+    "ra": 151.8331,
+    "dec": 16.7627,
+    "constellation": "Leo"
+  },
+  {
+    "name": "Leo-St262",
+    "ra": 168.56,
+    "dec": 15.4296,
+    "constellation": "Leo"
+  },
+  {
+    "name": "Leo-St263",
+    "ra": 148.1909,
+    "dec": 26.007,
+    "constellation": "Leo"
+  },
+  {
+    "name": "Leo-St264",
+    "ra": 146.4628,
+    "dec": 23.7743,
+    "constellation": "Leo"
+  },
+  {
+    "name": "LMi-St265",
+    "ra": 151.8573,
+    "dec": 35.2447,
+    "constellation": "LMi"
+  },
+  {
+    "name": "LMi-St266",
+    "ra": 156.4784,
+    "dec": 33.7961,
+    "constellation": "LMi"
+  },
+  {
+    "name": "LMi-St267",
+    "ra": 163.3279,
+    "dec": 34.2149,
+    "constellation": "LMi"
+  },
+  {
+    "name": "LMi-St268",
+    "ra": 156.9708,
+    "dec": 36.7072,
+    "constellation": "LMi"
+  },
+  {
+    "name": "LMi-St269",
+    "ra": 143.5558,
+    "dec": 36.3976,
+    "constellation": "LMi"
+  },
+  {
+    "name": "Lep-St270",
+    "ra": 91.5388,
+    "dec": -14.9353,
+    "constellation": "Lep"
+  },
+  {
+    "name": "Lep-St271",
+    "ra": 89.1012,
+    "dec": -14.1677,
+    "constellation": "Lep"
+  },
+  {
+    "name": "Lep-St272",
+    "ra": 86.7389,
+    "dec": -14.822,
+    "constellation": "Lep"
+  },
+  {
+    "name": "Lep-St273",
+    "ra": 78.2329,
+    "dec": -16.2055,
+    "constellation": "Lep"
+  },
+  {
+    "name": "Lep-St274",
+    "ra": 76.3653,
+    "dec": -22.371,
+    "constellation": "Lep"
+  },
+  {
+    "name": "Lep-St275",
+    "ra": 86.1158,
+    "dec": -22.4484,
+    "constellation": "Lep"
+  },
+  {
+    "name": "Lep-St276",
+    "ra": 87.8304,
+    "dec": -20.8791,
+    "constellation": "Lep"
+  },
+  {
+    "name": "Lep-St277",
+    "ra": 78.3078,
+    "dec": -12.9413,
+    "constellation": "Lep"
+  },
+  {
+    "name": "Lep-St278",
+    "ra": 79.8939,
+    "dec": -13.1768,
+    "constellation": "Lep"
+  },
+  {
+    "name": "Lib-St279",
+    "ra": 226.0176,
+    "dec": -25.282,
+    "constellation": "Lib"
+  },
+  {
+    "name": "Lib-St280",
+    "ra": 233.8816,
+    "dec": -14.7895,
+    "constellation": "Lib"
+  },
+  {
+    "name": "Lib-St281",
+    "ra": 234.256,
+    "dec": -28.1351,
+    "constellation": "Lib"
+  },
+  {
+    "name": "Lib-St282",
+    "ra": 234.664,
+    "dec": -29.7778,
+    "constellation": "Lib"
+  },
+  {
+    "name": "Lup-St283",
+    "ra": 237.7397,
+    "dec": -33.6272,
+    "constellation": "Lup"
+  },
+  {
+    "name": "Lup-St284",
+    "ra": 234.9416,
+    "dec": -34.4119,
+    "constellation": "Lup"
+  },
+  {
+    "name": "Lup-St285",
+    "ra": 230.4515,
+    "dec": -36.2614,
+    "constellation": "Lup"
+  },
+  {
+    "name": "Lup-St286",
+    "ra": 228.0712,
+    "dec": -52.0992,
+    "constellation": "Lup"
+  },
+  {
+    "name": "Lup-St287",
+    "ra": 229.6334,
+    "dec": -47.8753,
+    "constellation": "Lup"
+  },
+  {
+    "name": "Lup-St288",
+    "ra": 230.6703,
+    "dec": -44.6896,
+    "constellation": "Lup"
+  },
+  {
+    "name": "Lup-St289",
+    "ra": 233.7852,
+    "dec": -41.1668,
+    "constellation": "Lup"
+  },
+  {
+    "name": "Lup-St290",
+    "ra": 240.03050000000002,
+    "dec": -38.3967,
+    "constellation": "Lup"
+  },
+  {
+    "name": "Lup-St291",
+    "ra": 241.6481,
+    "dec": -36.8023,
+    "constellation": "Lup"
+  },
+  {
+    "name": "Lyn-St292",
+    "ra": 94.9058,
+    "dec": 59.011,
+    "constellation": "Lyn"
+  },
+  {
+    "name": "Lyn-St293",
+    "ra": 104.3192,
+    "dec": 58.4228,
+    "constellation": "Lyn"
+  },
+  {
+    "name": "Lyn-St294",
+    "ra": 111.6785,
+    "dec": 49.2115,
+    "constellation": "Lyn"
+  },
+  {
+    "name": "Lyn-St295",
+    "ra": 125.7088,
+    "dec": 43.1881,
+    "constellation": "Lyn"
+  },
+  {
+    "name": "Lyn-St296",
+    "ra": 140.2638,
+    "dec": 34.3926,
+    "constellation": "Lyn"
+  },
+  {
+    "name": "Lyr-St297",
+    "ra": 281.1932,
+    "dec": 37.6051,
+    "constellation": "Lyr"
+  },
+  {
+    "name": "Lyr-St298",
+    "ra": 281.0949,
+    "dec": 39.6127,
+    "constellation": "Lyr"
+  },
+  {
+    "name": "Lyr-St299",
+    "ra": 283.6262,
+    "dec": 36.8986,
+    "constellation": "Lyr"
+  },
+  {
+    "name": "Men-St300",
+    "ra": 82.9709,
+    "dec": -76.341,
+    "constellation": "Men"
+  },
+  {
+    "name": "Men-St301",
+    "ra": 73.7967,
+    "dec": -74.9369,
+    "constellation": "Men"
+  },
+  {
+    "name": "Men-St302",
+    "ra": 75.6792,
+    "dec": -71.3143,
+    "constellation": "Men"
+  },
+  {
+    "name": "Mic-St303",
+    "ra": 312.492,
+    "dec": -33.7797,
+    "constellation": "Mic"
+  },
+  {
+    "name": "Mic-St304",
+    "ra": 312.1214,
+    "dec": -43.9885,
+    "constellation": "Mic"
+  },
+  {
+    "name": "Mic-St305",
+    "ra": 320.1902,
+    "dec": -40.8095,
+    "constellation": "Mic"
+  },
+  {
+    "name": "Mic-St306",
+    "ra": 319.4845,
+    "dec": -32.1725,
+    "constellation": "Mic"
+  },
+  {
+    "name": "Mic-St307",
+    "ra": 315.32280000000003,
+    "dec": -32.2578,
+    "constellation": "Mic"
+  },
+  {
+    "name": "Mon-St308",
+    "ra": 122.1485,
+    "dec": -2.9838,
+    "constellation": "Mon"
+  },
+  {
+    "name": "Mon-St309",
+    "ra": 101.9652,
+    "dec": 2.4122,
+    "constellation": "Mon"
+  },
+  {
+    "name": "Mon-St310",
+    "ra": 95.942,
+    "dec": 4.5929,
+    "constellation": "Mon"
+  },
+  {
+    "name": "Mon-St311",
+    "ra": 98.2259,
+    "dec": 7.333,
+    "constellation": "Mon"
+  },
+  {
+    "name": "Mon-St312",
+    "ra": 100.2444,
+    "dec": 9.8958,
+    "constellation": "Mon"
+  },
+  {
+    "name": "Mus-St313",
+    "ra": 176.4017,
+    "dec": -66.7288,
+    "constellation": "Mus"
+  },
+  {
+    "name": "Mus-St314",
+    "ra": 184.3928,
+    "dec": -67.9607,
+    "constellation": "Mus"
+  },
+  {
+    "name": "Mus-St315",
+    "ra": 188.1167,
+    "dec": -72.133,
+    "constellation": "Mus"
+  },
+  {
+    "name": "Nor-St316",
+    "ra": 241.6227,
+    "dec": -45.1732,
+    "constellation": "Nor"
+  },
+  {
+    "name": "Nor-St317",
+    "ra": 246.796,
+    "dec": -47.5548,
+    "constellation": "Nor"
+  },
+  {
+    "name": "Nor-St318",
+    "ra": 240.8037,
+    "dec": -49.2297,
+    "constellation": "Nor"
+  },
+  {
+    "name": "Oct-St319",
+    "ra": 216.7301,
+    "dec": -83.6679,
+    "constellation": "Oct"
+  },
+  {
+    "name": "Oct-St320",
+    "ra": 341.5146,
+    "dec": -81.3816,
+    "constellation": "Oct"
+  },
+  {
+    "name": "Oct-St321",
+    "ra": 325.3694,
+    "dec": -77.39,
+    "constellation": "Oct"
+  },
+  {
+    "name": "Oph-St322",
+    "ra": 269.7566,
+    "dec": -9.7736,
+    "constellation": "Oph"
+  },
+  {
+    "name": "Oph-St323",
+    "ra": 266.9732,
+    "dec": 2.7073,
+    "constellation": "Oph"
+  },
+  {
+    "name": "Oph-St324",
+    "ra": 254.4171,
+    "dec": 9.375,
+    "constellation": "Oph"
+  },
+  {
+    "name": "Oph-St325",
+    "ra": 247.7284,
+    "dec": 1.9839,
+    "constellation": "Oph"
+  },
+  {
+    "name": "Oph-St326",
+    "ra": 244.5804,
+    "dec": -4.6925,
+    "constellation": "Oph"
+  },
+  {
+    "name": "Oph-St327",
+    "ra": 247.7849,
+    "dec": -16.6127,
+    "constellation": "Oph"
+  },
+  {
+    "name": "Oph-St328",
+    "ra": 246.756,
+    "dec": -18.4563,
+    "constellation": "Oph"
+  },
+  {
+    "name": "Oph-St329",
+    "ra": 246.0258,
+    "dec": -20.0373,
+    "constellation": "Oph"
+  },
+  {
+    "name": "Oph-St330",
+    "ra": 246.3963,
+    "dec": -23.4472,
+    "constellation": "Oph"
+  },
+  {
+    "name": "Oph-St331",
+    "ra": 260.50239999999997,
+    "dec": -24.9995,
+    "constellation": "Oph"
+  },
+  {
+    "name": "Oph-St332",
+    "ra": 261.8386,
+    "dec": -29.867,
+    "constellation": "Oph"
+  },
+  {
+    "name": "Ori-St333",
+    "ra": 91.893,
+    "dec": 14.7685,
+    "constellation": "Ori"
+  },
+  {
+    "name": "Ori-St334",
+    "ra": 88.5958,
+    "dec": 20.2762,
+    "constellation": "Ori"
+  },
+  {
+    "name": "Ori-St335",
+    "ra": 90.9799,
+    "dec": 20.1385,
+    "constellation": "Ori"
+  },
+  {
+    "name": "Ori-St336",
+    "ra": 92.985,
+    "dec": 14.2088,
+    "constellation": "Ori"
+  },
+  {
+    "name": "Ori-St337",
+    "ra": 90.5958,
+    "dec": 9.6473,
+    "constellation": "Ori"
+  },
+  {
+    "name": "Ori-St338",
+    "ra": 73.7239,
+    "dec": 10.1508,
+    "constellation": "Ori"
+  },
+  {
+    "name": "Ori-St339",
+    "ra": 72.46,
+    "dec": 6.9613,
+    "constellation": "Ori"
+  },
+  {
+    "name": "Ori-St340",
+    "ra": 74.0928,
+    "dec": 13.5145,
+    "constellation": "Ori"
+  },
+  {
+    "name": "Ori-St341",
+    "ra": 76.1423,
+    "dec": 15.4041,
+    "constellation": "Ori"
+  },
+  {
+    "name": "Ori-St342",
+    "ra": 77.4248,
+    "dec": 15.5972,
+    "constellation": "Ori"
+  },
+  {
+    "name": "Ori-St343",
+    "ra": 81.1192,
+    "dec": -2.3971,
+    "constellation": "Ori"
+  },
+  {
+    "name": "Pav-St344",
+    "ra": 283.0543,
+    "dec": -62.1876,
+    "constellation": "Pav"
+  },
+  {
+    "name": "Pav-St345",
+    "ra": 275.8068,
+    "dec": -61.4939,
+    "constellation": "Pav"
+  },
+  {
+    "name": "Pav-St346",
+    "ra": 272.1451,
+    "dec": -63.6686,
+    "constellation": "Pav"
+  },
+  {
+    "name": "Pav-St347",
+    "ra": 266.43330000000003,
+    "dec": -64.7239,
+    "constellation": "Pav"
+  },
+  {
+    "name": "Pav-St348",
+    "ra": 280.7589,
+    "dec": -71.4281,
+    "constellation": "Pav"
+  },
+  {
+    "name": "Pav-St349",
+    "ra": 300.1481,
+    "dec": -72.9105,
+    "constellation": "Pav"
+  },
+  {
+    "name": "Pav-St350",
+    "ra": 321.6109,
+    "dec": -65.3662,
+    "constellation": "Pav"
+  },
+  {
+    "name": "Peg-St351",
+    "ra": 332.4969,
+    "dec": 33.1782,
+    "constellation": "Peg"
+  },
+  {
+    "name": "Peg-St352",
+    "ra": 340.7506,
+    "dec": 30.2212,
+    "constellation": "Peg"
+  },
+  {
+    "name": "Peg-St353",
+    "ra": 341.6733,
+    "dec": 12.1729,
+    "constellation": "Peg"
+  },
+  {
+    "name": "Peg-St354",
+    "ra": 340.3655,
+    "dec": 10.8314,
+    "constellation": "Peg"
+  },
+  {
+    "name": "Peg-St355",
+    "ra": 332.5499,
+    "dec": 6.1979,
+    "constellation": "Peg"
+  },
+  {
+    "name": "Peg-St356",
+    "ra": 326.0465,
+    "dec": 9.875,
+    "constellation": "Peg"
+  },
+  {
+    "name": "Peg-St357",
+    "ra": 342.5008,
+    "dec": 24.6016,
+    "constellation": "Peg"
+  },
+  {
+    "name": "Peg-St358",
+    "ra": 341.6328,
+    "dec": 23.5657,
+    "constellation": "Peg"
+  },
+  {
+    "name": "Peg-St359",
+    "ra": 331.7528,
+    "dec": 25.3451,
+    "constellation": "Peg"
+  },
+  {
+    "name": "Peg-St360",
+    "ra": 326.1614,
+    "dec": 25.645,
+    "constellation": "Peg"
+  },
+  {
+    "name": "Per-St361",
+    "ra": 56.0797,
+    "dec": 32.2882,
+    "constellation": "Per"
+  },
+  {
+    "name": "Per-St362",
+    "ra": 59.7413,
+    "dec": 35.791,
+    "constellation": "Per"
+  },
+  {
+    "name": "Per-St363",
+    "ra": 59.4635,
+    "dec": 40.0102,
+    "constellation": "Per"
+  },
+  {
+    "name": "Per-St364",
+    "ra": 56.2985,
+    "dec": 42.5785,
+    "constellation": "Per"
+  },
+  {
+    "name": "Per-St365",
+    "ra": 55.7313,
+    "dec": 47.7876,
+    "constellation": "Per"
+  },
+  {
+    "name": "Per-St366",
+    "ra": 54.1224,
+    "dec": 48.1926,
+    "constellation": "Per"
+  },
+  {
+    "name": "Per-St367",
+    "ra": 46.1991,
+    "dec": 53.5064,
+    "constellation": "Per"
+  },
+  {
+    "name": "Per-St368",
+    "ra": 43.5644,
+    "dec": 52.7625,
+    "constellation": "Per"
+  },
+  {
+    "name": "Per-St369",
+    "ra": 47.2667,
+    "dec": 49.6133,
+    "constellation": "Per"
+  },
+  {
+    "name": "Per-St370",
+    "ra": 47.8224,
+    "dec": 39.6116,
+    "constellation": "Per"
+  },
+  {
+    "name": "Per-St371",
+    "ra": 46.2941,
+    "dec": 38.8403,
+    "constellation": "Per"
+  },
+  {
+    "name": "Per-St372",
+    "ra": 44.6903,
+    "dec": 39.6627,
+    "constellation": "Per"
+  },
+  {
+    "name": "Per-St373",
+    "ra": 44.9162,
+    "dec": 41.0329,
+    "constellation": "Per"
+  },
+  {
+    "name": "Per-St374",
+    "ra": 61.646,
+    "dec": 50.3513,
+    "constellation": "Per"
+  },
+  {
+    "name": "Per-St375",
+    "ra": 63.7244,
+    "dec": 48.4093,
+    "constellation": "Per"
+  },
+  {
+    "name": "Per-St376",
+    "ra": 62.1654,
+    "dec": 47.7125,
+    "constellation": "Per"
+  },
+  {
+    "name": "Per-St377",
+    "ra": 41.0499,
+    "dec": 49.2284,
+    "constellation": "Per"
+  },
+  {
+    "name": "Per-St378",
+    "ra": 25.9152,
+    "dec": 50.6887,
+    "constellation": "Per"
+  },
+  {
+    "name": "Phe-St379",
+    "ra": 22.8129,
+    "dec": -49.0727,
+    "constellation": "Phe"
+  },
+  {
+    "name": "Phe-St380",
+    "ra": 17.0962,
+    "dec": -55.2458,
+    "constellation": "Phe"
+  },
+  {
+    "name": "Phe-St381",
+    "ra": 2.3527,
+    "dec": -45.7474,
+    "constellation": "Phe"
+  },
+  {
+    "name": "Pic-St382",
+    "ra": 102.0477,
+    "dec": -61.9414,
+    "constellation": "Pic"
+  },
+  {
+    "name": "Pic-St383",
+    "ra": 87.4569,
+    "dec": -56.1667,
+    "constellation": "Pic"
+  },
+  {
+    "name": "Psc-St384",
+    "ra": 18.4373,
+    "dec": 24.5837,
+    "constellation": "Psc"
+  },
+  {
+    "name": "Psc-St385",
+    "ra": 17.9152,
+    "dec": 30.0896,
+    "constellation": "Psc"
+  },
+  {
+    "name": "Psc-St386",
+    "ra": 19.8666,
+    "dec": 27.2641,
+    "constellation": "Psc"
+  },
+  {
+    "name": "Psc-St387",
+    "ra": 17.8634,
+    "dec": 21.0347,
+    "constellation": "Psc"
+  },
+  {
+    "name": "Psc-St388",
+    "ra": 26.3485,
+    "dec": 9.1577,
+    "constellation": "Psc"
+  },
+  {
+    "name": "Psc-St389",
+    "ra": 30.5118,
+    "dec": 2.7638,
+    "constellation": "Psc"
+  },
+  {
+    "name": "Psc-St390",
+    "ra": 28.389,
+    "dec": 3.1875,
+    "constellation": "Psc"
+  },
+  {
+    "name": "Psc-St391",
+    "ra": 25.3579,
+    "dec": 5.4876,
+    "constellation": "Psc"
+  },
+  {
+    "name": "Psc-St392",
+    "ra": 22.5463,
+    "dec": 6.1438,
+    "constellation": "Psc"
+  },
+  {
+    "name": "Psc-St393",
+    "ra": 18.4329,
+    "dec": 7.5754,
+    "constellation": "Psc"
+  },
+  {
+    "name": "Psc-St394",
+    "ra": 15.7359,
+    "dec": 7.8901,
+    "constellation": "Psc"
+  },
+  {
+    "name": "Psc-St395",
+    "ra": 12.1706,
+    "dec": 7.5851,
+    "constellation": "Psc"
+  },
+  {
+    "name": "Psc-St396",
+    "ra": 359.8279,
+    "dec": 6.8633,
+    "constellation": "Psc"
+  },
+  {
+    "name": "Psc-St397",
+    "ra": 354.9877,
+    "dec": 5.6263,
+    "constellation": "Psc"
+  },
+  {
+    "name": "Psc-St398",
+    "ra": 351.9921,
+    "dec": 6.379,
+    "constellation": "Psc"
+  },
+  {
+    "name": "Psc-St399",
+    "ra": 350.0858,
+    "dec": 5.3813,
+    "constellation": "Psc"
+  },
+  {
+    "name": "Psc-St400",
+    "ra": 349.2914,
+    "dec": 3.2823,
+    "constellation": "Psc"
+  },
+  {
+    "name": "Psc-St401",
+    "ra": 351.7331,
+    "dec": 1.2556,
+    "constellation": "Psc"
+  },
+  {
+    "name": "Psc-St402",
+    "ra": 355.5117,
+    "dec": 1.78,
+    "constellation": "Psc"
+  },
+  {
+    "name": "Psc-St403",
+    "ra": 356.598,
+    "dec": 3.4868,
+    "constellation": "Psc"
+  },
+  {
+    "name": "Psc-St404",
+    "ra": 345.9692,
+    "dec": 3.82,
+    "constellation": "Psc"
+  },
+  {
+    "name": "PsA-St405",
+    "ra": 340.1639,
+    "dec": -27.0436,
+    "constellation": "PsA"
+  },
+  {
+    "name": "PsA-St406",
+    "ra": 343.9871,
+    "dec": -32.5396,
+    "constellation": "PsA"
+  },
+  {
+    "name": "PsA-St407",
+    "ra": 343.1314,
+    "dec": -32.8755,
+    "constellation": "PsA"
+  },
+  {
+    "name": "PsA-St408",
+    "ra": 337.8764,
+    "dec": -32.3461,
+    "constellation": "PsA"
+  },
+  {
+    "name": "PsA-St409",
+    "ra": 332.09590000000003,
+    "dec": -32.9885,
+    "constellation": "PsA"
+  },
+  {
+    "name": "PsA-St410",
+    "ra": 326.2367,
+    "dec": -33.0258,
+    "constellation": "PsA"
+  },
+  {
+    "name": "PsA-St411",
+    "ra": 326.93399999999997,
+    "dec": -30.8983,
+    "constellation": "PsA"
+  },
+  {
+    "name": "Pup-St412",
+    "ra": 113.8454,
+    "dec": -28.3693,
+    "constellation": "Pup"
+  },
+  {
+    "name": "Pup-St413",
+    "ra": 114.7078,
+    "dec": -26.8038,
+    "constellation": "Pup"
+  },
+  {
+    "name": "Pup-St414",
+    "ra": 117.3236,
+    "dec": -24.8598,
+    "constellation": "Pup"
+  },
+  {
+    "name": "Pup-St415",
+    "ra": 119.2147,
+    "dec": -22.8801,
+    "constellation": "Pup"
+  },
+  {
+    "name": "Pup-St416",
+    "ra": 117.0215,
+    "dec": -25.9372,
+    "constellation": "Pup"
+  },
+  {
+    "name": "Pup-St417",
+    "ra": 115.952,
+    "dec": -28.9548,
+    "constellation": "Pup"
+  },
+  {
+    "name": "Pyx-St418",
+    "ra": 130.0256,
+    "dec": -35.3084,
+    "constellation": "Pyx"
+  },
+  {
+    "name": "Ret-St419",
+    "ra": 64.121,
+    "dec": -59.3022,
+    "constellation": "Ret"
+  },
+  {
+    "name": "Ret-St420",
+    "ra": 59.6865,
+    "dec": -61.4002,
+    "constellation": "Ret"
+  },
+  {
+    "name": "Ret-St421",
+    "ra": 56.0499,
+    "dec": -64.8069,
+    "constellation": "Ret"
+  },
+  {
+    "name": "Sge-St422",
+    "ra": 296.8469,
+    "dec": 18.5343,
+    "constellation": "Sge"
+  },
+  {
+    "name": "Sge-St423",
+    "ra": 295.2622,
+    "dec": 17.476,
+    "constellation": "Sge"
+  },
+  {
+    "name": "Sgr-St424",
+    "ra": 274.4068,
+    "dec": -36.7617,
+    "constellation": "Sgr"
+  },
+  {
+    "name": "Sgr-St425",
+    "ra": 273.4409,
+    "dec": -21.0588,
+    "constellation": "Sgr"
+  },
+  {
+    "name": "Sgr-St426",
+    "ra": 290.6596,
+    "dec": -44.459,
+    "constellation": "Sgr"
+  },
+  {
+    "name": "Sgr-St427",
+    "ra": 290.97159999999997,
+    "dec": -40.6159,
+    "constellation": "Sgr"
+  },
+  {
+    "name": "Sgr-St428",
+    "ra": 285.653,
+    "dec": -29.8801,
+    "constellation": "Sgr"
+  },
+  {
+    "name": "Sgr-St429",
+    "ra": 281.4141,
+    "dec": -26.9908,
+    "constellation": "Sgr"
+  },
+  {
+    "name": "Sgr-St430",
+    "ra": 298.8154,
+    "dec": -41.8683,
+    "constellation": "Sgr"
+  },
+  {
+    "name": "Sgr-St431",
+    "ra": 299.9341,
+    "dec": -35.2763,
+    "constellation": "Sgr"
+  },
+  {
+    "name": "Sgr-St432",
+    "ra": 298.9598,
+    "dec": -26.2995,
+    "constellation": "Sgr"
+  },
+  {
+    "name": "Sgr-St433",
+    "ra": 294.1768,
+    "dec": -24.8836,
+    "constellation": "Sgr"
+  },
+  {
+    "name": "Sgr-St434",
+    "ra": 291.31870000000004,
+    "dec": -24.5086,
+    "constellation": "Sgr"
+  },
+  {
+    "name": "Sgr-St435",
+    "ra": 288.88509999999997,
+    "dec": -25.2567,
+    "constellation": "Sgr"
+  },
+  {
+    "name": "Sgr-St436",
+    "ra": 271.452,
+    "dec": -30.4241,
+    "constellation": "Sgr"
+  },
+  {
+    "name": "Sgr-St437",
+    "ra": 286.735,
+    "dec": -27.6704,
+    "constellation": "Sgr"
+  },
+  {
+    "name": "Sgr-St438",
+    "ra": 286.1708,
+    "dec": -21.7415,
+    "constellation": "Sgr"
+  },
+  {
+    "name": "Sgr-St439",
+    "ra": 287.44100000000003,
+    "dec": -21.0236,
+    "constellation": "Sgr"
+  },
+  {
+    "name": "Sgr-St440",
+    "ra": 289.4087,
+    "dec": -18.9529,
+    "constellation": "Sgr"
+  },
+  {
+    "name": "Sgr-St441",
+    "ra": 290.4182,
+    "dec": -17.8472,
+    "constellation": "Sgr"
+  },
+  {
+    "name": "Sgr-St442",
+    "ra": 290.4318,
+    "dec": -15.955,
+    "constellation": "Sgr"
+  },
+  {
+    "name": "Sgr-St443",
+    "ra": 284.4325,
+    "dec": -21.1067,
+    "constellation": "Sgr"
+  },
+  {
+    "name": "Sgr-St444",
+    "ra": 283.5424,
+    "dec": -22.7448,
+    "constellation": "Sgr"
+  },
+  {
+    "name": "Sco-St445",
+    "ra": 239.713,
+    "dec": -26.1141,
+    "constellation": "Sco"
+  },
+  {
+    "name": "Sco-St446",
+    "ra": 245.2972,
+    "dec": -25.5928,
+    "constellation": "Sco"
+  },
+  {
+    "name": "Sco-St447",
+    "ra": 252.5409,
+    "dec": -34.2932,
+    "constellation": "Sco"
+  },
+  {
+    "name": "Sco-St448",
+    "ra": 252.9676,
+    "dec": -38.0474,
+    "constellation": "Sco"
+  },
+  {
+    "name": "Sco-St449",
+    "ra": 253.64589999999998,
+    "dec": -42.3613,
+    "constellation": "Sco"
+  },
+  {
+    "name": "Sco-St450",
+    "ra": 258.0383,
+    "dec": -43.2392,
+    "constellation": "Sco"
+  },
+  {
+    "name": "Sco-St451",
+    "ra": 266.8962,
+    "dec": -40.127,
+    "constellation": "Sco"
+  },
+  {
+    "name": "Sco-St452",
+    "ra": 265.622,
+    "dec": -39.03,
+    "constellation": "Sco"
+  },
+  {
+    "name": "Scl-St453",
+    "ra": 357.2314,
+    "dec": -28.1303,
+    "constellation": "Scl"
+  },
+  {
+    "name": "Scl-St454",
+    "ra": 349.706,
+    "dec": -32.532,
+    "constellation": "Scl"
+  },
+  {
+    "name": "Scl-St455",
+    "ra": 353.2427,
+    "dec": -37.8183,
+    "constellation": "Scl"
+  },
+  {
+    "name": "Sct-St456",
+    "ra": 278.8018,
+    "dec": -8.2441,
+    "constellation": "Sct"
+  },
+  {
+    "name": "Sct-St457",
+    "ra": 280.5684,
+    "dec": -9.0525,
+    "constellation": "Sct"
+  },
+  {
+    "name": "Sct-St458",
+    "ra": 277.2994,
+    "dec": -14.5658,
+    "constellation": "Sct"
+  },
+  {
+    "name": "Ser-St459",
+    "ra": 236.5469,
+    "dec": 15.4218,
+    "constellation": "Ser"
+  },
+  {
+    "name": "Ser-St460",
+    "ra": 235.3877,
+    "dec": 19.6704,
+    "constellation": "Ser"
+  },
+  {
+    "name": "Ser-St461",
+    "ra": 237.1849,
+    "dec": 18.1416,
+    "constellation": "Ser"
+  },
+  {
+    "name": "Ser-St462",
+    "ra": 239.11329999999998,
+    "dec": 15.6616,
+    "constellation": "Ser"
+  },
+  {
+    "name": "Ser-St463",
+    "ra": 233.7006,
+    "dec": 10.5389,
+    "constellation": "Ser"
+  },
+  {
+    "name": "Ser-St464",
+    "ra": 237.704,
+    "dec": 4.4777,
+    "constellation": "Ser"
+  },
+  {
+    "name": "Ser-St465",
+    "ra": 264.3967,
+    "dec": -15.3986,
+    "constellation": "Ser"
+  },
+  {
+    "name": "Ser-St466",
+    "ra": 270.77049999999997,
+    "dec": -8.1803,
+    "constellation": "Ser"
+  },
+  {
+    "name": "Ser-St467",
+    "ra": 284.0549,
+    "dec": 4.2036,
+    "constellation": "Ser"
+  },
+  {
+    "name": "Sex-St468",
+    "ra": 151.9845,
+    "dec": -0.3716,
+    "constellation": "Sex"
+  },
+  {
+    "name": "Sex-St469",
+    "ra": 148.1268,
+    "dec": -8.105,
+    "constellation": "Sex"
+  },
+  {
+    "name": "Sex-St470",
+    "ra": 157.3696,
+    "dec": -2.7391,
+    "constellation": "Sex"
+  },
+  {
+    "name": "Sex-St471",
+    "ra": 157.5728,
+    "dec": -0.637,
+    "constellation": "Sex"
+  },
+  {
+    "name": "Tau-St472",
+    "ra": 65.7337,
+    "dec": 17.5425,
+    "constellation": "Tau"
+  },
+  {
+    "name": "Tau-St473",
+    "ra": 60.1701,
+    "dec": 12.4903,
+    "constellation": "Tau"
+  },
+  {
+    "name": "Tau-St474",
+    "ra": 51.7923,
+    "dec": 9.7327,
+    "constellation": "Tau"
+  },
+  {
+    "name": "Tau-St475",
+    "ra": 60.7891,
+    "dec": 5.9893,
+    "constellation": "Tau"
+  },
+  {
+    "name": "Tau-St476",
+    "ra": 51.2033,
+    "dec": 9.0289,
+    "constellation": "Tau"
+  },
+  {
+    "name": "Tau-St477",
+    "ra": 54.2183,
+    "dec": 0.4017,
+    "constellation": "Tau"
+  },
+  {
+    "name": "Tel-St478",
+    "ra": 272.8073,
+    "dec": -45.9544,
+    "constellation": "Tel"
+  },
+  {
+    "name": "Tel-St479",
+    "ra": 276.7434,
+    "dec": -45.9685,
+    "constellation": "Tel"
+  },
+  {
+    "name": "Tel-St480",
+    "ra": 277.2077,
+    "dec": -49.0706,
+    "constellation": "Tel"
+  },
+  {
+    "name": "Tri-St481",
+    "ra": 32.3859,
+    "dec": 34.9873,
+    "constellation": "Tri"
+  },
+  {
+    "name": "TrA-St482",
+    "ra": 229.7274,
+    "dec": -68.6795,
+    "constellation": "TrA"
+  },
+  {
+    "name": "Tuc-St483",
+    "ra": 349.3574,
+    "dec": -58.2357,
+    "constellation": "Tuc"
+  },
+  {
+    "name": "Tuc-St484",
+    "ra": 7.8861,
+    "dec": -62.9582,
+    "constellation": "Tuc"
+  },
+  {
+    "name": "Tuc-St485",
+    "ra": 5.0178,
+    "dec": -64.8748,
+    "constellation": "Tuc"
+  },
+  {
+    "name": "Tuc-St486",
+    "ra": 359.9791,
+    "dec": -65.5771,
+    "constellation": "Tuc"
+  },
+  {
+    "name": "Tuc-St487",
+    "ra": 336.8332,
+    "dec": -64.9664,
+    "constellation": "Tuc"
+  },
+  {
+    "name": "UMa-St488",
+    "ra": 176.5126,
+    "dec": 47.7794,
+    "constellation": "UMa"
+  },
+  {
+    "name": "UMa-St489",
+    "ra": 169.6197,
+    "dec": 33.0943,
+    "constellation": "UMa"
+  },
+  {
+    "name": "UMa-St490",
+    "ra": 169.5468,
+    "dec": 31.5308,
+    "constellation": "UMa"
+  },
+  {
+    "name": "UMa-St491",
+    "ra": 167.4159,
+    "dec": 44.4985,
+    "constellation": "UMa"
+  },
+  {
+    "name": "UMa-St492",
+    "ra": 155.5823,
+    "dec": 41.4995,
+    "constellation": "UMa"
+  },
+  {
+    "name": "UMa-St493",
+    "ra": 154.2741,
+    "dec": 42.9144,
+    "constellation": "UMa"
+  },
+  {
+    "name": "UMa-St494",
+    "ra": 142.8821,
+    "dec": 63.0619,
+    "constellation": "UMa"
+  },
+  {
+    "name": "UMa-St495",
+    "ra": 127.5661,
+    "dec": 60.7182,
+    "constellation": "UMa"
+  },
+  {
+    "name": "UMa-St496",
+    "ra": 147.7473,
+    "dec": 59.0387,
+    "constellation": "UMa"
+  },
+  {
+    "name": "UMa-St497",
+    "ra": 148.0265,
+    "dec": 54.0643,
+    "constellation": "UMa"
+  },
+  {
+    "name": "UMa-St498",
+    "ra": 143.2143,
+    "dec": 51.6773,
+    "constellation": "UMa"
+  },
+  {
+    "name": "UMa-St499",
+    "ra": 134.8019,
+    "dec": 48.0418,
+    "constellation": "UMa"
+  },
+  {
+    "name": "UMa-St500",
+    "ra": 135.9064,
+    "dec": 47.1565,
+    "constellation": "UMa"
+  },
+  {
+    "name": "Vel-St501",
+    "ra": 149.2156,
+    "dec": -54.5678,
+    "constellation": "Vel"
+  },
+  {
+    "name": "Vel-St502",
+    "ra": 153.684,
+    "dec": -42.1219,
+    "constellation": "Vel"
+  },
+  {
+    "name": "Vel-St503",
+    "ra": 142.675,
+    "dec": -40.4668,
+    "constellation": "Vel"
+  },
+  {
+    "name": "Vel-St504",
+    "ra": 136.999,
+    "dec": -43.4326,
+    "constellation": "Vel"
+  },
+  {
+    "name": "Vir-St505",
+    "ra": 176.4648,
+    "dec": 6.5294,
+    "constellation": "Vir"
+  },
+  {
+    "name": "Vir-St506",
+    "ra": 177.6738,
+    "dec": 1.7647,
+    "constellation": "Vir"
+  },
+  {
+    "name": "Vir-St507",
+    "ra": 184.9765,
+    "dec": -0.6668,
+    "constellation": "Vir"
+  },
+  {
+    "name": "Vir-St508",
+    "ra": 197.4875,
+    "dec": -5.539,
+    "constellation": "Vir"
+  },
+  {
+    "name": "Vir-St509",
+    "ra": 214.0036,
+    "dec": -6.0005,
+    "constellation": "Vir"
+  },
+  {
+    "name": "Vir-St510",
+    "ra": 220.7651,
+    "dec": -5.6582,
+    "constellation": "Vir"
+  },
+  {
+    "name": "Vir-St511",
+    "ra": 193.9009,
+    "dec": 3.3975,
+    "constellation": "Vir"
+  },
+  {
+    "name": "Vir-St512",
+    "ra": 203.6733,
+    "dec": -0.5958,
+    "constellation": "Vir"
+  },
+  {
+    "name": "Vir-St513",
+    "ra": 210.4116,
+    "dec": 1.5445,
+    "constellation": "Vir"
+  },
+  {
+    "name": "Vir-St514",
+    "ra": 221.5622,
+    "dec": 1.8929,
+    "constellation": "Vir"
+  },
+  {
+    "name": "Vol-St515",
+    "ra": 135.6116,
+    "dec": -66.3961,
+    "constellation": "Vol"
+  },
+  {
+    "name": "Vol-St516",
+    "ra": 121.9825,
+    "dec": -68.6171,
+    "constellation": "Vol"
+  },
+  {
+    "name": "Vol-St517",
+    "ra": 109.2076,
+    "dec": -67.9572,
+    "constellation": "Vol"
+  },
+  {
+    "name": "Vol-St518",
+    "ra": 107.1869,
+    "dec": -70.4989,
+    "constellation": "Vol"
+  },
+  {
+    "name": "Vul-St519",
+    "ra": 289.0543,
+    "dec": 21.3904,
+    "constellation": "Vul"
+  },
+  {
+    "name": "Vul-St520",
+    "ra": 292.1764,
+    "dec": 24.6649,
+    "constellation": "Vul"
+  },
+  {
+    "name": "Vul-St521",
+    "ra": 298.3654,
+    "dec": 24.0796,
+    "constellation": "Vul"
+  },
+  {
+    "name": "Vul-St522",
+    "ra": 300.2752,
+    "dec": 27.7536,
+    "constellation": "Vul"
+  },
+  {
+    "name": "Vul-St523",
+    "ra": 303.9422,
+    "dec": 27.8142,
+    "constellation": "Vul"
+  }
+]
