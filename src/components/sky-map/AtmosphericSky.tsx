@@ -85,17 +85,17 @@ const SKY_FRAGMENT_SHADER = `
 
 export default function AtmosphericSky() {
     const meshRef = useRef<THREE.Mesh>(null);
-    const bortleScale = useAppStore((s) => s.settings.bortleScale);
     const camFov = useAppStore((s) => s.camFov);
     const viewMode = useAppStore((s) => s.viewMode);
     const sunPos = useMemo(() => new THREE.Vector3(100, 0, 0), []);
 
+    // Stable uniforms object — mutate values in useFrame, never recreate
     const uniforms = useMemo(() => ({
         uSunPos: { value: sunPos },
         uTime: { value: 0 },
-        uBortle: { value: bortleScale },
+        uBortle: { value: 4 },
         uSuppression: { value: 1.0 }
-    }), [bortleScale, sunPos]);
+    }), [sunPos]);
 
     useFrame((state) => {
         if (!meshRef.current) return;
@@ -107,7 +107,9 @@ export default function AtmosphericSky() {
         // eslint-disable-next-line react-hooks/immutability
         uniforms.uSuppression.value = suppression;
 
-        const { time, observer } = useAppStore.getState();
+        const { time, observer, settings } = useAppStore.getState();
+        uniforms.uBortle.value = settings.bortleScale;
+
         try {
             const obs = new Astronomy.Observer(observer.lat, observer.lon, 0);
             const eq = Astronomy.Equator(Astronomy.Body.Sun, time, obs, true, true);

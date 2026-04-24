@@ -29,7 +29,8 @@ export default function DailyEventsPanel() {
         year: 'numeric',
     });
 
-    const isNight = hour >= 20 || hour <= 6;
+    // Night badge: true when most night-relevant events are visible
+    const isNight = hour >= 20 || hour <= 5;
     const visibleCount = events.filter((event) => event.visible).length;
 
     return (
@@ -120,7 +121,7 @@ function EventCard({ event, compact = false }: { event: CelestialEvent; compact?
                                     {event.object}
                                 </span>
                                 <span className="rounded-full border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[9px] uppercase tracking-[0.14em] text-white/42">
-                                    {event.type}
+                                    {event.type === 'twilight' ? 'crepúsc.' : event.type}
                                 </span>
                             </div>
                             {!compact && (
