@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const SPEEDS = [
     { label: '1h/s', daysPerSec: 1 / 24 },
     { label: '1d/s', daysPerSec: 1 },
-    { label: '1s/s', daysPerSec: 7 },
+    { label: '1sem/s', daysPerSec: 7 },
     { label: '1m/s', daysPerSec: 30 },
 ];
 
@@ -17,7 +17,7 @@ const PRESET_JUMPS = [
     { label: '-10a', days: -3650 },
     { label: '-1a', days: -365 },
     { label: '-1m', days: -30 },
-    { label: '-1s', days: -7 },
+    { label: '-1sem', days: -7 },
     { label: '-1d', days: -1 },
 ];
 
@@ -217,7 +217,7 @@ export default function TimeTravelControls() {
                             ))}
                         </div>
 
-                        {/* Speed selector + Live button */}
+                        {/* Selector de velocidad + botón de tiempo real */}
                         <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-white/5">
                             <div className="flex items-center gap-1" role="group" aria-label="Velocidad de reproducción">
                                 <span className="text-[8px] text-white/20 font-mono tracking-widest uppercase mr-1.5" aria-hidden="true">

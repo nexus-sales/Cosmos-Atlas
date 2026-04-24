@@ -150,9 +150,9 @@ export default function ViewModeWidget() {
         calibrationPhase === 'running'
             ? `Calibrando... ${calibrationProgress}%`
             : calibrationPhase === 'done'
-                ? 'Calibracion completada'
+                ? 'Calibración completada'
                 : calibrationPhase === 'failed'
-                    ? 'Calibracion incompleta'
+                    ? 'Calibración incompleta'
                     : !isSupported
                         ? 'Este dispositivo no soporta giroscopio.'
                         : needsCalibration
@@ -184,7 +184,7 @@ export default function ViewModeWidget() {
             >
                 {viewMode === 'camera' ? <Camera className="w-3.5 h-3.5" /> : <MapIcon className="w-3.5 h-3.5" />}
                 <span className="text-[10px] font-bold tracking-widest uppercase">
-                    {viewMode === 'camera' ? 'CAMARA' : 'BOVEDA'}
+                    {viewMode === 'camera' ? 'CÁMARA' : 'BÓVEDA'}
                 </span>
                 <ChevronUp className="w-3 h-3 opacity-50" />
             </button>
@@ -205,7 +205,7 @@ export default function ViewModeWidget() {
                     )}
                 >
                     <MapIcon className="w-3.5 h-3.5" />
-                    BOVEDA
+                    BÓVEDA
                 </button>
                 <button
                     onClick={handleActivateCameraMode}
@@ -217,7 +217,7 @@ export default function ViewModeWidget() {
                     )}
                 >
                     <Camera className="w-3.5 h-3.5" />
-                    CAMARA
+                    CÁMARA
                 </button>
             </div>
 
@@ -251,7 +251,7 @@ export default function ViewModeWidget() {
 
             {showCalibrationCard && (
                 <div className="atlas-panel pointer-events-auto max-w-[290px] rounded-2xl px-3.5 py-3">
-                    <p className="text-[10px] text-white/78 uppercase tracking-[0.18em] font-semibold mb-1.5">Calibracion Sensores</p>
+                    <p className="text-[10px] text-white/78 uppercase tracking-[0.18em] font-semibold mb-1.5">Calibración Sensores</p>
                     <p className="text-[11px] text-white/55 leading-relaxed mb-2.5">
                         {calibrationPhase === 'running'
                             ? 'Mueve el movil en forma de 8 durante 3 segundos.'
@@ -285,10 +285,10 @@ export default function ViewModeWidget() {
                     )}
 
                     {calibrationPhase === 'done' && (
-                        <p className="text-[10px] mb-2.5 font-mono text-emerald-300/80">Calibracion correcta</p>
+                        <p className="text-[10px] mb-2.5 font-mono text-emerald-300/80">Calibración correcta</p>
                     )}
                     {calibrationPhase === 'failed' && (
-                        <p className="text-[10px] mb-2.5 font-mono text-red-300/80">No se pudo estabilizar. Repite calibracion.</p>
+                        <p className="text-[10px] mb-2.5 font-mono text-red-300/80">No se pudo estabilizar. Repite calibración.</p>
                     )}
 
                     <button

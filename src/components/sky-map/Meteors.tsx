@@ -1,11 +1,38 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useAppStore } from '@/stores/useAppStore';
 
 const METEOR_COUNT = 8; // Número bajo para que se sienta especial
+
+type MeteorState = {
+    active: boolean;
+    startPos: THREE.Vector3;
+    endPos: THREE.Vector3;
+    progress: number;
+    speed: number;
+    length: number;
+    waitDelay: number;
+};
+
+function pseudoRandom(seed: number) {
+    const x = Math.sin(seed * 12.9898) * 43758.5453;
+    return x - Math.floor(x);
+}
+
+function createInitialMeteors(): MeteorState[] {
+    return Array.from({ length: METEOR_COUNT }, (_, index) => ({
+        active: false,
+        startPos: new THREE.Vector3(),
+        endPos: new THREE.Vector3(),
+        progress: 0,
+        speed: 0,
+        length: 0,
+        waitDelay: pseudoRandom(index + 1) * 8 + 2,
+    }));
+}
 
 const vertexShader = `
     attribute float instanceOpacity;
@@ -44,17 +71,7 @@ export default function Meteors() {
     const meshRef = useRef<THREE.InstancedMesh>(null);
     const dummy = useMemo(() => new THREE.Object3D(), []);
     
-    const meteors = useMemo(() => {
-        return Array.from({ length: METEOR_COUNT }).map(() => ({
-            active: false,
-            startPos: new THREE.Vector3(),
-            endPos: new THREE.Vector3(),
-            progress: 0,
-            speed: 0,
-            length: 0,
-            waitDelay: Math.random() * 8 + 2
-        }));
-    }, []);
+    const meteorsRef = useRef<MeteorState[]>(createInitialMeteors());
 
     const uniforms = useMemo(() => ({
         uColor: { value: new THREE.Color('#ffffff') }
@@ -68,6 +85,7 @@ export default function Meteors() {
         let needUpdate = false;
         const color = new THREE.Color(nightMode ? '#ff4444' : '#e0f2fe');
         uniforms.uColor.value.copy(color);
+        const meteors = meteorsRef.current;
 
         for (let i = 0; i < METEOR_COUNT; i++) {
             const m = meteors[i];
@@ -95,6 +113,7 @@ export default function Meteors() {
                     
                     m.endPos.copy(m.startPos).add(dir.multiplyScalar(m.length));
                     
+                    // eslint-disable-next-line react-hooks/immutability
                     opacityArray[i] = 0;
                     needUpdate = true;
                 }
@@ -136,7 +155,7 @@ export default function Meteors() {
 
     // Rotar geometría para que el largo (eje Y) se alinee con el eje Z (para lookAt)
     const geomRef = useRef<THREE.CylinderGeometry>(null);
-    useMemo(() => {
+    useEffect(() => {
         if (geomRef.current) {
             geomRef.current.rotateX(Math.PI / 2);
         }

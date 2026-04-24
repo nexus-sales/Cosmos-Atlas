@@ -113,21 +113,41 @@ function PanelContent({
         { id: 'passport', label: 'PASAPORTE', icon: Sparkles },
     ] as const;
 
-    const layerToggles = [
-        { key: 'showGrid' as const, label: 'CUADRÍCULA', icon: Grid3X3, active: showGrid },
-        { key: 'showConstellations' as const, label: 'CONSTELAC.', icon: Layers, active: showConstellations },
-        { key: 'showConstellationArt' as const, label: 'MITOLOGÍA', icon: Sparkles, active: showConstellationArt },
-        { key: 'showMilkyWay' as const, label: 'VÍA LÁCTEA', icon: Layers, active: showMilkyWay },
-        { key: 'showEcliptic' as const, label: 'ECLÍPTICA', icon: Layers, active: showEcliptic },
-        { key: 'nightMode' as const, label: 'MODO NOCHE', icon: Moon, active: nightMode },
-        { key: 'showFOV' as const, label: 'CAMPO FOV', icon: Camera, active: showFOV },
-        { key: 'showSatellites' as const, label: 'SATÉLITES', icon: Satellite, active: showSatellites },
-        { key: 'showStarlink' as const, label: 'STARLINK', icon: Globe, active: showStarlink },
-        { key: 'soundscape' as const, label: 'SONIDO AMB.', icon: Volume2, active: soundscape },
-        { key: 'showDiagnostics' as const, label: 'DIAGNÓST.', icon: Activity, active: showDiagnostics },
-        { key: 'telescopeMode' as const, label: 'TELESCOPIO', icon: Camera, active: telescopeMode },
-        { key: 'followTarget' as const, label: 'SEGUIR', icon: Crosshair, active: followTarget },
-        { key: 'kidsMode' as const, label: 'MODO NIÑO', icon: Sparkles, active: kidsMode },
+    const layerGroups = [
+        {
+            title: 'Cielo',
+            items: [
+                { key: 'showGrid' as const, label: 'CUADRÍCULA', icon: Grid3X3, active: showGrid },
+                { key: 'showConstellations' as const, label: 'CONSTELAC.', icon: Layers, active: showConstellations },
+                { key: 'showConstellationArt' as const, label: 'MITOLOGÍA', icon: Sparkles, active: showConstellationArt },
+                { key: 'showMilkyWay' as const, label: 'VÍA LÁCTEA', icon: Layers, active: showMilkyWay },
+                { key: 'showEcliptic' as const, label: 'ECLÍPTICA', icon: Layers, active: showEcliptic },
+            ],
+        },
+        {
+            title: 'Observación',
+            items: [
+                { key: 'showFOV' as const, label: 'CAMPO FOV', icon: Camera, active: showFOV },
+                { key: 'telescopeMode' as const, label: 'TELESCOPIO', icon: Camera, active: telescopeMode },
+                { key: 'followTarget' as const, label: 'SEGUIR', icon: Crosshair, active: followTarget },
+            ],
+        },
+        {
+            title: 'Satélites y Sistema',
+            items: [
+                { key: 'showSatellites' as const, label: 'SATÉLITES', icon: Satellite, active: showSatellites },
+                { key: 'showStarlink' as const, label: 'STARLINK', icon: Globe, active: showStarlink },
+                { key: 'showDiagnostics' as const, label: 'DIAGNÓST.', icon: Activity, active: showDiagnostics },
+            ],
+        },
+        {
+            title: 'Experiencia',
+            items: [
+                { key: 'nightMode' as const, label: 'MODO NOCHE', icon: Moon, active: nightMode },
+                { key: 'soundscape' as const, label: 'SONIDO AMB.', icon: Volume2, active: soundscape },
+                { key: 'kidsMode' as const, label: 'MODO NIÑO', icon: Sparkles, active: kidsMode },
+            ],
+        },
     ];
 
     const [layersOpen, setLayersOpen] = useState(false);
@@ -233,26 +253,38 @@ function PanelContent({
                             <span>Capas visibles optimizadas para lectura rápida.</span>
                             <span className="font-mono text-white/72">{activeLayerCount} activas</span>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
-                            {layerToggles.map(({ key, label, icon: Icon, active }) => (
-                                <button
-                                    key={key}
-                                    onClick={() => toggleSetting(key)}
-                                    className={cn(
-                                        'flex items-center gap-2.5 px-3 py-3 rounded-xl text-[10px] font-bold tracking-[0.08em] transition-all border outline-none cursor-pointer text-left',
-                                        active ? 'text-blue-300 border-blue-500/30 bg-blue-500/10' : 'text-white/35 border-white/5 hover:text-white/60 hover:border-white/12'
-                                    )}
-                                >
-                                    <div className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border', active ? 'border-blue-400/20 bg-blue-500/10' : 'border-white/8 bg-white/[0.03]')}>
-                                        <Icon className="w-4 h-4" />
-                                    </div>
-                                    <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
-                                        <span className="truncate">{label}</span>
-                                        <span className={cn('text-[9px] font-mono', active ? 'text-blue-200/80' : 'text-white/25')}>
-                                            {active ? 'ON' : 'OFF'}
+                        <div className="space-y-4">
+                            {layerGroups.map((group) => (
+                                <div key={group.title} className="space-y-2">
+                                    <div className="flex items-center justify-between px-1">
+                                        <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/28">{group.title}</span>
+                                        <span className="font-mono text-[9px] text-white/24">
+                                            {group.items.filter((item) => item.active).length}/{group.items.length}
                                         </span>
                                     </div>
-                                </button>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {group.items.map(({ key, label, icon: Icon, active }) => (
+                                            <button
+                                                key={key}
+                                                onClick={() => toggleSetting(key)}
+                                                className={cn(
+                                                    'flex items-center gap-2.5 px-3 py-3 rounded-xl text-[10px] font-bold tracking-[0.08em] transition-all border outline-none cursor-pointer text-left',
+                                                    active ? 'text-blue-300 border-blue-500/30 bg-blue-500/10' : 'text-white/35 border-white/5 hover:text-white/60 hover:border-white/12'
+                                                )}
+                                            >
+                                                <div className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border', active ? 'border-blue-400/20 bg-blue-500/10' : 'border-white/8 bg-white/[0.03]')}>
+                                                    <Icon className="w-4 h-4" />
+                                                </div>
+                                                <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                                                    <span className="truncate">{label}</span>
+                                                    <span className={cn('text-[9px] font-mono', active ? 'text-blue-200/80' : 'text-white/25')}>
+                                                        {active ? 'ON' : 'OFF'}
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
                             ))}
                         </div>
                     </AccordionSection>
@@ -504,6 +536,7 @@ export default function SidePanel() {
         { id: 'challenge', label: 'RETO', icon: Target },
         { id: 'info', label: 'OBJETO', icon: Info },
         { id: 'guide', label: 'GUÍA', icon: BookOpen },
+        { id: 'passport', label: 'PASAPORTE', icon: Sparkles },
     ] as const;
 
     return (

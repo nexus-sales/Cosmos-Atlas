@@ -96,10 +96,9 @@ export default function Constellations() {
             if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
             rafRef.current = null;
         };
-    }, [focusedConstellation, camFov, shouldAnimateDraw]);
+    }, [focusedConstellation, shouldAnimateDraw]);
 
     const bortleScale = useAppStore((state) => state.settings.bortleScale);
-    const pulseRef = useRef(0);
 
     // Continuous pulse for the focused one
     const [pulse, setPulse] = useState(1);
@@ -107,8 +106,8 @@ export default function Constellations() {
     // We use a small optimization here: only pulse if something is focused
     useEffect(() => {
         if (!focusedConstellation && !selectedObject) {
-            setPulse(1);
-            return;
+            const timer = setTimeout(() => setPulse(1), 0);
+            return () => clearTimeout(timer);
         }
         
         let alive = true;

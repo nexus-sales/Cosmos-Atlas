@@ -33,17 +33,17 @@ export default function MeteorShowerInfo() {
                     <div>
                         <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/42">
                             <CloudRain className="h-3.5 w-3.5 text-blue-300/70" />
-                            Meteor Watch
+                            Vigilancia de Meteoros
                         </div>
                         <div className="mt-1 text-[15px] font-semibold text-white">
-                            {bestShower ? bestShower.name : 'No strong shower today'}
+                            {bestShower ? bestShower.name : 'Sin lluvia intensa hoy'}
                         </div>
                         <div className="mt-1 text-[11px] leading-5 text-white/58">
-                            Premium glance for active showers, peak timing and expected intensity.
+                            Resumen de lluvias activas, máximo previsto e intensidad esperada.
                         </div>
                     </div>
                     <div className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white/64">
-                        {activeShowers.length} active
+                        {activeShowers.length} activas
                     </div>
                 </div>
 
@@ -54,20 +54,20 @@ export default function MeteorShowerInfo() {
                             value={`${Math.round(bestShower.thz * getShowerActivity(bestShower, date))}`}
                             hint="est."
                         />
-                        <Metric label="Speed" value={`${bestShower.speed}`} hint="km/s" />
+                        <Metric label="Veloc." value={`${bestShower.speed}`} hint="km/s" />
                         <Metric
-                            label="Peak"
+                            label="Máximo"
                             value={
                                 Math.abs(new Date(bestShower.peakDate).getTime() - date.getTime()) / (1000 * 60 * 60 * 24) < 2
-                                    ? 'Soon'
+                                    ? 'Pronto'
                                     : new Date(bestShower.peakDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
                             }
-                            hint="window"
+                            hint="ventana"
                         />
                     </div>
                 ) : (
                     <div className="mt-4 rounded-xl border border-white/8 bg-white/[0.03] px-3 py-3 text-[11px] leading-5 text-white/54">
-                        Conditions are quiet right now. Keep an eye on the upcoming peak windows below.
+                        La actividad está tranquila ahora mismo. Vigila los próximos máximos.
                     </div>
                 )}
             </div>
@@ -76,22 +76,22 @@ export default function MeteorShowerInfo() {
                 <div className="atlas-card rounded-2xl p-3.5">
                     <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/34">
                         <Sparkles className="h-3.5 w-3.5 text-blue-300/70" />
-                        Prime Shower
+                        Lluvia Principal
                     </div>
                     <div className="mt-3 flex items-start justify-between gap-3">
                         <div>
                             <div className="text-[13px] font-semibold text-white">{bestShower.shortName}</div>
                             <div className="mt-1 flex items-center gap-1.5 text-[11px] text-white/54">
                                 <Eye className="h-3 w-3 text-blue-200/70" />
-                                Best under dark skies and after moonset when possible.
+                                Mejor con cielos oscuros y, si es posible, después de la puesta de la Luna.
                             </div>
                             <div className="mt-1 flex items-center gap-1.5 text-[11px] text-white/54">
                                 <Clock3 className="h-3 w-3 text-blue-200/70" />
-                                Peak: {new Date(bestShower.peakDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}
+                                Máximo: {new Date(bestShower.peakDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}
                             </div>
                         </div>
                         <div className="rounded-xl border border-blue-400/20 bg-blue-500/10 px-3 py-2 text-right">
-                            <div className="text-[9px] uppercase tracking-[0.16em] text-blue-200/60">Activity</div>
+                            <div className="text-[9px] uppercase tracking-[0.16em] text-blue-200/60">Actividad</div>
                             <div className="mt-1 text-[15px] font-semibold text-blue-100">
                                 {Math.round(getShowerActivity(bestShower, date) * 100)}%
                             </div>
@@ -104,7 +104,7 @@ export default function MeteorShowerInfo() {
                 <section className="space-y-2">
                     <div className="flex items-center gap-2 px-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/34">
                         <TrendingUp className="h-3.5 w-3.5 text-blue-300/70" />
-                        Other Active Showers
+                        Otras Lluvias Activas
                     </div>
                     <div className="space-y-2">
                         {activeShowers
@@ -118,7 +118,7 @@ export default function MeteorShowerInfo() {
                                         accentColor={shower.color}
                                         label={shower.shortName}
                                         meta={`THZ ${Math.round(shower.thz * activity)}`}
-                                        badge={activity > 0.8 ? 'Peak' : activity > 0.3 ? 'Active' : 'Light'}
+                                        badge={activity > 0.8 ? 'Máximo' : activity > 0.3 ? 'Activa' : 'Leve'}
                                         badgeTone={activity > 0.8 ? 'good' : activity > 0.3 ? 'warning' : 'neutral'}
                                     />
                                 );
@@ -130,7 +130,7 @@ export default function MeteorShowerInfo() {
             <section className="space-y-2">
                 <div className="flex items-center gap-2 px-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/34">
                     <Clock3 className="h-3.5 w-3.5 text-blue-300/70" />
-                    Upcoming Peaks
+                    Próximos Máximos
                 </div>
                 <div className="space-y-2">
                     {upcomingShowers.map((shower) => {

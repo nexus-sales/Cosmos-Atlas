@@ -39,11 +39,11 @@ export default function DailyEventsPanel() {
                     <div>
                         <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/42">
                             <CalendarDays className="h-3.5 w-3.5 text-blue-300/70" />
-                            Daily Sky Briefing
+                            Resumen del Cielo
                         </div>
                         <div className="mt-1 text-[15px] font-semibold capitalize text-white">{todayStr}</div>
                         <div className="mt-1 text-[11px] leading-5 text-white/58">
-                            Quick reading of the best viewing windows and the timeline for today.
+                            Lectura rápida de las mejores ventanas de observación y la línea temporal de hoy.
                         </div>
                     </div>
                     <div
@@ -54,14 +54,14 @@ export default function DailyEventsPanel() {
                                 : 'border-amber-400/30 bg-amber-500/10 text-amber-200'
                         )}
                     >
-                        {isNight ? 'Night' : 'Day'}
+                        {isNight ? 'Noche' : 'Día'}
                     </div>
                 </div>
 
                 <div className="mt-4 grid grid-cols-3 gap-2">
-                    <Metric label="Now" value={formatEventTime(timeDisplay)} hint="local" />
-                    <Metric label="Visible" value={`${visibleCount}`} hint="events" />
-                    <Metric label="Highlights" value={`${bestEvents.length}`} hint="best" />
+                    <Metric label="Ahora" value={formatEventTime(timeDisplay)} hint="local" />
+                    <Metric label="Visible" value={`${visibleCount}`} hint="eventos" />
+                    <Metric label="Destac." value={`${bestEvents.length}`} hint="mejor" />
                 </div>
             </div>
 
@@ -69,7 +69,7 @@ export default function DailyEventsPanel() {
                 <section className="space-y-2">
                     <div className="flex items-center gap-2 px-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/34">
                         <Sparkles className="h-3.5 w-3.5 text-blue-300/70" />
-                        Best Moments
+                        Mejores Momentos
                     </div>
                     <div className="space-y-2">
                         {bestEvents.slice(0, 4).map((event) => (
@@ -83,7 +83,7 @@ export default function DailyEventsPanel() {
                 <div className="flex items-center justify-between px-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/34">
                     <div className="flex items-center gap-2">
                         <Clock3 className="h-3.5 w-3.5 text-blue-300/70" />
-                        Timeline
+                        Línea Temporal
                     </div>
                     <span className="font-mono text-white/44">{events.length}</span>
                 </div>

@@ -17,6 +17,7 @@ export default function ObjectInfoTab() {
     const toggleFavorite = useAppStore((state) => state.toggleFavorite);
     const markAsVisited = useAppStore((state) => state.markAsVisited);
     const kidsMode = useAppStore((state) => state.settings.kidsMode);
+    const time = useAppStore((state) => state.timeMinute);
     const coords = useCelestialVisibility(selected?.ra || 0, selected?.dec || 0);
 
     const id = selected ? ('id' in selected ? selected.id : selected.name) : '';
@@ -46,6 +47,7 @@ export default function ObjectInfoTab() {
     const typeLabel = isStar ? 'ESTRELLA' : isPlanet ? 'PLANETA' : ((selected as DSO)?.type?.toUpperCase?.() ?? 'OBJETO');
     const accentColor = isStar ? '#60a5fa' : isPlanet ? '#00f2ff' : '#a78bfa';
     const isVisible = coords.alt > 0;
+    const solarSystemDate = time.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' });
 
     const accentVars = {
         '--accent-color': accentColor,
@@ -130,7 +132,7 @@ export default function ObjectInfoTab() {
                         <div className="flex items-center gap-2">
                             <Globe className="object-accent w-2.5 h-2.5" />
                             <span className="object-accent-90 text-[9px] font-mono tracking-wider">
-                                Sistema Solar · Feb 2026
+                                Sistema Solar · {solarSystemDate}
                             </span>
                         </div>
                     </div>
@@ -224,5 +226,4 @@ function MetricCard({ label, value, sub, color, icon }: {
         </div>
     );
 }
-
 

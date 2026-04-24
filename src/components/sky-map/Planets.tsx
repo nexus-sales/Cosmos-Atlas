@@ -2,7 +2,6 @@
 
 import { Html, Float } from '@react-three/drei';
 import { useMemo, useRef } from 'react';
-import type { CSSProperties } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';

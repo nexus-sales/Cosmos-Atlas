@@ -1,6 +1,29 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { Star, DSO, Observer, Planet } from '../types/celestial';
+import { CHALLENGES } from '../data/challenges';
+
+type CelestialObject = Star | DSO | Planet;
+
+function objectKeys(obj: CelestialObject | null) {
+    if (!obj) return [];
+    const keys = [obj.name];
+    if ('id' in obj) keys.push(obj.id);
+    return keys.map((item) => item.trim().toLowerCase());
+}
+
+function foundChallengesForObject(obj: CelestialObject | null, current: string[]) {
+    const keys = objectKeys(obj);
+    if (keys.length === 0) return current;
+
+    const next = new Set(current);
+    for (const challenge of CHALLENGES) {
+        if (keys.includes(challenge.name.trim().toLowerCase())) {
+            next.add(challenge.name);
+        }
+    }
+    return [...next];
+}
 
 interface AppState {
     observer: Observer;
@@ -21,10 +44,10 @@ interface AppState {
     }>;
     addArHealthSample: (sample: { timestamp: number; success: boolean; jitterDeg: number; stableRatio: number }) => void;
     clearArHealthHistory: () => void;
-    selectedObject: Star | DSO | Planet | null;
-    setSelectedObject: (obj: Star | DSO | Planet | null) => void;
-    targetedObject: Star | DSO | Planet | null;
-    setTargetedObject: (obj: Star | DSO | Planet | null) => void;
+    selectedObject: CelestialObject | null;
+    setSelectedObject: (obj: CelestialObject | null) => void;
+    targetedObject: CelestialObject | null;
+    setTargetedObject: (obj: CelestialObject | null) => void;
     time: Date;
     /** Igual que `time` pero solo cambia cuando cambia el MINUTO.
      *  Usar en componentes 3D (Planets, Comets...) para evitar re-renders cada segundo. */
@@ -136,10 +159,15 @@ export const useAppStore = create<AppState>()(
                 })),
             clearArHealthHistory: () => set({ arHealthHistory: [] }),
             selectedObject: null,
-            setSelectedObject: (obj) => set({ selectedObject: obj }),
+            setSelectedObject: (obj) => set((state) => ({
+                selectedObject: obj,
+                foundChallenges: foundChallengesForObject(obj, state.foundChallenges),
+            })),
             targetedObject: null,
             setTargetedObject: (obj) => set((state) => ({
                 targetedObject: obj,
+                selectedObject: obj ?? state.selectedObject,
+                foundChallenges: foundChallengesForObject(obj, state.foundChallenges),
                 // Si seleccionamos un objetivo desde la guía/busqueda, desactivamos el seguimiento de brújula
                 // para que la cámara pueda "volar" hacia el objeto automáticamente.
                 followOrientation: obj ? false : state.followOrientation

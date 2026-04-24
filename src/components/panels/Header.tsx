@@ -139,7 +139,7 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                         Ubicacion
                     </div>
                     <div className="text-sm text-blue-200/70">
-                        {Math.abs(observer.lat).toFixed(2)}deg{latHemisphere} {Math.abs(observer.lon).toFixed(2)}deg{lonHemisphere}
+                        {Math.abs(observer.lat).toFixed(2)}°{latHemisphere} {Math.abs(observer.lon).toFixed(2)}°{lonHemisphere}
                     </div>
                     <div
                         className={cn(
@@ -150,8 +150,8 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                         {hasPreciseLocation
                             ? `GPS +/-${Math.round(geolocation.accuracyM ?? 0)}m`
                             : geolocation.source === 'fallback'
-                                ? `Fallback ${Math.abs(observer.lat).toFixed(1)}deg${latHemisphere}`
-                                : 'Ubicacion aproximada'}
+                                ? `Fallback ${Math.abs(observer.lat).toFixed(1)}°${latHemisphere}`
+                                : 'Ubicación aproximada'}
                     </div>
                     {!hasPreciseLocation && geolocation.status !== 'denied' && (
                         <button
@@ -187,7 +187,7 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                         onClick={!hasPreciseLocation && geolocation.status !== 'denied' ? onRequestLocation : undefined}
                         disabled={hasPreciseLocation || geolocation.status === 'denied'}
                         className="disabled:cursor-default"
-                        title={hasPreciseLocation ? 'GPS activo' : 'Activar ubicacion precisa'}
+                        title={hasPreciseLocation ? 'GPS activo' : 'Activar ubicación precisa'}
                     >
                         {mobileLocationLabel}
                     </button>

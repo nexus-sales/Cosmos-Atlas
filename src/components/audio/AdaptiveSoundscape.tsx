@@ -268,7 +268,7 @@ export function AdaptiveSoundscape() {
             lowPassFreq: profile.lowPassFreq,
             noiseVolume: profile.noiseVolume * reduction * active,
         };
-    }, [settings.nightMode, settings.soundscape, currentProfile.current]);
+    }, [settings.nightMode, settings.soundscape]);
 
     // Ajuste por Bortle scale
     useEffect(() => {
@@ -340,9 +340,9 @@ export function AdaptiveSoundscape() {
         return () => {
             if (audioRef.current) {
                 const { oscillators, lfo, noiseNode, ctx } = audioRef.current;
-                oscillators.forEach((osc) => { try { osc.stop(); } catch (e) {} });
-                if (lfo) { try { lfo.stop(); } catch (e) {} }
-                if (noiseNode) { try { noiseNode.stop(); } catch (e) {} }
+                oscillators.forEach((osc) => { try { osc.stop(); } catch {} });
+                if (lfo) { try { lfo.stop(); } catch {} }
+                if (noiseNode) { try { noiseNode.stop(); } catch {} }
                 
                 if (ctx.state !== 'closed') {
                     ctx.close().catch(() => {});

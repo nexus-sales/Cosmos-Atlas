@@ -16,7 +16,7 @@ export default function PassportTab() {
 
     // Bienvenida por voz al pasaporte
     useEffect(() => {
-        setAiMessage("Bienvenido a tu Pasaporte Estelar. Aquí guardo tus descubrimientos. Recuerda que para ganar logros, debes localizar y pulsar sobre los objetos en el firmamento.");
+        setAiMessage("Bienvenido a tu Pasaporte Estelar. Aquí guardo tus descubrimientos. Para ganar logros, localiza y pulsa los objetos en el firmamento.");
     }, [setAiMessage]);
 
     const favoriteObjects = [
@@ -31,7 +31,7 @@ export default function PassportTab() {
 
     return (
         <div className="space-y-6 pb-6 animate-in fade-in duration-500">
-            {/* GUÍA DE LOGROS (EXPLICACIÓN) */}
+            {/* GUÍA DE LOGROS */}
             <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 relative overflow-hidden group">
                 <div className="flex gap-4 items-start relative z-10">
                     <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
@@ -175,7 +175,7 @@ function AchievementCard({ title, desc, progress, icon, completed, stat }: {
             {completed && (
                 <div className="absolute top-0 right-0 p-1">
                     <div className="animate-pulse bg-yellow-500/20 rounded-bl-lg px-2 py-0.5 text-[8px] font-black text-yellow-500 uppercase tracking-tighter">
-                        Unblocked
+                        Desbloqueado
                     </div>
                 </div>
             )}

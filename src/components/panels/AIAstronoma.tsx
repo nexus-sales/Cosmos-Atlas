@@ -87,34 +87,34 @@ function cardinalFromAzimuth(az: number): string {
 }
 
 function visibilityText(alt: number): string {
-    if (alt < 0) return `bajo el horizonte (${alt.toFixed(1)} deg)`;
-    if (alt < 12) return `muy bajo (${alt.toFixed(1)} deg)`;
-    if (alt < 30) return `observable bajo (${alt.toFixed(1)} deg)`;
-    if (alt < 65) return `bien situado (${alt.toFixed(1)} deg)`;
-    return `muy alto (${alt.toFixed(1)} deg)`;
+    if (alt < 0) return `bajo el horizonte (${alt.toFixed(1)}°)`;
+    if (alt < 12) return `muy bajo (${alt.toFixed(1)}°)`;
+    if (alt < 30) return `observable bajo (${alt.toFixed(1)}°)`;
+    if (alt < 65) return `bien situado (${alt.toFixed(1)}°)`;
+    return `muy alto (${alt.toFixed(1)}°)`;
 }
 
 function observingAdvice(kind: ObjectKind, obj: NarratableObject, alt: number, bortleScale: number): string {
-    if (alt < 0) return 'No es observable ahora desde tu ubicacion; espera a que ascienda o cambia la hora.';
-    if (alt < 12) return 'Esta demasiado cerca del horizonte: la atmosfera introduce extincion, turbulencia y color.';
+    if (alt < 0) return 'No es observable ahora desde tu ubicación; espera a que ascienda o cambia la hora.';
+    if (alt < 12) return 'Está demasiado cerca del horizonte: la atmósfera introduce extinción, turbulencia y color.';
 
     if (kind === 'planet') {
         if (obj.name === 'Luna') return 'Usa aumentos moderados: el terminador lunar revela relieve, crateres y sombras con mucho contraste.';
         if (obj.name === 'Saturno') return 'Prioriza noches estables; los anillos sufren mucho con turbulencia atmosferica.';
-        if (obj.name === 'Jupiter' || obj.name === 'Júpiter') return 'Busca bandas ecuatoriales y satelites galileanos; la escena cambia en minutos.';
+        if (obj.name === 'Jupiter' || obj.name === 'Júpiter') return 'Busca bandas ecuatoriales y satélites galileanos; la escena cambia en minutos.';
         if (obj.name === 'Venus') return 'Observa su fase: es brillante, pero su atmosfera oculta la superficie.';
         return 'Buen objetivo planetario: sube aumentos solo si la imagen permanece estable.';
     }
 
     if (kind === 'dso' && isDso(obj)) {
-        if (bortleScale >= 7) return 'Con este Bortle, conviene un cielo mas oscuro: la luz urbana borra contraste en objetos difusos.';
+        if (bortleScale >= 7) return 'Con este Bortle, conviene un cielo más oscuro: la luz urbana borra contraste en objetos difusos.';
         if (obj.type === 'galaxy') return 'Las galaxias premian la vision lateral y cielos oscuros; busca nucleo, orientacion y forma.';
         if (obj.type === 'nebula') return 'En nebulosas, un filtro UHC u OIII puede marcar una diferencia enorme con telescopio.';
         return 'En cumulos, prueba aumentos medios para separar estrellas sin perder el campo completo.';
     }
 
     if (kind === 'star') return 'En estrellas, compara color, estabilidad y brillo; ahi aparecen temperatura, multiplicidad y evolucion.';
-    return 'Usa la figura como mapa: identifica primero estrellas guia y despues salta a objetos profundos cercanos.';
+    return 'Usa la figura como mapa: identifica primero estrellas guía y después salta a objetos profundos cercanos.';
 }
 
 function scienceContext(kind: ObjectKind, obj: NarratableObject): string {
@@ -159,11 +159,11 @@ function buildNarrationBrief(
                 : kind === 'constellation' ? 'Constelacion'
                     : isDso(obj) ? obj.type.toUpperCase() : 'Objeto';
 
-    const subtitle = `${typeLabel} | ${visibilityText(coords.alt)} | Az ${coords.az.toFixed(0)} deg ${azCardinal}`;
+    const subtitle = `${typeLabel} | ${visibilityText(coords.alt)} | Az ${coords.az.toFixed(0)}° ${azCardinal}`;
     const tags = [
         magnitude,
         `RA ${(obj.ra / 15).toFixed(2)} h`,
-        `Dec ${obj.dec >= 0 ? '+' : ''}${obj.dec.toFixed(1)} deg`,
+        `Dec ${obj.dec >= 0 ? '+' : ''}${obj.dec.toFixed(1)}°`,
         `Bortle ${bortleScale}`,
     ];
 
@@ -190,14 +190,14 @@ function buildNarrationBrief(
 
 function normalizeTextForSpeech(text: string) {
     return text
-        .replace(/\bal\./gi, 'anos luz')
-        .replace(/\bal\b/gi, 'anos luz')
+        .replace(/\bal\./gi, 'años luz')
+        .replace(/\bal\b/gi, 'años luz')
         .replace(/\bmag\b/gi, 'magnitud')
         .replace(/\bkm\/h\b/gi, 'kilometros por hora')
         .replace(/\bkm\b/gi, 'kilometros')
         .replace(/\bms\b/gi, 'milisegundos')
-        .replace(/\bau\b/gi, 'unidades astronomicas')
-        .replace(/\bua\b/gi, 'unidades astronomicas')
+        .replace(/\bau\b/gi, 'unidades astronómicas')
+        .replace(/\bua\b/gi, 'unidades astronómicas')
         .replace(/&middot;/g, 'punto')
         .replace(/&deg;/g, 'grados')
         .replace(/\bmessier\b/gi, 'Messier')
@@ -337,7 +337,7 @@ export default function AIAstronoma() {
                 error?: string;
             };
             if (!res.ok || !data.answer) {
-                throw new Error(data.error || 'No se pudo consultar la IA astronomica');
+                throw new Error(data.error || 'No se pudo consultar la IA astronómica');
             }
             setChatMessages((prev) => [...prev, {
                 role: 'assistant',
@@ -348,7 +348,7 @@ export default function AIAstronoma() {
             setBrief(null);
             setShowBubble(false);
         } catch (error) {
-            const msg = error instanceof Error ? error.message : 'No se pudo consultar la IA astronomica';
+            const msg = error instanceof Error ? error.message : 'No se pudo consultar la IA astronómica';
             setChatError(msg);
             setChatMessages((prev) => [...prev, {
                 role: 'assistant',
@@ -419,7 +419,7 @@ export default function AIAstronoma() {
             const kidFact = kidsMode ? getKidFact(focusedConstellation, false, false) : null;
             nextMessage = kidFact
                 ? `Mira esa figura: es la constelacion de ${name}. ${kidFact}`
-                : `Constelacion de ${name}. No es un objeto fisico unico: es una region aparente del cielo, util para orientarse y saltar a objetos profundos cercanos.`;
+                : `Constelación de ${name}. No es un objeto físico único: es una región aparente del cielo, útil para orientarse y saltar a objetos profundos cercanos.`;
         }
 
         if (nextMessage && nextMessage !== lastMessageRef.current) {
@@ -501,7 +501,7 @@ export default function AIAstronoma() {
                             <button
                                 onClick={() => setChatOpen(false)}
                                 className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/10 text-white/35 hover:bg-white/10 hover:text-white/70"
-                                aria-label="Cerrar consulta astronomica"
+                                aria-label="Cerrar consulta astronómica"
                             >
                                 <X className="h-3.5 w-3.5" />
                             </button>
@@ -511,7 +511,7 @@ export default function AIAstronoma() {
                             {chatMessages.length === 0 && (
                                 <div className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-3 text-[11px] leading-relaxed text-white/55">
                                     {astronomerMode === 'openai'
-                                        ? 'Modo IA real: razonamiento remoto con el contexto actual del cielo, mas rico y flexible.'
+                                        ? 'Modo IA real: razonamiento remoto con el contexto actual del cielo, más rico y flexible.'
                                         : 'Modo local: respuestas instantaneas sin gastar API, utiles si hay limite, cortes o quieres ahorrar credito.'}
                                 </div>
                             )}
@@ -686,7 +686,7 @@ export default function AIAstronoma() {
                             ? 'border-blue-400 bg-blue-600 shadow-[0_0_30px_rgba(37,99,235,0.6)]'
                             : 'border-white/10 bg-black/40 backdrop-blur-md hover:border-blue-500/50'
                     )}
-                    aria-label={isSpeaking ? 'Detener narracion' : 'Repetir narracion astronomica'}
+                    aria-label={isSpeaking ? 'Detener narración' : 'Repetir narración astronómica'}
                 >
                     {isSpeaking ? (
                         <div className="flex items-center gap-1">

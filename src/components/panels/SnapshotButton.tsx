@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Camera, Download, X } from 'lucide-react';
 import { useAppStore } from '@/stores/useAppStore';
 import { getLST } from '@/lib/astronomy/time';
-import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function SnapshotButton() {
@@ -75,6 +74,7 @@ export default function SnapshotButton() {
                             </button>
 
                             <div className="aspect-[4/3] bg-black overflow-hidden shadow-inner border border-black/10">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img src={snapshot} alt="Astro Polaroid" className="w-full h-full object-cover" />
                             </div>
 

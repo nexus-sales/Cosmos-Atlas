@@ -35,7 +35,6 @@ dataLines.forEach(line => {
     const cols = line.split(';');
     if (cols.length < 10) return;
 
-    const name = cols[0];
     const typeStr = cols[1];
     const ra = parseRA(cols[2]);
     const dec = parseDec(cols[3]);

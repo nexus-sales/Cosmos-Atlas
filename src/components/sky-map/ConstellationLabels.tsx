@@ -12,6 +12,10 @@ import { useFrame } from '@react-three/fiber';
 import { cn } from '@/lib/utils';
 import type { Planet } from '@/types/celestial';
 
+type ConstellationTarget = Planet & {
+    angularSize: number;
+};
+
 const STAR_MAP = new Map(STARS.map((s) => [s.name, s]));
 const PIN_MS = 8000;
 const VISIBILITY_THROTTLE_MS = 180;
@@ -155,7 +159,6 @@ export default function ConstellationLabels() {
         }
     });
 
-    const scaleFactor = THREE.MathUtils.mapLinear(camFov, 120, 10, 0.6, 1.35);
     // Labels fade out as you zoom in UNLESS focused/selected
     const zoomFade = clamp01(THREE.MathUtils.mapLinear(camFov, 45, 80, 0.0, 1.0));
 
@@ -206,7 +209,7 @@ export default function ConstellationLabels() {
                                 };
                                 const angularSize = sizes[name] || 35;
 
-                                const constellationTarget = {
+                                const constellationTarget: ConstellationTarget = {
                                     name,
                                     ra,
                                     dec,
@@ -214,9 +217,9 @@ export default function ConstellationLabels() {
                                     color: '#60a5fa',
                                     mag: 0,
                                     symbol: CONSTELLATION_SYMBOL,
-                                    kind: 'constellation',
+                                    kind: 'planet',
                                     angularSize,
-                                } as any;
+                                };
 
                                 setSelectedObject(constellationTarget);
                                 setTargetedObject(constellationTarget);
@@ -258,4 +261,3 @@ export default function ConstellationLabels() {
         </group>
     );
 }
-

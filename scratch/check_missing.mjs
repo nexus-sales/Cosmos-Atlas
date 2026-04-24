@@ -1,5 +1,4 @@
 import fs from 'fs';
-import path from 'path';
 
 const starsPath = 'src/data/stars.ts';
 const constPath = 'src/data/constellations.ts';

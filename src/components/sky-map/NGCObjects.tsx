@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { loadNGC, type NGCObject } from '@/lib/astronomy/ngc';
 import { useAppStore } from '@/stores/useAppStore';
@@ -50,8 +50,6 @@ export default function NGCObjects() {
     const bortleScale = useAppStore(s => s.settings.bortleScale);
     const nightMode   = useAppStore(s => s.settings.nightMode);
     const camFov      = useAppStore(s => s.camFov);
-    const { camera }  = useThree();
-
     const [objects, setObjects] = useState<NGCObject[]>([]);
     const pointsRef = useRef<THREE.Points>(null);
 
@@ -114,6 +112,7 @@ export default function NGCObjects() {
         colAttr.needsUpdate = true;
         sizAttr.needsUpdate = true;
 
+        // eslint-disable-next-line react-hooks/immutability
         material.uniforms.uTime.value      = state.clock.elapsedTime;
         material.uniforms.uNightMode.value = nightMode;
         material.uniforms.uFOV.value       = camFov;
