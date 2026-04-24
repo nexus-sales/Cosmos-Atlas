@@ -2,12 +2,14 @@
 
 import { useAppStore } from '@/stores/useAppStore';
 import type { CSSProperties } from 'react';
-import { MousePointer2, Star as StarIcon, Navigation, Zap, Eye, EyeOff, Globe, Heart } from 'lucide-react';
+import { MousePointer2, Star as StarIcon, Navigation, Zap, Eye, EyeOff, Globe, Heart, Moon as MoonIcon } from 'lucide-react';
 import { useEffect } from 'react';
 import { useCelestialVisibility } from '@/hooks/useCelestialVisibility';
 import type { Star, DSO, Planet } from '@/types/celestial';
 import { getKidFact } from '@/data/kidFacts';
 import { Rocket } from 'lucide-react';
+import { getMoonPhaseName, getMoonPhaseIcon } from '@/lib/astronomy/moon';
+import * as Astronomy from 'astronomy-engine';
 
 export default function ObjectInfoTab() {
     const selected = useAppStore((state) => state.selectedObject) as Star | DSO | Planet | null;
@@ -44,10 +46,17 @@ export default function ObjectInfoTab() {
     const isTargeted = targetedObject?.name === selected?.name;
     const isStar = selected ? 'constellation' in selected : false;
     const isPlanet = selected ? 'kind' in selected && (selected as Planet).kind === 'planet' : false;
-    const typeLabel = isStar ? 'ESTRELLA' : isPlanet ? 'PLANETA' : ((selected as DSO)?.type?.toUpperCase?.() ?? 'OBJETO');
-    const accentColor = isStar ? '#60a5fa' : isPlanet ? '#00f2ff' : '#a78bfa';
+    const isMoon = selected?.name === 'Luna';
+    const typeLabel = isStar ? 'ESTRELLA' : isMoon ? 'SATÉLITE' : isPlanet ? 'PLANETA' : ((selected as DSO)?.type?.toUpperCase?.() ?? 'OBJETO');
+    const accentColor = isStar ? '#60a5fa' : (isPlanet || isMoon) ? '#00f2ff' : '#a78bfa';
     const isVisible = coords.alt > 0;
     const solarSystemDate = time.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' });
+
+    // Lunar Phase Logic
+    const moonPhaseAngle = isMoon ? Astronomy.MoonPhase(time) : 0;
+    const moonPhaseName = isMoon ? getMoonPhaseName(moonPhaseAngle) : '';
+    const moonPhaseIconStr = isMoon ? getMoonPhaseIcon(moonPhaseAngle) : '';
+    const moonIllum = isMoon ? Astronomy.Illumination(Astronomy.Body.Moon, time).phase_fraction * 100 : 0;
 
     const accentVars = {
         '--accent-color': accentColor,
@@ -148,13 +157,23 @@ export default function ObjectInfoTab() {
                 <>
                     {/* Métricas */}
                     <div className="grid grid-cols-2 gap-2">
-                        <MetricCard
-                            label="Magnitud"
-                            value={selected.mag?.toFixed(2) ?? '?'}
-                            sub={selected.mag === undefined ? 'N/A' : (selected.mag < 0 ? 'Superbrill.' : selected.mag < 2 ? 'Muy brillante' : 'Brillante')}
-                            color={accentColor}
-                            icon={<Zap className="w-3 h-3" />}
-                        />
+                        {isMoon ? (
+                            <MetricCard
+                                label="Fase Lunar"
+                                value={moonPhaseName}
+                                sub={`${moonIllum.toFixed(0)}% iluminada ${moonPhaseIconStr}`}
+                                color={accentColor}
+                                icon={<MoonIcon className="w-3 h-3" />}
+                            />
+                        ) : (
+                            <MetricCard
+                                label="Magnitud"
+                                value={selected.mag?.toFixed(2) ?? '?'}
+                                sub={selected.mag === undefined ? 'N/A' : (selected.mag < 0 ? 'Superbrill.' : selected.mag < 2 ? 'Muy brillante' : 'Brillante')}
+                                color={accentColor}
+                                icon={<Zap className="w-3 h-3" />}
+                            />
+                        )}
                         <MetricCard
                             label="Posición"
                             value={`${((selected.ra || 0) / 15).toFixed(1)}h`}
