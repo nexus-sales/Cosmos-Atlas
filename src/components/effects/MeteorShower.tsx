@@ -4,7 +4,7 @@ import { useMemo, useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useAppStore } from '@/stores/useAppStore';
-import { getActiveShowers, isShowerActive } from '@/data/meteorShowers';
+import { isShowerActive } from '@/data/meteorShowers';
 import type { MeteorShower } from '@/data/meteorShowers';
 import { useCatalog } from '@/stores/useCatalogStore';
 

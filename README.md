@@ -132,6 +132,12 @@ npm run dev
 
 Abre <http://localhost:5174> en el navegador.
 
+Si quieres poblar Supabase con el cat?logo actual de Cosmos Atlas:
+
+```bash
+npx tsx --env-file=.env.local scripts/seed-supabase.ts
+```
+
 ```bash
 # Build de producción
 npm run build
@@ -412,6 +418,15 @@ Mejoras recientes de navegación en el panel:
 - Cada cabecera admite fijado con pin; las favoritas se guardan en `localStorage`.
 - Las secciones fijadas suben al principio del panel para quedar accesibles sin atravesar todo el contenido.
 - Hay acciones globales para expandir o contraer las secciones visibles de una vez.
+- Luna y planetas ya usan el mismo cat?logo solar compartido en Gu?a, b?squeda y ficha detallada.
+
+El detalle del objeto seleccionado (`ObjectInfoTab`) puede mostrar ahora, para Sistema Solar:
+
+- descripci?n breve consistente entre vistas
+- contexto ampliado
+- consejos de observaci?n
+- curiosidades y mitolog?a
+- metadatos como tipo, lunas, anillos u ?rbita cuando existen en cat?logo
 
 ---
 

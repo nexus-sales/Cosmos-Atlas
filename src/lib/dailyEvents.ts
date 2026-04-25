@@ -1,6 +1,6 @@
 import { Observer } from '../types/celestial';
 import * as Astronomy from 'astronomy-engine';
-import { getActiveShowers, getShowerInfo } from '../data/meteorShowers';
+import { getActiveShowers, getShowerInfo, METEOR_SHOWERS } from '../data/meteorShowers';
 import type { MeteorShower } from '../data/meteorShowers';
 
 export interface CelestialEvent {
@@ -211,7 +211,7 @@ function getPlanetaryEvents(date: Date, observer: Observer): CelestialEvent[] {
 
 function getMeteorShowerEvents(date: Date): CelestialEvent[] {
     const events: CelestialEvent[] = [];
-    const active = getActiveShowers(date);
+    const active = getActiveShowers(METEOR_SHOWERS, date);
 
     active.forEach((shower: MeteorShower) => {
         const info = getShowerInfo(shower, date);

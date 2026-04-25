@@ -15,7 +15,7 @@ export default function MeteorShowerInfo() {
         const date = new Date(time);
         return {
             activeShowers: meteorShowers.filter(s => isShowerActive(s, date)),
-            bestShower: getBestShower(date),
+            bestShower: getBestShower(meteorShowers, date),
         };
     }, [time, meteorShowers]);
 

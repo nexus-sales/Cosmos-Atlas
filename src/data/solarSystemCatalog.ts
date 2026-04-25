@@ -425,7 +425,7 @@ export function normalizeCatalogName(value: string) {
         .toLowerCase();
 }
 
-export function getSolarSystemBodyByName(name: string, bodies: SolarSystemBody[] = LOCAL_SOLAR_SYSTEM_BODIES) {
+export function getSolarSystemBodyByName(name: string, bodies: SolarSystemBody[]) {
     const normalized = normalizeCatalogName(name);
     return bodies.find((body) => normalizeCatalogName(body.name) === normalized);
 }

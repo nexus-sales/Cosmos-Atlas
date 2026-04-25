@@ -36,34 +36,53 @@ export default function Horizon() {
                 />
             </mesh>
 
-            {/* ── Calima / Haze Atmosférico (Gradiente en el horizonte) ─── */}
+            {/* ── Bruma de horizonte amplia: difumina la línea dura ─── */}
             <mesh
-                position={[0, -0.45, 0]}
+                position={[0, -0.3, 0]}
                 rotation={[-Math.PI / 2, 0, 0]}
                 renderOrder={3}
             >
-                <ringGeometry args={[82, 110, 128]} />
+                <ringGeometry args={[70, 118, 128]} />
+                <meshBasicMaterial
+                    color={nightMode ? '#0a0510' : '#1a3050'}
+                    transparent
+                    opacity={0.55}
+                    side={THREE.DoubleSide}
+                    blending={THREE.NormalBlending}
+                    depthWrite={false}
+                />
+            </mesh>
+
+            {/* ── Calima / Haze Atmosférico (borde del horizonte) ─── */}
+            <mesh
+                position={[0, -0.2, 0]}
+                rotation={[-Math.PI / 2, 0, 0]}
+                renderOrder={4}
+            >
+                <ringGeometry args={[85, 115, 128]} />
                 <meshBasicMaterial 
                     color={accentColor} 
                     transparent 
-                    opacity={0.4} 
+                    opacity={0.3} 
                     side={THREE.DoubleSide}
                     blending={THREE.AdditiveBlending}
+                    depthWrite={false}
                 />
             </mesh>
 
             {/* ── Capa de dispersión secundaria (Rayleigh) ─── */}
             <mesh
-                position={[0, -0.42, 0]}
+                position={[0, -0.1, 0]}
                 rotation={[-Math.PI / 2, 0, 0]}
-                renderOrder={4}
+                renderOrder={5}
             >
-                <ringGeometry args={[88, 92, 128]} />
+                <ringGeometry args={[90, 105, 128]} />
                 <meshBasicMaterial 
                     color={nightMode ? '#ff1111' : '#4ba3e3'} 
                     transparent 
-                    opacity={0.5} 
-                    blending={THREE.AdditiveBlending} 
+                    opacity={0.25} 
+                    blending={THREE.AdditiveBlending}
+                    depthWrite={false}
                 />
             </mesh>
 

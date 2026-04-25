@@ -243,18 +243,18 @@ export default function GuideTab() {
     const [openSections, setOpenSections] = useState<Record<string, boolean>>({
         planets: false, stars: false, galaxies: false, nebulae: false, clusters: false, constellations: false,
     });
-    const [pinnedSections, setPinnedSections] = useState<SectionKey[]>(() => {
-        if (typeof window === 'undefined') return [];
+    const [pinnedSections, setPinnedSections] = useState<SectionKey[]>([]);
+    useEffect(() => {
         try {
             const stored = window.localStorage.getItem(PINNED_SECTIONS_STORAGE_KEY);
-            if (!stored) return [];
+            if (!stored) return;
             const parsed = JSON.parse(stored);
-            if (!Array.isArray(parsed)) return [];
-            return parsed.filter((value): value is SectionKey => SECTION_ORDER.includes(value as SectionKey));
-        } catch {
-            return [];
-        }
-    });
+            if (!Array.isArray(parsed)) return;
+            const valid = parsed.filter((value): value is SectionKey => SECTION_ORDER.includes(value as SectionKey));
+            if (valid.length > 0) setPinnedSections(valid);
+        } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
     const toggleSection = (key: string) =>
         setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
 

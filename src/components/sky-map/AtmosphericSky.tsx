@@ -73,8 +73,9 @@ const SKY_FRAGMENT_SHADER = `
         vec3 finalColor = mix(nightSky, dayColor, dayFactor);
         finalColor += sunsetColor;
 
-        float alpha = clamp(uSuppression, 0.0, 1.0);
-        if (zenithAngle < -0.05) alpha = 0.0;
+        // Transición suave en el horizonte: fade-out en lugar de corte duro
+        float horizonFade = smoothstep(-0.10, 0.04, zenithAngle);
+        float alpha = clamp(uSuppression * horizonFade, 0.0, 1.0);
 
         // Tonemapping suave
         finalColor = 1.0 - exp(-2.2 * finalColor);

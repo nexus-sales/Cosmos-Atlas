@@ -29,7 +29,8 @@ import {
 import { cn } from '@/lib/utils';
 import ChallengeTab from '@/components/panels/ChallengeTab';
 import ObjectInfoTab from '@/components/panels/ObjectInfoTab';
-import GuideTab from '@/components/panels/GuideTab';
+import dynamic from 'next/dynamic';
+const GuideTab = dynamic(() => import('@/components/panels/GuideTab'), { ssr: false });
 import PassportTab from '@/components/panels/PassportTab';
 import MeteorShowerInfo from '@/components/panels/MeteorShowerInfo';
 import DailyEventsPanel from '@/components/panels/DailyEventsPanel';
@@ -38,10 +39,10 @@ import { getArHealthSummary, getArToneClasses } from '@/lib/arHealth';
 type TabType = 'challenge' | 'info' | 'guide' | 'passport';
 
 function useIsMobile() {
-    const [isMobile, setIsMobile] = useState(() => {
-        if (typeof window === 'undefined') return false;
-        return window.matchMedia('(max-width: 767px)').matches;
-    });
+    const [isMobile, setIsMobile] = useState(false);
+    useEffect(() => {
+        setIsMobile(window.matchMedia('(max-width: 767px)').matches);
+    }, []);
 
     useEffect(() => {
         const mq = window.matchMedia('(max-width: 767px)');

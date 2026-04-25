@@ -208,15 +208,15 @@ export function getShowerActivity(shower: MeteorShower, date: Date): number {
 /**
  * Obtiene las lluvias activas para una fecha
  */
-export function getActiveShowers(date: Date): MeteorShower[] {
-    return METEOR_SHOWERS.filter(shower => isShowerActive(shower, date));
+export function getActiveShowers(showers: MeteorShower[], date: Date): MeteorShower[] {
+    return showers.filter(shower => isShowerActive(shower, date));
 }
 
 /**
  * Obtiene la lluvia con mayor actividad en una fecha
  */
-export function getBestShower(date: Date): MeteorShower | null {
-    const active = getActiveShowers(date);
+export function getBestShower(showers: MeteorShower[], date: Date): MeteorShower | null {
+    const active = getActiveShowers(showers, date);
     if (active.length === 0) return null;
     
     return active.reduce((best, shower) => {

@@ -6,6 +6,7 @@ import { useFrame } from '@react-three/fiber';
 import * as Astronomy from 'astronomy-engine';
 import { useAppStore } from '@/stores/useAppStore';
 import { getBestShower, getShowerActivity } from '@/data/meteorShowers';
+import { useCatalog } from '@/stores/useCatalogStore';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 
 const METEOR_COUNT = 8;
@@ -109,7 +110,7 @@ export default function Meteors() {
         const cache = showerCacheRef.current;
         if (nowMs - cache.lastUpdateMs > 30_000) {
             cache.lastUpdateMs = nowMs;
-            const shower = getBestShower(time);
+            const shower = getBestShower(useCatalog.getState().meteorShowers, time);
             if (shower) {
                 const activity = getShowerActivity(shower, time);
                 if (activity > 0.03) {

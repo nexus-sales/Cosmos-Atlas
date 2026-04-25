@@ -13,14 +13,15 @@ import { create } from 'zustand'
 import type { Star, DSO, Challenge } from '@/types/celestial'
 import type { MeteorShower } from '@/data/meteorShowers'
 import type { SolarSystemBody } from '@/data/solarSystemCatalog'
-import { LOCAL_SOLAR_SYSTEM_BODIES } from '@/data/solarSystemCatalog'
 
-// ─── Datos locales como fallback ─────────────────────────────────────────────
-// Se importan de forma diferida para no bloquear el store si cambian.
+// ─── Datos locales como fallback de primera visita ─────────────────────────
+// Garantizan renderizado inmediato. La caché localStorage los sustituye en
+// visitas posteriores; Supabase los reemplaza con datos frescos al cargar.
 import { STARS as LOCAL_STARS } from '@/data/stars'
 import { DSOS as LOCAL_DSOS } from '@/data/dsos'
 import { METEOR_SHOWERS as LOCAL_SHOWERS } from '@/data/meteorShowers'
 import { CHALLENGES as LOCAL_CHALLENGES } from '@/data/challenges'
+import { LOCAL_SOLAR_SYSTEM_BODIES } from '@/data/solarSystemCatalog'
 
 // ─── Mappers Supabase → tipos de la app ─────────────────────────────────────
 
@@ -154,6 +155,29 @@ function mapMoonCatalog(row: any): SolarSystemBody {
 
 // ─── Store ────────────────────────────────────────────────────────────────────
 
+const CACHE_KEY = 'cosmos_catalog_v2'
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 horas
+
+function saveCache(data: Omit<CatalogState, 'supabaseLoaded' | 'loadFromSupabase'>) {
+  // Solo guardar si todos los conjuntos principales tienen datos reales
+  if (!data.stars.length || !data.dsos.length || !data.solarSystemBodies.length) return
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data }))
+  } catch { /* quota exceeded — ignorar */ }
+}
+
+function loadCache(): Omit<CatalogState, 'supabaseLoaded' | 'loadFromSupabase'> | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY)
+    if (!raw) return null
+    const { ts, data } = JSON.parse(raw)
+    if (Date.now() - ts > CACHE_TTL_MS) return null
+    // Validar que la caché tiene datos reales antes de usarla
+    if (!data?.stars?.length || !data?.dsos?.length) return null
+    return data
+  } catch { return null }
+}
+
 interface CatalogState {
   stars:         Star[]
   dsos:          DSO[]
@@ -166,26 +190,38 @@ interface CatalogState {
   loadFromSupabase: () => Promise<void>
 }
 
+// Estado inicial idéntico en servidor y cliente → sin hydration mismatch.
+// La caché de localStorage se aplica en loadFromSupabase (llamado desde useEffect).
 export const useCatalog = create<CatalogState>()((set) => ({
-  stars:          LOCAL_STARS,
-  dsos:           LOCAL_DSOS,
-  meteorShowers:  LOCAL_SHOWERS,
-  challenges:     LOCAL_CHALLENGES,
+  stars:             LOCAL_STARS,
+  dsos:              LOCAL_DSOS,
+  meteorShowers:     LOCAL_SHOWERS,
+  challenges:        LOCAL_CHALLENGES,
   solarSystemBodies: LOCAL_SOLAR_SYSTEM_BODIES,
-  supabaseLoaded: false,
+  supabaseLoaded:    false,
 
   loadFromSupabase: async () => {
+    // ── 1. Intentar caché local primero (respuesta inmediata) ────────────────
+    const cached = loadCache()
+    if (cached) {
+      set({ ...cached, supabaseLoaded: true })
+      return
+    }
+
     try {
       // Import dinámico para no incluir el cliente en el bundle del servidor
       const { supabase } = await import('@/lib/supabase')
 
+      // ── 2. Solo las columnas que el mapa necesita para renderizar ──────────
+      //    Las columnas pesadas (desc_long, mythology, etc.) se cargan
+      //    bajo demanda en el panel de detalle vía la API.
       const [starsRes, dsosRes, showersRes, challengesRes, planetsRes, moonsRes] = await Promise.all([
-        supabase.from('stars_cos').select('*').order('mag_visual'),
-        supabase.from('deep_sky_objects_cos').select('*').order('mag_visual'),
-        supabase.from('meteor_showers_cos').select('*').order('zhr_max', { ascending: false }),
-        supabase.from('challenges_cos').select('*').order('sort_order'),
-        supabase.from('planets_cos').select('*').order('order_from_sun'),
-        supabase.from('moons_cos').select('*').order('name'),
+        supabase.from('stars_cos').select('name,constellation_id,ra,dec,mag_visual,color_hex,base_size,desc_short').order('mag_visual'),
+        supabase.from('deep_sky_objects_cos').select('id,name,ra,dec,type,mag_visual,color_hex,size_arcmin_major,desc_short').order('mag_visual'),
+        supabase.from('meteor_showers_cos').select('id,name_es,name_en,short_name,radiant_ra,radiant_dec,constellation_id,date_start,date_end,peak_date,zhr_max,speed_kms,parent_body,desc_short,color_hex').order('zhr_max', { ascending: false }),
+        supabase.from('challenges_cos').select('target_id,hint_es,fun_fact_es,award_name_es,sort_order').order('sort_order'),
+        supabase.from('planets_cos').select('id,name_es,symbol,color_hex,desc_short,order_from_sun,planet_type,moons_count,has_rings,has_atmosphere,radius_km,mass_earth,semi_major_axis_au,orbital_period_days,image_url,thumb_url,fun_fact,observation_tips').order('order_from_sun'),
+        supabase.from('moons_cos').select('id,name,planet_id,desc_short,radius_km,orbital_period_days,semi_major_axis_km,mag_visual,image_url,observation_tips,discovery_year,discoverer,fun_fact').order('name'),
       ])
 
       const stars         = starsRes.data?.map(mapStar)
@@ -197,14 +233,24 @@ export const useCatalog = create<CatalogState>()((set) => ({
         ...(moonsRes.data?.map(mapMoonCatalog) ?? []),
       ]
 
-      set({
+      const next = {
         ...(stars?.length         && { stars }),
         ...(dsos?.length          && { dsos }),
         ...(meteorShowers?.length && { meteorShowers }),
         ...(challenges?.length    && { challenges }),
         ...(solarSystemBodies.length && { solarSystemBodies }),
-        supabaseLoaded: true,
+      }
+
+      // ── 3. Guardar en caché solo si tenemos datos reales ───────────────────
+      saveCache({
+        stars:              stars?.length         ? stars         : LOCAL_STARS,
+        dsos:               dsos?.length          ? dsos          : LOCAL_DSOS,
+        meteorShowers:      meteorShowers?.length ? meteorShowers : LOCAL_SHOWERS,
+        challenges:         challenges?.length    ? challenges    : LOCAL_CHALLENGES,
+        solarSystemBodies:  solarSystemBodies.length ? solarSystemBodies : LOCAL_SOLAR_SYSTEM_BODIES,
       })
+
+      set({ ...next, supabaseLoaded: true })
     } catch (err) {
       // Supabase no disponible → se usan los datos locales sin interrupción
       console.warn('[CatalogStore] Usando datos locales (Supabase no disponible):', err)
