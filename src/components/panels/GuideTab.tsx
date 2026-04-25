@@ -5,7 +5,7 @@ import { DSOS } from '@/data/dsos';
 import { CONSTELLATIONS } from '@/data/constellations';
 import { getConstellationDisplayName } from '@/data/constellationNames';
 import { useAppStore } from '@/stores/useAppStore';
-import { Search, Star as StarIcon, Orbit, CloudFog, Sparkles, X, Globe2, Share2, ChevronDown } from 'lucide-react';
+import { Search, Star as StarIcon, Orbit, CloudFog, Sparkles, X, Globe2, Share2, ChevronDown, Pin, PinOff } from 'lucide-react';
 import { useState, useMemo, useRef, useEffect } from 'react';
 import type { CSSProperties } from 'react';
 import { cn } from '@/lib/utils';
@@ -16,6 +16,7 @@ import * as Astronomy from 'astronomy-engine';
 import { resolveObjectName, SesameResolution } from '@/lib/astronomy/sesame';
 
 type Filter = 'all' | 'stars' | 'planets' | 'galaxies' | 'nebulae' | 'clusters' | 'constellations';
+type SectionKey = Exclude<Filter, 'all'>;
 
 const FILTERS: { id: Filter; label: string; activeClass: string }[] = [
     { id: 'all', label: 'TODOS', activeClass: 'bg-white/15 text-white border-white/30' },
@@ -26,6 +27,9 @@ const FILTERS: { id: Filter; label: string; activeClass: string }[] = [
     { id: 'clusters', label: 'C\u00DAMULOS', activeClass: 'bg-blue-500/20 text-blue-300 border-blue-400/50' },
     { id: 'constellations', label: 'CONSTEL.', activeClass: 'bg-indigo-500/20 text-indigo-300 border-indigo-400/50' },
 ];
+
+const SECTION_ORDER: SectionKey[] = ['planets', 'stars', 'galaxies', 'nebulae', 'clusters', 'constellations'];
+const PINNED_SECTIONS_STORAGE_KEY = 'cosmos-atlas-guide-pinned-sections';
 
 // ── Planet ephemeris helpers ─────────────────────────────────────────────────
 
@@ -227,6 +231,14 @@ export default function GuideTab() {
     const [remoteResult, setRemoteResult] = useState<SesameResolution | null>(null);
     const [isSearchingRemote, setIsSearchingRemote] = useState(false);
     const lastSearchRef = useRef('');
+    const sectionRefs = useRef<Record<SectionKey, HTMLElement | null>>({
+        planets: null,
+        stars: null,
+        galaxies: null,
+        nebulae: null,
+        clusters: null,
+        constellations: null,
+    });
 
     const q = search.trim().toLowerCase();
     // When no search, limit items; when searching show all matches
@@ -316,8 +328,83 @@ export default function GuideTab() {
     const [openSections, setOpenSections] = useState<Record<string, boolean>>({
         planets: false, stars: false, galaxies: false, nebulae: false, clusters: false, constellations: false,
     });
+    const [pinnedSections, setPinnedSections] = useState<SectionKey[]>(() => {
+        if (typeof window === 'undefined') return [];
+        try {
+            const stored = window.localStorage.getItem(PINNED_SECTIONS_STORAGE_KEY);
+            if (!stored) return [];
+            const parsed = JSON.parse(stored);
+            if (!Array.isArray(parsed)) return [];
+            return parsed.filter((value): value is SectionKey => SECTION_ORDER.includes(value as SectionKey));
+        } catch {
+            return [];
+        }
+    });
     const toggleSection = (key: string) =>
         setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
+
+    useEffect(() => {
+        window.localStorage.setItem(PINNED_SECTIONS_STORAGE_KEY, JSON.stringify(pinnedSections));
+    }, [pinnedSections]);
+
+    const visibleSections = useMemo(() => {
+        const sections: {
+            key: SectionKey;
+            label: string;
+            shortLabel: string;
+            count: number;
+            total: number;
+            tone: string;
+        }[] = [];
+
+        if ((filter === 'all' || filter === 'planets') && planetList.length > 0) {
+            sections.push({ key: 'planets', label: 'Planetas', shortLabel: 'Planetas', count: planetList.length, total: planetList.length, tone: 'text-orange-300 border-orange-400/25 bg-orange-500/10' });
+        }
+        if ((filter === 'all' || filter === 'stars') && starList.length > 0) {
+            sections.push({ key: 'stars', label: 'Estrellas', shortLabel: 'Estrellas', count: starList.length, total: starTotal, tone: 'text-yellow-300 border-yellow-400/25 bg-yellow-500/10' });
+        }
+        if ((filter === 'all' || filter === 'galaxies') && galaxyTotal > 0) {
+            sections.push({ key: 'galaxies', label: 'Galaxias', shortLabel: 'Galaxias', count: Math.min(galaxyTotal, limit), total: galaxyTotal, tone: 'text-amber-300 border-amber-400/25 bg-amber-500/10' });
+        }
+        if ((filter === 'all' || filter === 'nebulae') && nebulaTotal > 0) {
+            sections.push({ key: 'nebulae', label: 'Nebulosas', shortLabel: 'Nebulosas', count: Math.min(nebulaTotal, limit), total: nebulaTotal, tone: 'text-emerald-300 border-emerald-400/25 bg-emerald-500/10' });
+        }
+        if ((filter === 'all' || filter === 'clusters') && clusterTotal > 0) {
+            sections.push({ key: 'clusters', label: 'Cúmulos', shortLabel: 'Cúmulos', count: Math.min(clusterTotal, limit), total: clusterTotal, tone: 'text-blue-300 border-blue-400/25 bg-blue-500/10' });
+        }
+        if ((filter === 'all' || filter === 'constellations') && constellationList.length > 0) {
+            sections.push({ key: 'constellations', label: 'Constelaciones', shortLabel: 'Constel.', count: constellationList.length, total: constellationTotal, tone: 'text-indigo-300 border-indigo-400/25 bg-indigo-500/10' });
+        }
+
+        return sections;
+    }, [clusterTotal, constellationList.length, constellationTotal, filter, galaxyTotal, limit, nebulaTotal, planetList.length, starList.length, starTotal]);
+
+    const pinnedVisibleSections = visibleSections.filter(({ key }) => pinnedSections.includes(key));
+
+    const togglePinnedSection = (sectionKey: SectionKey) => {
+        setPinnedSections((prev) =>
+            prev.includes(sectionKey)
+                ? prev.filter((key) => key !== sectionKey)
+                : [...prev, sectionKey]
+        );
+    };
+
+    const setVisibleSectionsOpen = (isOpen: boolean) => {
+        setOpenSections((prev) => {
+            const next = { ...prev };
+            visibleSections.forEach(({ key }) => {
+                next[key] = isOpen;
+            });
+            return next;
+        });
+    };
+
+    const jumpToSection = (sectionKey: SectionKey) => {
+        setOpenSections((prev) => ({ ...prev, [sectionKey]: true }));
+        window.setTimeout(() => {
+            sectionRefs.current[sectionKey]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 120);
+    };
 
     const isTargeted = (obj: Star | DSO | Planet) => targetedObject?.name === obj.name;
 
@@ -325,8 +412,174 @@ export default function GuideTab() {
         setTargetedObject(isTargeted(obj) ? null : obj);
     };
 
+    const orderedSectionKeys = [
+        ...pinnedVisibleSections.map(({ key }) => key),
+        ...visibleSections.map(({ key }) => key).filter((key) => !pinnedSections.includes(key)),
+    ];
+    const sectionOrderMap = orderedSectionKeys.reduce((acc, key, index) => {
+        acc[key] = index;
+        return acc;
+    }, {} as Record<SectionKey, number>);
+    const getSectionOrder = (key: SectionKey) => sectionOrderMap[key] ?? SECTION_ORDER.length;
+
+    const sectionContent: Partial<Record<SectionKey, React.ReactNode>> = {
+        planets: (filter === 'all' || filter === 'planets') && planetList.length > 0 ? (
+            <section ref={(element) => { sectionRefs.current.planets = element; }}>
+                <SectionToggle label="Planetas" icon={<Globe2 className="w-3.5 h-3.5 text-orange-400/70" />}
+                    count={planetList.length} total={planetList.length}
+                    isOpen={openSections.planets} onToggle={() => toggleSection('planets')}
+                    isPinned={pinnedSections.includes('planets')} onTogglePinned={() => togglePinnedSection('planets')} />
+                <div className="overflow-hidden transition-all duration-200"
+                    style={{ maxHeight: openSections.planets ? '2000px' : '0px', opacity: openSections.planets ? 1 : 0 }}>
+                    <div className="space-y-0.5 pb-1">
+                        {planetList.map((planet) => {
+                            const active = isTargeted(planet);
+                            return (
+                                <div key={skyObjectKey(planet, 'planet')}>
+                                    <button onClick={() => handleSelect(planet)}
+                                        className={cn('w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all border',
+                                            active ? 'border-orange-400/40 bg-orange-500/10 text-orange-200'
+                                                : 'border-transparent hover:border-white/12 hover:bg-white/4 text-white/75 hover:text-white')}>
+                                        <span
+                                            className="accent-color text-[14px] shrink-0 leading-none"
+                                            style={{ '--accent-color': planet.color } as CSSProperties}
+                                        >
+                                            {planet.symbol}
+                                        </span>
+                                        <div className="flex flex-col flex-1 min-w-0">
+                                            <span className="text-[13px] font-semibold truncate">{planet.name}</span>
+                                            {planet.phaseInfo && (
+                                                <span className="text-[9px] text-amber-200/80 font-bold tracking-wide">
+                                                    {planet.phaseInfo}
+                                                </span>
+                                            )}
+                                            {planet.dist && planet.name !== 'Luna' && (
+                                                <span className="text-[9px] text-white/30 font-mono">
+                                                    {(planet.dist * 149.6).toFixed(1)}M km
+                                                </span>
+                                            )}
+                                            {planet.name === 'Luna' && planet.dist && (
+                                                <span className="text-[9px] text-white/30 font-mono">
+                                                    {(planet.dist * 149597870 / 1000).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ".")} km
+                                                </span>
+                                            )}
+                                        </div>
+                                        <span className="text-[10px] text-white/40 shrink-0 font-mono">{planet.mag.toFixed(1)}</span>
+                                        <div suppressHydrationWarning title={planet.alt > 0 ? `Visible Â· Alt ${planet.alt.toFixed(0)}Â°` : 'Bajo el horizonte'}
+                                            className={cn('w-1.5 h-1.5 rounded-full shrink-0 ml-0.5', planet.alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15')} />
+                                    </button>
+                                    {active && <InfoCard obj={planet} />}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </section>
+        ) : null,
+        stars: (filter === 'all' || filter === 'stars') && starList.length > 0 ? (
+            <section ref={(element) => { sectionRefs.current.stars = element; }}>
+                <SectionToggle label="Estrellas" icon={<StarIcon className="w-3.5 h-3.5 text-yellow-400/70" />}
+                    count={starList.length} total={starTotal}
+                    isOpen={openSections.stars} onToggle={() => toggleSection('stars')}
+                    isPinned={pinnedSections.includes('stars')} onTogglePinned={() => togglePinnedSection('stars')} />
+                <div className="overflow-hidden transition-all duration-200"
+                    style={{ maxHeight: openSections.stars ? '2000px' : '0px', opacity: openSections.stars ? 1 : 0 }}>
+                    <div className="space-y-0.5 pb-1">
+                        {starList.map((star) => {
+                            const active = isTargeted(star);
+                            return (
+                                <div key={skyObjectKey(star, 'star')}>
+                                    <button onClick={() => handleSelect(star)}
+                                        className={cn('w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all border',
+                                            active ? 'border-yellow-400/40 bg-yellow-500/10 text-yellow-200'
+                                                : 'border-transparent hover:border-white/12 hover:bg-white/4 text-white/75 hover:text-white')}>
+                                        <div
+                                            className={cn('star-dot w-2.5 h-2.5 rounded-full shrink-0', active ? 'star-dot-active' : '')}
+                                            style={{ '--accent-color': star.color } as CSSProperties}
+                                        />
+                                        <span className="text-[13px] font-semibold flex-1 truncate">{star.name}</span>
+                                        <span className="text-[10px] text-white/40 shrink-0 font-mono">{star.mag.toFixed(1)}</span>
+                                        <span className="text-[10px] text-white/35 shrink-0 italic hidden sm:block truncate max-w-[64px]">
+                                            {getConstellationDisplayName(star.constellation)}
+                                        </span>
+                                        <div suppressHydrationWarning title={star.alt > 0 ? `Visible Â· Alt ${star.alt.toFixed(0)}Â°` : 'Bajo el horizonte'}
+                                            className={cn('w-1.5 h-1.5 rounded-full shrink-0 ml-0.5', star.alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15')} />
+                                    </button>
+                                    {active && <InfoCard obj={star} />}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </section>
+        ) : null,
+        galaxies: (filter === 'all' || filter === 'galaxies') && dsoList.filter(d => d.type === 'galaxy').length > 0 ? (
+            <DSOSection title="Galaxias" items={dsoList.filter(d => d.type === 'galaxy').slice(0, limit)}
+                total={galaxyTotal} isOpen={openSections.galaxies} onToggle={() => toggleSection('galaxies')}
+                isTargeted={isTargeted} onSelect={handleSelect}
+                isPinned={pinnedSections.includes('galaxies')} onTogglePinned={() => togglePinnedSection('galaxies')}
+                sectionRef={(element) => { sectionRefs.current.galaxies = element; }} />
+        ) : null,
+        nebulae: (filter === 'all' || filter === 'nebulae') && dsoList.filter(d => d.type === 'nebula').length > 0 ? (
+            <DSOSection title="Nebulosas" items={dsoList.filter(d => d.type === 'nebula').slice(0, limit)}
+                total={nebulaTotal} isOpen={openSections.nebulae} onToggle={() => toggleSection('nebulae')}
+                isTargeted={isTargeted} onSelect={handleSelect}
+                isPinned={pinnedSections.includes('nebulae')} onTogglePinned={() => togglePinnedSection('nebulae')}
+                sectionRef={(element) => { sectionRefs.current.nebulae = element; }} />
+        ) : null,
+        clusters: (filter === 'all' || filter === 'clusters') && dsoList.filter(d => d.type === 'cluster').length > 0 ? (
+            <DSOSection title="CÃºmulos" items={dsoList.filter(d => d.type === 'cluster').slice(0, limit)}
+                total={clusterTotal} isOpen={openSections.clusters} onToggle={() => toggleSection('clusters')}
+                isTargeted={isTargeted} onSelect={handleSelect}
+                isPinned={pinnedSections.includes('clusters')} onTogglePinned={() => togglePinnedSection('clusters')}
+                sectionRef={(element) => { sectionRefs.current.clusters = element; }} />
+        ) : null,
+        constellations: (filter === 'all' || filter === 'constellations') && constellationList.length > 0 ? (
+            <section ref={(element) => { sectionRefs.current.constellations = element; }}>
+                <SectionToggle label="Constelaciones" icon={<Share2 className="w-3.5 h-3.5 text-indigo-400/70" />}
+                    count={constellationList.length} total={constellationTotal}
+                    isOpen={openSections.constellations} onToggle={() => toggleSection('constellations')}
+                    isPinned={pinnedSections.includes('constellations')} onTogglePinned={() => togglePinnedSection('constellations')} />
+                <div className="overflow-hidden transition-all duration-200"
+                    style={{ maxHeight: openSections.constellations ? '2000px' : '0px', opacity: openSections.constellations ? 1 : 0 }}>
+                    <div className="space-y-0.5 pb-1">
+                        {constellationList.map((c) => {
+                            const active = isTargeted(c);
+                            return (
+                                <div key={skyObjectKey(c, 'constellation')}>
+                                    <button
+                                        onClick={() => handleSelect(c)}
+                                        className={cn(
+                                            'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all border',
+                                            active
+                                                ? 'border-indigo-400/40 bg-indigo-500/10 text-indigo-200'
+                                                : 'border-transparent hover:border-white/12 hover:bg-white/4 text-white/75 hover:text-white'
+                                        )}
+                                    >
+                                        <span className="text-[11px] text-indigo-400/60 shrink-0">&#10038;</span>
+                                        <span className="text-[13px] font-semibold flex-1 truncate">{getConstellationDisplayName(c.name)}</span>
+                                        <div
+                                            suppressHydrationWarning
+                                            title={c.alt > 0 ? `Visible \u00b7 Alt ${c.alt.toFixed(0)}\u00b0` : 'Bajo el horizonte'}
+                                            className={cn(
+                                                'w-1.5 h-1.5 rounded-full shrink-0 ml-0.5',
+                                                c.alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15'
+                                            )}
+                                        />
+                                    </button>
+                                    {active && <InfoCard obj={c} />}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </section>
+        ) : null,
+    };
+    void sectionContent;
+
     return (
-        <div className="space-y-3">
+        <div className="flex flex-col gap-3">
 
             {/* Buscador */}
             <div className="relative">
@@ -396,6 +649,66 @@ export default function GuideTab() {
                 </div>
             </div>
 
+            {visibleSections.length > 0 && (
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-2.5 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                            <p className="text-[9px] font-bold uppercase tracking-[0.24em] text-white/35">Acceso rápido</p>
+                            <p className="text-[11px] text-white/55">Abre o salta a una sección sin recorrer todo el panel.</p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <button
+                                onClick={() => setVisibleSectionsOpen(true)}
+                                className="rounded-md border border-white/10 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.18em] text-white/45 transition-colors hover:border-white/20 hover:text-white/70"
+                            >
+                                Abrir
+                            </button>
+                            <button
+                                onClick={() => setVisibleSectionsOpen(false)}
+                                className="rounded-md border border-white/10 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.18em] text-white/45 transition-colors hover:border-white/20 hover:text-white/70"
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+
+                    {pinnedVisibleSections.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                            {pinnedVisibleSections.map(({ key, shortLabel, count, total, tone }) => (
+                                <button
+                                    key={`pinned-${key}`}
+                                    onClick={() => jumpToSection(key)}
+                                    className={cn(
+                                        'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[10px] font-bold tracking-[0.12em] uppercase transition-transform hover:-translate-y-0.5',
+                                        tone
+                                    )}
+                                >
+                                    <Pin className="h-3 w-3" />
+                                    <span>{shortLabel}</span>
+                                    <span className="text-white/40">({count}{total > count ? `/${total}` : ''})</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-1.5">
+                        {visibleSections.map(({ key, shortLabel, count, total, tone }) => (
+                            <button
+                                key={key}
+                                onClick={() => jumpToSection(key)}
+                                className={cn(
+                                    'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[10px] font-bold tracking-[0.12em] uppercase text-white/75 transition-colors hover:text-white',
+                                    tone
+                                )}
+                            >
+                                <span>{shortLabel}</span>
+                                <span className="text-white/40">({count}{total > count ? `/${total}` : ''})</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Objetivo activo */}
             {targetedObject && (
                 <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg border border-blue-400/35 bg-blue-500/15">
@@ -414,10 +727,11 @@ export default function GuideTab() {
 
             {/* PLANETAS */}
             {(filter === 'all' || filter === 'planets') && planetList.length > 0 && (
-                <section>
+                <section ref={(element) => { sectionRefs.current.planets = element; }} style={{ order: getSectionOrder('planets') }}>
                     <SectionToggle label="Planetas" icon={<Globe2 className="w-3.5 h-3.5 text-orange-400/70" />}
                         count={planetList.length} total={planetList.length}
-                        isOpen={openSections.planets} onToggle={() => toggleSection('planets')} />
+                        isOpen={openSections.planets} onToggle={() => toggleSection('planets')}
+                        isPinned={pinnedSections.includes('planets')} onTogglePinned={() => togglePinnedSection('planets')} />
                     <div className="overflow-hidden transition-all duration-200"
                         style={{ maxHeight: openSections.planets ? '2000px' : '0px', opacity: openSections.planets ? 1 : 0 }}>
                         <div className="space-y-0.5 pb-1">
@@ -468,10 +782,11 @@ export default function GuideTab() {
 
             {/* ESTRELLAS */}
             {(filter === 'all' || filter === 'stars') && starList.length > 0 && (
-                <section>
+                <section ref={(element) => { sectionRefs.current.stars = element; }} style={{ order: getSectionOrder('stars') }}>
                     <SectionToggle label="Estrellas" icon={<StarIcon className="w-3.5 h-3.5 text-yellow-400/70" />}
                         count={starList.length} total={starTotal}
-                        isOpen={openSections.stars} onToggle={() => toggleSection('stars')} />
+                        isOpen={openSections.stars} onToggle={() => toggleSection('stars')}
+                        isPinned={pinnedSections.includes('stars')} onTogglePinned={() => togglePinnedSection('stars')} />
                     <div className="overflow-hidden transition-all duration-200"
                         style={{ maxHeight: openSections.stars ? '2000px' : '0px', opacity: openSections.stars ? 1 : 0 }}>
                         <div className="space-y-0.5 pb-1">
@@ -507,27 +822,37 @@ export default function GuideTab() {
             {(filter === 'all' || filter === 'galaxies') && dsoList.filter(d => d.type === 'galaxy').length > 0 && (
                 <DSOSection title="Galaxias" items={dsoList.filter(d => d.type === 'galaxy').slice(0, limit)}
                     total={galaxyTotal} isOpen={openSections.galaxies} onToggle={() => toggleSection('galaxies')}
-                    isTargeted={isTargeted} onSelect={handleSelect} />
+                    isTargeted={isTargeted} onSelect={handleSelect}
+                    isPinned={pinnedSections.includes('galaxies')} onTogglePinned={() => togglePinnedSection('galaxies')}
+                    sectionRef={(element) => { sectionRefs.current.galaxies = element; }}
+                    sectionStyle={{ order: getSectionOrder('galaxies') }} />
             )}
 
             {(filter === 'all' || filter === 'nebulae') && dsoList.filter(d => d.type === 'nebula').length > 0 && (
                 <DSOSection title="Nebulosas" items={dsoList.filter(d => d.type === 'nebula').slice(0, limit)}
                     total={nebulaTotal} isOpen={openSections.nebulae} onToggle={() => toggleSection('nebulae')}
-                    isTargeted={isTargeted} onSelect={handleSelect} />
+                    isTargeted={isTargeted} onSelect={handleSelect}
+                    isPinned={pinnedSections.includes('nebulae')} onTogglePinned={() => togglePinnedSection('nebulae')}
+                    sectionRef={(element) => { sectionRefs.current.nebulae = element; }}
+                    sectionStyle={{ order: getSectionOrder('nebulae') }} />
             )}
 
             {(filter === 'all' || filter === 'clusters') && dsoList.filter(d => d.type === 'cluster').length > 0 && (
                 <DSOSection title="Cúmulos" items={dsoList.filter(d => d.type === 'cluster').slice(0, limit)}
                     total={clusterTotal} isOpen={openSections.clusters} onToggle={() => toggleSection('clusters')}
-                    isTargeted={isTargeted} onSelect={handleSelect} />
+                    isTargeted={isTargeted} onSelect={handleSelect}
+                    isPinned={pinnedSections.includes('clusters')} onTogglePinned={() => togglePinnedSection('clusters')}
+                    sectionRef={(element) => { sectionRefs.current.clusters = element; }}
+                    sectionStyle={{ order: getSectionOrder('clusters') }} />
             )}
 
             {/* CONSTELACIONES */}
             {(filter === 'all' || filter === 'constellations') && constellationList.length > 0 && (
-                <section>
+                <section ref={(element) => { sectionRefs.current.constellations = element; }} style={{ order: getSectionOrder('constellations') }}>
                     <SectionToggle label="Constelaciones" icon={<Share2 className="w-3.5 h-3.5 text-indigo-400/70" />}
                         count={constellationList.length} total={constellationTotal}
-                        isOpen={openSections.constellations} onToggle={() => toggleSection('constellations')} />
+                        isOpen={openSections.constellations} onToggle={() => toggleSection('constellations')}
+                        isPinned={pinnedSections.includes('constellations')} onTogglePinned={() => togglePinnedSection('constellations')} />
                     <div className="overflow-hidden transition-all duration-200"
                         style={{ maxHeight: openSections.constellations ? '2000px' : '0px', opacity: openSections.constellations ? 1 : 0 }}>
                         <div className="space-y-0.5 pb-1">
@@ -614,7 +939,7 @@ export default function GuideTab() {
     );
 }
 
-function DSOSection({ title, items, total, isOpen, onToggle, isTargeted, onSelect }: {
+function DSOSection({ title, items, total, isOpen, onToggle, isTargeted, onSelect, isPinned, onTogglePinned, sectionRef, sectionStyle }: {
     title: string;
     items: (DSO & { alt: number })[];
     total: number;
@@ -622,9 +947,13 @@ function DSOSection({ title, items, total, isOpen, onToggle, isTargeted, onSelec
     onToggle: () => void;
     isTargeted: (o: Star | DSO | Planet) => boolean;
     onSelect: (o: Star | DSO | Planet) => void;
+    isPinned: boolean;
+    onTogglePinned: () => void;
+    sectionRef: (element: HTMLElement | null) => void;
+    sectionStyle?: CSSProperties;
 }) {
     return (
-        <section>
+        <section ref={sectionRef} style={sectionStyle}>
             <SectionToggle
                 label={title}
                 icon={<DSOTypeIcon type={items[0].type} />}
@@ -632,6 +961,8 @@ function DSOSection({ title, items, total, isOpen, onToggle, isTargeted, onSelec
                 total={total}
                 isOpen={isOpen}
                 onToggle={onToggle}
+                isPinned={isPinned}
+                onTogglePinned={onTogglePinned}
             />
             <div
                 className="overflow-hidden transition-all duration-200"
@@ -676,37 +1007,54 @@ function DSOSection({ title, items, total, isOpen, onToggle, isTargeted, onSelec
     );
 }
 
-function SectionToggle({ label, icon, count, total, isOpen, onToggle }: {
+function SectionToggle({ label, icon, count, total, isOpen, onToggle, isPinned, onTogglePinned }: {
     label: string;
     icon: React.ReactNode;
     count: number;
     total: number;
     isOpen: boolean;
     onToggle: () => void;
+    isPinned: boolean;
+    onTogglePinned: () => void;
 }) {
     return (
-        <button
-            onClick={onToggle}
-            className="w-full flex items-center justify-between py-2 px-1 hover:bg-white/5 transition-colors group rounded-md outline-none"
-        >
-            <div className="flex items-center gap-2.5">
-                <div className={cn("transition-colors", isOpen ? "text-blue-400" : "text-white/30")}>
-                    {icon}
-                </div>
-                <span className={cn(
-                    "text-[10px] font-bold tracking-[0.18em] uppercase transition-colors",
-                    isOpen ? "text-white" : "text-white/40 group-hover:text-white/60"
-                )}>
-                    {label}
-                    <span className="ml-2 text-[9px] font-normal text-white/15">
-                        ({count}{total > count ? `/${total}` : ''})
+        <div className="flex items-center gap-2">
+            <button
+                onClick={onToggle}
+                className="flex-1 flex items-center justify-between py-2 px-1 hover:bg-white/5 transition-colors group rounded-md outline-none"
+            >
+                <div className="flex items-center gap-2.5 min-w-0">
+                    <div className={cn("transition-colors", isOpen ? "text-blue-400" : "text-white/30")}>
+                        {icon}
+                    </div>
+                    <span className={cn(
+                        "text-[10px] font-bold tracking-[0.18em] uppercase transition-colors truncate",
+                        isOpen ? "text-white" : "text-white/40 group-hover:text-white/60"
+                    )}>
+                        {label}
+                        <span className="ml-2 text-[9px] font-normal text-white/15">
+                            ({count}{total > count ? `/${total}` : ''})
+                        </span>
                     </span>
-                </span>
-            </div>
-            <ChevronDown className={cn(
-                "w-3.5 h-3.5 text-white/20 transition-transform duration-300",
-                isOpen ? "rotate-180 text-blue-400/50" : "group-hover:text-white/40"
-            )} />
-        </button>
+                </div>
+                <ChevronDown className={cn(
+                    "w-3.5 h-3.5 text-white/20 transition-transform duration-300 shrink-0",
+                    isOpen ? "rotate-180 text-blue-400/50" : "group-hover:text-white/40"
+                )} />
+            </button>
+            <button
+                type="button"
+                onClick={onTogglePinned}
+                title={isPinned ? 'Quitar de favoritos' : 'Fijar arriba'}
+                className={cn(
+                    'shrink-0 rounded-md border p-1.5 transition-colors',
+                    isPinned
+                        ? 'border-blue-400/35 bg-blue-500/10 text-blue-300'
+                        : 'border-white/10 text-white/30 hover:border-white/20 hover:text-white/60'
+                )}
+            >
+                {isPinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+            </button>
+        </div>
     );
 }
