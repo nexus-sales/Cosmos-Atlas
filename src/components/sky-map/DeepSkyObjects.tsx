@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import * as THREE from 'three';
-import { DSOS } from '@/data/dsos';
+import { useCatalog } from '@/stores/useCatalogStore';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { useAppStore } from '@/stores/useAppStore';
 import { Html } from '@react-three/drei';
@@ -235,15 +235,16 @@ function DSOItem({ dso }: { dso: DSOData }) {
 
 export default function DeepSkyObjects() {
     const DSO_RADIUS = 94;
+    const dsos = useCatalog(s => s.dsos);
 
     const dsoData = useMemo(() => {
-        return DSOS.map((dso) => {
+        return dsos.map((dso) => {
             const pos = equatorialTo3D(dso.ra, dso.dec, DSO_RADIUS) as [number, number, number];
             // visualSize: representative size, capped so even M31/LMC don't flood the screen
             const visualSize = Math.max(0.12, Math.min(2.2, (dso.sizeArcmin || 5) * 0.027));
             return { ...dso, pos, visualSize };
         });
-    }, []);
+    }, [dsos]);
 
     return (
         <group>

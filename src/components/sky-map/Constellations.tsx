@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Line } from '@react-three/drei';
 import { CONSTELLATIONS } from '@/data/constellations';
-import { STARS } from '@/data/stars';
+import { useCatalog } from '@/stores/useCatalogStore';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { useAppStore } from '@/stores/useAppStore';
 
@@ -32,14 +32,15 @@ export default function Constellations() {
     const camFov = useAppStore((state) => state.camFov);
     const focusedConstellation = useAppStore((state) => state.focusedConstellation);
     const selectedObject = useAppStore((state) => state.selectedObject);
+    const stars = useCatalog(s => s.stars);
     const RADIUS = 92;
     const [drawT, setDrawT] = useState(1);
     const rafRef = useRef<number | null>(null);
     const lastKeyRef = useRef<string>('');
 
     const constellationsData = useMemo(() => {
-        const starMap = new Map<string, (typeof STARS)[number]>();
-        STARS.forEach((star) => starMap.set(star.name, star));
+        const starMap = new Map<string, typeof stars[number]>();
+        stars.forEach((star) => starMap.set(star.name, star));
 
         return Object.entries(CONSTELLATIONS).map(([name, constLines]) => {
             const pointsList: Point3[][] = [];
@@ -54,7 +55,7 @@ export default function Constellations() {
             });
             return { name, pointsList };
         });
-    }, []);
+    }, [stars]);
 
     // Animate when the focused constellation changes (usually via click/pin).
     // Do not tie restart to FOV or it will feel broken while zooming.

@@ -2,23 +2,25 @@
 
 import { useMemo } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
-import { METEOR_SHOWERS, getActiveShowers, getShowerActivity, getBestShower } from '@/data/meteorShowers';
+import { getActiveShowers, getShowerActivity, getBestShower, isShowerActive } from '@/data/meteorShowers';
+import { useCatalog } from '@/stores/useCatalogStore';
 import { CloudRain, TrendingUp, Clock3, Eye, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function MeteorShowerInfo() {
     const time = useAppStore((state) => state.timeMinute);
+    const meteorShowers = useCatalog(s => s.meteorShowers);
 
     const { activeShowers, bestShower } = useMemo(() => {
         const date = new Date(time);
         return {
-            activeShowers: getActiveShowers(date),
+            activeShowers: meteorShowers.filter(s => isShowerActive(s, date)),
             bestShower: getBestShower(date),
         };
-    }, [time]);
+    }, [time, meteorShowers]);
 
     const date = new Date(time);
-    const upcomingShowers = METEOR_SHOWERS
+    const upcomingShowers = meteorShowers
         .filter((shower) => {
             const peakDate = new Date(shower.peakDate);
             return peakDate > date && !activeShowers.includes(shower);

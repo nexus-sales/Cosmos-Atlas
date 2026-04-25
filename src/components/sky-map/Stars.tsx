@@ -4,7 +4,8 @@ import { useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
-import { STARS } from '@/data/stars';
+import { useCatalog } from '@/stores/useCatalogStore';
+import type { Star } from '@/types/celestial';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { useAppStore } from '@/stores/useAppStore';
 import type { ThreeEvent } from '@react-three/fiber';
@@ -97,7 +98,7 @@ function DynamicStarLabels({
     visibleStars,
     starPositions,
 }: {
-    visibleStars: typeof STARS;
+    visibleStars: Star[];
     starPositions: [number, number, number][];
 }) {
     const camFov   = useAppStore(s => s.camFov);
@@ -144,6 +145,7 @@ function DynamicStarLabels({
 
 export default function Stars() {
     const pointsRef = useRef<THREE.Points>(null);
+    const stars = useCatalog(s => s.stars);
     const bortleScale = useAppStore(s => s.settings.bortleScale);
     const nightMode   = useAppStore(s => s.settings.nightMode);
     const camFov      = useAppStore(s => s.camFov);
@@ -157,13 +159,13 @@ export default function Stars() {
 
     // Estado del tooltip hover — una sola instancia para toda la nube de puntos
     const [hovered, setHovered] = useState<{
-        star: typeof STARS[0];
+        star: Star;
         pos: [number, number, number];
     } | null>(null);
 
     const [geometry, material, visibleStars, starPositions] = useMemo(() => {
         // Incluir estrellas hasta limitingMag (zona de fade ya manejada por tamaño)
-        const filteredStars = STARS.filter(s => s.mag <= limitingMag);
+        const filteredStars = stars.filter(s => s.mag <= limitingMag);
 
         const pos         = new Float32Array(filteredStars.length * 3);
         const col         = new Float32Array(filteredStars.length * 3);
@@ -226,7 +228,7 @@ export default function Stars() {
         });
 
         return [geom, mat, filteredStars, positions3D];
-    }, [limitingMag, focusedConstellation]);
+    }, [limitingMag, focusedConstellation, stars]);
 
     useFrame((state) => {
         const mat     = material as THREE.ShaderMaterial;

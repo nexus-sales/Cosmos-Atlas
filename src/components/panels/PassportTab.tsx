@@ -4,8 +4,7 @@ import { useEffect } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
 import { Trophy, Star, Heart, Map as MapIcon, CheckCircle2, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { STARS } from '@/data/stars';
-import { DSOS } from '@/data/dsos';
+import { useCatalog } from '@/stores/useCatalogStore';
 
 export default function PassportTab() {
     const favorites = useAppStore((s) => s.favorites);
@@ -13,6 +12,8 @@ export default function PassportTab() {
     const achievements = useAppStore((s) => s.achievements);
     const setTargetedObject = useAppStore((s) => s.setTargetedObject);
     const setAiMessage = useAppStore((s) => s.setAiMessage);
+    const stars = useCatalog(s => s.stars);
+    const dsos = useCatalog(s => s.dsos);
 
     // Bienvenida por voz al pasaporte
     useEffect(() => {
@@ -20,13 +21,13 @@ export default function PassportTab() {
     }, [setAiMessage]);
 
     const favoriteObjects = [
-        ...STARS.filter(s => favorites.includes(s.name)),
-        ...DSOS.filter(d => favorites.includes(d.id || d.name))
+        ...stars.filter(s => favorites.includes(s.name)),
+        ...dsos.filter(d => favorites.includes(d.id || d.name))
     ];
 
     const visitedObjects = [
-        ...STARS.filter(s => visited.includes(s.name)),
-        ...DSOS.filter(d => visited.includes(d.id || d.name))
+        ...stars.filter(s => visited.includes(s.name)),
+        ...dsos.filter(d => visited.includes(d.id || d.name))
     ];
 
     return (

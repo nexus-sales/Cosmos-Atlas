@@ -4,8 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Search, Loader2, Star, Globe, Crosshair, ExternalLink, History, Trash2 } from 'lucide-react';
 import { useAppStore } from '@/stores/useAppStore';
 import { resolveObjectName } from '@/lib/astronomy/sesame';
-import { STARS } from '@/data/stars';
-import { DSOS } from '@/data/dsos';
+import { useCatalog } from '@/stores/useCatalogStore';
 import type { Star as StarType, DSO } from '@/types/celestial';
 import * as Astronomy from 'astronomy-engine';
 
@@ -93,6 +92,8 @@ export default function CelestialSearch() {
 
     const setTargetedObject = useAppStore((state) => state.setTargetedObject);
     const addSimbadObject = useAppStore((state) => state.addSimbadObject);
+    const stars = useCatalog(s => s.stars);
+    const dsos = useCatalog(s => s.dsos);
 
     useEffect(() => {
         try {
@@ -143,12 +144,12 @@ export default function CelestialSearch() {
 
         const q = val.toLowerCase();
 
-        const starMatches: SearchResult[] = STARS.filter(s =>
+        const starMatches: SearchResult[] = stars.filter(s =>
             s.name.toLowerCase().includes(q) ||
             s.constellation?.toLowerCase().includes(q)
         ).slice(0, 3).map(s => ({ ...s, resultType: 'star' as const, source: 'local' as const }));
 
-        const dsoMatches: SearchResult[] = DSOS.filter(d =>
+        const dsoMatches: SearchResult[] = dsos.filter(d =>
             d.name.toLowerCase().includes(q) ||
             d.id?.toLowerCase().includes(q)
         ).slice(0, 2).map(d => ({ ...d, resultType: 'dso' as const, source: 'local' as const }));

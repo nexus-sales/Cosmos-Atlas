@@ -31,6 +31,7 @@ Esta ronda deja Cosmos Atlas mas cerca de una app de astronomia seria, no una de
 - **Detección de Repeticiones** — Implementado `lastMessageRef` para evitar que la IA repita el mismo dato varias veces seguidas ante actualizaciones de estado rápidas.
 - **Interactividad Total en el Mapa** — Ahora el Sol, la Luna y todos los planetas son objetos clicables. Al pulsar sobre ellos, la IA reacciona inmediatamente con datos científicos específicos.
 - **Etiquetas de Constelaciones Activas** — Las etiquetas de texto ahora actúan como disparadores: al pulsarlas, se selecciona la constelación y la IA narra su mitología.
+- **GuideTab con Acceso Rápido y Favoritos** — El panel lateral incorpora accesos directos a secciones, acciones globales para expandir o contraer bloques visibles, pines persistentes en `localStorage` y reordenación automática para subir las secciones favoritas al inicio.
 
 #### Datos Científicos en Tiempo Real
 - **Cálculo de Distancias Dinámicas** — Integración con `astronomy-engine` para reportar la distancia actual entre el usuario y cada planeta (en millones de km o UA) y la Luna (en km detallados).
@@ -403,6 +404,14 @@ La Guía tiene 7 filtros y muestra todos los objetos con indicador de visibilida
 | CONSTEL. | 85 constelaciones (IAU) con centroide calculado |
 
 Clic en cualquier entrada → la cámara vuela hacia el objeto y aparece el crosshair de objetivo.
+
+Mejoras recientes de navegación en el panel:
+
+- Las secciones pueden mantenerse colapsadas para reducir scroll cuando hay muchos bloques abiertos.
+- La banda de `Acceso rápido` permite saltar directamente a categorías y secciones frecuentes.
+- Cada cabecera admite fijado con pin; las favoritas se guardan en `localStorage`.
+- Las secciones fijadas suben al principio del panel para quedar accesibles sin atravesar todo el contenido.
+- Hay acciones globales para expandir o contraer las secciones visibles de una vez.
 
 ---
 

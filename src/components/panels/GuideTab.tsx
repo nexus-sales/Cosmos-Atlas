@@ -1,9 +1,8 @@
 'use client';
 
-import { STARS } from '@/data/stars';
-import { DSOS } from '@/data/dsos';
 import { CONSTELLATIONS } from '@/data/constellations';
 import { getConstellationDisplayName } from '@/data/constellationNames';
+import { useCatalog } from '@/stores/useCatalogStore';
 import { useAppStore } from '@/stores/useAppStore';
 import { Search, Star as StarIcon, Orbit, CloudFog, Sparkles, X, Globe2, Share2, ChevronDown, Pin, PinOff } from 'lucide-react';
 import { useState, useMemo, useRef, useEffect } from 'react';
@@ -119,8 +118,6 @@ function buildPlanet(cfg: PlanetCfg, date: Date, lat: number, lon: number): (Pla
 
 // ── Constellation centroid helpers ───────────────────────────────────────────
 
-const STAR_MAP = new Map(STARS.map((s) => [s.name, s]));
-
 /** Inverse of equatorialTo3D(ra, dec, 1) */
 function vec3ToRaDec(x: number, y: number, z: number): { ra: number; dec: number } {
     const dec = 90 - Math.acos(Math.max(-1, Math.min(1, y))) * 180 / Math.PI;
@@ -129,7 +126,7 @@ function vec3ToRaDec(x: number, y: number, z: number): { ra: number; dec: number
 }
 
 /** Pre-compute constellation centroid positions as Planet-shaped objects */
-function buildConstellationTargets(): Planet[] {
+function buildConstellationTargets(starMap: Map<string, { name: string; ra: number; dec: number }>): Planet[] {
     return Object.keys(CONSTELLATIONS).map((name) => {
         const pairs = CONSTELLATIONS[name];
         const starNames = new Set<string>();
@@ -138,7 +135,7 @@ function buildConstellationTargets(): Planet[] {
         const sum = new THREE.Vector3();
         let count = 0;
         starNames.forEach((sn) => {
-            const s = STAR_MAP.get(sn);
+            const s = starMap.get(sn);
             if (!s) return;
             const [x, y, z] = equatorialTo3D(s.ra, s.dec, 1);
             sum.add(new THREE.Vector3(x, y, z));
@@ -160,8 +157,6 @@ function buildConstellationTargets(): Planet[] {
         };
     }).filter(Boolean) as Planet[];
 }
-
-const CONSTELLATION_TARGETS = buildConstellationTargets();
 
 // ── Icon / style helpers ─────────────────────────────────────────────────────
 
@@ -226,6 +221,10 @@ export default function GuideTab() {
     const setTargetedObject = useAppStore((s) => s.setTargetedObject);
     const observer = useAppStore((s) => s.observer);
     const time = useAppStore((s) => s.timeMinute);
+    const stars = useCatalog(s => s.stars);
+    const dsos = useCatalog(s => s.dsos);
+    const starMap = useMemo(() => new Map(stars.map(s => [s.name, s])), [stars]);
+    const constellationTargets = useMemo(() => buildConstellationTargets(starMap), [starMap]);
 
     // --- Remote Search State ---
     const [remoteResult, setRemoteResult] = useState<SesameResolution | null>(null);
@@ -260,12 +259,12 @@ export default function GuideTab() {
         };
 
         // All objects matching the query
-        const allStars = [...STARS]
+        const allStars = [...stars]
             .filter(matchStar)
             .map(s => ({ ...s, alt: equToHor(s.ra, s.dec, observer.lat, observer.lon, time).alt }))
             .sort(sortFn);
 
-        const allDSOs = DSOS
+        const allDSOs = dsos
             .filter(matchDSO)
             .map(d => ({ ...d, alt: equToHor(d.ra, d.dec, observer.lat, observer.lon, time).alt }))
             .sort(sortFn);
@@ -275,7 +274,7 @@ export default function GuideTab() {
             .filter((p): p is Planet & { alt: number; phaseInfo?: string } => p !== null && matchName(p.name))
             .sort(sortFn);
 
-        const allConsts = CONSTELLATION_TARGETS
+        const allConsts = constellationTargets
             .filter(c => matchName(c.name) || matchName(getConstellationDisplayName(c.name)))
             .map(c => ({ ...c, alt: equToHor(c.ra, c.dec, observer.lat, observer.lon, time).alt }))
             .sort((a, b) => {
@@ -300,7 +299,7 @@ export default function GuideTab() {
             clusterTotal: clusters.length,
             constellationTotal: allConsts.length,
         };
-    }, [q, observer, time, limit, sortBy]);
+    }, [q, observer, time, limit, sortBy, stars, dsos, constellationTargets]);
 
     // --- Debounced Remote Search ---
     useEffect(() => {

@@ -1,16 +1,17 @@
 'use client';
 
 import { useMemo } from 'react';
-import { CHALLENGES } from '@/data/challenges';
+import { useCatalog } from '@/stores/useCatalogStore';
 import { useAppStore } from '@/stores/useAppStore';
 import { Trophy, Compass, Lightbulb } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function ChallengeTab() {
+    const challenges = useCatalog(s => s.challenges);
     const dayN = useMemo(() => {
         return Math.floor((new Date().getTime() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
     }, []);
-    const challenge = CHALLENGES[dayN % CHALLENGES.length];
+    const challenge = challenges[dayN % challenges.length];
     const foundChallenges = useAppStore((state) => state.foundChallenges);
     const isFound = foundChallenges.includes(challenge.name);
 

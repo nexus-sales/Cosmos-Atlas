@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { Html } from '@react-three/drei';
 import { CONSTELLATIONS } from '@/data/constellations';
 import { getConstellationDisplayName } from '@/data/constellationNames';
-import { STARS } from '@/data/stars';
+import { useCatalog } from '@/stores/useCatalogStore';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { useAppStore } from '@/stores/useAppStore';
 import { useFrame } from '@react-three/fiber';
@@ -16,7 +16,6 @@ type ConstellationTarget = Planet & {
     angularSize: number;
 };
 
-const STAR_MAP = new Map(STARS.map((s) => [s.name, s]));
 const PIN_MS = 8000;
 const VISIBILITY_THROTTLE_MS = 180;
 const CONSTELLATION_SYMBOL = '\u2726';
@@ -42,6 +41,8 @@ export default function ConstellationLabels() {
     const selectedObject = useAppStore((state) => state.selectedObject);
     const setSelectedObject = useAppStore((state) => state.setSelectedObject);
     const setTargetedObject = useAppStore((state) => state.setTargetedObject);
+    const stars = useCatalog(s => s.stars);
+    const starMap = useMemo(() => new Map(stars.map(s => [s.name, s])), [stars]);
     const groupRef = useRef<THREE.Group>(null);
 
     // Mouse hover should override camera-based focusing.
@@ -60,7 +61,7 @@ export default function ConstellationLabels() {
             const sum = new THREE.Vector3();
             let count = 0;
             starNames.forEach((sName) => {
-                const star = STAR_MAP.get(sName);
+                const star = starMap.get(sName);
                 if (!star) return;
                 const [x, y, z] = equatorialTo3D(star.ra, star.dec, 1.0);
                 sum.add(new THREE.Vector3(x, y, z));
@@ -78,7 +79,7 @@ export default function ConstellationLabels() {
                 vector: centroid,
             }];
         });
-    }, []);
+    }, [starMap]);
 
     useFrame(({ camera }) => {
         const now = Date.now();

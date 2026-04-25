@@ -4,8 +4,9 @@ import { useMemo, useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useAppStore } from '@/stores/useAppStore';
-import { METEOR_SHOWERS, getActiveShowers } from '@/data/meteorShowers';
+import { getActiveShowers, isShowerActive } from '@/data/meteorShowers';
 import type { MeteorShower } from '@/data/meteorShowers';
+import { useCatalog } from '@/stores/useCatalogStore';
 
 
 const meteorVertexShader = `
@@ -62,6 +63,7 @@ export default function MeteorShower() {
     // timeMinute solo cambia 1x/min — las lluvias de meteoros activas cambian como máximo 1x/día
     const time = useAppStore((state) => state.timeMinute);
     const nightMode = useAppStore((state) => state.settings.nightMode);
+    const meteorShowers = useCatalog(s => s.meteorShowers);
 
     const activeShowersRef = useRef<MeteorShower[]>([]);
     const lastCheckRef = useRef(0);
@@ -83,7 +85,7 @@ export default function MeteorShower() {
         const ids = new Array(METEOR_COUNT);
         const bolides = new Array(METEOR_COUNT);
 
-        const activeShowers = isMounted ? getActiveShowers(new Date(time)) : METEOR_SHOWERS;
+        const activeShowers = isMounted ? meteorShowers.filter(s => isShowerActive(s, new Date(time))) : meteorShowers;
         // Semilla derivada del minuto — reproducible para este tick de tiempo
         const rng = makeLCG(Math.floor(time.getTime() / 60000) ^ 0xdeadbeef);
 
@@ -91,7 +93,7 @@ export default function MeteorShower() {
             // Asignar a una lluvia activa (o aleatoria si no hay activas)
             const shower = activeShowers.length > 0
                 ? activeShowers[Math.floor(rng() * activeShowers.length)]
-                : METEOR_SHOWERS[Math.floor(rng() * METEOR_SHOWERS.length)];
+                : meteorShowers[Math.floor(rng() * meteorShowers.length)];
 
             ids[i] = shower.id;
 
@@ -122,7 +124,7 @@ export default function MeteorShower() {
         }
 
         return [pos, col, siz, alp, vel, ids, bolides];
-    }, [time, isMounted]);
+    }, [time, isMounted, meteorShowers]);
 
     // Estado de cada meteoro (life, maxLife)
     const lifeRef = useRef<Float32Array>(new Float32Array(METEOR_COUNT));
@@ -139,7 +141,7 @@ export default function MeteorShower() {
         const dayKey = now.getDate();
 
         if (dayKey !== lastDayRef.current || nowMs - lastCheckRef.current > 5 * 60 * 1000) {
-            const active = getActiveShowers(now);
+            const active = meteorShowers.filter(s => isShowerActive(s, now));
             activeShowersRef.current = active;
             hasActiveShowersRef.current = active.length > 0;
             lastCheckRef.current = nowMs;

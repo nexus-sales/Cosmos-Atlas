@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { Star, DSO, Observer, Planet } from '../types/celestial';
-import { CHALLENGES } from '../data/challenges';
+import type { Challenge } from '../types/celestial';
 
 type CelestialObject = Star | DSO | Planet;
 
@@ -12,12 +12,12 @@ function objectKeys(obj: CelestialObject | null) {
     return keys.map((item) => item.trim().toLowerCase());
 }
 
-function foundChallengesForObject(obj: CelestialObject | null, current: string[]) {
+function foundChallengesForObject(obj: CelestialObject | null, current: string[], challenges: Challenge[]) {
     const keys = objectKeys(obj);
     if (keys.length === 0) return current;
 
     const next = new Set(current);
-    for (const challenge of CHALLENGES) {
+    for (const challenge of challenges) {
         if (keys.includes(challenge.name.trim().toLowerCase())) {
             next.add(challenge.name);
         }
@@ -159,19 +159,26 @@ export const useAppStore = create<AppState>()(
                 })),
             clearArHealthHistory: () => set({ arHealthHistory: [] }),
             selectedObject: null,
-            setSelectedObject: (obj) => set((state) => ({
-                selectedObject: obj,
-                foundChallenges: foundChallengesForObject(obj, state.foundChallenges),
-            })),
+            setSelectedObject: (obj) => set((state) => {
+                // Importación diferida para evitar dependencia circular
+                const { useCatalog } = require('./useCatalogStore')
+                const challenges = useCatalog.getState().challenges
+                return {
+                    selectedObject: obj,
+                    foundChallenges: foundChallengesForObject(obj, state.foundChallenges, challenges),
+                }
+            }),
             targetedObject: null,
-            setTargetedObject: (obj) => set((state) => ({
-                targetedObject: obj,
-                selectedObject: obj ?? state.selectedObject,
-                foundChallenges: foundChallengesForObject(obj, state.foundChallenges),
-                // Si seleccionamos un objetivo desde la guía/busqueda, desactivamos el seguimiento de brújula
-                // para que la cámara pueda "volar" hacia el objeto automáticamente.
-                followOrientation: obj ? false : state.followOrientation
-            })),
+            setTargetedObject: (obj) => set((state) => {
+                const { useCatalog } = require('./useCatalogStore')
+                const challenges = useCatalog.getState().challenges
+                return {
+                    targetedObject: obj,
+                    selectedObject: obj ?? state.selectedObject,
+                    foundChallenges: foundChallengesForObject(obj, state.foundChallenges, challenges),
+                    followOrientation: obj ? false : state.followOrientation
+                }
+            }),
             time: new Date(),
             timeMinute: new Date(),
             setTime: (time) => set((state) => {
