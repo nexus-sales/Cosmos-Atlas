@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local AI tool caches & notes (never commit)
+.claude/
+.qwen/
+_notas/
+
+# supabase local dev (opt-in manually if needed)
+supabase/
