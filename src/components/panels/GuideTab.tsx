@@ -312,8 +312,9 @@ export default function GuideTab() {
         return () => clearTimeout(timeoutId);
     }, [q]);
 
+    // Todas las secciones colapsadas por defecto
     const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-        planets: true, stars: true, galaxies: true, nebulae: true, clusters: true, constellations: true,
+        planets: false, stars: false, galaxies: false, nebulae: false, clusters: false, constellations: false,
     });
     const toggleSection = (key: string) =>
         setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));

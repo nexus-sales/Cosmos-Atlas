@@ -32,7 +32,7 @@ export function getMoonDetails(date: Date) {
         phase,
         phaseName: getMoonPhaseName(phase),
         phaseIcon: getMoonPhaseIcon(phase),
-        illumination: illumination.phase_fraction * 100, // percentage
-        distance: illumination.dist / 1.0, // km (approx using astronomy-engine Illumination result which is in Earth radii often? No, astronomy-engine Dist is in Earth Radii or AU depending on body. For Moon it's typically Earth Radii.)
+        illumination: illumination.phase_fraction * 100 // percentage
+        // distance eliminado: IlluminationInfo no tiene 'dist'
     };
 }
