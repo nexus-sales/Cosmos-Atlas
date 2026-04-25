@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
-import { getActiveShowers, getShowerActivity, getBestShower, isShowerActive } from '@/data/meteorShowers';
+import { getShowerActivity, getBestShower, isShowerActive } from '@/data/meteorShowers';
 import { useCatalog } from '@/stores/useCatalogStore';
 import { CloudRain, TrendingUp, Clock3, Eye, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';

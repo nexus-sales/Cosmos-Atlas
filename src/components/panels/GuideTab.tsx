@@ -12,7 +12,8 @@ import type { Star, DSO, Planet } from '@/types/celestial';
 import { equToHor, equatorialTo3D } from '@/lib/astronomy/transforms';
 import * as THREE from 'three';
 import { resolveObjectName, SesameResolution } from '@/lib/astronomy/sesame';
-import { buildSolarSystemTarget, SOLAR_SYSTEM_EPHEMERIS } from '@/lib/solarSystem';
+import { EMPTY_GUIDE_SEARCH_RESULT, type GuideSearchResult } from '@/lib/guideSearch';
+import type { GuideSearchWorkerRequest, GuideSearchWorkerResponse } from '@/workers/guideSearch.worker';
 
 type Filter = 'all' | 'stars' | 'planets' | 'galaxies' | 'nebulae' | 'clusters' | 'constellations';
 type SectionKey = Exclude<Filter, 'all'>;
@@ -29,6 +30,19 @@ const FILTERS: { id: Filter; label: string; activeClass: string }[] = [
 
 const SECTION_ORDER: SectionKey[] = ['planets', 'stars', 'galaxies', 'nebulae', 'clusters', 'constellations'];
 const PINNED_SECTIONS_STORAGE_KEY = 'cosmos-atlas-guide-pinned-sections';
+
+function readPinnedSections(): SectionKey[] {
+    if (typeof window === 'undefined') return [];
+    try {
+        const stored = window.localStorage.getItem(PINNED_SECTIONS_STORAGE_KEY);
+        if (!stored) return [];
+        const parsed = JSON.parse(stored);
+        if (!Array.isArray(parsed)) return [];
+        return parsed.filter((value): value is SectionKey => SECTION_ORDER.includes(value as SectionKey));
+    } catch {
+        return [];
+    }
+}
 
 // Constellation centroid helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -145,6 +159,7 @@ export default function GuideTab() {
     const [remoteResult, setRemoteResult] = useState<SesameResolution | null>(null);
     const [isSearchingRemote, setIsSearchingRemote] = useState(false);
     const lastSearchRef = useRef('');
+    const searchTokenRef = useRef(0);
     const sectionRefs = useRef<Record<SectionKey, HTMLElement | null>>({
         planets: null,
         stars: null,
@@ -155,74 +170,70 @@ export default function GuideTab() {
     });
 
     const q = search.trim().toLowerCase();
+    const visibleRemoteResult = q.length >= 3 ? remoteResult : null;
     // When no search, limit items; when searching show all matches
     const limit = q ? Infinity : MAX_PER_SECTION;
 
-    const { 
-        starList, dsoList, planetList, constellationList, 
-        starTotal, galaxyTotal, nebulaTotal, clusterTotal, constellationTotal 
-    } = useMemo(() => {
-        const matchStar = (s: Star) =>
-            s.name.toLowerCase().includes(q) || s.constellation.toLowerCase().includes(q);
-        const matchDSO = (d: DSO) =>
-            d.name.toLowerCase().includes(q) || d.id.toLowerCase().includes(q);
-        const matchName = (n: string) => n.toLowerCase().includes(q);
+    const [guideResults, setGuideResults] = useState<GuideSearchResult>(EMPTY_GUIDE_SEARCH_RESULT);
+    const guideWorkerRef = useRef<Worker | null>(null);
+    const guideRequestRef = useRef(0);
 
-        const sortFn = (a: { mag: number; alt: number }, b: { mag: number; alt: number }) => {
-            if (sortBy === 'altitude') return b.alt - a.alt;
-            return a.mag - b.mag;
+    useEffect(() => {
+        const worker = new Worker(new URL('../../workers/guideSearch.worker.ts', import.meta.url), { type: 'module' });
+        guideWorkerRef.current = worker;
+
+        worker.onmessage = (event: MessageEvent<GuideSearchWorkerResponse>) => {
+            if (event.data.requestId !== guideRequestRef.current) return;
+            setGuideResults(event.data.result);
         };
 
-        // All objects matching the query
-        const allStars = [...stars]
-            .filter(matchStar)
-            .map(s => ({ ...s, alt: equToHor(s.ra, s.dec, observer.lat, observer.lon, time).alt }))
-            .sort(sortFn);
-
-        const allDSOs = dsos
-            .filter(matchDSO)
-            .map(d => ({ ...d, alt: equToHor(d.ra, d.dec, observer.lat, observer.lon, time).alt }))
-            .sort(sortFn);
-
-        const allPlanets = Object.keys(SOLAR_SYSTEM_EPHEMERIS)
-            .filter((name) => name !== 'Sol')
-            .map((name) => buildSolarSystemTarget(name, time, observer.lat, observer.lon, solarSystemBodies))
-            .filter((p): p is Planet & { alt: number; phaseInfo?: string } => p !== null && matchName(p.name))
-            .sort(sortFn);
-
-        const allConsts = constellationTargets
-            .filter(c => matchName(c.name) || matchName(getConstellationDisplayName(c.name)))
-            .map(c => ({ ...c, alt: equToHor(c.ra, c.dec, observer.lat, observer.lon, time).alt }))
-            .sort((a, b) => {
-                if (sortBy === 'altitude') return b.alt - a.alt;
-                return getConstellationDisplayName(a.name).localeCompare(getConstellationDisplayName(b.name));
-            });
-
-        // Categorized DSOs for counts
-        const galaxies = allDSOs.filter(d => d.type === 'galaxy');
-        const nebulae = allDSOs.filter(d => d.type === 'nebula');
-        const clusters = allDSOs.filter(d => d.type === 'cluster');
-
-        return {
-            starList: allStars.slice(0, limit),
-            dsoList: allDSOs, // We will filter and slice this in the render sections
-            planetList: allPlanets,
-            constellationList: allConsts.slice(0, limit),
-            // Totals
-            starTotal: allStars.length,
-            galaxyTotal: galaxies.length,
-            nebulaTotal: nebulae.length,
-            clusterTotal: clusters.length,
-            constellationTotal: allConsts.length,
+        worker.onerror = (event) => {
+            console.warn('[GuideTab] No se pudo calcular la b\u00fasqueda en worker:', event.message);
         };
+
+        return () => {
+            worker.terminate();
+            guideWorkerRef.current = null;
+        };
+    }, []);
+
+    useEffect(() => {
+        const worker = guideWorkerRef.current;
+        if (!worker) return;
+
+        worker.postMessage({
+            type: 'catalog',
+            catalog: { stars, dsos, constellationTargets, solarSystemBodies },
+        } satisfies GuideSearchWorkerRequest);
+    }, [stars, dsos, constellationTargets, solarSystemBodies]);
+
+    useEffect(() => {
+        const worker = guideWorkerRef.current;
+        if (!worker) return;
+
+        const requestId = guideRequestRef.current + 1;
+        guideRequestRef.current = requestId;
+
+        worker.postMessage({
+            type: 'search',
+            requestId,
+            q,
+            observer,
+            timeMs: time.getTime(),
+            limit,
+            sortBy,
+        } satisfies GuideSearchWorkerRequest);
     }, [q, observer, time, limit, sortBy, stars, dsos, constellationTargets, solarSystemBodies]);
+
+    const {
+        starList, dsoList, planetList, constellationList,
+        starTotal, galaxyTotal, nebulaTotal, clusterTotal, constellationTotal,
+    } = guideResults;
 
     // --- Debounced Remote Search ---
     useEffect(() => {
+        const token = ++searchTokenRef.current;
         if (!q || q.length < 3) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setRemoteResult(null);
-            setIsSearchingRemote(false);
             return;
         }
 
@@ -232,6 +243,7 @@ export default function GuideTab() {
 
             setIsSearchingRemote(true);
             const result = await resolveObjectName(q);
+            if (searchTokenRef.current !== token) return;
             setRemoteResult(result);
             setIsSearchingRemote(false);
         }, 800);
@@ -243,18 +255,7 @@ export default function GuideTab() {
     const [openSections, setOpenSections] = useState<Record<string, boolean>>({
         planets: false, stars: false, galaxies: false, nebulae: false, clusters: false, constellations: false,
     });
-    const [pinnedSections, setPinnedSections] = useState<SectionKey[]>([]);
-    useEffect(() => {
-        try {
-            const stored = window.localStorage.getItem(PINNED_SECTIONS_STORAGE_KEY);
-            if (!stored) return;
-            const parsed = JSON.parse(stored);
-            if (!Array.isArray(parsed)) return;
-            const valid = parsed.filter((value): value is SectionKey => SECTION_ORDER.includes(value as SectionKey));
-            if (valid.length > 0) setPinnedSections(valid);
-        } catch { /* ignore */ }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    const [pinnedSections, setPinnedSections] = useState<SectionKey[]>(readPinnedSections);
     const toggleSection = (key: string) =>
         setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
 
@@ -514,7 +515,7 @@ export default function GuideTab() {
                 )}
             </div>
 
-            {isSearchingRemote && (
+            {q.length >= 3 && isSearchingRemote && (
                 <div className="flex items-center gap-2 px-3 py-1.5 text-[10px] text-blue-400 font-mono animate-pulse">
                     <Sparkles className="w-3 h-3" />
                     Consultando bases de datos SIMBAD/CDS...
@@ -805,7 +806,7 @@ export default function GuideTab() {
             )}
 
             {/* RESULTADOS REMOTOS (SIMBAD) */}
-            {remoteResult && (
+            {visibleRemoteResult && (
                 <section className="animate-in slide-in-from-bottom-2 duration-500">
                     <div className="flex items-center gap-2 px-1 mb-2">
                         <Globe2 className="w-3.5 h-3.5 text-blue-400" />
@@ -813,11 +814,11 @@ export default function GuideTab() {
                     </div>
                     {(() => {
                         const obj: Planet = {
-                            name: remoteResult.name,
-                            ra: remoteResult.ra,
-                            dec: remoteResult.dec,
-                            mag: remoteResult.mag || 0,
-                            desc: `Objeto resuelto v\u00eda ${remoteResult.source}. Tipo: ${remoteResult.type || 'Desconocido'}.`,
+                            name: visibleRemoteResult.name,
+                            ra: visibleRemoteResult.ra,
+                            dec: visibleRemoteResult.dec,
+                            mag: visibleRemoteResult.mag || 0,
+                            desc: `Objeto resuelto v\u00eda ${visibleRemoteResult.source}. Tipo: ${visibleRemoteResult.type || 'Desconocido'}.`,
                             kind: 'planet' as const,
                             symbol: '\u2727',
                             color: '#60a5fa'
@@ -833,7 +834,7 @@ export default function GuideTab() {
                                     <span className="text-[14px] shrink-0 leading-none text-blue-400">&#x2727;</span>
                                     <div className="flex flex-col flex-1 min-w-0">
                                         <span className="text-[13px] font-bold truncate">{obj.name}</span>
-                                        <span className="text-[9px] text-blue-400/60 font-mono tracking-tighter uppercase">{remoteResult.type || 'Objeto'}</span>
+                                        <span className="text-[9px] text-blue-400/60 font-mono tracking-tighter uppercase">{visibleRemoteResult.type || 'Objeto'}</span>
                                     </div>
                                     <div suppressHydrationWarning title={alt > 0 ? `Visible \u00b7 Alt ${alt.toFixed(0)}\u00b0` : 'Bajo el horizonte'}
                                         className={cn('w-1.5 h-1.5 rounded-full shrink-0 ml-0.5', alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15')} />
@@ -845,7 +846,7 @@ export default function GuideTab() {
                 </section>
             )}
 
-            {starList.length === 0 && dsoList.length === 0 && planetList.length === 0 && constellationList.length === 0 && !remoteResult && !isSearchingRemote && (
+            {starList.length === 0 && dsoList.length === 0 && planetList.length === 0 && constellationList.length === 0 && !visibleRemoteResult && !(q.length >= 3 && isSearchingRemote) && (
                 <p className="text-center text-[12px] text-white/35 italic py-10">
                     Sin resultados locales para &laquo;{search}&raquo;
                 </p>

@@ -2,14 +2,14 @@
 
 import { useMemo } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
-import { equToHor } from '@/lib/astronomy/transforms';
+import { getCelestialVisibility } from '@/lib/astronomy/celestialVisibility';
 
 export function useCelestialVisibility(ra: number, dec: number) {
     const time = useAppStore((state) => state.timeMinute);
     const observer = useAppStore((state) => state.observer);
 
     const coords = useMemo(() => {
-        return equToHor(ra, dec, observer.lat, observer.lon, time);
+        return getCelestialVisibility(ra, dec, observer, time);
     }, [ra, dec, observer, time]);
 
     return coords;

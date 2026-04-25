@@ -1,14 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
 import { Volume2, VolumeX, Sparkles, MessageSquare, Eye, Telescope, Gauge, Send, Loader2, X, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { getKidFact } from '@/data/kidFacts';
 import { getConstellationDisplayName } from '@/data/constellationNames';
-import { equToHor } from '@/lib/astronomy/transforms';
-import { calculateVisibilityEvents, formatVisibilityEvents } from '@/lib/astronomy/visibilityEvents';
+import { getCelestialVisibility } from '@/lib/astronomy/celestialVisibility';
 import type { DSO, Planet, Star } from '@/types/celestial';
 
 type NarratableObject = Star | DSO | Planet;
@@ -34,12 +33,15 @@ interface ChatMessage {
 
 const AU_TO_KM = 149_597_870.7;
 const CONSTELLATION_SYMBOL = '\u2726';
+const NARRATION_BRIEF_CACHE_LIMIT = 64;
 const QUICK_QUESTIONS = [
     'Como lo observo mejor?',
     'Que significa su magnitud?',
     'Por que es importante?',
     'Cuando conviene verlo?',
 ];
+
+const narrationBriefCache = new Map<string, NarrationBrief>();
 
 function isDso(obj: NarratableObject): obj is DSO {
     return 'type' in obj;
@@ -138,15 +140,50 @@ function scienceContext(kind: ObjectKind, obj: NarratableObject): string {
     return obj.desc;
 }
 
+function buildNarrationBriefCacheKey(
+    obj: NarratableObject,
+    observer: { lat: number; lon: number },
+    time: Date,
+    bortleScale: number,
+) {
+    const objectId = isDso(obj) ? obj.id : obj.name;
+    return [
+        objectId,
+        obj.ra.toFixed(4),
+        obj.dec.toFixed(4),
+        observer.lat.toFixed(3),
+        observer.lon.toFixed(3),
+        time.getTime(),
+        bortleScale,
+    ].join(':');
+}
+
+function rememberNarrationBrief(key: string, brief: NarrationBrief) {
+    narrationBriefCache.delete(key);
+    narrationBriefCache.set(key, brief);
+
+    if (narrationBriefCache.size > NARRATION_BRIEF_CACHE_LIMIT) {
+        const oldestKey = narrationBriefCache.keys().next().value;
+        if (oldestKey) narrationBriefCache.delete(oldestKey);
+    }
+
+    return brief;
+}
+
 function buildNarrationBrief(
     obj: NarratableObject,
     observer: { lat: number; lon: number },
     time: Date,
     bortleScale: number,
 ): NarrationBrief {
+    const cacheKey = buildNarrationBriefCacheKey(obj, observer, time, bortleScale);
+    const cached = narrationBriefCache.get(cacheKey);
+    if (cached) return cached;
+
     const kind = getObjectKind(obj);
-    const coords = equToHor(obj.ra, obj.dec, observer.lat, observer.lon, time);
-    const events = formatVisibilityEvents(calculateVisibilityEvents(obj.ra, obj.dec, observer, time));
+    const visibility = getCelestialVisibility(obj.ra, obj.dec, observer, time);
+    const coords = { alt: visibility.alt, az: visibility.az };
+    const events = visibility.eventsLabel;
     const visible = coords.alt > 0;
     const azCardinal = cardinalFromAzimuth(coords.az);
     const magnitude = formatMagnitude(obj.mag);
@@ -176,7 +213,7 @@ function buildNarrationBrief(
         observing,
     ].join(' ');
 
-    return {
+    return rememberNarrationBrief(cacheKey, {
         title,
         subtitle,
         message,
@@ -185,7 +222,7 @@ function buildNarrationBrief(
         visible,
         observing,
         events,
-    };
+    });
 }
 
 function normalizeTextForSpeech(text: string) {
@@ -202,6 +239,24 @@ function normalizeTextForSpeech(text: string) {
         .replace(/&deg;/g, 'grados')
         .replace(/\bmessier\b/gi, 'Messier')
         .replace(/\bh\b/gi, 'horas');
+}
+
+function selectSpanishSpainVoice(voices: SpeechSynthesisVoice[]) {
+    const hasNameToken = (voice: SpeechSynthesisVoice, tokens: string[]) => {
+        const name = voice.name.toLowerCase();
+        return tokens.some((token) => name.includes(token));
+    };
+
+    const esEsVoices = voices.filter((voice) => voice.lang.toLowerCase().startsWith('es-es'));
+    const esVoices = voices.filter((voice) => voice.lang.toLowerCase().startsWith('es'));
+
+    return (
+        esEsVoices.find((voice) => hasNameToken(voice, ['elvira', 'alvaro', 'helena', 'monica', 'jorge'])) ||
+        esEsVoices.find((voice) => hasNameToken(voice, ['natural', 'microsoft', 'google'])) ||
+        esEsVoices[0] ||
+        esVoices.find((voice) => hasNameToken(voice, ['natural', 'google'])) ||
+        esVoices[0]
+    );
 }
 
 export default function AIAstronoma() {
@@ -233,6 +288,12 @@ export default function AIAstronoma() {
     const lastMessageRef = useRef<string>('');
     const narratorReadyRef = useRef(false);
     const chatEndRef = useRef<HTMLDivElement | null>(null);
+    const currentSelection = selected || targetedObject;
+
+    const currentBrief = useMemo(() => {
+        if (!currentSelection || kidsMode) return null;
+        return buildNarrationBrief(currentSelection, observer, time, bortleScale);
+    }, [currentSelection, observer, time, bortleScale, kidsMode]);
 
     useEffect(() => {
         synthRef.current = window.speechSynthesis;
@@ -262,11 +323,7 @@ export default function AIAstronoma() {
         const utterance = new SpeechSynthesisUtterance(normalizeTextForSpeech(text));
         const voices = synthRef.current.getVoices();
         // Priorizar voces "Natural" o "Google" que suenan mucho más humanas
-        const spanishVoice = 
-            voices.find(v => v.lang.startsWith('es') && v.name.includes('Natural')) ||
-            voices.find(v => v.lang.startsWith('es') && v.name.includes('Google')) ||
-            voices.find(v => v.lang.startsWith('es') && v.name.includes('Helena')) ||
-            voices.find(v => v.lang.startsWith('es'));
+        const spanishVoice = selectSpanishSpainVoice(voices);
 
         if (spanishVoice) utterance.voice = spanishVoice;
         utterance.lang = 'es-ES';
@@ -291,10 +348,7 @@ export default function AIAstronoma() {
     }, [chatOpen, chatMessages, chatLoading]);
 
     const buildChatContext = useCallback(() => {
-        const currentSelection = selected || targetedObject;
-        const computedBrief = currentSelection
-            ? buildNarrationBrief(currentSelection, observer, time, bortleScale)
-            : brief;
+        const computedBrief = currentBrief ?? brief;
 
         return {
             objectName: computedBrief?.title,
@@ -309,7 +363,7 @@ export default function AIAstronoma() {
             observingAdvice: computedBrief?.observing,
             visibilityWindow: computedBrief?.events,
         };
-    }, [selected, targetedObject, observer, time, bortleScale, brief]);
+    }, [currentBrief, brief, bortleScale, observer, time]);
 
     const askAstronomer = useCallback(async (rawQuestion?: string) => {
         const text = (rawQuestion ?? question).trim();
@@ -399,7 +453,6 @@ export default function AIAstronoma() {
 
         if (!narratorReadyRef.current) return;
 
-        const currentSelection = selected || targetedObject;
         let nextMessage = '';
         let nextBrief: NarrationBrief | null = null;
 
@@ -410,8 +463,8 @@ export default function AIAstronoma() {
 
             if (kidFact) {
                 nextMessage = `Has encontrado ${currentSelection.name}. ${kidFact}`;
-            } else {
-                nextBrief = buildNarrationBrief(currentSelection, observer, time, bortleScale);
+            } else if (currentBrief) {
+                nextBrief = currentBrief;
                 nextMessage = nextBrief.voice;
             }
         } else if (focusedConstellation && !muted) {
@@ -452,9 +505,8 @@ export default function AIAstronoma() {
         kidsMode,
         globalAiMessage,
         setAiMessage,
-        observer,
-        time,
-        bortleScale,
+        currentSelection,
+        currentBrief,
     ]);
 
     return (

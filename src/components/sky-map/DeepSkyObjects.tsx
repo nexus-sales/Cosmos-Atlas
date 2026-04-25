@@ -14,6 +14,8 @@ import NebulaVolume from '@/components/sky-map/NebulaVolume';
 // el mismo tipo+color, así que no tiene sentido crearlas N veces con Math.random().
 // Se reutiliza la misma CanvasTexture en todos los DSOs del mismo tipo.
 const _dsoTextureCache = new Map<string, THREE.CanvasTexture>();
+const _dsoRealTextureCache = new Map<string, THREE.Texture>();
+const _dsoRealTexturePromiseCache = new Map<string, Promise<THREE.Texture | null>>();
 
 function hexToRgb(hex: string): [number, number, number] {
     const r = parseInt(hex.slice(1, 3), 16);
@@ -108,44 +110,71 @@ function createDSOTexture(type: DSOType, color: string): THREE.CanvasTexture {
     return tex;
 }
 
+function loadDSORealTexture(dso: DSO): Promise<THREE.Texture | null> {
+    const cached = _dsoRealTextureCache.get(dso.id);
+    if (cached) return Promise.resolve(cached);
+
+    const pending = _dsoRealTexturePromiseCache.get(dso.id);
+    if (pending) return pending;
+
+    const promise = preloadDSOImage(dso.id).then((img) => {
+        if (!img) return null;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return null;
+
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, 512, 512);
+
+        const scale = Math.min(512 / img.width, 512 / img.height) * 0.9;
+        const w = img.width * scale;
+        const h = img.height * scale;
+        ctx.drawImage(img, (512 - w) / 2, (512 - h) / 2, w, h);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.needsUpdate = true;
+        _dsoRealTextureCache.set(dso.id, texture);
+        _dsoRealTexturePromiseCache.delete(dso.id);
+        return texture;
+    }).catch(() => {
+        _dsoRealTexturePromiseCache.delete(dso.id);
+        return null;
+    });
+
+    _dsoRealTexturePromiseCache.set(dso.id, promise);
+    return promise;
+}
+
 /**
  * Carga textura de imagen real o fallback procedimental
  */
-function useDSOTexture(dso: DSO): THREE.Texture {
+function useDSOTexture(dso: DSO, shouldLoadRealImage: boolean): THREE.Texture {
     // La textura procedural viene del caché global — sin refs ni allocaciones extra
     const [texture, setTexture] = useState<THREE.Texture | null>(null);
+    const cachedTexture = shouldLoadRealImage ? (_dsoRealTextureCache.get(dso.id) ?? null) : null;
 
     useEffect(() => {
         const dsoImage = getDSOImage(dso.id);
-        if (!dsoImage) return; // El fallback del cache se devuelve al renderizar
+        if (!dsoImage || !shouldLoadRealImage) return;
 
-        preloadDSOImage(dso.id).then((img) => {
-            if (!img) return;
+        if (cachedTexture) return;
 
-            const canvas = document.createElement('canvas');
-            canvas.width = canvas.height = 512;
-            const ctx = canvas.getContext('2d')!;
-
-            ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, 512, 512);
-
-            const scale = Math.min(512 / img.width, 512 / img.height) * 0.9;
-            const w = img.width * scale;
-            const h = img.height * scale;
-            ctx.drawImage(img, (512 - w) / 2, (512 - h) / 2, w, h);
-
-            const tex = new THREE.CanvasTexture(canvas);
-            tex.needsUpdate = true;
-            setTexture(tex);
+        let cancelled = false;
+        loadDSORealTexture(dso).then((loadedTexture) => {
+            if (!cancelled && loadedTexture) {
+                setTexture(loadedTexture);
+            }
         });
 
         return () => {
-            setTexture(prev => { prev?.dispose(); return null; });
+            cancelled = true;
         };
-    }, [dso.id, dso.type, dso.color]);
+    }, [cachedTexture, dso, shouldLoadRealImage]);
 
     // Fallback: textura procedural del caché global (O(1), sin new canvas)
-    return texture ?? createDSOTexture(dso.type, dso.color);
+    return cachedTexture ?? texture ?? createDSOTexture(dso.type, dso.color);
 }
 
 // ── Componente individual de DSO con hover ─────────────────────────────────────
@@ -160,7 +189,8 @@ function DSOItem({ dso }: { dso: DSOData }) {
     const markAsVisited = useAppStore((state) => state.markAsVisited);
     const nightMode = useAppStore((state) => state.settings.nightMode);
     const camFov = useAppStore((state) => state.camFov);
-    const texture = useDSOTexture(dso);
+    const shouldLoadRealImage = hovered || camFov < 20;
+    const texture = useDSOTexture(dso, shouldLoadRealImage);
 
     const displayColor = nightMode ? '#ff4444' : dso.color;
 

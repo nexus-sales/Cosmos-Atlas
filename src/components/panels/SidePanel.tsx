@@ -39,10 +39,11 @@ import { getArHealthSummary, getArToneClasses } from '@/lib/arHealth';
 type TabType = 'challenge' | 'info' | 'guide' | 'passport';
 
 function useIsMobile() {
-    const [isMobile, setIsMobile] = useState(false);
-    useEffect(() => {
-        setIsMobile(window.matchMedia('(max-width: 767px)').matches);
-    }, []);
+    const [isMobile, setIsMobile] = useState(() => (
+        typeof window !== 'undefined'
+            ? window.matchMedia('(max-width: 767px)').matches
+            : false
+    ));
 
     useEffect(() => {
         const mq = window.matchMedia('(max-width: 767px)');

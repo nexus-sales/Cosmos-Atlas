@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { memo, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
@@ -94,7 +94,7 @@ function getRaycastThreshold(fov: number): number {
     );
 }
 
-function DynamicStarLabels({
+const DynamicStarLabels = memo(function DynamicStarLabels({
     visibleStars,
     starPositions,
 }: {
@@ -109,42 +109,66 @@ function DynamicStarLabels({
         THREE.MathUtils.mapLinear(camFov, 80, 50, 0, 1), 0.1, 1
     );
 
+    const labelCandidates = useMemo(() => {
+        const baseThreshold = THREE.MathUtils.mapLinear(camFov, 75, 20, 1.2, 5.0);
+        const maxLabels = focusedConstellation ? 140 : Math.round(THREE.MathUtils.mapLinear(camFov, 75, 20, 18, 90));
+        const candidates: Array<{
+            key: string;
+            name: string;
+            pos: [number, number, number];
+            color: string;
+            opacity: number;
+            priority: number;
+        }> = [];
+
+        for (let i = 0; i < visibleStars.length; i++) {
+            const star = visibleStars[i];
+            const isFromFocused = focusedConstellation === star.constellation;
+            const magThreshold = isFromFocused ? Math.max(6.0, baseThreshold + 3.0) : baseThreshold;
+            if (star.mag > magThreshold) continue;
+
+            const opacity = THREE.MathUtils.clamp(
+                THREE.MathUtils.mapLinear(magThreshold - star.mag, 0, 1.0, 0, 1), 0, 1
+            ) * (isFromFocused ? 1.0 : overallOpacity);
+
+            candidates.push({
+                key: star.name,
+                name: star.name,
+                pos: starPositions[i],
+                color: nightMode ? '#ff4444' : (isFromFocused ? '#ffffff' : '#e0e8ff'),
+                opacity,
+                priority: (isFromFocused ? 100 : 0) - star.mag,
+            });
+        }
+
+        candidates.sort((a, b) => b.priority - a.priority);
+        return candidates.slice(0, maxLabels);
+    }, [camFov, focusedConstellation, nightMode, overallOpacity, starPositions, visibleStars]);
+
     return (
         <group renderOrder={50}>
-            {visibleStars.map((star, i) => {
-                const isFromFocused = focusedConstellation === star.constellation;
-                // Boost mag threshold for focused stars so labels appear earlier
-                const baseThreshold = THREE.MathUtils.mapLinear(camFov, 75, 20, 1.2, 5.0);
-                const magThreshold = isFromFocused ? Math.max(6.0, baseThreshold + 3.0) : baseThreshold;
-                
-                if (star.mag > magThreshold) return null;
-
-                const pos     = starPositions[i];
-                const color   = nightMode ? '#ff4444' : (isFromFocused ? '#ffffff' : '#e0e8ff');
-                const opacity = THREE.MathUtils.clamp(
-                    THREE.MathUtils.mapLinear(magThreshold - star.mag, 0, 1.0, 0, 1), 0, 1
-                ) * (isFromFocused ? 1.0 : overallOpacity);
-
+            {labelCandidates.map((label) => {
                 return (
-                    <Html key={star.name} position={pos} center distanceFactor={15} zIndexRange={[150, 50]}>
+                    <Html key={label.key} position={label.pos} center distanceFactor={15} zIndexRange={[150, 50]}>
                         <div
                             className="font-sans font-medium tracking-[0.05em] pointer-events-none select-none translate-y-3.5 text-center text-[10px] [text-shadow:0_1px_4px_rgba(0,0,0,0.8)]"
                             style={{
-                                color: color,
-                                opacity: opacity,
+                                color: label.color,
+                                opacity: label.opacity,
                             }}
                         >
-                            {star.name}
+                            {label.name}
                         </div>
                     </Html>
                 );
             })}
         </group>
     );
-}
+});
 
 export default function Stars() {
     const pointsRef = useRef<THREE.Points>(null);
+    const hoveredIndexRef = useRef<number | null>(null);
     const stars = useCatalog(s => s.stars);
     const bortleScale = useAppStore(s => s.settings.bortleScale);
     const nightMode   = useAppStore(s => s.settings.nightMode);
@@ -247,13 +271,17 @@ export default function Stars() {
     const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
         e.stopPropagation();
         if (e.index === undefined || e.index >= visibleStars.length) return;
+        if (hoveredIndexRef.current === e.index) return;
+
         const star = visibleStars[e.index];
         const pos  = starPositions[e.index];
+        hoveredIndexRef.current = e.index;
         setHovered({ star, pos });
         document.body.style.cursor = 'pointer';
     };
 
     const handlePointerOut = () => {
+        hoveredIndexRef.current = null;
         setHovered(null);
         document.body.style.cursor = 'default';
     };

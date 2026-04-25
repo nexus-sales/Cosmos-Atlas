@@ -60,6 +60,11 @@ const MAX_VISIBLE_STARS = 10000;
 
 export default function BackgroundStars() {
     const pointsRef = useRef<THREE.Points>(null);
+    const lastUpdateTimeRef = useRef(-Infinity);
+    const lastQuatRef = useRef(new THREE.Quaternion());
+    const lastPosRef = useRef(new THREE.Vector3());
+    const lastBortleRef = useRef<number | null>(null);
+    const lastViewModeRef = useRef<string | null>(null);
     const nightMode = useAppStore((state) => state.settings.nightMode);
     const bortleScale = useAppStore((state) => state.settings.bortleScale);
     const viewMode = useAppStore((state) => state.viewMode);
@@ -138,8 +143,29 @@ export default function BackgroundStars() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    useFrame(() => {
+    useFrame((state) => {
         if (!pointsRef.current) return;
+
+        material.uniforms.uNightMode.value = nightMode;
+
+        const now = state.clock.getElapsedTime();
+        const cameraMoved =
+            camera.quaternion.angleTo(lastQuatRef.current) > 0.0005 ||
+            camera.position.distanceToSquared(lastPosRef.current) > 1e-8;
+        const settingsChanged =
+            lastBortleRef.current !== bortleScale ||
+            lastViewModeRef.current !== viewMode;
+        const dueForRefresh = now - lastUpdateTimeRef.current > 1 / 24;
+
+        if (!cameraMoved && !settingsChanged && !dueForRefresh) {
+            return;
+        }
+
+        lastUpdateTimeRef.current = now;
+        lastQuatRef.current.copy(camera.quaternion);
+        lastPosRef.current.copy(camera.position);
+        lastBortleRef.current = bortleScale;
+        lastViewModeRef.current = viewMode;
 
         projScreenMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
         projScreenMatrix.multiply(pointsRef.current.matrixWorld);
@@ -174,8 +200,6 @@ export default function BackgroundStars() {
         posAttr.needsUpdate = true;
         colAttr.needsUpdate = true;
         sizAttr.needsUpdate = true;
-
-        material.uniforms.uNightMode.value = nightMode;
     });
 
     return <points ref={pointsRef} geometry={geometry} material={material} renderOrder={0} />;

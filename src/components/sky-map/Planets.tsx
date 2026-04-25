@@ -216,6 +216,24 @@ const PLANET_FRAGMENT_SHADER = `
 
 const PLANET_RADIUS = 95;
 
+function computeLocalSunDirection(time: Date, observer: { lat: number; lon: number }): [number, number, number] {
+    try {
+        const astObs = new Astronomy.Observer(observer.lat, observer.lon, 0);
+        const sunEq = Astronomy.Equator(Astronomy.Body.Sun, time, astObs, true, true);
+        const sunHor = Astronomy.Horizon(time, astObs, sunEq.ra, sunEq.dec, 'normal');
+        const el = THREE.MathUtils.degToRad(sunHor.altitude);
+        const az = THREE.MathUtils.degToRad(sunHor.azimuth);
+
+        return [
+            Math.cos(el) * Math.sin(az),
+            Math.sin(el),
+            -Math.cos(el) * Math.cos(az),
+        ];
+    } catch {
+        return [1, 0, 0];
+    }
+}
+
 
 function SunMesh({ pos }: { pos: [number, number, number] }) {
     const meshRef = useRef<THREE.Mesh>(null);
@@ -285,7 +303,17 @@ function SunMesh({ pos }: { pos: [number, number, number] }) {
     );
 }
 
-function MoonMesh({ planet, phase, opacity }: { planet: { pos: [number, number, number], dist: number }, phase: number, opacity: number }) {
+function MoonMesh({
+    planet,
+    phase,
+    opacity,
+    sunLightDirection,
+}: {
+    planet: { pos: [number, number, number], dist: number },
+    phase: number,
+    opacity: number,
+    sunLightDirection: [number, number, number],
+}) {
     const meshRef = useRef<THREE.Mesh>(null);
     const setSelectedObject = useAppStore(state => state.setSelectedObject);
     const markAsVisited = useAppStore(state => state.markAsVisited);
@@ -304,21 +332,11 @@ function MoonMesh({ planet, phase, opacity }: { planet: { pos: [number, number, 
         if (texture) material.uniforms.uMap.value = texture;
         material.uniforms.uOpacity.value = opacity;
 
-        try {
-            const { time: t, observer: obs } = useAppStore.getState();
-            const astObs = new Astronomy.Observer(obs.lat, obs.lon, 0);
-            const sunEq = Astronomy.Equator(Astronomy.Body.Sun, t, astObs, true, true);
-            const sunHor = Astronomy.Horizon(t, astObs, sunEq.ra, sunEq.dec, 'normal');
-
-            const el = THREE.MathUtils.degToRad(sunHor.altitude);
-            const az = THREE.MathUtils.degToRad(sunHor.azimuth);
-
-            material.uniforms.uLightDirection.value.set(
-                Math.cos(el) * Math.sin(az),
-                Math.sin(el),
-                -Math.cos(el) * Math.cos(az)
-            ).normalize();
-        } catch {}
+        material.uniforms.uLightDirection.value.set(
+            sunLightDirection[0],
+            sunLightDirection[1],
+            sunLightDirection[2]
+        ).normalize();
     });
 
     return (
@@ -383,7 +401,13 @@ interface PlanetData {
     dist: number;
 }
 
-function PlanetMesh({ planet }: { planet: PlanetData }) {
+function PlanetMesh({
+    planet,
+    sunLightDirection,
+}: {
+    planet: PlanetData;
+    sunLightDirection: [number, number, number];
+}) {
     const meshRef = useRef<THREE.Mesh>(null);
     const camFov = useAppStore(state => state.camFov);
     const setSelectedObject = useAppStore(state => state.setSelectedObject);
@@ -412,23 +436,11 @@ function PlanetMesh({ planet }: { planet: PlanetData }) {
         const material = meshRef.current.material as THREE.ShaderMaterial;
         if (texture) material.uniforms.uMap.value = texture;
         material.uniforms.uOpacity.value = opacity;
-
-        try {
-            const { time: t, observer: obs } = useAppStore.getState();
-            const astObs = new Astronomy.Observer(obs.lat, obs.lon, 0);
-            const sunEq = Astronomy.Equator(Astronomy.Body.Sun, t, astObs, true, true);
-            const sunHor = Astronomy.Horizon(t, astObs, sunEq.ra, sunEq.dec, 'normal');
-
-            const el = THREE.MathUtils.degToRad(sunHor.altitude);
-            const az = THREE.MathUtils.degToRad(sunHor.azimuth);
-
-            // Dirección sol -> observador en coordenadas locales
-            material.uniforms.uLightDirection.value.set(
-                Math.cos(el) * Math.sin(az),
-                Math.sin(el),
-                -Math.cos(el) * Math.cos(az)
-            ).normalize();
-        } catch {}
+        material.uniforms.uLightDirection.value.set(
+            sunLightDirection[0],
+            sunLightDirection[1],
+            sunLightDirection[2]
+        ).normalize();
     });
 
     return (
@@ -615,17 +627,24 @@ export default function Planets() {
             }
         }
 
-        return { planets, moon, jMoons, sunPos };
+        const sunLightDirection = computeLocalSunDirection(time, observer);
+
+        return { planets, moon, jMoons, sunPos, sunLightDirection };
     }, [time, observer]);
 
     return (
         <group>
             <SunMesh pos={data.sunPos} />
             {data.planets.map(p => (
-                <PlanetMesh key={p.name} planet={p} />
+                <PlanetMesh key={p.name} planet={p} sunLightDirection={data.sunLightDirection} />
             ))}
             {data.moon && (
-                <MoonMesh planet={data.moon.planet} phase={data.moon.phase} opacity={camFov < 30 ? 1 : 0} />
+                <MoonMesh
+                    planet={data.moon.planet}
+                    phase={data.moon.phase}
+                    opacity={camFov < 30 ? 1 : 0}
+                    sunLightDirection={data.sunLightDirection}
+                />
             )}
             {data.jMoons.map(m => (
                 <JupiterMoonMesh key={m.id} moon={m} />
@@ -633,6 +652,8 @@ export default function Planets() {
         </group>
     );
 }
+
+
 
 
 

@@ -15,7 +15,45 @@ export interface CelestialEvent {
     icon: string;
 }
 
+interface DailyEventsSummary {
+    events: CelestialEvent[];
+    bestEvents: CelestialEvent[];
+}
+
+const DAILY_EVENTS_CACHE_LIMIT = 24;
+const dailyEventsCache = new Map<string, DailyEventsSummary>();
+
+function buildDailyEventsCacheKey(date: Date, observer: Observer): string {
+    const dayKey = [
+        date.getFullYear(),
+        String(date.getMonth() + 1).padStart(2, '0'),
+        String(date.getDate()).padStart(2, '0'),
+    ].join('-');
+
+    return `${dayKey}:${observer.lat.toFixed(3)}:${observer.lon.toFixed(3)}`;
+}
+
+function rememberDailyEvents(key: string, summary: DailyEventsSummary): DailyEventsSummary {
+    dailyEventsCache.delete(key);
+    dailyEventsCache.set(key, summary);
+
+    if (dailyEventsCache.size > DAILY_EVENTS_CACHE_LIMIT) {
+        const oldestKey = dailyEventsCache.keys().next().value;
+        if (oldestKey) dailyEventsCache.delete(oldestKey);
+    }
+
+    return summary;
+}
+
 export function getDailyEvents(date: Date, observer: Observer): CelestialEvent[] {
+    return getDailyEventsSummary(date, observer).events;
+}
+
+export function getDailyEventsSummary(date: Date, observer: Observer): DailyEventsSummary {
+    const cacheKey = buildDailyEventsCacheKey(date, observer);
+    const cached = dailyEventsCache.get(cacheKey);
+    if (cached) return cached;
+
     const events: CelestialEvent[] = [];
     events.push(...getTwilightEvents(date, observer));
     events.push(...getSolarEvents(date, observer));
@@ -23,7 +61,13 @@ export function getDailyEvents(date: Date, observer: Observer): CelestialEvent[]
     events.push(...getPlanetaryEvents(date, observer));
     events.push(...getMeteorShowerEvents(date));
     events.sort((a, b) => a.time.getTime() - b.time.getTime());
-    return events;
+
+    const summary = {
+        events,
+        bestEvents: pickBestViewingEvents(events, date, observer),
+    };
+
+    return rememberDailyEvents(cacheKey, summary);
 }
 
 function getTwilightEvents(date: Date, observer: Observer): CelestialEvent[] {
@@ -288,7 +332,10 @@ function getSunAltitude(date: Date, observer: Observer): number {
 }
 
 export function getBestViewingEvents(date: Date, observer: Observer): CelestialEvent[] {
-    const allEvents = getDailyEvents(date, observer);
+    return getDailyEventsSummary(date, observer).bestEvents;
+}
+
+function pickBestViewingEvents(allEvents: CelestialEvent[], date: Date, observer: Observer): CelestialEvent[] {
     const sunAlt = getSunAltitude(date, observer);
     const isAstronomicalNight = sunAlt < -12;
     const isCivilNight = sunAlt < -6;

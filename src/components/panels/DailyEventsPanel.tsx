@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
-import { getDailyEvents, getBestViewingEvents, formatEventTime } from '@/lib/dailyEvents';
+import { getDailyEventsSummary, formatEventTime } from '@/lib/dailyEvents';
 import type { CelestialEvent } from '@/lib/dailyEvents';
 import { Eye, EyeOff, Clock3, CalendarDays, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -16,10 +16,7 @@ export default function DailyEventsPanel() {
 
     const { events, bestEvents } = useMemo(() => {
         const currentTime = new Date(timestamp);
-        return {
-            events: getDailyEvents(currentTime, observer),
-            bestEvents: getBestViewingEvents(currentTime, observer),
-        };
+        return getDailyEventsSummary(currentTime, observer);
     }, [observer, timestamp]);
 
     const todayStr = new Date(dateKey).toLocaleDateString('es-ES', {

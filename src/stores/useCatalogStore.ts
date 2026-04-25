@@ -158,7 +158,11 @@ function mapMoonCatalog(row: any): SolarSystemBody {
 const CACHE_KEY = 'cosmos_catalog_v2'
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 horas
 
-function saveCache(data: Omit<CatalogState, 'supabaseLoaded' | 'loadFromSupabase'>) {
+type CatalogData = Pick<CatalogState, 'stars' | 'dsos' | 'meteorShowers' | 'challenges' | 'solarSystemBodies'>
+
+let catalogRefreshPromise: Promise<void> | null = null
+
+function saveCache(data: CatalogData) {
   // Solo guardar si todos los conjuntos principales tienen datos reales
   if (!data.stars.length || !data.dsos.length || !data.solarSystemBodies.length) return
   try {
@@ -166,7 +170,7 @@ function saveCache(data: Omit<CatalogState, 'supabaseLoaded' | 'loadFromSupabase
   } catch { /* quota exceeded — ignorar */ }
 }
 
-function loadCache(): Omit<CatalogState, 'supabaseLoaded' | 'loadFromSupabase'> | null {
+function loadCache(): CatalogData | null {
   try {
     const raw = localStorage.getItem(CACHE_KEY)
     if (!raw) return null
@@ -176,6 +180,16 @@ function loadCache(): Omit<CatalogState, 'supabaseLoaded' | 'loadFromSupabase'> 
     if (!data?.stars?.length || !data?.dsos?.length) return null
     return data
   } catch { return null }
+}
+
+function buildCompleteCatalog(data: Partial<CatalogData>, fallback: CatalogData): CatalogData {
+  return {
+    stars:             data.stars?.length             ? data.stars             : fallback.stars,
+    dsos:              data.dsos?.length              ? data.dsos              : fallback.dsos,
+    meteorShowers:     data.meteorShowers?.length     ? data.meteorShowers     : fallback.meteorShowers,
+    challenges:        data.challenges?.length        ? data.challenges        : fallback.challenges,
+    solarSystemBodies: data.solarSystemBodies?.length ? data.solarSystemBodies : fallback.solarSystemBodies,
+  }
 }
 
 interface CatalogState {
@@ -204,11 +218,21 @@ export const useCatalog = create<CatalogState>()((set) => ({
     // ── 1. Intentar caché local primero (respuesta inmediata) ────────────────
     const cached = loadCache()
     if (cached) {
-      set({ ...cached, supabaseLoaded: true })
-      return
+      set({ ...cached })
     }
 
-    try {
+    if (catalogRefreshPromise) return catalogRefreshPromise
+
+    const fallback = cached ?? {
+      stars:             LOCAL_STARS,
+      dsos:              LOCAL_DSOS,
+      meteorShowers:     LOCAL_SHOWERS,
+      challenges:        LOCAL_CHALLENGES,
+      solarSystemBodies: LOCAL_SOLAR_SYSTEM_BODIES,
+    }
+
+    catalogRefreshPromise = (async () => {
+      try {
       // Import dinámico para no incluir el cliente en el bundle del servidor
       const { supabase } = await import('@/lib/supabase')
 
@@ -224,6 +248,14 @@ export const useCatalog = create<CatalogState>()((set) => ({
         supabase.from('moons_cos').select('id,name,planet_id,desc_short,radius_km,orbital_period_days,semi_major_axis_km,mag_visual,image_url,observation_tips,discovery_year,discoverer,fun_fact').order('name'),
       ])
 
+      const errors = [starsRes, dsosRes, showersRes, challengesRes, planetsRes, moonsRes]
+        .map(res => res.error)
+        .filter(Boolean)
+
+      if (errors.length) {
+        console.warn('[CatalogStore] Algunas tablas de Supabase no respondieron:', errors)
+      }
+
       const stars         = starsRes.data?.map(mapStar)
       const dsos          = dsosRes.data?.map(mapDSO)
       const meteorShowers = showersRes.data?.map(mapShower)
@@ -233,27 +265,26 @@ export const useCatalog = create<CatalogState>()((set) => ({
         ...(moonsRes.data?.map(mapMoonCatalog) ?? []),
       ]
 
-      const next = {
+      const next = buildCompleteCatalog({
         ...(stars?.length         && { stars }),
         ...(dsos?.length          && { dsos }),
         ...(meteorShowers?.length && { meteorShowers }),
         ...(challenges?.length    && { challenges }),
         ...(solarSystemBodies.length && { solarSystemBodies }),
-      }
+      }, fallback)
 
       // ── 3. Guardar en caché solo si tenemos datos reales ───────────────────
-      saveCache({
-        stars:              stars?.length         ? stars         : LOCAL_STARS,
-        dsos:               dsos?.length          ? dsos          : LOCAL_DSOS,
-        meteorShowers:      meteorShowers?.length ? meteorShowers : LOCAL_SHOWERS,
-        challenges:         challenges?.length    ? challenges    : LOCAL_CHALLENGES,
-        solarSystemBodies:  solarSystemBodies.length ? solarSystemBodies : LOCAL_SOLAR_SYSTEM_BODIES,
-      })
+      saveCache(next)
 
       set({ ...next, supabaseLoaded: true })
-    } catch (err) {
+      } catch (err) {
       // Supabase no disponible → se usan los datos locales sin interrupción
       console.warn('[CatalogStore] Usando datos locales (Supabase no disponible):', err)
-    }
+      } finally {
+        catalogRefreshPromise = null
+      }
+    })()
+
+    return catalogRefreshPromise
   },
 }))
