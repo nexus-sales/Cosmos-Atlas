@@ -18,6 +18,7 @@ import { STARS } from '../src/data/stars'
 import { DSOS } from '../src/data/dsos'
 import { METEOR_SHOWERS } from '../src/data/meteorShowers'
 import { CHALLENGES } from '../src/data/challenges'
+import { SOLAR_SYSTEM_PLANETS_SEED, SOLAR_SYSTEM_MOONS_SEED } from '../src/data/solarSystemCatalog'
 
 // ─── Cargar .env.local manualmente ────────────────────────────────────────────
 function loadEnvLocal() {
@@ -308,6 +309,16 @@ async function seedChallenges() {
   await clearAndInsert('challenges_cos', rows)
 }
 
+// --- 6. PLANETAS ---
+async function seedPlanets() {
+  await upsert('planets_cos', SOLAR_SYSTEM_PLANETS_SEED, 'id')
+}
+
+// --- 7. LUNAS ---
+async function seedMoons() {
+  await clearAndInsert('moons_cos', SOLAR_SYSTEM_MOONS_SEED)
+}
+
 // ─── MAIN ──────────────────────────────────────────────────────────────────────
 async function main() {
   console.log('\n🚀 Iniciando seed de Cosmos Atlas en Supabase...\n')
@@ -326,6 +337,12 @@ async function main() {
 
   console.log('🏆 Retos de observación...')
   await seedChallenges()
+
+  console.log('🪐 Planetas...')
+  await seedPlanets()
+
+  console.log('🌙 Lunas...')
+  await seedMoons()
 
   console.log('\n✅ Seed completado.\n')
 }

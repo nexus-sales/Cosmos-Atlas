@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { Star, DSO, Observer, Planet } from '../types/celestial';
 import type { Challenge } from '../types/celestial';
+import { useCatalog } from './useCatalogStore';
 
 type CelestialObject = Star | DSO | Planet;
 
@@ -105,10 +106,10 @@ interface AppState {
     addSimbadObject: (obj: Star) => void;
     clearSimbadObjects: () => void;
     /** Tier de rendimiento detectado al inicio: high/medium/low.
-     *  No persiste — se detecta en cada sesión. */
+     *  No persiste Ã¢â‚¬â€ se detecta en cada sesiÃƒÂ³n. */
     deviceQuality: 'high' | 'medium' | 'low';
     setDeviceQuality: (q: 'high' | 'medium' | 'low') => void;
-    /** true si el usuario ya completó (o saltó) el onboarding */
+    /** true si el usuario ya completÃƒÂ³ (o saltÃƒÂ³) el onboarding */
     hasSeenOnboarding: boolean;
     setHasSeenOnboarding: (v: boolean) => void;
     isTourActive: boolean;
@@ -160,8 +161,7 @@ export const useAppStore = create<AppState>()(
             clearArHealthHistory: () => set({ arHealthHistory: [] }),
             selectedObject: null,
             setSelectedObject: (obj) => set((state) => {
-                // Importación diferida para evitar dependencia circular
-                const { useCatalog } = require('./useCatalogStore')
+                // ImportaciÃƒÂ³n diferida para evitar dependencia circular
                 const challenges = useCatalog.getState().challenges
                 return {
                     selectedObject: obj,
@@ -170,7 +170,6 @@ export const useAppStore = create<AppState>()(
             }),
             targetedObject: null,
             setTargetedObject: (obj) => set((state) => {
-                const { useCatalog } = require('./useCatalogStore')
                 const challenges = useCatalog.getState().challenges
                 return {
                     targetedObject: obj,
@@ -302,12 +301,12 @@ export const useAppStore = create<AppState>()(
                 const nextVisited = s.visited.includes(id) ? s.visited : [...s.visited, id];
                 
                 // --- Logro: Explorador de Planetas ---
-                const planets = ['Mercurio', 'Venus', 'Marte', 'Júpiter', 'Saturno', 'Urano', 'Neptuno', 'Luna'];
+                const planets = ['Mercurio', 'Venus', 'Marte', 'JÃƒÂºpiter', 'Saturno', 'Urano', 'Neptuno', 'Luna'];
                 const visitedPlanets = planets.filter(p => nextVisited.includes(p));
                 const planetHunter = visitedPlanets.length >= 8;
 
-                // --- Logro: Maratón Messier ---
-                // Si el ID empieza por 'M' y tiene un número después, es un Messier.
+                // --- Logro: MaratÃƒÂ³n Messier ---
+                // Si el ID empieza por 'M' y tiene un nÃƒÂºmero despuÃƒÂ©s, es un Messier.
                 const messierCount = nextVisited.filter(v => /^M\d+/.test(v)).length;
 
                 return { 
@@ -351,7 +350,7 @@ export const useAppStore = create<AppState>()(
                 favorites: state.favorites,
                 visited: state.visited,
                 achievements: state.achievements,
-                // deviceQuality excluido — se detecta en cada sesión
+                // deviceQuality excluido Ã¢â‚¬â€ se detecta en cada sesiÃƒÂ³n
             }),
             migrate: (persisted) => {
                 if (!persisted || typeof persisted !== 'object') return persisted;

@@ -1,15 +1,17 @@
 'use client';
 
-import { useAppStore } from '@/stores/useAppStore';
-import type { CSSProperties } from 'react';
-import { MousePointer2, Star as StarIcon, Navigation, Zap, Eye, EyeOff, Globe, Heart, Moon as MoonIcon } from 'lucide-react';
 import { useEffect } from 'react';
-import { useCelestialVisibility } from '@/hooks/useCelestialVisibility';
-import type { Star, DSO, Planet } from '@/types/celestial';
-import { getKidFact } from '@/data/kidFacts';
-import { Rocket } from 'lucide-react';
-import { getMoonPhaseName, getMoonPhaseIcon } from '@/lib/astronomy/moon';
+import type { CSSProperties, ReactNode } from 'react';
 import * as Astronomy from 'astronomy-engine';
+import { Globe, Heart, Moon as MoonIcon, MousePointer2, Navigation, Rocket, Star as StarIcon, Zap, Eye, EyeOff } from 'lucide-react';
+
+import { useAppStore } from '@/stores/useAppStore';
+import { useCatalog } from '@/stores/useCatalogStore';
+import { useCelestialVisibility } from '@/hooks/useCelestialVisibility';
+import { getKidFact } from '@/data/kidFacts';
+import { getSolarSystemBodyByName } from '@/data/solarSystemCatalog';
+import { getMoonPhaseIcon, getMoonPhaseName } from '@/lib/astronomy/moon';
+import type { DSO, Planet, Star } from '@/types/celestial';
 
 export default function ObjectInfoTab() {
     const selected = useAppStore((state) => state.selectedObject) as Star | DSO | Planet | null;
@@ -20,39 +22,40 @@ export default function ObjectInfoTab() {
     const markAsVisited = useAppStore((state) => state.markAsVisited);
     const kidsMode = useAppStore((state) => state.settings.kidsMode);
     const time = useAppStore((state) => state.timeMinute);
+    const solarSystemBodies = useCatalog((state) => state.solarSystemBodies);
     const coords = useCelestialVisibility(selected?.ra || 0, selected?.dec || 0);
 
     const id = selected ? ('id' in selected ? selected.id : selected.name) : '';
     const isFavorite = favorites.includes(id);
 
-    // Auto-visit tracking & Achievement Check
     useEffect(() => {
         if (!id) return;
         markAsVisited(id);
 
-        // Check for Planet Hunter
         const planetIds = ['Mercurio', 'Venus', 'Marte', 'Júpiter', 'Saturno', 'Urano', 'Neptuno'];
-        const visitedPlanets = planetIds.filter(p => useAppStore.getState().visited.includes(p));
+        const visitedPlanets = planetIds.filter((planet) => useAppStore.getState().visited.includes(planet));
         if (visitedPlanets.length === planetIds.length) {
             useAppStore.getState().updateAchievement('planetHunter', true);
         }
 
-        // Check for Messier Marathon (DSOs that start with 'M')
-        const messierVisited = useAppStore.getState().visited.filter(v => v.startsWith('M'));
+        const messierVisited = useAppStore.getState().visited.filter((value) => value.startsWith('M'));
         useAppStore.getState().updateAchievement('messierMarathon', messierVisited.length);
-
     }, [id, markAsVisited]);
 
     const isTargeted = targetedObject?.name === selected?.name;
     const isStar = selected ? 'constellation' in selected : false;
     const isPlanet = selected ? 'kind' in selected && (selected as Planet).kind === 'planet' : false;
     const isMoon = selected?.name === 'Luna';
+    const solarSystemInfo = selected && (isPlanet || isMoon)
+        ? getSolarSystemBodyByName(selected.name, solarSystemBodies)
+        : undefined;
+
     const typeLabel = isStar ? 'ESTRELLA' : isMoon ? 'SATÉLITE' : isPlanet ? 'PLANETA' : ((selected as DSO)?.type?.toUpperCase?.() ?? 'OBJETO');
     const accentColor = isStar ? '#60a5fa' : (isPlanet || isMoon) ? '#00f2ff' : '#a78bfa';
     const isVisible = coords.alt > 0;
     const solarSystemDate = time.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' });
+    const primaryDescription = solarSystemInfo?.shortDesc || selected?.desc || '';
 
-    // Lunar Phase Logic
     const moonPhaseAngle = isMoon ? Astronomy.MoonPhase(time) : 0;
     const moonPhaseName = isMoon ? getMoonPhaseName(moonPhaseAngle) : '';
     const moonPhaseIconStr = isMoon ? getMoonPhaseIcon(moonPhaseAngle) : '';
@@ -71,75 +74,72 @@ export default function ObjectInfoTab() {
 
     if (!selected) {
         return (
-            <div className="flex flex-col items-center justify-center h-full py-24 text-center space-y-4">
-                <div className="w-16 h-16 rounded-full border border-white/8 flex items-center justify-center">
-                    <MousePointer2 className="w-6 h-6 text-white/15" />
+            <div className="flex h-full flex-col items-center justify-center space-y-4 py-24 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/8">
+                    <MousePointer2 className="h-6 w-6 text-white/15" />
                 </div>
                 <div className="space-y-2">
-                    <div className="text-[10px] tracking-[0.25em] font-mono text-white/20 uppercase">Sin selección</div>
-                    <div className="text-[9px] text-white/10 font-mono">Haz clic en cualquier<br />estrella o planeta</div>
+                    <div className="text-[10px] font-mono uppercase tracking-[0.25em] text-white/20">Sin selección</div>
+                    <div className="text-[9px] font-mono text-white/10">Haz clic en cualquier<br />estrella o planeta</div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="space-y-4 animate-in fade-in duration-300" style={accentVars}>
-            {/* Header con nombre y tipo */}
-            <div className="object-card relative rounded-xl overflow-hidden p-5 bg-white/[0.03] border">
-
-                <div className="absolute bottom-3 right-3 flex gap-2 z-10">
-                    {/* Botón Favorito */}
+        <div className="animate-in space-y-4 fade-in duration-300" style={accentVars}>
+            <div className="object-card relative overflow-hidden rounded-xl border bg-white/[0.03] p-5">
+                <div className="absolute bottom-3 right-3 z-10 flex gap-2">
                     <button
                         onClick={() => toggleFavorite(id)}
-                        className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all duration-300 ${
-                            isFavorite ? 'bg-red-500/20 border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]' : 'bg-white/5 border-white/10 hover:bg-white/10'
+                        className={`flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-300 ${
+                            isFavorite ? 'border-red-500/50 bg-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.2)]' : 'border-white/10 bg-white/5 hover:bg-white/10'
                         }`}
-                        title={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
+                        title={isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
                     >
-                        <Heart className={`w-3.5 h-3.5 ${isFavorite ? 'text-red-500 fill-red-500' : 'text-white/40'}`} />
+                        <Heart className={`h-3.5 w-3.5 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-white/40'}`} />
                     </button>
 
-                    {/* Botón de fijar objetivo animado */}
                     <button
                         onClick={() => setTargetedObject(isTargeted ? null : selected)}
-                        className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all duration-500 ${isTargeted
-                             ? 'bg-[#00f2ff] border-[#00f2ff] shadow-[0_0_15px_rgba(0,242,255,0.4)]'
-                             : 'bg-white/5 border-white/10 hover:bg-white/10'
-                            }`}
-                        title={isTargeted ? "Dejar de seguir" : "Seguir con telescopio"}
+                        className={`flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-500 ${
+                            isTargeted ? 'border-[#00f2ff] bg-[#00f2ff] shadow-[0_0_15px_rgba(0,242,255,0.4)]' : 'border-white/10 bg-white/5 hover:bg-white/10'
+                        }`}
+                        title={isTargeted ? 'Dejar de seguir' : 'Seguir con telescopio'}
                     >
-                        <Navigation className={`w-3.5 h-3.5 ${isTargeted ? 'text-black fill-black' : 'text-white/40'}`} />
+                        <Navigation className={`h-3.5 w-3.5 ${isTargeted ? 'fill-black text-black' : 'text-white/40'}`} />
                     </button>
                 </div>
 
-                <div className="object-orb absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl -translate-y-8 translate-x-8" />
+                <div className="object-orb absolute right-0 top-0 h-32 w-32 translate-x-8 -translate-y-8 rounded-full blur-3xl" />
 
-                <div className="flex items-start justify-between mb-3">
-                    <span className="object-chip text-[8px] font-bold tracking-[0.25em] px-2 py-1 rounded-sm">
-                        {typeLabel}{isPlanet ? ` ${(selected as Planet).symbol}` : ''}
+                <div className="mb-3 flex items-start justify-between">
+                    <span className="object-chip rounded-sm px-2 py-1 text-[8px] font-bold tracking-[0.25em]">
+                        {typeLabel}
+                        {isPlanet ? ` ${(selected as Planet).symbol}` : ''}
                     </span>
                     <span className={`text-[9px] font-mono ${isVisible ? 'text-green-400' : 'text-red-400'}`}>
                         {isVisible ? '▲ VISIBLE' : '▽ OCULTO'}
                     </span>
                 </div>
 
-                <h3 className="object-title text-2xl font-bold mb-1 tracking-wide text-white">
+                <h3 className="object-title mb-1 text-2xl font-bold tracking-wide text-white">
                     {selected.name}
                 </h3>
 
                 {isStar && (
-                    <div className="flex items-center gap-2 mb-3">
-                        <StarIcon className="object-accent w-2.5 h-2.5" />
+                    <div className="mb-3 flex items-center gap-2">
+                        <StarIcon className="object-accent h-2.5 w-2.5" />
                         <span className="object-accent-90 text-[9px] font-mono tracking-wider">
                             {(selected as Star).constellation}
                         </span>
                     </div>
                 )}
+
                 {isPlanet && (
-                    <div className="flex flex-col gap-2 mb-3">
+                    <div className="mb-3 flex flex-col gap-2">
                         <div className="flex items-center gap-2">
-                            <Globe className="object-accent w-2.5 h-2.5" />
+                            <Globe className="object-accent h-2.5 w-2.5" />
                             <span className="object-accent-90 text-[9px] font-mono tracking-wider">
                                 Sistema Solar · {solarSystemDate}
                             </span>
@@ -148,14 +148,12 @@ export default function ObjectInfoTab() {
                 )}
 
                 <p className="text-[11px] leading-relaxed text-white/55">
-                    {selected.desc}
+                    {primaryDescription}
                 </p>
             </div>
 
-            {/* MODO ADULTO: Métricas Avanzadas */}
             {!kidsMode && (
                 <>
-                    {/* Métricas */}
                     <div className="grid grid-cols-2 gap-2">
                         {isMoon ? (
                             <MetricCard
@@ -163,7 +161,7 @@ export default function ObjectInfoTab() {
                                 value={moonPhaseName}
                                 sub={`${moonIllum.toFixed(0)}% iluminada ${moonPhaseIconStr}`}
                                 color={accentColor}
-                                icon={<MoonIcon className="w-3 h-3" />}
+                                icon={<MoonIcon className="h-3 w-3" />}
                             />
                         ) : (
                             <MetricCard
@@ -171,7 +169,7 @@ export default function ObjectInfoTab() {
                                 value={selected.mag?.toFixed(2) ?? '?'}
                                 sub={selected.mag === undefined ? 'N/A' : (selected.mag < 0 ? 'Superbrill.' : selected.mag < 2 ? 'Muy brillante' : 'Brillante')}
                                 color={accentColor}
-                                icon={<Zap className="w-3 h-3" />}
+                                icon={<Zap className="h-3 w-3" />}
                             />
                         )}
                         <MetricCard
@@ -179,49 +177,73 @@ export default function ObjectInfoTab() {
                             value={`${((selected.ra || 0) / 15).toFixed(1)}h`}
                             sub={`Dec ${selected.dec > 0 ? '+' : ''}${(selected.dec || 0).toFixed(1)}°`}
                             color={accentColor}
-                            icon={<Navigation className="w-3 h-3" />}
+                            icon={<Navigation className="h-3 w-3" />}
                         />
                     </div>
 
-                    {/* Visibilidad */}
-                    <div className="rounded-xl p-4 bg-white/3 border border-white/6">
-                        <div className="flex items-center gap-2 mb-3">
+                    <div className="rounded-xl border border-white/6 bg-white/3 p-4">
+                        <div className="mb-3 flex items-center gap-2">
                             {isVisible
-                                ? <Eye className="w-3.5 h-3.5 text-emerald-400" />
-                                : <EyeOff className="w-3.5 h-3.5 text-red-400" />}
-                            <span
-                                className={`text-[9px] font-bold tracking-[0.2em] uppercase ${isVisible ? 'text-green-400' : 'text-red-400'}`}
-                            >
+                                ? <Eye className="h-3.5 w-3.5 text-emerald-400" />
+                                : <EyeOff className="h-3.5 w-3.5 text-red-400" />}
+                            <span className={`text-[9px] font-bold uppercase tracking-[0.2em] ${isVisible ? 'text-green-400' : 'text-red-400'}`}>
                                 {isVisible ? 'Visible ahora' : 'Bajo el horizonte'}
                             </span>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div className="mb-3 grid grid-cols-2 gap-3">
                             <div>
-                                <div className="text-[8px] text-white/20 mb-1 tracking-wider uppercase">Altitud</div>
+                                <div className="mb-1 text-[8px] uppercase tracking-wider text-white/20">Altitud</div>
                                 <div className={`text-base font-bold font-mono ${isVisible ? 'text-green-400' : 'text-white/40'}`}>
                                     {coords.alt.toFixed(1)}°
                                 </div>
                             </div>
                             <div>
-                                <div className="text-[8px] text-white/20 mb-1 tracking-wider uppercase">Azimut</div>
+                                <div className="mb-1 text-[8px] uppercase tracking-wider text-white/20">Azimut</div>
                                 <div className="text-base font-bold font-mono text-white/70">
                                     {coords.az.toFixed(1)}°
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    {solarSystemInfo && (
+                        <>
+                            {(solarSystemInfo.longDesc || solarSystemInfo.observationTips) && (
+                                <div className="rounded-xl border border-white/6 bg-white/3 p-4 space-y-3">
+                                    {solarSystemInfo.longDesc && (
+                                        <InfoBlock title="Contexto" text={solarSystemInfo.longDesc} />
+                                    )}
+                                    {solarSystemInfo.observationTips && (
+                                        <InfoBlock title="Observación" text={solarSystemInfo.observationTips} />
+                                    )}
+                                </div>
+                            )}
+
+                            {(solarSystemInfo.funFact || solarSystemInfo.mythology || solarSystemInfo.planetType || solarSystemInfo.moonsCount !== undefined || solarSystemInfo.hasRings !== undefined || solarSystemInfo.orbitalPeriodDays !== undefined) && (
+                                <div className="rounded-xl border border-white/6 bg-white/3 p-4 space-y-3">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {solarSystemInfo.planetType && <DataPoint label="Tipo" value={solarSystemInfo.planetType} />}
+                                        {solarSystemInfo.moonsCount !== undefined && <DataPoint label="Lunas" value={String(solarSystemInfo.moonsCount)} />}
+                                        {solarSystemInfo.hasRings !== undefined && <DataPoint label="Anillos" value={solarSystemInfo.hasRings ? 'Sí' : 'No'} />}
+                                        {solarSystemInfo.orbitalPeriodDays !== undefined && <DataPoint label="Órbita" value={`${solarSystemInfo.orbitalPeriodDays.toFixed(1)} d`} />}
+                                    </div>
+                                    {solarSystemInfo.funFact && <InfoBlock title="Curiosidad" text={solarSystemInfo.funFact} />}
+                                    {solarSystemInfo.mythology && <InfoBlock title="Mitología" text={solarSystemInfo.mythology} />}
+                                </div>
+                            )}
+                        </>
+                    )}
                 </>
             )}
 
-            {/* MODO INFANTIL: Dato Espacial Exclusivo */}
             {kidsMode && selected && (
-                <div className="rounded-xl p-5 bg-gradient-to-br from-yellow-400/20 to-orange-500/10 border-2 border-yellow-400/40 animate-in bounce-in duration-500 shadow-[0_0_20px_rgba(250,204,21,0.15)]">
-                    <div className="flex items-center gap-2 mb-3 bg-black/20 w-fit px-3 py-1.5 rounded-full border border-yellow-500/30">
-                        <Rocket className="w-4 h-4 text-yellow-400 animate-bounce" />
-                        <span className="text-[10px] font-black tracking-widest text-yellow-400 uppercase">¡Dato Espacial!</span>
+                <div className="animate-in rounded-xl border-2 border-yellow-400/40 bg-gradient-to-br from-yellow-400/20 to-orange-500/10 p-5 shadow-[0_0_20px_rgba(250,204,21,0.15)] bounce-in duration-500">
+                    <div className="mb-3 flex w-fit items-center gap-2 rounded-full border border-yellow-500/30 bg-black/20 px-3 py-1.5">
+                        <Rocket className="h-4 w-4 animate-bounce text-yellow-400" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-yellow-400">¡Dato Espacial!</span>
                     </div>
-                    <p className="text-[14px] font-semibold text-white/90 leading-relaxed drop-shadow-md">
+                    <p className="text-[14px] font-semibold leading-relaxed text-white/90 drop-shadow-md">
                         {getKidFact(selected.name, isStar, isPlanet)}
                     </p>
                 </div>
@@ -231,14 +253,18 @@ export default function ObjectInfoTab() {
 }
 
 function MetricCard({ label, value, sub, color, icon }: {
-    label: string; value: string; sub: string; color: string; icon: React.ReactNode
+    label: string;
+    value: string;
+    sub: string;
+    color: string;
+    icon: ReactNode;
 }) {
     const metricVars = { '--metric-color': `${color}60` } as CSSProperties;
     return (
-        <div className="rounded-xl p-3.5 bg-white/3 border border-white/6">
-            <div className="metric-label flex items-center gap-1.5 mb-2" style={metricVars}>
+        <div className="rounded-xl border border-white/6 bg-white/3 p-3.5">
+            <div className="metric-label mb-2 flex items-center gap-1.5" style={metricVars}>
                 {icon}
-                <span className="text-[8px] font-bold tracking-wider uppercase">{label}</span>
+                <span className="text-[8px] font-bold uppercase tracking-wider">{label}</span>
             </div>
             <div className="text-lg font-bold font-mono text-white/90">{value}</div>
             <div className="text-[9px] font-mono text-white/30">{sub}</div>
@@ -246,3 +272,20 @@ function MetricCard({ label, value, sub, color, icon }: {
     );
 }
 
+function InfoBlock({ title, text }: { title: string; text: string }) {
+    return (
+        <div>
+            <div className="mb-1 text-[8px] uppercase tracking-wider text-white/20">{title}</div>
+            <p className="text-[11px] leading-relaxed text-white/65">{text}</p>
+        </div>
+    );
+}
+
+function DataPoint({ label, value }: { label: string; value: string }) {
+    return (
+        <div>
+            <div className="mb-1 text-[8px] uppercase tracking-wider text-white/20">{label}</div>
+            <div className="text-[11px] font-mono text-white/70">{value}</div>
+        </div>
+    );
+}

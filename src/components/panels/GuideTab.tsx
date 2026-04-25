@@ -11,8 +11,8 @@ import { cn } from '@/lib/utils';
 import type { Star, DSO, Planet } from '@/types/celestial';
 import { equToHor, equatorialTo3D } from '@/lib/astronomy/transforms';
 import * as THREE from 'three';
-import * as Astronomy from 'astronomy-engine';
 import { resolveObjectName, SesameResolution } from '@/lib/astronomy/sesame';
+import { buildSolarSystemTarget, SOLAR_SYSTEM_EPHEMERIS } from '@/lib/solarSystem';
 
 type Filter = 'all' | 'stars' | 'planets' | 'galaxies' | 'nebulae' | 'clusters' | 'constellations';
 type SectionKey = Exclude<Filter, 'all'>;
@@ -30,93 +30,7 @@ const FILTERS: { id: Filter; label: string; activeClass: string }[] = [
 const SECTION_ORDER: SectionKey[] = ['planets', 'stars', 'galaxies', 'nebulae', 'clusters', 'constellations'];
 const PINNED_SECTIONS_STORAGE_KEY = 'cosmos-atlas-guide-pinned-sections';
 
-// ── Planet ephemeris helpers ─────────────────────────────────────────────────
-
-interface PlanetCfg {
-    body: Astronomy.Body;
-    name: string;
-    symbol: string;
-    color: string;
-    desc: (mag: number) => string;
-}
-
-function getMoonPhaseName(phase: number): string {
-    const p = ((phase % 360) + 360) % 360;
-    if (p < 22.5 || p >= 337.5) return 'Luna nueva';
-    if (p < 67.5) return 'Creciente c\u00f3ncava';
-    if (p < 112.5) return 'Cuarto creciente';
-    if (p < 157.5) return 'Gibosa creciente';
-    if (p < 202.5) return 'Luna llena';
-    if (p < 247.5) return 'Gibosa menguante';
-    if (p < 292.5) return 'Cuarto menguante';
-    return 'Creciente menguante';
-}
-
-function getMoonPhaseSymbol(phase: number): string {
-    const p = ((phase % 360) + 360) % 360;
-    if (p < 22.5 || p >= 337.5) return '🌑';
-    if (p < 67.5) return '🌒';
-    if (p < 112.5) return '🌓';
-    if (p < 157.5) return '🌔';
-    if (p < 202.5) return '🌕';
-    if (p < 247.5) return '🌖';
-    if (p < 292.5) return '🌗';
-    return '🌘';
-}
-
-const PLANET_GUIDE_CONFIGS: PlanetCfg[] = [
-    { body: Astronomy.Body.Moon, name: 'Luna', symbol: '\u263d', color: '#d8d6c0', desc: (m) => `Sat\u00e9lite natural de la Tierra. Mag ${m.toFixed(1)}.` },
-    { body: Astronomy.Body.Venus, name: 'Venus', symbol: '\u2640', color: '#fff8d4', desc: (m) => `Planeta m\u00e1s brillante del cielo. Mag ${m.toFixed(1)}.` },
-    { body: Astronomy.Body.Jupiter, name: 'J\u00fapiter', symbol: '\u2643', color: '#ffe4b0', desc: (m) => `El gigante gaseoso del sistema solar. Mag ${m.toFixed(1)}.` },
-    { body: Astronomy.Body.Mars, name: 'Marte', symbol: '\u2642', color: '#ff7744', desc: (m) => `El Planeta Rojo. Mag ${m.toFixed(1)}.` },
-    { body: Astronomy.Body.Saturn, name: 'Saturno', symbol: '\u2644', color: '#f5d97a', desc: (m) => `Anillos visibles en telescopio. Mag ${m.toFixed(1)}.` },
-    { body: Astronomy.Body.Mercury, name: 'Mercurio', symbol: '\u263f', color: '#b8c8d8', desc: (m) => `El planeta m\u00e1s escurridizo. Mag ${m.toFixed(1)}.` },
-    { body: Astronomy.Body.Uranus, name: 'Urano', symbol: '\u26e2', color: '#a8dff0', desc: (m) => `Gigante de hielo. Mag ${m.toFixed(1)}.` },
-    { body: Astronomy.Body.Neptune, name: 'Neptuno', symbol: '\u2646', color: '#4060ff', desc: (m) => `El gigante azul. Mag ${m.toFixed(1)}.` },
-];
-
-function buildPlanet(cfg: PlanetCfg, date: Date, lat: number, lon: number): (Planet & { alt: number; phaseInfo?: string }) | null {
-    try {
-        const obs = new Astronomy.Observer(lat, lon, 0);
-        const eq = Astronomy.Equator(cfg.body, date, obs, true, true);
-        const illum = Astronomy.Illumination(cfg.body, date);
-        const ra = eq.ra * 15;
-        const dec = eq.dec;
-        const dist = eq.dist; // Distancia al observador en AU
-        const { alt } = equToHor(ra, dec, lat, lon, date);
-
-        // For the Moon, enrich description with phase info
-        let desc = cfg.desc(illum.mag);
-        let symbol = cfg.symbol;
-        let phaseInfo: string | undefined = undefined;
-
-        if (cfg.body === Astronomy.Body.Moon) {
-            const moonPhase = Astronomy.MoonPhase(date);
-            const pct = (illum.phase_fraction * 100).toFixed(0);
-            const phaseName = getMoonPhaseName(moonPhase);
-            desc = `${phaseName} \u2014 ${pct}% iluminada. ${desc}`;
-            symbol = getMoonPhaseSymbol(moonPhase);
-            phaseInfo = `${phaseName} (${pct}%)`;
-        }
-
-        return { 
-            name: cfg.name, 
-            symbol, 
-            ra, dec, 
-            mag: illum.mag, 
-            dist, // Inyectamos distancia
-            color: cfg.color, 
-            desc, 
-            kind: 'planet', 
-            alt,
-            phaseInfo
-        };
-    } catch {
-        return null;
-    }
-}
-
-// ── Constellation centroid helpers ───────────────────────────────────────────
+// Constellation centroid helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /** Inverse of equatorialTo3D(ra, dec, 1) */
 function vec3ToRaDec(x: number, y: number, z: number): { ra: number; dec: number } {
@@ -152,13 +66,13 @@ function buildConstellationTargets(starMap: Map<string, { name: string; ra: numb
             mag: 0,
             desc: `Constelaci\u00f3n de ${getConstellationDisplayName(name)} \u2014 ${count} estrellas en el cat\u00e1logo`,
             color: '#b4d2ff',
-            symbol: '\u2736',   // ✶ marker to identify constellation targets
+            symbol: '\u2736',   // âœ¶ marker to identify constellation targets
             kind: 'planet' as const,
         };
     }).filter(Boolean) as Planet[];
 }
 
-// ── Icon / style helpers ─────────────────────────────────────────────────────
+// â”€â”€ Icon / style helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function DSOTypeIcon({ type }: { type: DSO['type'] }) {
     if (type === 'galaxy') return <Orbit className="w-3.5 h-3.5 text-amber-400 shrink-0" />;
@@ -207,7 +121,7 @@ function InfoCard({ obj }: { obj: Star | DSO | Planet }) {
     );
 }
 
-// ── Main component ───────────────────────────────────────────────────────────
+// â”€â”€ Main component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 // Max items shown per section when no active search query
 const MAX_PER_SECTION = 40;
@@ -223,6 +137,7 @@ export default function GuideTab() {
     const time = useAppStore((s) => s.timeMinute);
     const stars = useCatalog(s => s.stars);
     const dsos = useCatalog(s => s.dsos);
+    const solarSystemBodies = useCatalog(s => s.solarSystemBodies);
     const starMap = useMemo(() => new Map(stars.map(s => [s.name, s])), [stars]);
     const constellationTargets = useMemo(() => buildConstellationTargets(starMap), [starMap]);
 
@@ -269,8 +184,9 @@ export default function GuideTab() {
             .map(d => ({ ...d, alt: equToHor(d.ra, d.dec, observer.lat, observer.lon, time).alt }))
             .sort(sortFn);
 
-        const allPlanets = PLANET_GUIDE_CONFIGS
-            .map(cfg => buildPlanet(cfg, time, observer.lat, observer.lon))
+        const allPlanets = Object.keys(SOLAR_SYSTEM_EPHEMERIS)
+            .filter((name) => name !== 'Sol')
+            .map((name) => buildSolarSystemTarget(name, time, observer.lat, observer.lon, solarSystemBodies))
             .filter((p): p is Planet & { alt: number; phaseInfo?: string } => p !== null && matchName(p.name))
             .sort(sortFn);
 
@@ -299,7 +215,7 @@ export default function GuideTab() {
             clusterTotal: clusters.length,
             constellationTotal: allConsts.length,
         };
-    }, [q, observer, time, limit, sortBy, stars, dsos, constellationTargets]);
+    }, [q, observer, time, limit, sortBy, stars, dsos, constellationTargets, solarSystemBodies]);
 
     // --- Debounced Remote Search ---
     useEffect(() => {
@@ -369,7 +285,7 @@ export default function GuideTab() {
             sections.push({ key: 'nebulae', label: 'Nebulosas', shortLabel: 'Nebulosas', count: Math.min(nebulaTotal, limit), total: nebulaTotal, tone: 'text-emerald-300 border-emerald-400/25 bg-emerald-500/10' });
         }
         if ((filter === 'all' || filter === 'clusters') && clusterTotal > 0) {
-            sections.push({ key: 'clusters', label: 'Cúmulos', shortLabel: 'Cúmulos', count: Math.min(clusterTotal, limit), total: clusterTotal, tone: 'text-blue-300 border-blue-400/25 bg-blue-500/10' });
+            sections.push({ key: 'clusters', label: 'CÃºmulos', shortLabel: 'CÃºmulos', count: Math.min(clusterTotal, limit), total: clusterTotal, tone: 'text-blue-300 border-blue-400/25 bg-blue-500/10' });
         }
         if ((filter === 'all' || filter === 'constellations') && constellationList.length > 0) {
             sections.push({ key: 'constellations', label: 'Constelaciones', shortLabel: 'Constel.', count: constellationList.length, total: constellationTotal, tone: 'text-indigo-300 border-indigo-400/25 bg-indigo-500/10' });
@@ -464,7 +380,7 @@ export default function GuideTab() {
                                             )}
                                         </div>
                                         <span className="text-[10px] text-white/40 shrink-0 font-mono">{planet.mag.toFixed(1)}</span>
-                                        <div suppressHydrationWarning title={planet.alt > 0 ? `Visible Â· Alt ${planet.alt.toFixed(0)}Â°` : 'Bajo el horizonte'}
+                                        <div suppressHydrationWarning title={planet.alt > 0 ? `Visible Ã‚Â· Alt ${planet.alt.toFixed(0)}Ã‚Â°` : 'Bajo el horizonte'}
                                             className={cn('w-1.5 h-1.5 rounded-full shrink-0 ml-0.5', planet.alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15')} />
                                     </button>
                                     {active && <InfoCard obj={planet} />}
@@ -501,7 +417,7 @@ export default function GuideTab() {
                                         <span className="text-[10px] text-white/35 shrink-0 italic hidden sm:block truncate max-w-[64px]">
                                             {getConstellationDisplayName(star.constellation)}
                                         </span>
-                                        <div suppressHydrationWarning title={star.alt > 0 ? `Visible Â· Alt ${star.alt.toFixed(0)}Â°` : 'Bajo el horizonte'}
+                                        <div suppressHydrationWarning title={star.alt > 0 ? `Visible Ã‚Â· Alt ${star.alt.toFixed(0)}Ã‚Â°` : 'Bajo el horizonte'}
                                             className={cn('w-1.5 h-1.5 rounded-full shrink-0 ml-0.5', star.alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15')} />
                                     </button>
                                     {active && <InfoCard obj={star} />}
@@ -527,7 +443,7 @@ export default function GuideTab() {
                 sectionRef={(element) => { sectionRefs.current.nebulae = element; }} />
         ) : null,
         clusters: (filter === 'all' || filter === 'clusters') && dsoList.filter(d => d.type === 'cluster').length > 0 ? (
-            <DSOSection title="CÃºmulos" items={dsoList.filter(d => d.type === 'cluster').slice(0, limit)}
+            <DSOSection title="CÃƒÂºmulos" items={dsoList.filter(d => d.type === 'cluster').slice(0, limit)}
                 total={clusterTotal} isOpen={openSections.clusters} onToggle={() => toggleSection('clusters')}
                 isTargeted={isTargeted} onSelect={handleSelect}
                 isPinned={pinnedSections.includes('clusters')} onTogglePinned={() => togglePinnedSection('clusters')}
@@ -585,7 +501,7 @@ export default function GuideTab() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                 <input
                     type="text"
-                    placeholder="Buscar objeto o constelación..."
+                    placeholder="Buscar objeto o constelaciÃ³n..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="w-full rounded-lg border border-white/15 bg-white/[0.06] py-2.5 pl-10 pr-8 text-[12px] font-mono text-white/85 focus:outline-none transition-colors placeholder:text-white/25"
@@ -652,8 +568,8 @@ export default function GuideTab() {
                 <div className="rounded-xl border border-white/10 bg-white/[0.03] p-2.5 space-y-2">
                     <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0">
-                            <p className="text-[9px] font-bold uppercase tracking-[0.24em] text-white/35">Acceso rápido</p>
-                            <p className="text-[11px] text-white/55">Abre o salta a una sección sin recorrer todo el panel.</p>
+                            <p className="text-[9px] font-bold uppercase tracking-[0.24em] text-white/35">Acceso rÃ¡pido</p>
+                            <p className="text-[11px] text-white/55">Abre o salta a una secciÃ³n sin recorrer todo el panel.</p>
                         </div>
                         <div className="flex items-center gap-1">
                             <button
@@ -767,7 +683,7 @@ export default function GuideTab() {
                                                 )}
                                             </div>
                                             <span className="text-[10px] text-white/40 shrink-0 font-mono">{planet.mag.toFixed(1)}</span>
-                                            <div suppressHydrationWarning title={planet.alt > 0 ? `Visible · Alt ${planet.alt.toFixed(0)}°` : 'Bajo el horizonte'}
+                                            <div suppressHydrationWarning title={planet.alt > 0 ? `Visible Â· Alt ${planet.alt.toFixed(0)}Â°` : 'Bajo el horizonte'}
                                                 className={cn('w-1.5 h-1.5 rounded-full shrink-0 ml-0.5', planet.alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15')} />
                                         </button>
                                         {active && <InfoCard obj={planet} />}
@@ -806,7 +722,7 @@ export default function GuideTab() {
                                             <span className="text-[10px] text-white/35 shrink-0 italic hidden sm:block truncate max-w-[64px]">
                                                 {getConstellationDisplayName(star.constellation)}
                                             </span>
-                                            <div suppressHydrationWarning title={star.alt > 0 ? `Visible · Alt ${star.alt.toFixed(0)}°` : 'Bajo el horizonte'}
+                                            <div suppressHydrationWarning title={star.alt > 0 ? `Visible Â· Alt ${star.alt.toFixed(0)}Â°` : 'Bajo el horizonte'}
                                                 className={cn('w-1.5 h-1.5 rounded-full shrink-0 ml-0.5', star.alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15')} />
                                         </button>
                                         {active && <InfoCard obj={star} />}
@@ -837,7 +753,7 @@ export default function GuideTab() {
             )}
 
             {(filter === 'all' || filter === 'clusters') && dsoList.filter(d => d.type === 'cluster').length > 0 && (
-                <DSOSection title="Cúmulos" items={dsoList.filter(d => d.type === 'cluster').slice(0, limit)}
+                <DSOSection title="CÃºmulos" items={dsoList.filter(d => d.type === 'cluster').slice(0, limit)}
                     total={clusterTotal} isOpen={openSections.clusters} onToggle={() => toggleSection('clusters')}
                     isTargeted={isTargeted} onSelect={handleSelect}
                     isPinned={pinnedSections.includes('clusters')} onTogglePinned={() => togglePinnedSection('clusters')}
