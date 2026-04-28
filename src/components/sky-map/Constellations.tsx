@@ -3,10 +3,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { Line } from '@react-three/drei';
+import { useFrame } from '@react-three/fiber';
 import { CONSTELLATIONS } from '@/data/constellations';
 import { useCatalog } from '@/stores/useCatalogStore';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { useAppStore } from '@/stores/useAppStore';
+import * as Astronomy from 'astronomy-engine';
 
 type Point3 = [number, number, number];
 
@@ -35,8 +37,10 @@ export default function Constellations() {
     const stars = useCatalog(s => s.stars);
     const RADIUS = 92;
     const [drawT, setDrawT] = useState(1);
+    const [dayVisibility, setDayVisibility] = useState(0);
     const rafRef = useRef<number | null>(null);
     const lastKeyRef = useRef<string>('');
+    const lastSunCheckRef = useRef(0);
 
     const constellationsData = useMemo(() => {
         const starMap = new Map<string, typeof stars[number]>();
@@ -126,6 +130,25 @@ export default function Constellations() {
         };
     }, [focusedConstellation, selectedObject]);
 
+    useFrame((state) => {
+        if (state.clock.elapsedTime - lastSunCheckRef.current < 1) return;
+        lastSunCheckRef.current = state.clock.elapsedTime;
+
+        const { time, observer } = useAppStore.getState();
+        try {
+            const obs = new Astronomy.Observer(observer.lat, observer.lon, 0);
+            const eq = Astronomy.Equator(Astronomy.Body.Sun, time, obs, true, true);
+            const hor = Astronomy.Horizon(time, obs, eq.ra, eq.dec, 'normal');
+            const nextDayVisibility = THREE.MathUtils.smoothstep(hor.altitude, -6, 10);
+
+            setDayVisibility((current) => (
+                Math.abs(current - nextDayVisibility) > 0.03 ? nextDayVisibility : current
+            ));
+        } catch {
+            setDayVisibility(0);
+        }
+    });
+
     if (!showLines) return null;
 
     // --- ASTRONOMICAL VISIBILITY LAW ---
@@ -146,6 +169,10 @@ export default function Constellations() {
         1.0
     ) * bortleFactor;
 
+    const dayOpacityBoost = THREE.MathUtils.lerp(1.0, 2.2, dayVisibility);
+    const dayLineBoost = THREE.MathUtils.lerp(1.0, 1.65, dayVisibility);
+    const dayGlowOpacity = 0.16 * dayVisibility * overallPresence;
+
     return (
         <group renderOrder={3}>
             {constellationsData.map(({ name, pointsList }) => {
@@ -153,15 +180,15 @@ export default function Constellations() {
 
                 const color = nightMode
                     ? (isFocused ? '#ff4444' : '#441111')
-                    : (isFocused ? '#4fd1ff' : '#ffffff');
+                    : (isFocused ? '#4fd1ff' : (dayVisibility > 0.15 ? '#f5fbff' : '#ffffff'));
 
                 const opacity = isFocused
-                    ? 1.0 * overallPresence * (isFocused ? pulse : 1.0)
-                    : 0.35 * overallPresence * nonFocusedVisibility;
+                    ? THREE.MathUtils.clamp(1.0 * overallPresence * pulse * dayOpacityBoost, 0, 1)
+                    : THREE.MathUtils.clamp(0.35 * overallPresence * nonFocusedVisibility * dayOpacityBoost, 0, 0.72);
 
                 const lineWidth = isFocused 
-                    ? 1.8 * (isFocused ? pulse : 1.0) 
-                    : 0.9;
+                    ? 1.8 * pulse * dayLineBoost
+                    : 0.9 * dayLineBoost;
 
                 if (opacity < 0.01) return null;
 
@@ -193,6 +220,19 @@ export default function Constellations() {
 
                 return (
                     <group key={name}>
+                        {dayGlowOpacity > 0.01 && pointsToRender.map((points, i) => (
+                            <Line
+                                key={`day-glow-${i}`}
+                                points={points}
+                                color={color}
+                                lineWidth={lineWidth * 3.2}
+                                transparent
+                                opacity={isFocused ? dayGlowOpacity * 1.4 : dayGlowOpacity}
+                                depthTest={false}
+                                depthWrite={false}
+                            />
+                        ))}
+
                         {isFocused && pointsToRender.map((points, i) => (
                             <group key={`glow-layers-${i}`}>
                                 <Line

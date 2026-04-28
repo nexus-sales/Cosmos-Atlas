@@ -5,13 +5,17 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useAppStore } from '@/stores/useAppStore';
 import * as Astronomy from 'astronomy-engine';
+import { equatorialTo3D } from '@/lib/astronomy/transforms';
 
 // ─── Galactic coordinate rotation ────────────────────────────────────────────
-// Identical constants to MilkyWay.tsx — rotates the sphere's Y+ pole to align
-// with the galactic north pole in equatorial space so the texture maps correctly.
-const GALACTIC_NORTH = new THREE.Vector3(0.8678, 0.4531, 0.1981).normalize();
-const galacticRotation = new THREE.Euler().setFromQuaternion(
-    new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), GALACTIC_NORTH)
+// Build a full RA/Dec basis so the texture follows the same equatorial frame as
+// stars, constellations and deep-sky objects.
+const GALACTIC_NORTH = new THREE.Vector3(...equatorialTo3D(192.85948, 27.12825, 1)).normalize();
+const GALACTIC_CENTER = new THREE.Vector3(...equatorialTo3D(266.4051, -28.936175, 1)).normalize();
+const GALACTIC_X = new THREE.Vector3().crossVectors(GALACTIC_NORTH, GALACTIC_CENTER).normalize();
+const GALACTIC_Z = new THREE.Vector3().crossVectors(GALACTIC_X, GALACTIC_NORTH).normalize();
+const galacticRotation = new THREE.Euler().setFromRotationMatrix(
+    new THREE.Matrix4().makeBasis(GALACTIC_X, GALACTIC_NORTH, GALACTIC_Z)
 );
 
 // ─── Shaders ─────────────────────────────────────────────────────────────────
@@ -46,8 +50,9 @@ void main() {
     float lum  = dot(rgb, vec3(0.299, 0.587, 0.114));
     float mask = smoothstep(0.003, 0.055, lum);
 
-    // Horizon fade: blend out 8 world-units below horizon, full opacity by 18 above.
-    float horizonFade = smoothstep(-8.0, 18.0, vWorldY);
+    // Horizon fade: keep the opposite hemisphere dimly visible in atlas mode
+    // instead of erasing the Milky Way entirely below the local horizon.
+    float horizonFade = mix(0.22, 1.0, smoothstep(-8.0, 18.0, vWorldY));
 
     // Boost brightness so dim outer-galaxy regions are perceptible.
     vec3 color = rgb * 3.0;
