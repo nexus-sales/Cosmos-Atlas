@@ -188,15 +188,22 @@ function DSOItem({ dso }: { dso: DSOData }) {
     const setSelectedObject = useAppStore((state) => state.setSelectedObject);
     const markAsVisited = useAppStore((state) => state.markAsVisited);
     const nightMode = useAppStore((state) => state.settings.nightMode);
+    const bortleScale = useAppStore((state) => state.settings.bortleScale);
     const camFov = useAppStore((state) => state.camFov);
     const shouldLoadRealImage = hovered || camFov < 20;
     const texture = useDSOTexture(dso, shouldLoadRealImage);
 
     const displayColor = nightMode ? '#ff4444' : dso.color;
+    const limitingMag = 8.8 - (bortleScale - 1) * 0.55 + THREE.MathUtils.clamp(40 / camFov, 0, 2.2);
+    const magVisibility = THREE.MathUtils.clamp((limitingMag + 0.8 - dso.mag) / 1.6, 0, 1);
+    const pollutionVisibility = THREE.MathUtils.lerp(1.0, 0.15, (bortleScale - 1) / 8);
+    const visibility = Math.max(hovered ? 0.35 : 0, magVisibility * pollutionVisibility);
 
     // Transición suave: a medida que bajamos el FOV (< 35), aparece el volumen.
     const volumeIntensity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 45, 20, 0, 1), 0, 1);
-    const spriteIntensity = 1.0 - volumeIntensity * 0.7; // El sprite no desaparece del todo, sirve de centro brillante.
+    const spriteIntensity = (1.0 - volumeIntensity * 0.7) * visibility; // El sprite no desaparece del todo, sirve de centro brillante.
+
+    if (visibility < 0.02 && camFov > 35) return null;
 
     return (
         <group position={dso.pos}>
@@ -219,7 +226,7 @@ function DSOItem({ dso }: { dso: DSOData }) {
                 <NebulaVolume
                     color={displayColor}
                     size={dso.visualSize * 1.5}
-                    opacity={volumeIntensity * 0.45}
+                    opacity={volumeIntensity * 0.45 * visibility}
                 />
             )}
 

@@ -28,7 +28,7 @@ const SKY_FRAGMENT_SHADER = `
     // Bortle 5-6: ámbar suave (alumbrado sodio)
     // Bortle 8-9: naranja-blanco intenso (LED moderno + sodio)
     const vec3 LightPollutionLow  = vec3(0.08, 0.04, 0.01);  // ámbar muy tenue
-    const vec3 LightPollutionHigh = vec3(0.28, 0.14, 0.04);  // ámbar-naranja intenso
+    const vec3 LightPollutionHigh = vec3(0.55, 0.30, 0.10);  // ámbar-naranja intenso
 
     void main() {
         vec3 viewDir = normalize(vWorldPosition);
@@ -53,11 +53,11 @@ const SKY_FRAGMENT_SHADER = `
 
         // El glow se concentra en el horizonte (exp decay) pero a Bortle alto
         // se extiende hasta el cénit: horizonSpread aumenta con la contaminación.
-        float horizonSpread = mix(8.0, 2.5, pollutionT);   // 8=concentrado, 2.5=difuso
+        float horizonSpread = mix(8.0, 1.8, pollutionT);   // 8=concentrado, 1.8=difuso
         float horizonGlow   = exp(-max(0.0, zenithAngle) * horizonSpread);
 
         // Brillo base del cielo: en Bortle 8-9, incluso el cénit está iluminado
-        float skyFloor    = pollutionT * pollutionT * 0.04; // cuadrático: muy lento hasta Bortle 6+
+        float skyFloor    = pollutionT * pollutionT * 0.12; // cuadrático: muy lento hasta Bortle 6+
 
         vec3 nightSky = SpaceBlack
                       + pollutionColor * (horizonGlow * pollutionT + skyFloor);
@@ -71,6 +71,7 @@ const SKY_FRAGMENT_SHADER = `
         // Mezcla día/noche
         vec3 dayColor   = mix(nightSky, rayleighColor + mieColor, dayFactor);
         vec3 finalColor = mix(nightSky, dayColor, dayFactor);
+        finalColor += pollutionColor * pollutionT * (horizonGlow * 0.18 + skyFloor * 0.7) * (1.0 - dayFactor * 0.65);
         finalColor += sunsetColor;
 
         // Transición suave en el horizonte: fade-out en lugar de corte duro

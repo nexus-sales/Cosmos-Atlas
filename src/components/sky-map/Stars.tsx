@@ -179,7 +179,7 @@ export default function Stars() {
 
     // Zona de fade: 0.8 mag por encima del límite las estrellas empiezan a desaparecer
     const FADE_RANGE = 0.8;
-    const limitingMag = 9.5 - (bortleScale - 1) * 0.55;
+    const limitingMag = 8.2 - (bortleScale - 1) * 0.75;
 
     // Estado del tooltip hover — una sola instancia para toda la nube de puntos
     const [hovered, setHovered] = useState<{

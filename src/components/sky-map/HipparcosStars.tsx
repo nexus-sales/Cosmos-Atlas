@@ -166,7 +166,7 @@ export default function HipparcosStars() {
         const visibleIndices: number[] = [];
         octree.search(frustum, visibleIndices);
 
-        const limitingMag = 10.5 - (bortleScale - 1) * 0.65;
+        const limitingMag = 8.0 - (bortleScale - 1) * 0.72;
         const FADE_RANGE  = 1.2; // mag: zona de transición suave
 
         const posAttr  = geometry.getAttribute('position')       as THREE.BufferAttribute;

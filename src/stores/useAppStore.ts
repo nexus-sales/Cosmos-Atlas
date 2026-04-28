@@ -232,7 +232,10 @@ export const useAppStore = create<AppState>()(
                 })),
             setBortleScale: (bortleScale) =>
                 set((state) => ({
-                    settings: { ...state.settings, bortleScale },
+                    settings: {
+                        ...state.settings,
+                        bortleScale: Math.max(1, Math.min(9, Math.round(bortleScale))),
+                    },
                 })),
             setFOVParams: (params) =>
                 set((state) => ({

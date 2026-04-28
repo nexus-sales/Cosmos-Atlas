@@ -38,6 +38,7 @@ void main() {
 const fragmentShader = `
 uniform sampler2D uTexture;
 uniform float     uNightFactor;
+uniform float     uBortle;
 
 varying vec2  vUv;
 varying float vWorldY;
@@ -57,7 +58,9 @@ void main() {
     // Boost brightness so dim outer-galaxy regions are perceptible.
     vec3 color = rgb * 3.0;
 
-    float alpha = mask * horizonFade * uNightFactor;
+    float pollutionT = clamp((uBortle - 1.0) / 8.0, 0.0, 1.0);
+    float skyQuality = mix(1.0, 0.08, smoothstep(0.25, 1.0, pollutionT));
+    float alpha = mask * horizonFade * uNightFactor * skyQuality;
     gl_FragColor = vec4(color, alpha);
 }
 `;
@@ -68,6 +71,7 @@ export default function MilkyWaySkyDome() {
     const uniforms = useMemo(() => ({
         uTexture:     { value: null as THREE.Texture | null },
         uNightFactor: { value: 1.0 },
+        uBortle:      { value: 4.0 },
     }), []);
 
     useEffect(() => {
@@ -90,7 +94,8 @@ export default function MilkyWaySkyDome() {
     }, [uniforms]);
 
     useFrame(() => {
-        const { time, observer } = useAppStore.getState();
+        const { time, observer, settings } = useAppStore.getState();
+        uniforms.uBortle.value = settings.bortleScale;
         try {
             const obs = new Astronomy.Observer(observer.lat, observer.lon, 0);
             const eq  = Astronomy.Equator(Astronomy.Body.Sun, time, obs, true, true);
