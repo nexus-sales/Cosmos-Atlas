@@ -9,6 +9,8 @@ import { getKidFact } from '@/data/kidFacts';
 import { getConstellationDisplayName } from '@/data/constellationNames';
 import { getCelestialVisibility } from '@/lib/astronomy/celestialVisibility';
 import type { DSO, Planet, Star } from '@/types/celestial';
+import { useCatalog } from '@/stores/useCatalogStore';
+import { getSolarSystemBodyByName } from '@/data/solarSystemCatalog';
 
 type NarratableObject = Star | DSO | Planet;
 type ObjectKind = 'star' | 'planet' | 'dso' | 'constellation';
@@ -31,6 +33,17 @@ interface ChatMessage {
     source?: 'openai' | 'local';
 }
 
+interface EnrichedObjectContext {
+    objectId?: string;
+    objectKind: ObjectKind;
+    description?: string;
+    longDescription?: string;
+    mythology?: string;
+    observationTips?: string;
+    funFact?: string;
+    catalogSource: 'supabase' | 'local';
+}
+
 const AU_TO_KM = 149_597_870.7;
 const CONSTELLATION_SYMBOL = '\u2726';
 const NARRATION_BRIEF_CACHE_LIMIT = 64;
@@ -39,6 +52,12 @@ const QUICK_QUESTIONS = [
     'Que significa su magnitud?',
     'Por que es importante?',
     'Cuando conviene verlo?',
+];
+const KIDS_QUICK_QUESTIONS = [
+    'Explicamelo facil',
+    'Que tiene de increible?',
+    'Como lo encuentro en el cielo?',
+    'Hazme un reto rapido',
 ];
 
 const narrationBriefCache = new Map<string, NarrationBrief>();
@@ -158,6 +177,27 @@ function buildNarrationBriefCacheKey(
     ].join(':');
 }
 
+function buildKidNarration(
+    obj: NarratableObject,
+    brief: NarrationBrief,
+    enrichment: EnrichedObjectContext | null,
+) {
+    const kind = getObjectKind(obj);
+    const title = kind === 'constellation' ? getConstellationDisplayName(obj.name) : obj.name;
+    const surprise = enrichment?.funFact || getKidFact(obj.name, isStar(obj), isPlanet(obj));
+    const simpleContext = enrichment?.longDescription || enrichment?.description || scienceContext(kind, obj);
+    const visibleLine = brief.visible
+        ? `Ahora mismo esta en el cielo: mira hacia donde marca el atlas y fijate en su brillo.`
+        : `Ahora esta bajo el horizonte desde tu ubicacion, pero puedes viajar en el tiempo del atlas para verlo aparecer.`;
+
+    return [
+        `${title}: ${surprise}`,
+        `Piensalo asi: ${simpleContext}`,
+        visibleLine,
+        `Reto rapido: intenta explicar en una frase si es una estrella, un planeta, una nube de gas o una galaxia. Esa es la llave para entenderlo.`,
+    ].join(' ');
+}
+
 function rememberNarrationBrief(key: string, brief: NarrationBrief) {
     narrationBriefCache.delete(key);
     narrationBriefCache.set(key, brief);
@@ -271,6 +311,8 @@ export default function AIAstronoma() {
     const focusedConstellation = useAppStore((s) => s.focusedConstellation);
     const globalAiMessage = useAppStore((s) => s.aiMessage);
     const setAiMessage = useAppStore((s) => s.setAiMessage);
+    const solarSystemBodies = useCatalog((s) => s.solarSystemBodies);
+    const supabaseLoaded = useCatalog((s) => s.supabaseLoaded);
 
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [muted, setMuted] = useState(false);
@@ -290,10 +332,31 @@ export default function AIAstronoma() {
     const chatEndRef = useRef<HTMLDivElement | null>(null);
     const currentSelection = selected || targetedObject;
 
+    const objectEnrichment = useMemo<EnrichedObjectContext | null>(() => {
+        if (!currentSelection) return null;
+
+        const kind = getObjectKind(currentSelection);
+        const objectId = isDso(currentSelection) ? currentSelection.id : currentSelection.name;
+        const solarInfo = (kind === 'planet' || currentSelection.name === 'Luna')
+            ? getSolarSystemBodyByName(currentSelection.name, solarSystemBodies)
+            : undefined;
+
+        return {
+            objectId,
+            objectKind: kind,
+            description: solarInfo?.shortDesc || currentSelection.desc,
+            longDescription: solarInfo?.longDesc,
+            mythology: solarInfo?.mythology,
+            observationTips: solarInfo?.observationTips,
+            funFact: solarInfo?.funFact,
+            catalogSource: supabaseLoaded ? 'supabase' : 'local',
+        };
+    }, [currentSelection, solarSystemBodies, supabaseLoaded]);
+
     const currentBrief = useMemo(() => {
-        if (!currentSelection || kidsMode) return null;
+        if (!currentSelection) return null;
         return buildNarrationBrief(currentSelection, observer, time, bortleScale);
-    }, [currentSelection, observer, time, bortleScale, kidsMode]);
+    }, [currentSelection, observer, time, bortleScale]);
 
     useEffect(() => {
         synthRef.current = window.speechSynthesis;
@@ -351,6 +414,8 @@ export default function AIAstronoma() {
         const computedBrief = currentBrief ?? brief;
 
         return {
+            objectId: objectEnrichment?.objectId,
+            objectKind: objectEnrichment?.objectKind,
             objectName: computedBrief?.title,
             objectType: computedBrief?.subtitle.split('|')[0]?.trim(),
             visibility: computedBrief?.subtitle,
@@ -362,8 +427,15 @@ export default function AIAstronoma() {
             summary: computedBrief?.message,
             observingAdvice: computedBrief?.observing,
             visibilityWindow: computedBrief?.events,
+            description: objectEnrichment?.description,
+            longDescription: objectEnrichment?.longDescription,
+            mythology: objectEnrichment?.mythology,
+            observationTips: objectEnrichment?.observationTips,
+            funFact: objectEnrichment?.funFact,
+            catalogSource: objectEnrichment?.catalogSource,
+            kidsMode,
         };
-    }, [currentBrief, brief, bortleScale, observer, time]);
+    }, [currentBrief, brief, objectEnrichment, bortleScale, observer, time, kidsMode]);
 
     const askAstronomer = useCallback(async (rawQuestion?: string) => {
         const text = (rawQuestion ?? question).trim();
@@ -457,12 +529,9 @@ export default function AIAstronoma() {
         let nextBrief: NarrationBrief | null = null;
 
         if (currentSelection && !muted) {
-            const kidFact = kidsMode
-                ? getKidFact(currentSelection.name, isStar(currentSelection), isPlanet(currentSelection))
-                : null;
-
-            if (kidFact) {
-                nextMessage = `Has encontrado ${currentSelection.name}. ${kidFact}`;
+            if (kidsMode && currentBrief) {
+                nextBrief = currentBrief;
+                nextMessage = buildKidNarration(currentSelection, currentBrief, objectEnrichment);
             } else if (currentBrief) {
                 nextBrief = currentBrief;
                 nextMessage = nextBrief.voice;
@@ -507,6 +576,7 @@ export default function AIAstronoma() {
         setAiMessage,
         currentSelection,
         currentBrief,
+        objectEnrichment,
     ]);
 
     return (
@@ -595,7 +665,7 @@ export default function AIAstronoma() {
                         </div>
 
                         <div className="mb-2 flex flex-wrap gap-1.5">
-                            {QUICK_QUESTIONS.map((item) => (
+                            {(kidsMode ? KIDS_QUICK_QUESTIONS : QUICK_QUESTIONS).map((item) => (
                                 <button
                                     key={item}
                                     onClick={() => { void askAstronomer(item); }}
@@ -618,7 +688,7 @@ export default function AIAstronoma() {
                                 value={question}
                                 onChange={(e) => setQuestion(e.target.value)}
                                 maxLength={600}
-                                placeholder="Pregunta sobre el objeto o la observacion..."
+                                placeholder={kidsMode ? 'Pregunta como si tuvieras entre 8 y 14...' : 'Pregunta sobre el objeto o la observacion...'}
                                 className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-[11px] text-white/80 outline-none placeholder:text-white/25 focus:border-cyan-400/35"
                             />
                             <button

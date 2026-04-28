@@ -6,12 +6,13 @@ const cspReportOnly = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://upload.wikimedia.org https://esahubble.org",
   "font-src 'self' data:",
-  "connect-src 'self' https://api.openai.com https://ssd-api.jpl.nasa.gov https://celestrak.org https://celestrak.com https://cdsweb.u-strasbg.fr",
+  "connect-src 'self' https://api.openai.com https://ssd-api.jpl.nasa.gov https://celestrak.org https://celestrak.com https://cdsweb.u-strasbg.fr https://*.supabase.co wss://*.supabase.co",
   "media-src 'self' blob:",
   "worker-src 'self' blob:",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
+  "report-uri /api/csp-report",
 ].join("; ");
 
 const securityHeaders = [

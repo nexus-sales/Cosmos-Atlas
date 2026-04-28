@@ -83,7 +83,6 @@ function PanelContent({
     const telescopeMode = useAppStore((state) => state.settings.telescopeMode);
     const setFOVParams = useAppStore((state) => state.setFOVParams);
     const toggleSetting = useAppStore((state) => state.toggleSetting);
-    const kidsMode = useAppStore((state) => state.settings.kidsMode);
     const soundscape = useAppStore((state) => state.settings.soundscape);
     const satelliteInfo = useAppStore((state) => state.satelliteInfo);
     const viewMode = useAppStore((state) => state.viewMode);
@@ -104,7 +103,6 @@ function PanelContent({
         showDiagnostics,
         telescopeMode,
         followTarget,
-        kidsMode,
         soundscape,
     });
 
@@ -147,7 +145,6 @@ function PanelContent({
             items: [
                 { key: 'nightMode' as const, label: 'MODO NOCHE', icon: Moon, active: nightMode },
                 { key: 'soundscape' as const, label: 'SONIDO AMB.', icon: Volume2, active: soundscape },
-                { key: 'kidsMode' as const, label: 'MODO NIÑO', icon: Sparkles, active: kidsMode },
             ],
         },
     ];
@@ -643,7 +640,6 @@ function layerTogglesCount(settings: {
     showDiagnostics: boolean;
     telescopeMode: boolean;
     followTarget: boolean;
-    kidsMode: boolean;
     soundscape: boolean;
 }) {
     return Object.values(settings).filter(Boolean).length;

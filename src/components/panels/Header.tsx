@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
-import { Stars, MapPin, Play, Square, ShieldCheck, Search, X } from 'lucide-react';
+import { Stars, MapPin, Play, Square, ShieldCheck, Search, X, Sparkles } from 'lucide-react';
 import CelestialSearch from './CelestialSearch';
 import { cn } from '@/lib/utils';
 import { getArHealthSummary, getArToneClasses } from '@/lib/arHealth';
@@ -66,6 +66,8 @@ export default function Header({ onRequestLocation }: HeaderProps) {
     const arHealthHistory = useAppStore((state) => state.arHealthHistory);
     const isTourActive = useAppStore((state) => state.isTourActive);
     const setIsTourActive = useAppStore((state) => state.setIsTourActive);
+    const kidsMode = useAppStore((state) => state.settings.kidsMode);
+    const toggleSetting = useAppStore((state) => state.toggleSetting);
 
     const latHemisphere = observer.lat >= 0 ? 'N' : 'S';
     const lonHemisphere = observer.lon < 0 ? 'O' : 'E';
@@ -131,6 +133,22 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                 >
                     {isTourActive ? <Square className="w-3 h-3" /> : <Play className="w-3 h-3" />}
                     {isTourActive ? 'Detener' : 'Tour'}
+                </button>
+
+                <button
+                    onClick={() => toggleSetting('kidsMode')}
+                    aria-label={kidsMode ? 'Desactivar modo chicos' : 'Activar modo chicos'}
+                    aria-pressed={kidsMode ? 'true' : 'false'}
+                    title={kidsMode ? 'Modo chicos activo' : 'Modo chicos'}
+                    className={cn(
+                        'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[10px] font-bold tracking-widest uppercase transition-all cursor-pointer',
+                        kidsMode
+                            ? 'bg-amber-400/20 border-amber-300/45 text-amber-200 shadow-[0_0_18px_rgba(251,191,36,0.22)]'
+                            : 'border-white/10 text-white/30 hover:text-amber-200/90 hover:border-amber-300/30'
+                    )}
+                >
+                    <Sparkles className="w-3 h-3" />
+                    Kids
                 </button>
 
                 <div className="hidden lg:flex flex-col items-end text-right">
