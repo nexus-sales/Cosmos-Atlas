@@ -1,17 +1,32 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useAppStore } from '@/stores/useAppStore';
 import * as Astronomy from 'astronomy-engine';
 
-// ─── Shader mínimo de diagnóstico ────────────────────────────────────────────
-// Sin filtros, sin rotación extra — solo textura pura para verificar renderizado.
+// ─── Galactic coordinate rotation ────────────────────────────────────────────
+// Identical constants to MilkyWay.tsx — rotates the sphere's Y+ pole to align
+// with the galactic north pole in equatorial space so the texture maps correctly.
+const GALACTIC_NORTH = new THREE.Vector3(0.8678, 0.4531, 0.1981).normalize();
+const galacticRotation = new THREE.Euler().setFromQuaternion(
+    new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), GALACTIC_NORTH)
+);
+
+// ─── Shaders ─────────────────────────────────────────────────────────────────
 const vertexShader = `
-varying vec2 vUv;
+varying vec2  vUv;
+varying float vWorldY;
+
 void main() {
-    vUv = uv;
+    // Mirror U so the image reads correctly when viewed from inside (BackSide).
+    vUv = vec2(1.0 - uv.x, uv.y);
+
+    // World-space Y drives the horizon fade (Y=0 is horizon, Y+ is zenith).
+    vec4 worldPos = modelMatrix * vec4(position, 1.0);
+    vWorldY = worldPos.y;
+
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }
 `;
@@ -20,19 +35,35 @@ const fragmentShader = `
 uniform sampler2D uTexture;
 uniform float     uNightFactor;
 
-varying vec2 vUv;
+varying vec2  vUv;
+varying float vWorldY;
 
 void main() {
-    vec2 uv  = vec2(1.0 - vUv.x, vUv.y);
-    vec4 tex = texture2D(uTexture, uv);
-    // Textura cruda × 2 para ver si el domo renderiza (habrá fondo marrón).
-    gl_FragColor = vec4(tex.rgb * uNightFactor * 2.0, 1.0);
+    vec3 rgb = texture2D(uTexture, vUv).rgb;
+
+    // Luminance mask: suppress the dark JPEG background, pass galactic nebulosity.
+    // Values are in linear space (texture uses SRGBColorSpace auto-conversion).
+    float lum  = dot(rgb, vec3(0.299, 0.587, 0.114));
+    float mask = smoothstep(0.003, 0.055, lum);
+
+    // Horizon fade: blend out 8 world-units below horizon, full opacity by 18 above.
+    float horizonFade = smoothstep(-8.0, 18.0, vWorldY);
+
+    // Boost brightness so dim outer-galaxy regions are perceptible.
+    vec3 color = rgb * 3.0;
+
+    float alpha = mask * horizonFade * uNightFactor;
+    gl_FragColor = vec4(color, alpha);
 }
 `;
 
 export default function MilkyWaySkyDome() {
     const viewMode = useAppStore(s => s.viewMode);
-    const [texture, setTexture] = useState<THREE.Texture | null>(null);
+
+    const uniforms = useMemo(() => ({
+        uTexture:     { value: null as THREE.Texture | null },
+        uNightFactor: { value: 1.0 },
+    }), []);
 
     useEffect(() => {
         const loader = new THREE.TextureLoader();
@@ -45,25 +76,15 @@ export default function MilkyWaySkyDome() {
                 tex.minFilter       = THREE.LinearMipmapLinearFilter;
                 tex.magFilter       = THREE.LinearFilter;
                 tex.generateMipmaps = true;
-                setTexture(tex);
+                uniforms.uTexture.value = tex;
+                console.log('[MilkyWaySkyDome] Textura cargada OK');
             },
             undefined,
             (err) => { console.error('[MilkyWaySkyDome] Error cargando textura:', err); }
         );
-    }, []);
-
-    const uniforms = useMemo(() => ({
-        uTexture:     { value: null as THREE.Texture | null },
-        uNightFactor: { value: 1.0 },
-    }), []);
-
-    useEffect(() => {
-        uniforms.uTexture.value = texture;
-        if (texture) console.log('[MilkyWaySkyDome] Textura cargada OK');
-    }, [texture, uniforms]);
+    }, [uniforms]);
 
     useFrame(() => {
-        if (!texture) return;
         const { time, observer } = useAppStore.getState();
         try {
             const obs = new Astronomy.Observer(observer.lat, observer.lon, 0);
@@ -75,11 +96,11 @@ export default function MilkyWaySkyDome() {
         }
     });
 
-    if (!texture || viewMode === 'camera') return null;
+    if (viewMode === 'camera') return null;
 
     return (
-        <group renderOrder={-3}>
-            <mesh renderOrder={-3}>
+        <group rotation={galacticRotation}>
+            <mesh renderOrder={-4}>
                 <sphereGeometry args={[190, 64, 64]} />
                 <shaderMaterial
                     uniforms={uniforms}
@@ -88,7 +109,7 @@ export default function MilkyWaySkyDome() {
                     transparent
                     depthWrite={false}
                     depthTest={false}
-                    blending={THREE.AdditiveBlending}
+                    blending={THREE.NormalBlending}
                     toneMapped={false}
                     side={THREE.BackSide}
                 />
