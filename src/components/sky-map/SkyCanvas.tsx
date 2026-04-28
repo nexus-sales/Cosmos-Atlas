@@ -10,6 +10,7 @@ import Constellations from '@/components/sky-map/Constellations';
 import ConstellationLabels from '@/components/sky-map/ConstellationLabels';
 import Planets from '@/components/sky-map/Planets';
 import MilkyWay from '@/components/sky-map/MilkyWay';
+import MilkyWaySkyDome from '@/components/sky-map/MilkyWaySkyDome';
 import CelestialGrid from '@/components/sky-map/CelestialGrid';
 import Ecliptic from '@/components/sky-map/Ecliptic';
 import Horizon from '@/components/sky-map/Horizon';
@@ -392,7 +393,7 @@ export default function SkyCanvas() {
                     {/* Grupo rotado al sistema horizontal del observador */}
                     <CelestialGroup>
                         <ErrorBoundary label="BackgroundStars"><BackgroundStars /></ErrorBoundary>
-                        {showMilkyWay && <ErrorBoundary label="MilkyWay"><MilkyWay /></ErrorBoundary>}
+                        {showMilkyWay && <ErrorBoundary label="MilkyWaySkyDome"><MilkyWaySkyDome /></ErrorBoundary>}
                         {/* Catálogo Hipparcos — 14.984 estrellas hasta mag 7, carga asíncrona */}
                         <ErrorBoundary label="HipparcosStars"><HipparcosStars /></ErrorBoundary>
                         {/* Estrellas nombradas (355) con hitboxes e interacción — encima del catálogo */}
