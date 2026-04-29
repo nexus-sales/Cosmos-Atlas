@@ -9,7 +9,6 @@ import DeepSkyObjects from '@/components/sky-map/DeepSkyObjects';
 import Constellations from '@/components/sky-map/Constellations';
 import ConstellationLabels from '@/components/sky-map/ConstellationLabels';
 import Planets from '@/components/sky-map/Planets';
-import MilkyWay from '@/components/sky-map/MilkyWay';
 import MilkyWaySkyDome from '@/components/sky-map/MilkyWaySkyDome';
 import CelestialGrid from '@/components/sky-map/CelestialGrid';
 import Ecliptic from '@/components/sky-map/Ecliptic';
@@ -437,5 +436,4 @@ export default function SkyCanvas() {
         </div>
     );
 }
-
 

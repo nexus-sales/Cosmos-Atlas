@@ -95,6 +95,7 @@ export default function MilkyWaySkyDome() {
 
     useFrame(() => {
         const { time, observer, settings } = useAppStore.getState();
+        // eslint-disable-next-line react-hooks/immutability
         uniforms.uBortle.value = settings.bortleScale;
         try {
             const obs = new Astronomy.Observer(observer.lat, observer.lon, 0);
