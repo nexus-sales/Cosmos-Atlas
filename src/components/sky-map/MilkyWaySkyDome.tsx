@@ -86,10 +86,11 @@ export default function MilkyWaySkyDome() {
                 tex.magFilter       = THREE.LinearFilter;
                 tex.generateMipmaps = true;
                 uniforms.uTexture.value = tex;
-                console.log('[MilkyWaySkyDome] Textura cargada OK');
             },
             undefined,
-            (err) => { console.error('[MilkyWaySkyDome] Error cargando textura:', err); }
+            () => {
+                uniforms.uTexture.value = null;
+            }
         );
     }, [uniforms]);
 

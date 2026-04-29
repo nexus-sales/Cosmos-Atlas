@@ -83,6 +83,7 @@ function PanelContent({
     const telescopeMode = useAppStore((state) => state.settings.telescopeMode);
     const setFOVParams = useAppStore((state) => state.setFOVParams);
     const toggleSetting = useAppStore((state) => state.toggleSetting);
+    const kidsMode = useAppStore((state) => state.settings.kidsMode);
     const soundscape = useAppStore((state) => state.settings.soundscape);
     const satelliteInfo = useAppStore((state) => state.satelliteInfo);
     const viewMode = useAppStore((state) => state.viewMode);
@@ -178,6 +179,22 @@ function PanelContent({
                         </button>
                     );
                 })}
+                <button
+                    onClick={() => toggleSetting('kidsMode')}
+                    className={cn(
+                        'relative flex h-full w-14 shrink-0 flex-col items-center justify-center gap-1 border-l border-white/8 transition-colors cursor-pointer',
+                        kidsMode
+                            ? 'bg-amber-400/12 text-amber-200'
+                            : 'text-white/35 hover:text-amber-200/85'
+                    )}
+                    aria-label={kidsMode ? 'Desactivar modo chicos' : 'Activar modo chicos'}
+                    aria-pressed={kidsMode}
+                    title={kidsMode ? 'Modo chicos activo' : 'Modo chicos'}
+                >
+                    <Sparkles className="w-4 h-4" />
+                    <span className="text-[9px] font-bold tracking-[0.12em]">KIDS</span>
+                    {kidsMode && <div className="absolute bottom-0 h-[3px] w-8 rounded-t-full bg-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.8)]" />}
+                </button>
                 <button
                     onClick={onClose}
                     className={cn(

@@ -1,5 +1,20 @@
 # Cosmos Atlas
 
+## Version 3.5.0 — 2026-04-29
+
+Esta version consolida en `main` la rama provisional `feature/milkyway-skydome` y deja Cosmos Atlas como una experiencia mas completa, limpia y preparada para produccion.
+
+- **Via Lactea fotografica en la boveda** - Nuevo `MilkyWaySkyDome` con textura panoramica real en `public/textures/milkyway.jpg`, orientada con base galactica RA/Dec completa para alinearse con estrellas, constelaciones y objetos de cielo profundo.
+- **Visibilidad por hemisferios** - La Via Lactea conserva continuidad en el hemisferio opuesto/sur de la boveda con atenuacion bajo horizonte, evitando que desaparezca de forma brusca.
+- **Simulacion Bortle reforzada** - La contaminacion luminica afecta de forma mas clara al cielo, estrellas Hipparcos, estrellas principales, objetos de cielo profundo y contraste de la Via Lactea.
+- **Constelaciones legibles de dia** - Las lineas de constelaciones aumentan grosor, opacidad y halo cuando el cielo esta azul o en crepusculo, manteniendo lectura visual sin cambiar de capa.
+- **IA Astronoma enriquecida** - `/api/astronomer` puede consultar detalles de Supabase del objeto seleccionado y combinar contexto local, visibilidad, Bortle, descripcion, mitologia, consejos y curiosidades.
+- **Modo Kids en cabecera del panel** - El modo para chicos de 8 a 14 anos pasa a la cabecera de navegacion del panel (`Kids`), en lugar de estar escondido entre capas del cielo.
+- **Modo infantil real** - La IA cambia preguntas rapidas, tono y explicaciones cuando `Kids` esta activo: analogias sencillas, retos cortos y explicaciones claras sin infantilizar.
+- **CSP y Supabase mas robustos** - Se anade endpoint `/api/csp-report`, `report-uri`, permisos CSP para Supabase y cliente Supabase opcional si faltan variables de entorno.
+- **Limpieza de release** - La carpeta prototipo `via lactea/` no queda en `main`; solo se conserva el asset final usado por la aplicacion.
+- **Verificacion** - `main` validada con `npm run lint`, `npm run test` y `npm run build`.
+
 ## Auditoria extrema 2026-04-21
 
 Esta ronda deja Cosmos Atlas mas cerca de una app de astronomia seria, no una demo: IA astronomica real opcional, modo local sin coste, privacidad de ubicacion, endpoints protegidos, calculos de visibilidad y verificacion completa.
@@ -12,7 +27,7 @@ Esta ronda deja Cosmos Atlas mas cerca de una app de astronomia seria, no una de
 - **Alertas de sistema refinadas** - Se distinguen ubicacion manual, fallback por error, GPS bloqueado, GPS impreciso y estado AR.
 - **Historial SIMBAD endurecido** - El historial en `localStorage` valida forma, RA/Dec, color, tamano, duplicados y limite de bytes antes de rehidratar objetos.
 - **Seguridad HTTP** - Headers reforzados: `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Cross-Origin-Opener-Policy`, `Permissions-Policy`, HSTS en produccion y CSP en modo `Report-Only`.
-- **Dependencias y auditoria** - Next.js actualizado a `16.2.4`; auditoria de produccion queda en `0` vulnerabilidades.
+- **Dependencias y auditoria** - Next.js actualizado a `16.2.4`; la auditoria de produccion debe revisarse en CI porque puede variar con avisos publicados despues de la release.
 - **Verificacion** - Ultima tanda validada con `npm run lint`, `npm run test`, `npm run build` y `npm audit --omit=dev --json`.
 
 - **Catálogo NGC Completo (7,840 objetos)** — Integración total del catálogo OpenNGC mediante un motor de renderizado binario de alto rendimiento.
@@ -132,10 +147,19 @@ npm run dev
 
 Abre <http://localhost:5174> en el navegador.
 
-Si quieres poblar Supabase con el cat?logo actual de Cosmos Atlas:
+Si quieres poblar Supabase con el catalogo actual de Cosmos Atlas:
 
 ```bash
 npx tsx --env-file=.env.local scripts/seed-supabase.ts
+```
+
+Variables recomendadas para produccion:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4.1-mini
 ```
 
 ```bash
@@ -418,7 +442,7 @@ Mejoras recientes de navegación en el panel:
 - Cada cabecera admite fijado con pin; las favoritas se guardan en `localStorage`.
 - Las secciones fijadas suben al principio del panel para quedar accesibles sin atravesar todo el contenido.
 - Hay acciones globales para expandir o contraer las secciones visibles de una vez.
-- Luna y planetas ya usan el mismo cat?logo solar compartido en Gu?a, b?squeda y ficha detallada.
+- Luna y planetas ya usan el mismo catalogo solar compartido en Guia, busqueda y ficha detallada.
 
 El detalle del objeto seleccionado (`ObjectInfoTab`) puede mostrar ahora, para Sistema Solar:
 
@@ -426,7 +450,7 @@ El detalle del objeto seleccionado (`ObjectInfoTab`) puede mostrar ahora, para S
 - contexto ampliado
 - consejos de observaci?n
 - curiosidades y mitolog?a
-- metadatos como tipo, lunas, anillos u ?rbita cuando existen en cat?logo
+- metadatos como tipo, lunas, anillos u orbita cuando existen en catalogo
 
 ---
 
@@ -506,6 +530,14 @@ Clic de nuevo en el mismo objeto lo deselecciona.
 ---
 
 ## Changelog
+
+### v3.5 — 2026-04-29 (Via Lactea fotografica, Bortle real e IA Kids)
+- **MilkyWaySkyDome real** — Textura panoramica fotografica de la Via Lactea renderizada sobre la boveda celeste, con orientacion galactica completa y continuidad visual por hemisferios.
+- **Bortle aplicado a todo el cielo** — El control de contaminacion luminica ahora afecta al fondo atmosferico, estrellas, Hipparcos, cielo profundo y Via Lactea.
+- **Constelaciones visibles en cielo diurno** — Refuerzo automatico de lineas con Sol alto o crepusculo para que sigan siendo legibles sobre el azul atmosferico.
+- **IA Astronoma + Supabase** — Las respuestas remotas pueden enriquecer el contexto con tablas Supabase y datos largos de planetas/lunas/objetos.
+- **Kids 8-14 en Header** — El modo infantil pasa a ser un control global visible, con tono, preguntas rapidas y narraciones adaptadas.
+- **CSP y limpieza de release** — Endpoint de reportes CSP, Supabase permitido en `connect-src`, y retirada de assets prototipo fuera del bundle final.
 
 ### v3.4 — 2026-04-23 (Refinamiento Estético de Constelaciones)
 #### 🏛️ Minimalismo y Elegancia Clásica
