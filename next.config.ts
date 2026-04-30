@@ -20,7 +20,12 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
-  { key: "Content-Security-Policy-Report-Only", value: cspReportOnly },
+  {
+    key: process.env.NODE_ENV === "production"
+      ? "Content-Security-Policy"
+      : "Content-Security-Policy-Report-Only",
+    value: cspReportOnly,
+  },
   {
     key: "Permissions-Policy",
     value: "camera=(self), geolocation=(self), gyroscope=(self), accelerometer=(self), magnetometer=(self), microphone=()",

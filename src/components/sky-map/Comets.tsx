@@ -10,6 +10,7 @@ import { useAppStore } from '@/stores/useAppStore';
 import { Html } from '@react-three/drei';
 import type { CometLiveData } from '@/app/api/comets/route';
 import type { OrbitalElements } from '@/lib/astronomy/cometOrbits';
+import { getSessionSeed } from '@/lib/sessionSeed';
 
 const cometVertexShader = `
     attribute vec3 color;
@@ -52,6 +53,7 @@ function makeLCG(seed: number) {
 function CometTail({ comet, position }: { comet: { color: string; tailLength: number }; position: [number, number, number] }) {
     const tailRef = useRef<THREE.Points>(null);
     const timeRef = useRef(0);
+    const [sessionSeed] = useState(() => getSessionSeed());
 
     const { geometry, material } = useMemo(() => {
         const particleCount = 500;
@@ -60,7 +62,7 @@ function CometTail({ comet, position }: { comet: { color: string; tailLength: nu
 
         const tailColor = new THREE.Color(comet.color);
         // Semilla basada en el color del cometa — reproducible y determinista
-        const rng = makeLCG(tailColor.r * 0xffff ^ tailColor.b * 0xabcd);
+        const rng = makeLCG((tailColor.r * 0xffff ^ tailColor.b * 0xabcd ^ sessionSeed) >>> 0);
 
         for (let i = 0; i < particleCount; i++) {
             const t = i / particleCount;
@@ -102,7 +104,7 @@ function CometTail({ comet, position }: { comet: { color: string; tailLength: nu
         });
 
         return { geometry: geom, material: mat };
-    }, [comet.color, comet.tailLength]);
+    }, [comet.color, comet.tailLength, sessionSeed]);
 
     useFrame((state) => {
         if (tailRef.current) {

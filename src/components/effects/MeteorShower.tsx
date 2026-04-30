@@ -7,6 +7,7 @@ import { useAppStore } from '@/stores/useAppStore';
 import { isShowerActive } from '@/data/meteorShowers';
 import type { MeteorShower } from '@/data/meteorShowers';
 import { useCatalog } from '@/stores/useCatalogStore';
+import { getSessionSeed } from '@/lib/sessionSeed';
 
 
 const meteorVertexShader = `
@@ -59,6 +60,8 @@ export default function MeteorShower() {
     const pointsRef = useRef<THREE.Points>(null);
     const timeRef = useRef(0);
     const [isMounted, setIsMounted] = useState(false);
+    const [sessionSeed] = useState(() => getSessionSeed());
+    const activationRngRef = useRef<() => number>(makeLCG(sessionSeed ^ 0xa53c9e1d));
 
     // timeMinute solo cambia 1x/min — las lluvias de meteoros activas cambian como máximo 1x/día
     const time = useAppStore((state) => state.timeMinute);
@@ -87,7 +90,7 @@ export default function MeteorShower() {
 
         const activeShowers = isMounted ? meteorShowers.filter(s => isShowerActive(s, new Date(time))) : meteorShowers;
         // Semilla derivada del minuto — reproducible para este tick de tiempo
-        const rng = makeLCG(Math.floor(time.getTime() / 60000) ^ 0xdeadbeef);
+        const rng = makeLCG(Math.floor(time.getTime() / 60000) ^ sessionSeed ^ 0xdeadbeef);
 
         for (let i = 0; i < METEOR_COUNT; i++) {
             // Asignar a una lluvia activa (o aleatoria si no hay activas)
@@ -124,7 +127,7 @@ export default function MeteorShower() {
         }
 
         return [pos, col, siz, alp, vel, ids, bolides];
-    }, [time, isMounted, meteorShowers]);
+    }, [time, isMounted, meteorShowers, sessionSeed]);
 
     // Estado de cada meteoro (life, maxLife)
     const lifeRef = useRef<Float32Array>(new Float32Array(METEOR_COUNT));
@@ -172,16 +175,17 @@ export default function MeteorShower() {
 
         // Activar nuevos meteoros
         for (let i = 0; i < METEOR_COUNT; i++) {
-            if (activeRef.current[i] === 0 && Math.random() < baseRate) {
+            const rng = activationRngRef.current;
+            if (activeRef.current[i] === 0 && rng() < baseRate) {
                 // Activar meteoro
                 activeRef.current[i] = 1;
                 lifeRef.current[i] = 0;
-                maxLifeRef.current[i] = 0.5 + Math.random() * 1.0; // 0.5-1.5 segundos
+                maxLifeRef.current[i] = 0.5 + rng() * 1.0; // 0.5-1.5 segundos
                 alphasAttr.setX(i, 0);
 
                 // Nueva posición aleatoria
-                const theta = Math.random() * Math.PI * 2;
-                const phi = Math.acos(2 * Math.random() - 1);
+                const theta = rng() * Math.PI * 2;
+                const phi = Math.acos(2 * rng() - 1);
                 positionsAttr.setXYZ(i,
                     RADIUS * Math.sin(phi) * Math.cos(theta),
                     RADIUS * Math.sin(phi) * Math.sin(theta),

@@ -77,7 +77,7 @@ function getClientKey(req: Request) {
     return forwarded || realIp || 'local';
 }
 
-function checkRateLimit(key: string) {
+function checkMemoryRateLimit(key: string) {
     const now = Date.now();
     for (const [entryKey, entry] of rateLimit) {
         if (entry.resetAt <= now) rateLimit.delete(entryKey);
@@ -95,6 +95,63 @@ function checkRateLimit(key: string) {
 
     current.count += 1;
     return { ok: true as const, remaining: RATE_LIMIT_MAX - current.count, resetAt: current.resetAt };
+}
+
+async function checkUpstashRateLimit(key: string) {
+    const url = process.env.UPSTASH_REDIS_REST_URL;
+    const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+    if (!url || !token) return null;
+
+    const bucket = Math.floor(Date.now() / RATE_LIMIT_WINDOW_MS);
+    const redisKey = `cosmos:astronomer:rl:${bucket}:${key}`;
+    const headers = {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+    };
+
+    const incr = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(['INCR', redisKey]),
+        cache: 'no-store',
+    });
+    if (!incr.ok) throw new Error(`Upstash INCR ${incr.status}`);
+
+    const payload = await incr.json() as { result?: number };
+    const count = Number(payload.result ?? 0);
+
+    if (count === 1) {
+        await fetch(url, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(['PEXPIRE', redisKey, RATE_LIMIT_WINDOW_MS]),
+            cache: 'no-store',
+        }).catch(() => undefined);
+    }
+
+    const resetAt = (bucket + 1) * RATE_LIMIT_WINDOW_MS;
+    return {
+        ok: count <= RATE_LIMIT_MAX,
+        remaining: Math.max(0, RATE_LIMIT_MAX - count),
+        resetAt,
+    } as const;
+}
+
+async function checkRateLimit(key: string) {
+    try {
+        const distributed = await checkUpstashRateLimit(key);
+        if (distributed) return distributed;
+    } catch (err) {
+        console.warn('[Astronomer] Distributed rate limit unavailable; using memory fallback:', err);
+    }
+
+    return checkMemoryRateLimit(key);
+}
+
+function requiresDistributedRateLimit(apiKey?: string) {
+    if (process.env.NODE_ENV !== 'production') return false;
+    if (!apiKey) return false;
+    return !process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN;
 }
 
 function truncateText(value: unknown, max = MAX_CONTEXT_FIELD_LENGTH) {
@@ -325,7 +382,15 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'request too large' }, { status: 413, headers: JSON_HEADERS });
     }
 
-    const limit = checkRateLimit(getClientKey(req));
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (requiresDistributedRateLimit(apiKey)) {
+        return NextResponse.json(
+            { error: 'distributed rate limit is required in production' },
+            { status: 503, headers: JSON_HEADERS }
+        );
+    }
+
+    const limit = await checkRateLimit(getClientKey(req));
     if (!limit.ok) {
         const retryAfter = Math.max(1, Math.ceil((limit.resetAt - Date.now()) / 1000));
         return NextResponse.json(
@@ -354,7 +419,6 @@ export async function POST(req: Request) {
 
     const context = sanitizeContext(body.context ?? {});
     const mode = body.mode === 'local' ? 'local' : 'openai';
-    const apiKey = process.env.OPENAI_API_KEY;
     const configuredModel = process.env.OPENAI_MODEL || 'gpt-4.1-mini';
     const models = [configuredModel, ...FALLBACK_MODELS].filter((item, index, arr) => item && arr.indexOf(item) === index);
     const supabaseDetails = await fetchSupabaseDetails(context);

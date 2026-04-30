@@ -225,6 +225,29 @@ function SetupRenderer() {
     return null;
 }
 
+function WebGLContextMonitor({ onLost, onRestored }: { onLost: () => void; onRestored: () => void }) {
+    const { gl } = useThree();
+
+    useEffect(() => {
+        const canvas = gl.domElement;
+        const handleLost = (event: Event) => {
+            event.preventDefault();
+            onLost();
+        };
+        const handleRestored = () => onRestored();
+
+        canvas.addEventListener('webglcontextlost', handleLost);
+        canvas.addEventListener('webglcontextrestored', handleRestored);
+
+        return () => {
+            canvas.removeEventListener('webglcontextlost', handleLost);
+            canvas.removeEventListener('webglcontextrestored', handleRestored);
+        };
+    }, [gl, onLost, onRestored]);
+
+    return null;
+}
+
 /**
  * Rota toda la esfera celeste (coordenadas ecuatoriales) al sistema
  * horizontal local del observador:
@@ -329,6 +352,8 @@ export default function SkyCanvas() {
     const manualFovRef = useRef<number | null>(null);
     const manualFovHoldRef = useRef(0);
     const [isMultitouch, setIsMultitouch] = useState(false);
+    const [webglLost, setWebglLost] = useState(false);
+    const [canvasKey, setCanvasKey] = useState(0);
 
     return (
         <div className={cn(
@@ -339,6 +364,7 @@ export default function SkyCanvas() {
             <CameraBackground />
 
             <Canvas
+                key={canvasKey}
                 dpr={[1, 1.5]}
                 gl={{
                     antialias: false,
@@ -354,6 +380,10 @@ export default function SkyCanvas() {
             >
                 <Suspense fallback={null}>
                     <SetupRenderer />
+                    <WebGLContextMonitor
+                        onLost={() => setWebglLost(true)}
+                        onRestored={() => setWebglLost(false)}
+                    />
                     <AdaptiveSoundscape />
 
                     {/* Iluminación para planetas y Luna (meshStandardMaterial) */}
@@ -433,7 +463,27 @@ export default function SkyCanvas() {
                     <Compass />
                 </Suspense>
             </Canvas>
+            {webglLost && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 p-6 text-center backdrop-blur-sm">
+                    <div className="max-w-sm rounded-lg border border-white/10 bg-black/85 p-5 shadow-2xl">
+                        <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-red-300">
+                            Render 3D pausado
+                        </div>
+                        <p className="mb-4 text-sm leading-relaxed text-white/70">
+                            El navegador ha perdido el contexto WebGL. Puedes reiniciar el lienzo sin recargar toda la app.
+                        </p>
+                        <button
+                            className="rounded-md border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-white hover:bg-white/15"
+                            onClick={() => {
+                                setWebglLost(false);
+                                setCanvasKey((value) => value + 1);
+                            }}
+                        >
+                            Reiniciar cielo
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
-

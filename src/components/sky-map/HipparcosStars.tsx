@@ -19,9 +19,22 @@ import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { loadHipparcos, bvToHex, type HipStar } from '@/lib/astronomy/hipparcos';
 import { StarOctree } from '@/lib/astronomy/Octree';
 import { useAppStore } from '@/stores/useAppStore';
+import { STARS } from '@/data/stars';
 
 const RADIUS = 98; 
 const MAX_VISIBLE_STARS = 10000;
+const NAMED_STAR_MATCH_DEG = 0.035;
+
+function angularDistanceDeg(aRa: number, aDec: number, bRa: number, bDec: number) {
+    const toRad = Math.PI / 180;
+    const ra1 = aRa * toRad;
+    const dec1 = aDec * toRad;
+    const ra2 = bRa * toRad;
+    const dec2 = bDec * toRad;
+    const cosD = Math.sin(dec1) * Math.sin(dec2)
+        + Math.cos(dec1) * Math.cos(dec2) * Math.cos(ra1 - ra2);
+    return Math.acos(Math.max(-1, Math.min(1, cosD))) / toRad;
+}
 
 // ── Shaders (idénticos a Stars.tsx para consistencia visual) ────────────────
 const vertexShader = `
@@ -89,6 +102,7 @@ export default function HipparcosStars() {
     const pointsRef   = useRef<THREE.Points>(null);
     const frustum     = useMemo(() => new THREE.Frustum(), []);
     const projMatrix  = useMemo(() => new THREE.Matrix4(), []);
+    const namedStars  = useMemo(() => STARS.map((star) => ({ ra: star.ra, dec: star.dec })), []);
 
     // Cargar catálogo una sola vez
     useEffect(() => {
@@ -99,7 +113,10 @@ export default function HipparcosStars() {
     const [positions, colors, sizes, magnitudes, distFactors, octree] = useMemo(() => {
         if (allStars.length === 0) return [null, null, null, null, null, null];
         
-        const count = allStars.length;
+        const hipparcosOnly = allStars.filter((star) =>
+            !namedStars.some((named) => angularDistanceDeg(star.ra, star.dec, named.ra, named.dec) <= NAMED_STAR_MATCH_DEG)
+        );
+        const count = hipparcosOnly.length;
         const pos     = new Float32Array(count * 3);
         const col     = new Float32Array(count * 3);
         const sz      = new Float32Array(count);
@@ -110,7 +127,7 @@ export default function HipparcosStars() {
         const refMag   = -1.5;
 
         for (let i = 0; i < count; i++) {
-            const s = allStars[i];
+            const s = hipparcosOnly[i];
             const p = equatorialTo3D(s.ra, s.dec, RADIUS);
             pos[i * 3]     = p[0];
             pos[i * 3 + 1] = p[1];
@@ -130,7 +147,7 @@ export default function HipparcosStars() {
 
         const tree = new StarOctree(pos, count);
         return [pos, col, sz, mags, dFac, tree];
-    }, [allStars]);
+    }, [allStars, namedStars]);
 
     // 2. Buffer para los puntos visibles (Instanced-like behavior manually via drawRange)
     const [geometry, material] = useMemo(() => {

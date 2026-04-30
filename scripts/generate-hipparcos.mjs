@@ -7,13 +7,15 @@
  * Requisito: Node 18+ (fetch nativo)
  */
 
-import { writeFileSync, mkdirSync } from 'fs';
+import { writeFileSync, mkdirSync, readFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const OUT_PATH = join(__dir, '..', 'public', 'hipparcos.bin');
+const STARS_PATH = join(__dir, '..', 'src', 'data', 'stars.ts');
 const MAG_LIMIT = 8.0;
+const NAMED_STAR_MATCH_DEG = 0.035;
 
 // VizieR ASU-TSV — catálogo Hipparcos I/239/hip_main
 // Formato: tab-separated, columnas RArad (rad), DErad (rad), Vmag, B-V
@@ -58,6 +60,33 @@ console.log(`Líneas recibidas: ${dataLines.length}`);
 
 const stars = [];
 let skipped = 0;
+let skippedNamed = 0;
+
+function angularDistanceDeg(aRa, aDec, bRa, bDec) {
+    const toRad = Math.PI / 180;
+    const ra1 = aRa * toRad;
+    const dec1 = aDec * toRad;
+    const ra2 = bRa * toRad;
+    const dec2 = bDec * toRad;
+    const cosD = Math.sin(dec1) * Math.sin(dec2)
+        + Math.cos(dec1) * Math.cos(dec2) * Math.cos(ra1 - ra2);
+    return Math.acos(Math.max(-1, Math.min(1, cosD))) / toRad;
+}
+
+function loadNamedStarCoordinates() {
+    try {
+        const source = readFileSync(STARS_PATH, 'utf8');
+        return [...source.matchAll(/ra:\s*(-?\d+(?:\.\d+)?),\s*dec:\s*(-?\d+(?:\.\d+)?)/g)]
+            .map((match) => ({ ra: Number(match[1]), dec: Number(match[2]) }))
+            .filter((star) => Number.isFinite(star.ra) && Number.isFinite(star.dec));
+    } catch (err) {
+        console.warn('No se pudo leer stars.ts para filtrar duplicados:', err.message);
+        return [];
+    }
+}
+
+const namedStars = loadNamedStarCoordinates();
+console.log(`Filtro de estrellas nombradas: ${namedStars.length} coordenadas`);
 
 for (const line of dataLines) {
     // TSV: HIP   RArad   DErad   Vmag   B-V (separados por tabulador o espacios múltiples)
@@ -76,10 +105,17 @@ for (const line of dataLines) {
     const decDeg = (decRad * 180.0 / Math.PI);
     const bvSafe = isNaN(bv) ? 0.5 : Math.max(-0.5, Math.min(2.5, bv));
 
+    const duplicatesNamedStar = namedStars.some((star) =>
+        angularDistanceDeg(raDeg, decDeg, star.ra, star.dec) <= NAMED_STAR_MATCH_DEG
+    );
+    if (duplicatesNamedStar) { skippedNamed++; continue; }
+
     stars.push([raDeg, decDeg, vmag, bvSafe]);
 }
 
 console.log(`Estrellas válidas: ${stars.length}  |  Omitidas: ${skipped}`);
+
+console.log(`Duplicadas Stars.ts filtradas: ${skippedNamed}`);
 
 if (stars.length === 0) {
     console.error('No se obtuvieron estrellas. Abortando.');
