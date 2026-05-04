@@ -14,6 +14,7 @@ import { useEffect } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { BookOpen } from 'lucide-react';
+import BootSequence from '@/components/ui/BootSequence';
 
 /** Detecta el tier de rendimiento del dispositivo de forma síncrona */
 function detectQualityTier(): 'high' | 'medium' | 'low' {
@@ -103,6 +104,9 @@ export default function Home() {
         <div className="absolute -bottom-[20%] -left-[10%] w-[60%] h-[60%] bg-blue-900/10 blur-[120px] rounded-full" />
         <div className="absolute -top-[10%] -right-[5%] w-[50%] h-[50%] bg-purple-900/10 blur-[120px] rounded-full" />
       </div>
+
+      {/* Cinematic Boot Sequence (Runs once per session) */}
+      <BootSequence />
     </main>
   );
 }
