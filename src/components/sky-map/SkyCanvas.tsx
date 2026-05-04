@@ -296,13 +296,16 @@ function OrientationDriver() {
         const trueHeading = ((rawHeading + declRef.current + compassCalibrationOffset) % 360 + 360) % 360;
         const elevation   = deviceOrientationRef.elevation;
 
+        // Factor 0.9 → cierre del 90% del error en 1 frame (~16ms).
+        // El EMA del hook (τ≈48ms) ya filtra el jitter del sensor.
+        // Un segundo lerp lento añadiría 300ms de lag inaceptable en AR.
         const dAz = ((trueHeading - azRef.current) % 360 + 540) % 360 - 180;
-        if (Math.abs(dAz) > 0.25) {
-            azRef.current = (azRef.current + dAz * 0.12 + 360) % 360;
+        if (Math.abs(dAz) > 0.05) {
+            azRef.current = (azRef.current + dAz * 0.9 + 360) % 360;
         }
         const dEl = elevation - elRef.current;
-        if (Math.abs(dEl) > 0.25) {
-            elRef.current += dEl * 0.12;
+        if (Math.abs(dEl) > 0.05) {
+            elRef.current += dEl * 0.9;
         }
 
         const elRad = THREE.MathUtils.degToRad(elRef.current);

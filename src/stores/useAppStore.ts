@@ -191,10 +191,14 @@ export const useAppStore = create<AppState>()(
             viewMode: 'vault',
             setViewMode: (viewMode) => set((state) => {
                 if (viewMode === 'camera') {
+                    // FOV 65° ≈ FOV vertical de cámara trasera típica en portrait.
+                    // Necesario para que el overlay Three.js cubra exactamente
+                    // el mismo campo visual que la cámara real (AR pixel-accurate).
+                    // El usuario puede hacer pinch para zoom una vez encuadrado el objeto.
                     return {
                         viewMode,
-                        camFov: 15,
-                        settings: { ...state.settings, telescopeMode: true, showFOV: true }
+                        camFov: 65,
+                        settings: { ...state.settings, telescopeMode: false, showFOV: false }
                     };
                 } else {
                     return {
