@@ -29,6 +29,7 @@ import { AdaptiveSoundscape } from '@/components/audio/AdaptiveSoundscape';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import NGCObjects from '@/components/sky-map/NGCObjects';
 import Meteors from '@/components/sky-map/Meteors';
+import { EffectComposer, Bloom, Vignette, ChromaticAberration, Scanline } from '@react-three/postprocessing';
 import { useAppStore } from '@/stores/useAppStore';
 import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
@@ -341,6 +342,25 @@ function SeeingJitter() {
 
 
 
+function DynamicEffects() {
+    const warpFactor = useAppStore((s) => s.warpFactor);
+    const deviceQuality = useAppStore((s) => s.deviceQuality);
+    
+    const bloomIntensity = deviceQuality === 'low' ? 0.2 : 0.5 + warpFactor * 1.5;
+
+    return (
+        <EffectComposer disableNormalPass>
+            <Bloom 
+                intensity={bloomIntensity}
+                luminanceThreshold={0.5}
+                luminanceSmoothing={0.9}
+                mipmapBlur
+            />
+            <Vignette eskil={false} offset={0.05} darkness={0.95} />
+        </EffectComposer>
+    );
+}
+
 export default function SkyCanvas() {
     const viewMode = useAppStore((state) => state.viewMode);
     const showGrid = useAppStore((state) => state.settings.showGrid);
@@ -459,6 +479,11 @@ export default function SkyCanvas() {
                     <CinematicTour />
                     <SeeingJitter />
                     <TelescopeEffect />
+
+                    {/* Post-procesado cinemático reactivo */}
+                    <Suspense fallback={null}>
+                        <DynamicEffects />
+                    </Suspense>
 
                     {/* FOVOverlay maneja su propio Html wrapper internamente */}
                     <FOVOverlay />

@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { Star, DSO, Observer, Planet } from '../types/celestial';
 import type { Challenge } from '../types/celestial';
 import { useCatalog } from './useCatalogStore';
+import { PLANET_LIST } from '../lib/constants/planets';
 
 type CelestialObject = Star | DSO | Planet;
 
@@ -106,10 +107,10 @@ interface AppState {
     addSimbadObject: (obj: Star) => void;
     clearSimbadObjects: () => void;
     /** Tier de rendimiento detectado al inicio: high/medium/low.
-     *  No persiste Ã¢â‚¬â€ se detecta en cada sesiÃƒÂ³n. */
+     *  No persiste — se detecta en cada sesión. */
     deviceQuality: 'high' | 'medium' | 'low';
     setDeviceQuality: (q: 'high' | 'medium' | 'low') => void;
-    /** true si el usuario ya completÃƒÂ³ (o saltÃƒÂ³) el onboarding */
+    /** true si el usuario ya completó (o saltó) el onboarding */
     hasSeenOnboarding: boolean;
     setHasSeenOnboarding: (v: boolean) => void;
     isTourActive: boolean;
@@ -135,6 +136,10 @@ interface AppState {
     incrementMythologyBuff: () => void;
     reportRenderError: (label: string, message: string) => void;
     clearRenderErrors: () => void;
+    isFlying: boolean;
+    setIsFlying: (v: boolean) => void;
+    warpFactor: number;
+    setWarpFactor: (v: number) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -161,7 +166,7 @@ export const useAppStore = create<AppState>()(
             clearArHealthHistory: () => set({ arHealthHistory: [] }),
             selectedObject: null,
             setSelectedObject: (obj) => set((state) => {
-                // ImportaciÃƒÂ³n diferida para evitar dependencia circular
+                // Importación diferida para evitar dependencia circular
                 const challenges = useCatalog.getState().challenges
                 return {
                     selectedObject: obj,
@@ -171,6 +176,10 @@ export const useAppStore = create<AppState>()(
             targetedObject: null,
             setTargetedObject: (obj) => set((state) => {
                 const challenges = useCatalog.getState().challenges
+                
+                // Trigger sync to cloud
+                import('../lib/supabase/neuralSync').then(m => m.syncPassportToCloud());
+
                 return {
                     targetedObject: obj,
                     selectedObject: obj ?? state.selectedObject,
@@ -299,22 +308,28 @@ export const useAppStore = create<AppState>()(
                 mythologyBuff: 0,
             },
             renderErrors: [],
-            toggleFavorite: (id) => set((s) => ({
-                favorites: s.favorites.includes(id) 
+            toggleFavorite: (id) => set((s) => {
+                const nextFavorites = s.favorites.includes(id) 
                     ? s.favorites.filter(x => x !== id) 
-                    : [...s.favorites, id]
-            })),
+                    : [...s.favorites, id];
+                
+                import('../lib/supabase/neuralSync').then(m => m.syncPassportToCloud());
+
+                return { favorites: nextFavorites };
+            }),
             markAsVisited: (id) => set((s) => {
                 const nextVisited = s.visited.includes(id) ? s.visited : [...s.visited, id];
                 
                 // --- Logro: Explorador de Planetas ---
-                const planets = ['Mercurio', 'Venus', 'Marte', 'JÃƒÂºpiter', 'Saturno', 'Urano', 'Neptuno', 'Luna'];
-                const visitedPlanets = planets.filter(p => nextVisited.includes(p));
+                const visitedPlanets = PLANET_LIST.filter(p => nextVisited.includes(p));
                 const planetHunter = visitedPlanets.length >= 8;
 
-                // --- Logro: MaratÃƒÂ³n Messier ---
-                // Si el ID empieza por 'M' y tiene un nÃƒÂºmero despuÃƒÂ©s, es un Messier.
+                // --- Logro: Maratón Messier ---
+                // Si el ID empieza por 'M' y tiene un número después, es un Messier.
                 const messierCount = nextVisited.filter(v => /^M\d+/.test(v)).length;
+
+                // Trigger sync to cloud
+                import('../lib/supabase/neuralSync').then(m => m.syncPassportToCloud());
 
                 return { 
                     visited: nextVisited,
@@ -342,6 +357,10 @@ export const useAppStore = create<AppState>()(
                     return { renderErrors: next };
                 }),
             clearRenderErrors: () => set({ renderErrors: [] }),
+            isFlying: false,
+            setIsFlying: (isFlying) => set({ isFlying }),
+            warpFactor: 0,
+            setWarpFactor: (warpFactor) => set({ warpFactor }),
         }),
         {
             name: 'cosmos-atlas-storage',
@@ -357,7 +376,7 @@ export const useAppStore = create<AppState>()(
                 favorites: state.favorites,
                 visited: state.visited,
                 achievements: state.achievements,
-                // deviceQuality excluido Ã¢â‚¬â€ se detecta en cada sesiÃƒÂ³n
+                // deviceQuality excluido — se detecta en cada sesión
             }),
             migrate: (persisted) => {
                 if (!persisted || typeof persisted !== 'object') return persisted;

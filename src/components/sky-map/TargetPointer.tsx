@@ -18,6 +18,8 @@ export default function TargetPointer() {
     const ring1Ref = useRef<THREE.Mesh>(null);
     const ring2Ref = useRef<THREE.Mesh>(null);
     const ring3Ref = useRef<THREE.Mesh>(null);
+    const scanBarRef = useRef<THREE.Mesh>(null);
+    const telemetryRef = useRef<HTMLDivElement>(null);
 
     // Posición 3D del objetivo en el espacio equatorial (dentro de CelestialGroup)
     const position = useMemo<[number, number, number] | null>(() => {
@@ -49,6 +51,14 @@ export default function TargetPointer() {
             const p = (Math.sin(t * 2.5 - Math.PI * 1.2) * 0.5 + 0.5);
             ring3Ref.current.scale.setScalar(1 + p * 0.5);
             (ring3Ref.current.material as THREE.MeshBasicMaterial).opacity = 0.40 - p * 0.30;
+        }
+        if (scanBarRef.current) {
+            const scanPos = (Math.sin(t * 1.5) * 1.4);
+            scanBarRef.current.position.y = scanPos;
+            (scanBarRef.current.material as THREE.MeshBasicMaterial).opacity = 0.4 + Math.sin(t * 10.0) * 0.1;
+        }
+        if (telemetryRef.current && t % 0.2 < 0.05) {
+            telemetryRef.current.innerText = `SIG: ${(90 + Math.random() * 10).toFixed(1)}% | DIST: ${Math.floor(1000 + Math.random() * 9000)} LY`;
         }
     });
 
@@ -129,7 +139,43 @@ export default function TargetPointer() {
                         side={THREE.DoubleSide} depthWrite={false}
                     />
                 </mesh>
+
+                {/* Barra de escaneo HUD */}
+                <mesh ref={scanBarRef} position={[0, 0, 0.05]} renderOrder={11}>
+                    <planeGeometry args={[3.0, 0.04]} />
+                    <meshBasicMaterial 
+                        color={accentColor} 
+                        transparent 
+                        opacity={0.6} 
+                        side={THREE.DoubleSide} 
+                        depthWrite={false} 
+                    />
+                </mesh>
+
+                {/* Brackets de las esquinas */}
+                {[[-1, 1], [1, 1], [1, -1], [-1, -1]].map(([cx, cy], i) => (
+                    <group key={i} position={[cx * 1.8, cy * 1.8, 0]} rotation={[0, 0, (i * -Math.PI) / 2]}>
+                        <mesh position={[0.2, 0, 0]}>
+                            <planeGeometry args={[0.4, 0.04]} />
+                            <meshBasicMaterial color={accentColor} transparent opacity={0.8} />
+                        </mesh>
+                        <mesh position={[0, 0.2, 0]}>
+                            <planeGeometry args={[0.04, 0.4]} />
+                            <meshBasicMaterial color={accentColor} transparent opacity={0.8} />
+                        </mesh>
+                    </group>
+                ))}
             </group>
+
+            {/* Telemetría HUD */}
+            <Html distanceFactor={10} position={[2.5, -2.5, 0]}>
+                <div 
+                    ref={telemetryRef}
+                    className="font-mono text-[8px] text-white/40 tracking-[2px] whitespace-nowrap bg-black/40 px-2 py-1 rounded border border-white/10"
+                >
+                    SCANNING...
+                </div>
+            </Html>
 
             {/* Etiqueta HTML — no rota con el grupo */}
             <Html

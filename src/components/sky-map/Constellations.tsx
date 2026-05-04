@@ -48,16 +48,30 @@ export default function Constellations() {
 
         return Object.entries(CONSTELLATIONS).map(([name, constLines]) => {
             const pointsList: Point3[][] = [];
+            const uniquePointsMap = new Map<string, Point3>();
+
             constLines.forEach(([startName, endName]) => {
                 const startStar = starMap.get(startName);
                 const endStar = starMap.get(endName);
                 if (!startStar || !endStar) return;
-                pointsList.push([
-                    equatorialTo3D(startStar.ra, startStar.dec, RADIUS),
-                    equatorialTo3D(endStar.ra, endStar.dec, RADIUS),
-                ]);
+                
+                const p1 = equatorialTo3D(startStar.ra, startStar.dec, RADIUS);
+                const p2 = equatorialTo3D(endStar.ra, endStar.dec, RADIUS);
+                
+                pointsList.push([p1, p2]);
+                uniquePointsMap.set(startName, p1);
+                uniquePointsMap.set(endName, p2);
             });
-            return { name, pointsList };
+            
+            const nodes = Array.from(uniquePointsMap.values());
+            const nodesPositions = new Float32Array(nodes.length * 3);
+            nodes.forEach((p, i) => {
+                nodesPositions[i * 3] = p[0];
+                nodesPositions[i * 3 + 1] = p[1];
+                nodesPositions[i * 3 + 2] = p[2];
+            });
+
+            return { name, pointsList, nodesPositions };
         });
     }, [stars]);
 
@@ -175,7 +189,7 @@ export default function Constellations() {
 
     return (
         <group renderOrder={3}>
-            {constellationsData.map(({ name, pointsList }) => {
+            {constellationsData.map(({ name, pointsList, nodesPositions }) => {
                 const isFocused = name === focusedConstellation || selectedObject?.name === name;
 
                 const color = nightMode
@@ -266,8 +280,36 @@ export default function Constellations() {
                                 opacity={opacity}
                                 depthTest={false}
                                 depthWrite={false}
+                                dashed={isFocused}
+                                dashScale={50}
+                                dashSize={2}
+                                gapSize={1}
                             />
                         ))}
+
+                        {/* High-Tech Nodes at star vertices */}
+                        {nodesPositions.length > 0 && opacity > 0.05 && (
+                            <points>
+                                <bufferGeometry>
+                                    <bufferAttribute
+                                        attach="attributes-position"
+                                        count={nodesPositions.length / 3}
+                                        array={nodesPositions}
+                                        itemSize={3}
+                                    />
+                                </bufferGeometry>
+                                <pointsMaterial
+                                    size={isFocused ? 1.5 * pulse : 0.6}
+                                    color={color}
+                                    transparent
+                                    opacity={isFocused ? Math.min(1, opacity * 1.5) : opacity * 0.7}
+                                    depthTest={false}
+                                    depthWrite={false}
+                                    sizeAttenuation={true}
+                                    blending={THREE.AdditiveBlending}
+                                />
+                            </points>
+                        )}
                     </group>
                 );
             })}

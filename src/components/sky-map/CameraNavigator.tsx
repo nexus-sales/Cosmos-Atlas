@@ -26,6 +26,8 @@ export default function CameraNavigator({
     const targetedObject = useAppStore((s) => s.targetedObject);
     const followTarget = useAppStore((s) => s.settings.followTarget);
     const setCamFov = useAppStore((state) => state.setCamFov);
+    const setIsFlying = useAppStore((state) => state.setIsFlying);
+    const setWarpFactor = useAppStore((state) => state.setWarpFactor);
 
     const isFlying = useRef(false);
     const prevTarget = useRef<Star | DSO | Planet | null>(null);
@@ -87,7 +89,6 @@ export default function CameraNavigator({
             const isConstel = 'symbol' in targetedObject && targetedObject.symbol === '\u2726';
 
             if (isConstel) {
-                // Focus on the constellation with enough margin
                 targetFov.current = ('angularSize' in targetedObject && typeof targetedObject.angularSize === 'number')
                     ? targetedObject.angularSize
                     : 45;
@@ -116,20 +117,36 @@ export default function CameraNavigator({
             manualFovHoldRef.current = Math.max(0, manualFovHoldRef.current - delta);
             if (manualFovHoldRef.current === 0) manualFovRef.current = null;
         }
-        if (Math.abs(cam.fov - desiredFov) > 0.1) {
-            // eslint-disable-next-line react-hooks/immutability
-            cam.fov = THREE.MathUtils.lerp(cam.fov, desiredFov, 0.05);
-            cam.updateProjectionMatrix();
-            setCamFov(cam.fov);
-        }
 
         // Bézier arc flight or tracking snap
         if (isFlying.current) {
             bezierT.current = Math.min(1, bezierT.current + delta / bezierDur.current);
             const arcDir = bezierSlerp(bezierT.current);
             camera.position.copy(arcDir).multiplyScalar(0.01);
-            if (bezierT.current >= 1) isFlying.current = false;
+
+            // Warp Effect: Aumentar FOV drásticamente en el centro del viaje
+            const wf = Math.sin(bezierT.current * Math.PI);
+            setWarpFactor(wf);
+            setIsFlying(true);
+            
+            const warpFovBoost = wf * 45;
+            cam.fov = THREE.MathUtils.lerp(cam.fov, desiredFov + warpFovBoost, 0.15);
+            cam.updateProjectionMatrix();
+            setCamFov(cam.fov);
+
+            if (bezierT.current >= 1) {
+                isFlying.current = false;
+                setIsFlying(false);
+                setWarpFactor(0);
+            }
         } else {
+            // Normal FOV lerp
+            if (Math.abs(cam.fov - desiredFov) > 0.1) {
+                cam.fov = THREE.MathUtils.lerp(cam.fov, desiredFov, 0.05);
+                cam.updateProjectionMatrix();
+                setCamFov(cam.fov);
+            }
+
             // Settled tracking: snap tightly to keep up with sky rotation
             camera.position.copy(targetCamPosRef.current);
             // Refresh target pos to follow sky rotation

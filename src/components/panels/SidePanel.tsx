@@ -32,6 +32,7 @@ import ObjectInfoTab from '@/components/panels/ObjectInfoTab';
 import dynamic from 'next/dynamic';
 const GuideTab = dynamic(() => import('@/components/panels/GuideTab'), { ssr: false });
 import PassportTab from '@/components/panels/PassportTab';
+import NeuralLink from './NeuralLink';
 import MeteorShowerInfo from '@/components/panels/MeteorShowerInfo';
 import DailyEventsPanel from '@/components/panels/DailyEventsPanel';
 import { getArHealthSummary, getArToneClasses } from '@/lib/arHealth';
@@ -169,13 +170,23 @@ function PanelContent({
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as TabType)}
                             className={cn(
-                                'flex-1 flex flex-col items-center justify-center gap-1.5 transition-all relative overflow-hidden h-full cursor-pointer',
+                                'flex-1 flex flex-col items-center justify-center gap-1.5 transition-all relative overflow-hidden h-full cursor-pointer group',
                                 isActive ? 'text-blue-400' : 'text-white/35 hover:text-white/65'
                             )}
                         >
-                            <Icon className="w-4 h-4" />
-                            <span className="text-[11px] font-bold tracking-[0.14em]">{tab.label}</span>
-                            {isActive && <div className="absolute bottom-0 left-[20%] right-[20%] h-[3px] bg-blue-500 rounded-t-full shadow-[0_0_12px_rgba(59,130,246,0.8)]" />}
+                            <motion.div
+                                animate={isActive ? { scale: 1.1, y: -2 } : { scale: 1, y: 0 }}
+                                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                            >
+                                <Icon className={cn("w-4 h-4 transition-filter duration-300", isActive && "drop-shadow-[0_0_5px_rgba(59,130,246,0.5)]")} />
+                            </motion.div>
+                            <span className="text-[10px] font-bold tracking-[0.14em]">{tab.label}</span>
+                            {isActive && (
+                                <motion.div 
+                                    layoutId="activeTabUnderline"
+                                    className="absolute bottom-0 left-[15%] right-[15%] h-[2px] bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,1)]" 
+                                />
+                            )}
                         </button>
                     );
                 })}
@@ -232,6 +243,9 @@ function PanelContent({
                             <StatusMetric label="GPS" value={satelliteInfo.visibleSpecial + satelliteInfo.visibleStarlink > 0 ? 'Activo' : 'Standby'} hint="seguimiento" />
                             <StatusMetric label="AR" value={arSummary.score == null ? 'N/A' : `${arSummary.score}`} hint="salud" />
                         </div>
+                        
+                        {/* Phase 3: Neural Link (Uplink/IA Control) */}
+                        <NeuralLink />
                     </div>
 
                     <div className="mb-6 bg-white/5 p-1 rounded-xl flex gap-1 border border-white/5">
@@ -636,11 +650,17 @@ function AccordionSection({
 
 function StatusMetric({ label, value, hint }: { label: string; value: string; hint: string }) {
     return (
-        <div className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2.5">
-            <div className="text-[9px] uppercase tracking-[0.18em] text-white/38">{label}</div>
-            <div className="mt-1 text-[15px] font-semibold text-white">{value}</div>
-            <div className="text-[9px] uppercase tracking-[0.14em] text-white/32">{hint}</div>
-        </div>
+        <motion.div 
+            whileHover={{ scale: 1.02, backgroundColor: 'rgba(255,255,255,0.05)' }}
+            className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2.5 transition-colors relative group overflow-hidden"
+        >
+            <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity blur-xl" />
+            <div className="relative z-10">
+                <div className="text-[9px] uppercase tracking-[0.18em] text-white/38">{label}</div>
+                <div className="mt-1 text-[15px] font-semibold text-white tracking-wider font-mono">{value}</div>
+                <div className="text-[9px] uppercase tracking-[0.14em] text-white/32">{hint}</div>
+            </div>
+        </motion.div>
     );
 }
 

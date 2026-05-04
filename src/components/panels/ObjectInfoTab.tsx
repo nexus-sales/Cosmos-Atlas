@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import * as Astronomy from 'astronomy-engine';
 import { Globe, Heart, Moon as MoonIcon, MousePointer2, Navigation, Rocket, Star as StarIcon, Zap, Eye, EyeOff } from 'lucide-react';
@@ -147,8 +147,8 @@ export default function ObjectInfoTab() {
                     </div>
                 )}
 
-                <p className="text-[11px] leading-relaxed text-white/55">
-                    {primaryDescription}
+                <p className="text-[11px] leading-relaxed text-white/55 min-h-[40px]">
+                    <HolographicText text={primaryDescription} />
                 </p>
             </div>
 
@@ -276,9 +276,48 @@ function InfoBlock({ title, text }: { title: string; text: string }) {
     return (
         <div>
             <div className="mb-1 text-[8px] uppercase tracking-wider text-white/20">{title}</div>
-            <p className="text-[11px] leading-relaxed text-white/65">{text}</p>
+            <p className="text-[11px] leading-relaxed text-white/65 min-h-[30px]">
+                <HolographicText text={text} speed={0.5} />
+            </p>
         </div>
     );
+}
+
+// Phase 3: Holographic Terminal Decryption Effect
+function HolographicText({ text, speed = 1 }: { text: string, speed?: number }) {
+    const [displayed, setDisplayed] = useState('');
+    
+    useEffect(() => {
+        if (!text) {
+            setDisplayed('');
+            return;
+        }
+
+        let iteration = 0;
+        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+";
+        let interval: NodeJS.Timeout;
+
+        // Reset on new text
+        setDisplayed('');
+
+        interval = setInterval(() => {
+            setDisplayed(text.split('').map((char, index) => {
+                if(index < iteration) {
+                    return text[index];
+                }
+                return char === ' ' ? ' ' : letters[Math.floor(Math.random() * letters.length)];
+            }).join(''));
+            
+            if(iteration >= text.length){
+                clearInterval(interval);
+            }
+            iteration += speed;
+        }, 15);
+
+        return () => clearInterval(interval);
+    }, [text, speed]);
+
+    return <span className="font-mono tracking-tight">{displayed}</span>;
 }
 
 function DataPoint({ label, value }: { label: string; value: string }) {

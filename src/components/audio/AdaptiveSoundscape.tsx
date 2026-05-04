@@ -148,6 +148,8 @@ function getSoundProfile(targetedObject: Star | DSO | Planet | null): SoundProfi
 export function AdaptiveSoundscape() {
     const targetedObject = useAppStore((s) => s.targetedObject);
     const settings = useAppStore((s) => s.settings);
+    const isFlying = useAppStore((s) => s.isFlying);
+    const warpFactor = useAppStore((s) => s.warpFactor);
     const audioRef = useRef<AudioNodes | null>(null);
     const [isInitialized, setIsInitialized] = useState(false);
     const isInitializedRef = useRef(false);
@@ -310,15 +312,30 @@ export function AdaptiveSoundscape() {
         const smoothing = Math.min(dt * 2, 1);
 
         // Interpolar parámetros suavemente
-        lowPass.frequency.value += (target.lowPassFreq - lowPass.frequency.value) * smoothing;
-        masterGain.gain.value += (target.masterVolume - masterGain.gain.value) * smoothing;
-        if (noiseGain) {
+        let currentLowPassFreq = target.lowPassFreq;
+        let currentMasterVolume = target.masterVolume;
+        let currentLfoFreq = profile.lfoFreq;
+
+        if (isFlying) {
+            // WARP EFFECT OVERRIDE
+            currentLowPassFreq = Math.min(2000, target.lowPassFreq + (warpFactor * 1500));
+            currentMasterVolume = Math.min(0.8, target.masterVolume + (warpFactor * 0.4));
+            currentLfoFreq = profile.lfoFreq + (warpFactor * 5);
+            
+            // Adds an aggressive rumble
+            if (noiseGain) noiseGain.gain.value += (0.15 * warpFactor - noiseGain.gain.value) * smoothing;
+        }
+
+        lowPass.frequency.value += (currentLowPassFreq - lowPass.frequency.value) * smoothing;
+        masterGain.gain.value += (currentMasterVolume - masterGain.gain.value) * smoothing;
+        
+        if (!isFlying && noiseGain) {
             noiseGain.gain.value += (target.noiseVolume - noiseGain.gain.value) * smoothing;
         }
 
         // LFO
         if (lfo && lfoGain) {
-            lfo.frequency.value += (profile.lfoFreq - lfo.frequency.value) * smoothing;
+            lfo.frequency.value += (currentLfoFreq - lfo.frequency.value) * smoothing;
             lfoGain.gain.value += (profile.lfoDepth - lfoGain.gain.value) * smoothing;
         }
 

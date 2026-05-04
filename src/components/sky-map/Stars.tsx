@@ -40,15 +40,21 @@ const starVertexShader = `
 
     float depthFactor = 1.0 - distanceFactor * 0.2;
 
-    float twinkleSpeed = 1.5 + airmass * 0.2;
-    float twinkleAmp = 0.05 + airmass * 0.03; // Much subtle twinkling
-    float noise = sin(uTime * twinkleSpeed + position.x * 50.0) * 0.6
-                + sin(uTime * twinkleSpeed * 0.7 + position.y * 50.0) * 0.4;
+    float twinkleSpeed = 2.2 + airmass * 0.4;
+    float twinkleAmp = 0.08 + airmass * 0.06; 
+    
+    // Ruido multicapa para centelleo atmosférico
+    float noise = sin(uTime * twinkleSpeed + position.x * 120.0 + position.y * 45.0) * 0.5
+                + sin(uTime * twinkleSpeed * 1.4 + position.z * 80.0) * 0.3
+                + cos(uTime * 8.0 + position.y * 200.0) * 0.2;
+                
     vOpacity = varFactor * depthFactor * ((1.0 - twinkleAmp) + twinkleAmp * noise);
     vAirmass = airmass;
 
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-    gl_PointSize = size * 0.9 * (vOpacity * 0.2 + 0.8) * (1000.0 / -mvPosition.z);
+    // Tamaño dinámico sutil con el centelleo para simular difracción atmosférica
+    float sizeTwinkle = 1.0 + (noise * 0.15 * airmass / 10.0);
+    gl_PointSize = size * sizeTwinkle * 0.9 * (vOpacity * 0.2 + 0.8) * (1000.0 / -mvPosition.z);
     gl_Position = projectionMatrix * mvPosition;
   }
 `;

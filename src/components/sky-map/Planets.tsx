@@ -123,13 +123,13 @@ function usePlanetTexture(key: string): THREE.CanvasTexture {
 }
 
 const PLANET_CONFIGS = [
-    { body: Astronomy.Body.Mercury, name: "Mercurio", symbol: "☿", color: "#b0b0b0", textureKey: "mercury" as const, description: (mag: number) => `El planeta más cercano al Sol. Mag: ${mag.toFixed(1)}` },
-    { body: Astronomy.Body.Venus,   name: "Venus",    symbol: "♀", color: "#f0e6c0", textureKey: "venus"   as const, description: (mag: number) => `El lucero del alba, cubierto de nubes. Mag: ${mag.toFixed(1)}` },
-    { body: Astronomy.Body.Mars,    name: "Marte",    symbol: "♂", color: "#c1440e", textureKey: "mars"    as const, description: (mag: number) => `El planeta rojo. Mag: ${mag.toFixed(1)}` },
-    { body: Astronomy.Body.Jupiter, name: "Júpiter",  symbol: "♃", color: "#c88b3a", textureKey: "jupiter" as const, description: (mag: number) => `Gigante gaseoso con su Gran Mancha Roja. Mag: ${mag.toFixed(1)}` },
-    { body: Astronomy.Body.Saturn,  name: "Saturno",  symbol: "♄", color: "#e8d890", textureKey: "saturn"  as const, description: (mag: number) => `El señor de los anillos. Mag: ${mag.toFixed(1)}` },
-    { body: Astronomy.Body.Uranus,  name: "Urano",    symbol: "⛢", color: "#7de8e8", textureKey: "uranus"  as const, description: (mag: number) => `Un gigante helado con eje inclinado. Mag: ${mag.toFixed(1)}` },
-    { body: Astronomy.Body.Neptune, name: "Neptuno",  symbol: "♆", color: "#3f54ba", textureKey: "neptune" as const, description: (mag: number) => `El planeta más lejano y ventoso. Mag: ${mag.toFixed(1)}` },
+    { body: Astronomy.Body.Mercury, name: "Mercurio", symbol: "☿", color: "#b0b0b0", textureKey: "mercury" as const, atmosphereColor: "#888888", description: (mag: number) => `El planeta más cercano al Sol. Mag: ${mag.toFixed(1)}` },
+    { body: Astronomy.Body.Venus,   name: "Venus",    symbol: "♀", color: "#f0e6c0", textureKey: "venus"   as const, atmosphereColor: "#e8dca0", description: (mag: number) => `El lucero del alba, cubierto de nubes. Mag: ${mag.toFixed(1)}` },
+    { body: Astronomy.Body.Mars,    name: "Marte",    symbol: "♂", color: "#c1440e", textureKey: "mars"    as const, atmosphereColor: "#ff7744", description: (mag: number) => `El planeta rojo. Mag: ${mag.toFixed(1)}` },
+    { body: Astronomy.Body.Jupiter, name: "Júpiter",  symbol: "♃", color: "#c88b3a", textureKey: "jupiter" as const, atmosphereColor: "#e8d890", description: (mag: number) => `Gigante gaseoso con su Gran Mancha Roja. Mag: ${mag.toFixed(1)}` },
+    { body: Astronomy.Body.Saturn,  name: "Saturno",  symbol: "♄", color: "#e8d890", textureKey: "saturn"  as const, atmosphereColor: "#f4ecb0", description: (mag: number) => `El señor de los anillos. Mag: ${mag.toFixed(1)}` },
+    { body: Astronomy.Body.Uranus,  name: "Urano",    symbol: "⛢", color: "#7de8e8", textureKey: "uranus"  as const, atmosphereColor: "#a0f4f4", description: (mag: number) => `Un gigante helado con eje inclinado. Mag: ${mag.toFixed(1)}` },
+    { body: Astronomy.Body.Neptune, name: "Neptuno",  symbol: "♆", color: "#3f54ba", textureKey: "neptune" as const, atmosphereColor: "#3f54ba", description: (mag: number) => `El planeta más lejano y ventoso. Mag: ${mag.toFixed(1)}` },
 ];
 
 const SUN_VERTEX_SHADER = `
@@ -160,8 +160,11 @@ const SUN_FRAGMENT_SHADER = `
         float rim = 1.0 - max(dot(vNormal, viewDir), 0.0);
         float intensity = pow(rim, 3.0);
         
-        vec3 glow = vec3(1.0, 0.7, 0.3) * intensity * 1.8;
-        vec3 sunBase = mix(color, vec3(1.0, 0.9, 0.7), 0.3);
+        // Simulación de granulación solar / actividad
+        float activity = sin(vUv.x * 20.0 + uTime) * cos(vUv.y * 20.0 - uTime) * 0.05;
+        
+        vec3 glow = vec3(1.0, 0.7, 0.3) * intensity * (1.8 + activity);
+        vec3 sunBase = mix(color, vec3(1.0, 0.9, 0.7), 0.3 + activity);
         
         gl_FragColor = vec4(sunBase + glow, uOpacity);
     }
@@ -194,22 +197,35 @@ const PLANET_FRAGMENT_SHADER = `
     uniform sampler2D uMap;
     uniform vec3 uLightDirection;
     uniform float uOpacity;
+    uniform vec3 uAtmosphereColor;
+
     void main() {
         vec3 color = texture2D(uMap, vUv).rgb;
 
-        // Iluminación: ambos en world-space → correcto independientemente del ángulo de cámara
+        // Iluminación: ambos en world-space
         vec3 normal = normalize(vNormalWorld);
         vec3 lightDir = normalize(uLightDirection);
         float dotNL = dot(normal, lightDir);
-        float light = smoothstep(-0.15, 0.25, dotNL);
+        
+        // Terminador suave para planetas con atmósfera
+        float light = smoothstep(-0.2, 0.4, dotNL);
 
-        // Fresnel: view-space normal vs dirección de vista (correcto para borde atmosférico)
+        // Fresnel: view-space normal vs dirección de vista
         vec3 viewDir = normalize(vViewPosition);
-        float fresnel = pow(1.0 - max(dot(normalize(vNormalView), viewDir), 0.0), 3.0);
-        vec3 atmosphericGlow = vec3(0.1, 0.3, 0.6) * fresnel * 0.5;
+        float vdn = max(dot(normalize(vNormalView), viewDir), 0.0);
+        float fresnel = pow(1.0 - vdn, 4.0);
+        
+        // Brillo atmosférico dependiente de la luz
+        float lightFactor = smoothstep(-0.1, 0.5, dotNL);
+        vec3 atmosphericGlow = uAtmosphereColor * fresnel * 0.8 * lightFactor;
 
-        float ambient = 0.06;
+        float ambient = 0.04;
         vec3 finalColor = color * (light + ambient) + atmosphericGlow;
+        
+        // Rim lighting sutil en el lado iluminado
+        float rim = pow(fresnel, 2.0) * lightFactor * 0.3;
+        finalColor += uAtmosphereColor * rim;
+
         gl_FragColor = vec4(finalColor, uOpacity);
     }
 `;
@@ -303,6 +319,67 @@ function SunMesh({ pos }: { pos: [number, number, number] }) {
     );
 }
 
+const SATURN_RINGS_VERTEX_SHADER = `
+    varying vec2 vUv;
+    varying vec3 vViewPosition;
+    void main() {
+        vUv = uv;
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        vViewPosition = -mvPosition.xyz;
+        gl_Position = projectionMatrix * mvPosition;
+    }
+`;
+
+const SATURN_RINGS_FRAGMENT_SHADER = `
+    varying vec2 vUv;
+    varying vec3 vViewPosition;
+    uniform float uOpacity;
+    uniform vec3 uColor;
+
+    void main() {
+        float dist = distance(vUv, vec2(0.5));
+        
+        // Simulación de divisiones de Cassini y bandas de polvo
+        // Los anillos van de 0.25 a 0.5 en UV dist
+        if (dist < 0.28 || dist > 0.48) discard;
+        
+        float ringPattern = sin(dist * 300.0) * 0.1 + 0.9;
+        float cassiniDivision = (dist > 0.38 && dist < 0.40) ? 0.1 : 1.0;
+        
+        float alpha = uOpacity * smoothstep(0.28, 0.30, dist) * (1.0 - smoothstep(0.46, 0.48, dist));
+        
+        gl_FragColor = vec4(uColor * ringPattern, alpha * cassiniDivision);
+    }
+`;
+
+function SaturnRings({ opacity, scale }: { opacity: number, scale: number }) {
+    const meshRef = useRef<THREE.Mesh>(null);
+    const uniforms = useMemo(() => ({
+        uOpacity: { value: 0 },
+        uColor: { value: new THREE.Color('#d4c480') }
+    }), []);
+
+    useFrame(() => {
+        if (meshRef.current) {
+            (meshRef.current.material as THREE.ShaderMaterial).uniforms.uOpacity.value = opacity;
+        }
+    });
+
+    return (
+        <mesh ref={meshRef} rotation={[-Math.PI / 2.5, 0, 0]} scale={[scale, scale, scale]}>
+            <ringGeometry args={[0.5, 1.1, 128]} />
+            <shaderMaterial
+                vertexShader={SATURN_RINGS_VERTEX_SHADER}
+                fragmentShader={SATURN_RINGS_FRAGMENT_SHADER}
+                uniforms={uniforms}
+                transparent
+                side={THREE.DoubleSide}
+                depthWrite={false}
+            />
+        </mesh>
+    );
+}
+
 function MoonMesh({
     planet,
     phase,
@@ -323,7 +400,8 @@ function MoonMesh({
     const uniforms = useMemo(() => ({
         uMap: { value: null as THREE.Texture | null },
         uOpacity: { value: 0 },
-        uLightDirection: { value: new THREE.Vector3(1, 0, 0) }
+        uLightDirection: { value: new THREE.Vector3(1, 0, 0) },
+        uAtmosphereColor: { value: new THREE.Color('#ffffff') }
     }), []);
 
     useFrame(() => {
@@ -396,6 +474,7 @@ interface PlanetData {
     name: string;
     pos: [number, number, number];
     textureKey: string;
+    atmosphereColor: string;
     ra: number;
     dec: number;
     dist: number;
@@ -428,8 +507,9 @@ function PlanetMesh({
     const uniforms = useMemo(() => ({
         uMap: { value: null as THREE.Texture | null },
         uOpacity: { value: 0 },
-        uLightDirection: { value: new THREE.Vector3(1, 0, 0) }
-    }), []);
+        uLightDirection: { value: new THREE.Vector3(1, 0, 0) },
+        uAtmosphereColor: { value: new THREE.Color(planet.atmosphereColor) }
+    }), [planet.atmosphereColor]);
 
     useFrame(() => {
         if (!meshRef.current) return;
@@ -476,15 +556,7 @@ function PlanetMesh({
                     />
                 </mesh>
                 {planet.name === "Saturno" && (
-                    <mesh rotation={[Math.PI / 2.5, 0, 0]} castShadow receiveShadow>
-                        <ringGeometry args={[scale * 1.4, scale * 2.4, 64]} />
-                        <meshStandardMaterial
-                            map={texture}
-                            transparent
-                            opacity={opacity * 0.8}
-                            side={THREE.DoubleSide}
-                        />
-                    </mesh>
+                    <SaturnRings opacity={opacity} scale={scale * 2.2} />
                 )}
             </Float>
             <Html>

@@ -6,6 +6,7 @@ import { useCatalog } from '@/stores/useCatalogStore';
 import { useAppStore } from '@/stores/useAppStore';
 import { Search, Star as StarIcon, Orbit, CloudFog, Sparkles, X, Globe2, Share2, ChevronDown, Pin, PinOff } from 'lucide-react';
 import { useState, useMemo, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { CSSProperties } from 'react';
 import { cn } from '@/lib/utils';
 import type { Star, DSO, Planet } from '@/types/celestial';
@@ -44,7 +45,7 @@ function readPinnedSections(): SectionKey[] {
     }
 }
 
-// Constellation centroid helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// --- Constellation centroid helpers ------------------------------------------
 
 /** Inverse of equatorialTo3D(ra, dec, 1) */
 function vec3ToRaDec(x: number, y: number, z: number): { ra: number; dec: number } {
@@ -80,7 +81,7 @@ function buildConstellationTargets(starMap: Map<string, { name: string; ra: numb
             mag: 0,
             desc: `Constelaci\u00f3n de ${getConstellationDisplayName(name)} \u2014 ${count} estrellas en el cat\u00e1logo`,
             color: '#b4d2ff',
-            symbol: '\u2736',   // âœ¶ marker to identify constellation targets
+            symbol: '\u2736',   // Star marker to identify constellation targets
             kind: 'planet' as const,
         };
     }).filter(Boolean) as Planet[];
@@ -286,7 +287,7 @@ export default function GuideTab() {
             sections.push({ key: 'nebulae', label: 'Nebulosas', shortLabel: 'Nebulosas', count: Math.min(nebulaTotal, limit), total: nebulaTotal, tone: 'text-emerald-300 border-emerald-400/25 bg-emerald-500/10' });
         }
         if ((filter === 'all' || filter === 'clusters') && clusterTotal > 0) {
-            sections.push({ key: 'clusters', label: 'CÃºmulos', shortLabel: 'CÃºmulos', count: Math.min(clusterTotal, limit), total: clusterTotal, tone: 'text-blue-300 border-blue-400/25 bg-blue-500/10' });
+            sections.push({ key: 'clusters', label: 'Cúmulos', shortLabel: 'Cúmulos', count: Math.min(clusterTotal, limit), total: clusterTotal, tone: 'text-blue-300 border-blue-400/25 bg-blue-500/10' });
         }
         if ((filter === 'all' || filter === 'constellations') && constellationList.length > 0) {
             sections.push({ key: 'constellations', label: 'Constelaciones', shortLabel: 'Constel.', count: constellationList.length, total: constellationTotal, tone: 'text-indigo-300 border-indigo-400/25 bg-indigo-500/10' });
@@ -351,11 +352,22 @@ export default function GuideTab() {
                         {planetList.map((planet) => {
                             const active = isTargeted(planet);
                             return (
-                                <div key={skyObjectKey(planet, 'planet')}>
+                                 <motion.div 
+                                    layout
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    key={skyObjectKey(planet, 'planet')}
+                                >
                                     <button onClick={() => handleSelect(planet)}
-                                        className={cn('w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all border',
+                                        className={cn('w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all border group relative overflow-hidden',
                                             active ? 'border-orange-400/40 bg-orange-500/10 text-orange-200'
                                                 : 'border-transparent hover:border-white/12 hover:bg-white/4 text-white/75 hover:text-white')}>
+                                        {active && (
+                                            <motion.div 
+                                                layoutId="activePlanetGlow"
+                                                className="absolute inset-0 bg-orange-500/5 blur-xl pointer-events-none"
+                                            />
+                                        )}
                                         <span
                                             className="accent-color text-[14px] shrink-0 leading-none"
                                             style={{ '--accent-color': planet.color } as CSSProperties}
@@ -381,11 +393,22 @@ export default function GuideTab() {
                                             )}
                                         </div>
                                         <span className="text-[10px] text-white/40 shrink-0 font-mono">{planet.mag.toFixed(1)}</span>
-                                        <div suppressHydrationWarning title={planet.alt > 0 ? `Visible Ã‚Â· Alt ${planet.alt.toFixed(0)}Ã‚Â°` : 'Bajo el horizonte'}
-                                            className={cn('w-1.5 h-1.5 rounded-full shrink-0 ml-0.5', planet.alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15')} />
+                                        <div suppressHydrationWarning title={planet.alt > 0 ? `Visible \u00b7 Alt ${planet.alt.toFixed(0)}\u00b0` : 'Bajo el horizonte'}
+                                            className={cn('w-1.5 h-1.5 rounded-full shrink-0 ml-0.5 transition-shadow duration-300', planet.alt > 0 ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'bg-white/15')} />
                                     </button>
-                                    {active && <InfoCard obj={planet} />}
-                                </div>
+                                    <AnimatePresence>
+                                        {active && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: 'auto', opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                className="overflow-hidden"
+                                            >
+                                                <InfoCard obj={planet} />
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </motion.div>
                             );
                         })}
                     </div>
@@ -418,7 +441,7 @@ export default function GuideTab() {
                                         <span className="text-[10px] text-white/35 shrink-0 italic hidden sm:block truncate max-w-[64px]">
                                             {getConstellationDisplayName(star.constellation)}
                                         </span>
-                                        <div suppressHydrationWarning title={star.alt > 0 ? `Visible Ã‚Â· Alt ${star.alt.toFixed(0)}Ã‚Â°` : 'Bajo el horizonte'}
+                                        <div suppressHydrationWarning title={star.alt > 0 ? `Visible \u00b7 Alt ${star.alt.toFixed(0)}\u00b0` : 'Bajo el horizonte'}
                                             className={cn('w-1.5 h-1.5 rounded-full shrink-0 ml-0.5', star.alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15')} />
                                     </button>
                                     {active && <InfoCard obj={star} />}
@@ -444,7 +467,7 @@ export default function GuideTab() {
                 sectionRef={(element) => { sectionRefs.current.nebulae = element; }} />
         ) : null,
         clusters: (filter === 'all' || filter === 'clusters') && dsoList.filter(d => d.type === 'cluster').length > 0 ? (
-            <DSOSection title="CÃƒÂºmulos" items={dsoList.filter(d => d.type === 'cluster').slice(0, limit)}
+            <DSOSection title="Cúmulos" items={dsoList.filter(d => d.type === 'cluster').slice(0, limit)}
                 total={clusterTotal} isOpen={openSections.clusters} onToggle={() => toggleSection('clusters')}
                 isTargeted={isTargeted} onSelect={handleSelect}
                 isPinned={pinnedSections.includes('clusters')} onTogglePinned={() => togglePinnedSection('clusters')}
@@ -502,7 +525,7 @@ export default function GuideTab() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                 <input
                     type="text"
-                    placeholder="Buscar objeto o constelaciÃ³n..."
+                    placeholder="Buscar objeto o constelación..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="w-full rounded-lg border border-white/15 bg-white/[0.06] py-2.5 pl-10 pr-8 text-[12px] font-mono text-white/85 focus:outline-none transition-colors placeholder:text-white/25"
@@ -569,8 +592,8 @@ export default function GuideTab() {
                 <div className="rounded-xl border border-white/10 bg-white/[0.03] p-2.5 space-y-2">
                     <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0">
-                            <p className="text-[9px] font-bold uppercase tracking-[0.24em] text-white/35">Acceso rÃ¡pido</p>
-                            <p className="text-[11px] text-white/55">Abre o salta a una secciÃ³n sin recorrer todo el panel.</p>
+                            <p className="text-[9px] font-bold uppercase tracking-[0.24em] text-white/35">Acceso rápido</p>
+                            <p className="text-[11px] text-white/55">Abre o salta a una sección sin recorrer todo el panel.</p>
                         </div>
                         <div className="flex items-center gap-1">
                             <button
@@ -684,7 +707,7 @@ export default function GuideTab() {
                                                 )}
                                             </div>
                                             <span className="text-[10px] text-white/40 shrink-0 font-mono">{planet.mag.toFixed(1)}</span>
-                                            <div suppressHydrationWarning title={planet.alt > 0 ? `Visible Â· Alt ${planet.alt.toFixed(0)}Â°` : 'Bajo el horizonte'}
+                                            <div suppressHydrationWarning title={planet.alt > 0 ? `Visible \u00b7 Alt ${planet.alt.toFixed(0)}\u00b0` : 'Bajo el horizonte'}
                                                 className={cn('w-1.5 h-1.5 rounded-full shrink-0 ml-0.5', planet.alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15')} />
                                         </button>
                                         {active && <InfoCard obj={planet} />}
@@ -723,7 +746,7 @@ export default function GuideTab() {
                                             <span className="text-[10px] text-white/35 shrink-0 italic hidden sm:block truncate max-w-[64px]">
                                                 {getConstellationDisplayName(star.constellation)}
                                             </span>
-                                            <div suppressHydrationWarning title={star.alt > 0 ? `Visible Â· Alt ${star.alt.toFixed(0)}Â°` : 'Bajo el horizonte'}
+                                            <div suppressHydrationWarning title={star.alt > 0 ? `Visible \u00b7 Alt ${star.alt.toFixed(0)}\u00b0` : 'Bajo el horizonte'}
                                                 className={cn('w-1.5 h-1.5 rounded-full shrink-0 ml-0.5', star.alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15')} />
                                         </button>
                                         {active && <InfoCard obj={star} />}
@@ -754,7 +777,7 @@ export default function GuideTab() {
             )}
 
             {(filter === 'all' || filter === 'clusters') && dsoList.filter(d => d.type === 'cluster').length > 0 && (
-                <DSOSection title="CÃºmulos" items={dsoList.filter(d => d.type === 'cluster').slice(0, limit)}
+                <DSOSection title="Cúmulos" items={dsoList.filter(d => d.type === 'cluster').slice(0, limit)}
                     total={clusterTotal} isOpen={openSections.clusters} onToggle={() => toggleSection('clusters')}
                     isTargeted={isTargeted} onSelect={handleSelect}
                     isPinned={pinnedSections.includes('clusters')} onTogglePinned={() => togglePinnedSection('clusters')}
@@ -880,45 +903,74 @@ function DSOSection({ title, items, total, isOpen, onToggle, isTargeted, onSelec
                 isPinned={isPinned}
                 onTogglePinned={onTogglePinned}
             />
-            <div
-                className="overflow-hidden transition-all duration-200"
-                style={{ maxHeight: isOpen ? '2000px' : '0px', opacity: isOpen ? 1 : 0 }}
-            >
-                <div className="space-y-0.5 pb-1">
-                    {items.map((dso) => {
-                        const active = isTargeted(dso);
-                        return (
-                            <div key={dso.id}>
-                                <button
-                                    onClick={() => onSelect(dso)}
-                                    className={cn(
-                                        'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all border',
-                                        active
-                                            ? dsoActiveClass(dso.type)
-                                            : 'border-transparent hover:border-white/12 hover:bg-white/4 text-white/75 hover:text-white'
-                                    )}
-                                >
-                                    <DSOTypeIcon type={dso.type} />
-                                    <div className="flex flex-col flex-1 min-w-0">
-                                        <span className="text-[13px] font-semibold truncate">{dso.name}</span>
-                                        <span className="text-[10px] text-white/40 font-mono">{dso.id}</span>
-                                    </div>
-                                    <span className="text-[10px] text-white/40 shrink-0 font-mono">{dso.mag.toFixed(1)}</span>
-                                    <div
-                                        suppressHydrationWarning
-                                        title={dso.alt > 0 ? `Visible \u00b7 Alt ${dso.alt.toFixed(0)}\u00b0` : 'Bajo el horizonte'}
-                                        className={cn(
-                                            'w-1.5 h-1.5 rounded-full shrink-0 ml-0.5',
-                                            dso.alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15'
-                                        )}
-                                    />
-                                </button>
-                                {active && <InfoCard obj={dso} />}
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                        className="overflow-hidden"
+                    >
+                        <div className="space-y-0.5 pb-1">
+                            {items.map((dso, i) => {
+                                const active = isTargeted(dso);
+                                return (
+                                    <motion.div 
+                                        initial={{ opacity: 0, x: -5 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: i * 0.02 }}
+                                        key={dso.id}
+                                    >
+                                        <button
+                                            onClick={() => onSelect(dso)}
+                                            className={cn(
+                                                'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all border group relative overflow-hidden',
+                                                active
+                                                    ? dsoActiveClass(dso.type)
+                                                    : 'border-transparent hover:border-white/12 hover:bg-white/4 text-white/75 hover:text-white'
+                                            )}
+                                        >
+                                            {active && (
+                                                <motion.div 
+                                                    layoutId={`activeDsoGlow-${title}`}
+                                                    className="absolute inset-0 bg-white/5 blur-xl pointer-events-none"
+                                                />
+                                            )}
+                                            <DSOTypeIcon type={dso.type} />
+                                            <div className="flex flex-col flex-1 min-w-0">
+                                                <span className="text-[13px] font-semibold truncate">{dso.name}</span>
+                                                <span className="text-[10px] text-white/40 font-mono">{dso.id}</span>
+                                            </div>
+                                            <span className="text-[10px] text-white/40 shrink-0 font-mono">{dso.mag.toFixed(1)}</span>
+                                            <div
+                                                suppressHydrationWarning
+                                                title={dso.alt > 0 ? `Visible \u00b7 Alt ${dso.alt.toFixed(0)}\u00b0` : 'Bajo el horizonte'}
+                                                className={cn(
+                                                    'w-1.5 h-1.5 rounded-full shrink-0 ml-0.5 transition-shadow duration-300',
+                                                    dso.alt > 0 ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'bg-white/15'
+                                                )}
+                                            />
+                                        </button>
+                                        <AnimatePresence>
+                                            {active && (
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: 'auto', opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    className="overflow-hidden"
+                                                >
+                                                    <InfoCard obj={dso} />
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </motion.div>
+                                );
+                            })}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </section>
     );
 }
