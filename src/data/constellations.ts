@@ -368,6 +368,10 @@ export const CONSTELLATIONS: Record<string, [string, string][]> = {
         ["Mekbuda", "Alhena"],
         ["Alhena", "Alzirr"],
         ["Wasat", "Gem-St202"],
+        ["Castor", "Theta Gem"],
+        ["Pollux", "Kappa Gem"],
+        ["Gem-St200", "Iota Gem"],
+        ["Iota Gem", "Gem-St201"],
     ],
     "Grus": [
         ["Gru-St203", "Gru-St204"],

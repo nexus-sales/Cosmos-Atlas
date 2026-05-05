@@ -139,15 +139,13 @@ export function useDeviceOrientation() {
             deviceOrientationRef.beta = rawBeta;
             deviceOrientationRef.gamma = rawGamma;
 
-            // ── Compensación de orientación de pantalla ──────────────────────
             // 0=portrait, 90=landscape-left, 270=landscape-right
             const screenAngle: number =
                 (typeof screen !== 'undefined' && screen.orientation?.angle != null)
                     ? screen.orientation.angle
                     : (window.orientation || 0) as number;
 
-            // Norte magnético desde los ángulos crudos de dispositivo físico, 
-            // no sobre iterados suavizados (evita gimbal lock)
+            // Norte magnético del eje -Z (cámara trasera)
             const magneticHeading = extractMagneticHeading(
                 e as CompassCapableEvent,
                 rawAlpha,
@@ -155,17 +153,16 @@ export function useDeviceOrientation() {
                 rawGamma,
             );
             
-            // La cámara 'gira' con la pantalla. Hay que sumar screenAngle.
-            const correctedHeading = ((magneticHeading + screenAngle) % 360 + 360) % 360;
+            // La cámara siempre apunta a lo largo del eje físico -Z del dispositivo.
+            // Al rotar la pantalla a landscape, el navegador rota el Canvas, pero
+            // el eje -Z sigue apuntando a la misma estrella física. 
+            // NO debemos sumar screenAngle al heading en modo AR.
+            const correctedHeading = magneticHeading;
 
-            const screenRad = (screenAngle * Math.PI) / 180;
-            const cosOrient = Math.cos(screenRad);
-            const sinOrient = Math.sin(screenRad);
-            // Inclinación real del dispositivo en el marco del usuario
-            const adjustedBeta = rawAlpha !== 0 || rawGamma !== 0 // Si tenemos giroscopio
-                ? rawBeta * cosOrient - rawGamma * sinOrient
-                : rawBeta;
-            const rawElevation = Math.max(-90, Math.min(90, 90 - adjustedBeta));
+            // Inclinación real del eje -Z del dispositivo sobre el horizonte
+            // Usamos trigonometría esférica directa: Z_world = -cos(beta) * cos(gamma)
+            const zWorld = -Math.cos(rawBeta * Math.PI / 180) * Math.cos(rawGamma * Math.PI / 180);
+            const rawElevation = Math.asin(Math.max(-1, Math.min(1, zWorld))) * (180 / Math.PI);
 
             if (!filterInitialized.current) {
                 deviceOrientationRef.heading = correctedHeading;
