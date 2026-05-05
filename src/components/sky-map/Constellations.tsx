@@ -296,6 +296,7 @@ export default function Constellations() {
                                         count={nodesPositions.length / 3}
                                         array={nodesPositions}
                                         itemSize={3}
+                                        args={[nodesPositions, 3]}
                                     />
                                 </bufferGeometry>
                                 <pointsMaterial

@@ -317,6 +317,7 @@ function OrientationDriver() {
             -Math.sin(elRad) * 0.01,
             Math.cos(azRad) * Math.cos(elRad) * 0.01,
         );
+        camera.lookAt(0, 0, 0);
     });
 
     return null;
@@ -349,7 +350,7 @@ function DynamicEffects() {
     const bloomIntensity = deviceQuality === 'low' ? 0.2 : 0.5 + warpFactor * 1.5;
 
     return (
-        <EffectComposer disableNormalPass>
+        <EffectComposer enableNormalPass={false}>
             <Bloom 
                 intensity={bloomIntensity}
                 luminanceThreshold={0.5}

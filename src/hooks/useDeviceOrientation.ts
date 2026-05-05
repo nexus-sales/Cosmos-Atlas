@@ -55,7 +55,7 @@ function applyAlphaFilter(prev: number, raw: number, alpha: number): number {
     return ((filtered % 360) + 360) % 360;
 }
 
-function computeCompassHeading(alpha: number, beta: number, gamma: number): number {
+export function computeRearCameraHeading(alpha: number, beta: number, gamma: number): number {
     const degToRad = Math.PI / 180;
     const x = beta * degToRad;
     const y = gamma * degToRad;
@@ -70,16 +70,26 @@ function computeCompassHeading(alpha: number, beta: number, gamma: number): numb
     const vx = -cZ * sY - sZ * sX * cY;
     const vy = -sZ * sY + cZ * sX * cY;
 
-    // Undo negation, standard is correct for CW heading when used with rotating dial
-    return (Math.atan2(vx, vy) * (180 / Math.PI) + 360) % 360;
+    // vx/vy are the horizontal projection of the device +Z axis (out of the
+    // screen). The rear camera looks along -Z, so use the opposite vector.
+    return (Math.atan2(-vx, -vy) * (180 / Math.PI) + 360) % 360;
+}
+
+export function computeRearCameraElevation(beta: number, gamma: number): number {
+    // Android/Chrome reports portrait pitch with beta=90 at the horizon and
+    // beta trending toward 0 as the rear camera is raised toward the sky.
+    const rearZWorld = Math.cos(beta * Math.PI / 180) * Math.cos(gamma * Math.PI / 180);
+    return Math.asin(Math.max(-1, Math.min(1, rearZWorld))) * (180 / Math.PI);
 }
 
 function extractMagneticHeading(e: CompassCapableEvent, alpha: number, beta: number, gamma: number): number {
     if (typeof e.webkitCompassHeading === 'number' && Number.isFinite(e.webkitCompassHeading)) {
-        return (e.webkitCompassHeading + 360) % 360;
+        // Safari's compass heading follows the device-facing axis used by
+        // compass UIs. AR camera mode needs the rear camera axis instead.
+        return (e.webkitCompassHeading + 180) % 360;
     }
 
-    return computeCompassHeading(alpha, beta, gamma);
+    return computeRearCameraHeading(alpha, beta, gamma);
 }
 
 /**
@@ -159,10 +169,8 @@ export function useDeviceOrientation() {
             // NO debemos sumar screenAngle al heading en modo AR.
             const correctedHeading = magneticHeading;
 
-            // Inclinación real del eje -Z del dispositivo sobre el horizonte
-            // Usamos trigonometría esférica directa: Z_world = -cos(beta) * cos(gamma)
-            const zWorld = -Math.cos(rawBeta * Math.PI / 180) * Math.cos(rawGamma * Math.PI / 180);
-            const rawElevation = Math.asin(Math.max(-1, Math.min(1, zWorld))) * (180 / Math.PI);
+            // Inclinación real del eje -Z del dispositivo sobre el horizonte.
+            const rawElevation = computeRearCameraElevation(rawBeta, rawGamma);
 
             if (!filterInitialized.current) {
                 deviceOrientationRef.heading = correctedHeading;
