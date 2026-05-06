@@ -21,7 +21,12 @@ export function middleware(request: NextRequest) {
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-nonce', nonce);
-  requestHeaders.set('Content-Security-Policy', cspHeader);
+  
+  // En desarrollo con Turbopack o HMR, una CSP estricta bloquea los scripts internos de Next.js
+  // Solo aplicamos CSP restrictiva en producción para no romper el entorno de desarrollo.
+  if (process.env.NODE_ENV === 'production') {
+    requestHeaders.set('Content-Security-Policy', cspHeader);
+  }
 
   const response = NextResponse.next({
     request: {
@@ -29,7 +34,9 @@ export function middleware(request: NextRequest) {
     },
   });
   
-  response.headers.set('Content-Security-Policy', cspHeader);
+  if (process.env.NODE_ENV === 'production') {
+    response.headers.set('Content-Security-Policy', cspHeader);
+  }
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
