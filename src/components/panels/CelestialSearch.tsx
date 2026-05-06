@@ -248,7 +248,7 @@ export default function CelestialSearch() {
             </div>
 
             {isOpen && (results.length > 0 || query.length > 2) && (
-                <div className="animate-in slide-in-from-top-2 absolute left-0 right-0 top-full z-[100] mt-2 overflow-hidden rounded-xl border border-white/10 bg-black/95 shadow-2xl backdrop-blur-2xl fade-in duration-200">
+                <div className="animate-in slide-in-from-top-2 absolute left-0 right-0 top-full z-[100] mt-2 overflow-hidden rounded-xl border border-white/10 bg-black/95 shadow-2xl glass-blur-heavy fade-in duration-200">
                     <div className="p-1">
                         {results.length > 0 && results[0].resultType === 'history' && (
                             <div className="mb-1 flex items-center justify-between border-b border-white/5 px-3 py-1.5">

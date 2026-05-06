@@ -126,8 +126,8 @@ export default function Compass() {
                 <button
                     onClick={handleCompassClick}
                     className={followOrientation
-                        ? 'relative w-16 h-16 rounded-full bg-black/60 backdrop-blur-md border border-[#44aaff66] hover:border-blue-400/50 shadow-[0_0_12px_rgba(68,170,255,0.25)] transition-all duration-200 flex items-center justify-center'
-                        : 'relative w-16 h-16 rounded-full bg-black/60 backdrop-blur-md border border-white/20 hover:border-blue-400/50 shadow-lg shadow-black/50 transition-all duration-200 flex items-center justify-center'
+                        ? 'relative w-16 h-16 rounded-full bg-black/60 glass-blur border border-[#44aaff66] hover:border-blue-400/50 shadow-[0_0_12px_rgba(68,170,255,0.25)] transition-all duration-200 flex items-center justify-center'
+                        : 'relative w-16 h-16 rounded-full bg-black/60 glass-blur border border-white/20 hover:border-blue-400/50 shadow-lg shadow-black/50 transition-all duration-200 flex items-center justify-center'
                     }
                     title={followOrientation ? 'Orientacion AR activa' : 'Clic: Cenit | Doble clic: Norte'}
                 >
@@ -173,7 +173,7 @@ export default function Compass() {
                             onClick={handleARToggle}
                             title={followOrientation ? 'Desactivar orientacion' : 'Activar orientacion del dispositivo'}
                             className={`mt-1 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-bold tracking-wider
-                                        border backdrop-blur-md shadow-lg transition-all duration-200
+                                        border glass-blur shadow-lg transition-all duration-200
                                         ${followOrientation
                                     ? 'bg-blue-500/30 border-blue-400/60 text-blue-300'
                                     : 'bg-black/60 border-white/15 text-white/40 hover:border-white/30 hover:text-white/60'
@@ -193,7 +193,7 @@ export default function Compass() {
                                 <button
                                     onClick={handleCalibrateNorth}
                                     title="Apunta a Polaris y pulsa para alinear el norte real"
-                                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-bold tracking-wider border border-amber-400/45 bg-amber-500/20 text-amber-100 backdrop-blur-md shadow-lg transition-all duration-200 hover:bg-amber-500/30"
+                                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-bold tracking-wider border border-amber-400/45 bg-amber-500/20 text-amber-100 glass-blur shadow-lg transition-all duration-200 hover:bg-amber-500/30"
                                 >
                                     Polaris
                                 </button>

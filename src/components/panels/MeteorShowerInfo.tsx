@@ -29,12 +29,12 @@ export default function MeteorShowerInfo() {
         .slice(0, 3);
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 min-h-[400px]">
             <div className="atlas-card rounded-2xl p-4">
                 <div className="flex items-start justify-between gap-3">
                     <div>
                         <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/42">
-                            <CloudRain className="h-3.5 w-3.5 text-blue-300/70" />
+                            <CloudRain className="h-3.5 w-3.5 text-cyan-300/70" />
                             Vigilancia de Meteoros
                         </div>
                         <div className="mt-1 text-[15px] font-semibold text-white">
@@ -77,24 +77,24 @@ export default function MeteorShowerInfo() {
             {bestShower && (
                 <div className="atlas-card rounded-2xl p-3.5">
                     <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/34">
-                        <Sparkles className="h-3.5 w-3.5 text-blue-300/70" />
+                        <Sparkles className="h-3.5 w-3.5 text-cyan-300/70" />
                         Lluvia Principal
                     </div>
                     <div className="mt-3 flex items-start justify-between gap-3">
                         <div>
                             <div className="text-[13px] font-semibold text-white">{bestShower.shortName}</div>
                             <div className="mt-1 flex items-center gap-1.5 text-[11px] text-white/54">
-                                <Eye className="h-3 w-3 text-blue-200/70" />
+                                <Eye className="h-3 w-3 text-cyan-200/70" />
                                 Mejor con cielos oscuros y, si es posible, después de la puesta de la Luna.
                             </div>
                             <div className="mt-1 flex items-center gap-1.5 text-[11px] text-white/54">
-                                <Clock3 className="h-3 w-3 text-blue-200/70" />
+                                <Clock3 className="h-3 w-3 text-cyan-200/70" />
                                 Máximo: {new Date(bestShower.peakDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}
                             </div>
                         </div>
-                        <div className="rounded-xl border border-blue-400/20 bg-blue-500/10 px-3 py-2 text-right">
-                            <div className="text-[9px] uppercase tracking-[0.16em] text-blue-200/60">Actividad</div>
-                            <div className="mt-1 text-[15px] font-semibold text-blue-100">
+                        <div className="rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-3 py-2 text-right">
+                            <div className="text-[9px] uppercase tracking-[0.16em] text-cyan-200/60">Actividad</div>
+                            <div className="mt-1 text-[15px] font-semibold text-cyan-100">
                                 {Math.round(getShowerActivity(bestShower, date) * 100)}%
                             </div>
                         </div>
@@ -105,7 +105,7 @@ export default function MeteorShowerInfo() {
             {activeShowers.length > 1 && (
                 <section className="space-y-2">
                     <div className="flex items-center gap-2 px-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/34">
-                        <TrendingUp className="h-3.5 w-3.5 text-blue-300/70" />
+                        <TrendingUp className="h-3.5 w-3.5 text-cyan-300/70" />
                         Otras Lluvias Activas
                     </div>
                     <div className="space-y-2">
@@ -131,7 +131,7 @@ export default function MeteorShowerInfo() {
 
             <section className="space-y-2">
                 <div className="flex items-center gap-2 px-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/34">
-                    <Clock3 className="h-3.5 w-3.5 text-blue-300/70" />
+                    <Clock3 className="h-3.5 w-3.5 text-cyan-300/70" />
                     Próximos Máximos
                 </div>
                 <div className="space-y-2">

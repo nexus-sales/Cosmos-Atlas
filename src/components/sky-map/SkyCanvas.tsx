@@ -249,14 +249,6 @@ function WebGLContextMonitor({ onLost, onRestored }: { onLost: () => void; onRes
     return null;
 }
 
-/**
- * Rota toda la esfera celeste (coordenadas ecuatoriales) al sistema
- * horizontal local del observador:
- *   - rotation.x = 90 - lat   → inclina el polo norte celeste
- *   - rotation.y = -LST        → gira para la hora sidérea local
- * Con esto las estrellas se mueven correctamente según la ubicación
- * y la hora real, exactamente como en el cielo nocturno.
- */
 function CelestialGroup({ children }: { children: React.ReactNode }) {
     const groupRef = useRef<THREE.Group>(null);
 
@@ -264,10 +256,20 @@ function CelestialGroup({ children }: { children: React.ReactNode }) {
         if (!groupRef.current) return;
         const { time, observer } = useAppStore.getState();
         const lst = getLST(time, observer.lon);
-        // La inclinación del eje polar debe ser 90 - lat para que el polo apunte 
-        // a la elevación correcta sobre el horizonte.
+        
+        // RE-INGENIERÍA DIABLO: Alineación de ejes para AR móvil.
+        // 1. Inclinación del eje (phi): Rotación en X.
+        //    Para el hemisferio Norte (lat > 0), el polo norte está a 'lat' grados sobre el horizonte.
+        //    Three.js usa un sistema +Y up. El eje polar debe inclinarse '90 - lat'.
         groupRef.current.rotation.x = THREE.MathUtils.degToRad(90 - observer.lat);
+        
+        // 2. Rotación de tiempo (theta): Rotación en Y.
+        //    Usamos -LST para sincronizar el meridiano local con el Punto Aries.
         groupRef.current.rotation.y = THREE.MathUtils.degToRad(-lst);
+        
+        // Aseguramos que el orden de rotación sea YXZ para que el tiempo (Y)
+        // se aplique sobre el eje ya inclinado por la latitud (X).
+        groupRef.current.rotation.order = 'YXZ';
     });
 
     return <group ref={groupRef}>{children}</group>;
@@ -295,31 +297,46 @@ function OrientationDriver() {
             lastObsRef.current = { lat: observer.lat, lon: observer.lon, year };
         }
 
+        // Heading: 0=N, 90=E, 180=S, 270=W.
         const rawHeading = deviceOrientationRef.heading;
         const trueHeading = ((rawHeading + declRef.current + compassCalibrationOffset) % 360 + 360) % 360;
         const elevation   = deviceOrientationRef.elevation;
 
-        // Factor 0.9 → cierre del 90% del error en 1 frame (~16ms).
-        // El EMA del hook (τ≈48ms) ya filtra el jitter del sensor.
-        // Un segundo lerp lento añadiría 300ms de lag inaceptable en AR.
+        // Suavizado ultra-rápido para AR
         const dAz = ((trueHeading - azRef.current) % 360 + 540) % 360 - 180;
-        if (Math.abs(dAz) > 0.05) {
-            azRef.current = (azRef.current + dAz * 0.9 + 360) % 360;
-        }
+        azRef.current = (azRef.current + dAz * 0.95 + 360) % 360;
+        
         const dEl = elevation - elRef.current;
-        if (Math.abs(dEl) > 0.05) {
-            elRef.current += dEl * 0.9;
-        }
+        elRef.current += dEl * 0.95;
 
         const elRad = THREE.MathUtils.degToRad(elRef.current);
         const azRad = THREE.MathUtils.degToRad(azRef.current);
 
-        camera.position.set(
-            -Math.sin(azRad) * Math.cos(elRad) * 0.01,
-            -Math.sin(elRad) * 0.01,
-            Math.cos(azRad) * Math.cos(elRad) * 0.01,
-        );
-        camera.lookAt(0, 0, 0);
+        // RE-INGENIERÍA DIABLO: Mapeo de Cámara AR.
+        // Three.js: +X=Derecha, +Y=Arriba, +Z=Hacia atrás (viniendo del monitor).
+        // En nuestro mapa: +Z es el SUR, +X es el ESTE.
+        // Si el usuario mira al NORTE (az=0), la cámara debe mirar hacia -Z.
+        // Si el usuario mira al ESTE (az=90), la cámara debe mirar hacia +X.
+        
+        const targetX = Math.sin(azRad) * Math.cos(elRad);
+        const targetY = Math.sin(elRad);
+        const targetZ = -Math.cos(azRad) * Math.cos(elRad);
+
+        // RE-INGENIERÍA DIABLO: Posicionamos la cámara en el centro y miramos hacia AFUERA.
+        // Invertimos el vector target para que lookAt apunte al firmamento y no al origen.
+        camera.position.set(0, 0, 0);
+        camera.lookAt(targetX, targetY, targetZ);
+        
+        // Compensamos el 'roll' (inclinación lateral del móvil)
+        // La API DeviceOrientation entrega 'gamma' que representa el balanceo.
+        // En Portrait (angle=0), el roll es -gamma.
+        const screenAngle = typeof window !== 'undefined' ? (window.screen.orientation?.angle || 0) : 0;
+        let roll = 0;
+        if (screenAngle === 0) roll = -deviceOrientationRef.gamma;
+        else if (screenAngle === 90) roll = deviceOrientationRef.beta;
+        else if (screenAngle === -90 || screenAngle === 270) roll = -deviceOrientationRef.beta;
+        
+        camera.rotation.z += THREE.MathUtils.degToRad(roll);
     });
 
     return null;
@@ -388,6 +405,11 @@ export default function SkyCanvas() {
         )}>
             {/* Fondo de Cámara para AR */}
             <CameraBackground />
+
+            {/* Overlay de degradado para asegurar visibilidad en modo cámara */}
+            {viewMode === 'camera' && (
+                <div className="absolute inset-0 pointer-events-none z-10 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
+            )}
 
             <Canvas
                 key={canvasKey}

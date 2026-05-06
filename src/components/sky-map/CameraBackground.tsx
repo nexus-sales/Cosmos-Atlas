@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
 import { cn } from '@/lib/utils';
 
@@ -11,8 +11,14 @@ import { cn } from '@/lib/utils';
 export default function CameraBackground() {
     const videoRef = useRef<HTMLVideoElement>(null);
     const viewMode = useAppStore((s) => s.viewMode);
+    const setCamFov = useAppStore((s) => s.setCamFov);
     const [streamActive, setStreamActive] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Velo de contraste dinámico para mejorar legibilidad de estrellas sobre el video
+    const overlayStyle = useMemo(() => ({
+        background: 'radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0.4) 100%)',
+    }), []);
 
     useEffect(() => {
         const video = videoRef.current;
@@ -20,14 +26,12 @@ export default function CameraBackground() {
             stream?.getTracks().forEach(track => track.stop());
         };
 
-        // Solo intentamos activar la cámara si estamos en modo 'camera'
         if (viewMode !== 'camera') {
             if (video?.srcObject) {
                 const stream = video.srcObject as MediaStream;
                 stopStream(stream);
                 video.srcObject = null;
             }
-            // eslint-disable-next-line react-hooks/set-state-in-effect
             setStreamActive(false);
             setError(null);
             return;
@@ -42,7 +46,7 @@ export default function CameraBackground() {
                     setError('Cámara no disponible');
                     return;
                 }
-                // Pedimos cámara trasera preferentemente (environment)
+
                 const stream = await navigator.mediaDevices.getUserMedia({
                     video: { 
                         facingMode: { ideal: 'environment' },
@@ -60,9 +64,29 @@ export default function CameraBackground() {
                 if (video) {
                     video.srcObject = stream;
                     currentStream = stream;
-                    // El video puede tardar un poco en cargar los metadatos y empezar a reproducir
+                    
                     video.onloadedmetadata = () => {
                         setStreamActive(true);
+                        
+                        // Sincronización de FOV (Campo de Visión)
+                        // La mayoría de móviles tienen un FOV horizontal de ~60-75°.
+                        // Intentamos obtener el FOV real si el navegador lo soporta,
+                        // o usamos un valor estándar realista para AR.
+                        const track = stream.getVideoTracks()[0];
+                        const settings = track.getSettings();
+                        
+                        // Si el navegador reporta el FOV (poco común aún pero estándar en progreso)
+                        // lo usamos. Si no, calculamos uno basado en la focal típica de móviles.
+                        // Un valor de 60-70 es seguro para evitar "objetos voladores" desincronizados.
+                        if (settings.aspectRatio) {
+                            // Ajuste agresivo: el FOV de Three.js es Vertical.
+                            // Si el móvil está en portrait, queremos que el FOV vertical sea amplio.
+                            const defaultHorizontalFov = 70; 
+                            const verticalFov = defaultHorizontalFov / (settings.aspectRatio || 1.77);
+                            setCamFov(verticalFov);
+                        } else {
+                            setCamFov(45); // FOV vertical conservador para 16:9
+                        }
                     };
                 }
             } catch (err: unknown) {
@@ -82,22 +106,38 @@ export default function CameraBackground() {
             }
             stopStream(currentStream);
         };
-    }, [viewMode]);
+    }, [viewMode, setCamFov]);
 
     if (viewMode !== 'camera') return null;
 
     return (
-        <div className="absolute inset-0 w-full h-full bg-black z-0 pointer-events-none">
+        <div className="absolute inset-0 w-full h-full bg-black z-0 pointer-events-none overflow-hidden">
             <video
                 ref={videoRef}
                 autoPlay
                 playsInline
                 muted
                 className={cn(
-                    "w-full h-full object-cover transition-opacity duration-1000",
-                    streamActive ? "opacity-100" : "opacity-0"
+                    "w-full h-full object-cover transition-opacity duration-700",
+                    streamActive ? "opacity-100 scale-105" : "opacity-0 scale-100" // Pequeño overscan para evitar bordes al rotar
                 )}
             />
+            {/* Velo de contraste: Oscurece ligeramente los bordes para resaltar el HUD y las estrellas */}
+            <div 
+                className="absolute inset-0 z-10 pointer-events-none transition-opacity duration-1000"
+                style={{
+                    ...overlayStyle,
+                    opacity: streamActive ? 1 : 0
+                }}
+            />
+            {error && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/80 text-white p-4 text-center z-20">
+                    <p>{error}</p>
+                </div>
+            )}
+        </div>
+    );
+}
             
             {/* Overlay de carga o error */}
             {!streamActive && !error && (

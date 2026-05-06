@@ -125,7 +125,7 @@ export default function TimeTravelControls() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 8, scale: 0.98 }}
                         transition={{ duration: 0.15 }}
-                        className="bg-black/90 backdrop-blur-xl border border-white/10 rounded-2xl px-5 py-4 w-[520px] shadow-[0_8px_32px_rgba(0,0,0,0.6)]"
+                        className="bg-black/90 glass-blur-heavy border border-white/10 rounded-2xl px-5 py-4 w-[520px] shadow-[0_8px_32px_rgba(0,0,0,0.6)]"
                     >
                         {/* Date / time header */}
                         <div className="flex items-start justify-between mb-3.5">
@@ -258,7 +258,7 @@ export default function TimeTravelControls() {
                 aria-expanded={expanded}
                 aria-label={expanded ? 'Cerrar controles de tiempo' : 'Abrir controles de viaje temporal'}
                 className={cn(
-                    'flex items-center gap-2.5 px-4 py-2 rounded-full border backdrop-blur-md transition-all shadow-lg',
+                    'flex items-center gap-2.5 px-4 py-2 rounded-full border glass-blur transition-all shadow-lg',
                     !isLive
                         ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 shadow-[0_0_20px_rgba(245,158,11,0.1)]'
                         : expanded

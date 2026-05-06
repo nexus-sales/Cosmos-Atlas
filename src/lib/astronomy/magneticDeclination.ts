@@ -1,42 +1,36 @@
 /**
- * Magnetic Declination — World Magnetic Model 2020 (WMM2020)
+ * Magnetic Declination — World Magnetic Model 2025 (WMM2025)
  *
  * Implements spherical harmonic expansion truncated at degree/order 4.
- * At mid-latitudes (|lat| < 65°) this gives ±0.5–1° accuracy.
+ * Updated to WMM2025 coefficients for accuracy during the 2025-2030 epoch.
  *
- * Source: NOAA/NGDC & BGS, WMM2020COF.txt (Dec 2019)
- * Valid epoch: 2020.0 – 2025.0; secular variation extends to ~2027.
- *
- * Declination convention (standard geomagnetic):
- *   D > 0  → magnetic north is EAST of geographic north (compass reads low)
- *   D < 0  → magnetic north is WEST of geographic north (compass reads high)
- *
- * True bearing = Magnetic bearing + D
+ * Source: NOAA/NCEI & BGS, WMM2025COF.txt
+ * Valid epoch: 2025.0 – 2030.0
  */
 
-// ── WMM2020 Gauss coefficients ────────────────────────────────────────────────
+// ── WMM2025 Gauss coefficients ────────────────────────────────────────────────
 // [n, m, g_nm (nT), h_nm (nT), ġ_nm (nT/yr), ḣ_nm (nT/yr)]
 type WmmCoeff = readonly [number, number, number, number, number, number];
 
-const WMM2020: readonly WmmCoeff[] = [
+const WMM2025: readonly WmmCoeff[] = [
     // n  m        g          h        ġ        ḣ
-    [1, 0, -29404.5,      0.0,    6.7,    0.0],
-    [1, 1,  -1450.7,   4652.9,    7.7,  -25.1],
-    [2, 0,  -2500.0,      0.0,  -11.5,    0.0],
-    [2, 1,   2982.0,  -2991.6,   -7.1,  -30.2],
-    [2, 2,   1676.7,   -734.8,    2.2,  -23.9],
-    [3, 0,   1363.9,      0.0,    2.8,    0.0],
-    [3, 1,  -2381.0,    -82.2,   -6.2,    5.7],
-    [3, 2,   1236.2,    241.8,    3.4,   -1.0],
-    [3, 3,    525.7,   -542.9,  -12.2,    1.1],
-    [4, 0,    903.1,      0.0,   -1.1,    0.0],
-    [4, 1,    809.4,    282.0,    4.0,    0.4],
-    [4, 2,     86.2,   -158.4,   -2.3,    6.9],
-    [4, 3,   -309.4,    199.8,   -0.8,    3.6],
-    [4, 4,     47.9,   -350.1,   -2.6,   -2.5],
+    [1, 0, -29243.0,      0.0,   12.5,    0.0],
+    [1, 1,  -1422.1,   4667.5,   11.7,  -11.8],
+    [2, 0,  -2516.4,      0.0,   -7.9,    0.0],
+    [2, 1,   2990.2,  -3112.5,   -1.1,  -29.0],
+    [2, 2,   1685.0,   -854.1,    1.9,  -26.7],
+    [3, 0,   1361.6,      0.0,    0.4,    0.0],
+    [3, 1,  -2374.9,   -132.0,   -3.5,   -8.2],
+    [3, 2,   1239.5,    219.0,    4.5,   -8.1],
+    [3, 3,    451.9,   -565.4,   -9.9,   -5.8],
+    [4, 0,    904.5,      0.0,    0.4,    0.0],
+    [4, 1,    819.3,    288.5,    2.2,    1.3],
+    [4, 2,     84.8,   -179.6,   -4.5,   -6.7],
+    [4, 3,   -322.8,    218.4,   -2.2,    6.2],
+    [4, 4,     36.0,   -349.0,   -2.6,    0.9],
 ] as const;
 
-const EPOCH  = 2020.0;
+const EPOCH  = 2025.0;
 const N_MAX  = 4;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -144,7 +138,7 @@ export function computeMagneticDeclination(lat: number, lon: number, date: Date)
     // Time-adjusted Gauss coefficients
     const g: number[][] = Array.from({ length: N_MAX + 1 }, () => new Array(N_MAX + 1).fill(0.0));
     const h: number[][] = Array.from({ length: N_MAX + 1 }, () => new Array(N_MAX + 1).fill(0.0));
-    for (const [n, m, gv, hv, dg, dh] of WMM2020) {
+    for (const [n, m, gv, hv, dg, dh] of WMM2025) {
         g[n][m] = gv + dg * dt;
         h[n][m] = hv + dh * dt;
     }

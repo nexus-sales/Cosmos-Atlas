@@ -622,10 +622,10 @@ export default function AIAstronoma() {
                             </div>
                             <button
                                 onClick={() => setChatOpen(false)}
-                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/10 text-white/35 hover:bg-white/10 hover:text-white/70"
+                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 text-white/35 hover:bg-white/10 hover:text-white/70"
                                 aria-label="Cerrar consulta astronómica"
                             >
-                                <X className="h-3.5 w-3.5" />
+                                <X className="h-4.5 w-4.5" />
                             </button>
                         </div>
 
@@ -643,7 +643,7 @@ export default function AIAstronoma() {
                                     className={cn(
                                         'rounded-xl px-3 py-2 text-[11px] leading-relaxed',
                                         item.role === 'user'
-                                            ? 'ml-8 bg-blue-500/18 text-blue-50 border border-blue-400/20'
+                                            ? 'ml-8 bg-cyan-600/18 text-cyan-50 border border-cyan-500/20'
                                             : 'mr-8 bg-white/[0.05] text-white/78 border border-white/10'
                                     )}
                                 >
@@ -719,12 +719,12 @@ export default function AIAstronoma() {
                             synthRef.current?.cancel();
                             setIsSpeaking(false);
                         }}
-                        className="pointer-events-auto w-[min(360px,calc(100vw-2rem))] cursor-pointer rounded-2xl rounded-br-none border border-blue-500/30 bg-black/85 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl transition-transform active:scale-95"
+                        className="pointer-events-auto w-[min(360px,calc(100vw-2rem))] cursor-pointer rounded-2xl rounded-br-none border border-cyan-500/30 bg-black/85 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.5)] glass-blur transition-transform active:scale-95"
                     >
-                        <div className="mb-2 flex items-start gap-2">
-                            <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-400" />
-                            <div className="min-w-0">
-                                <span className="block text-[10px] font-bold uppercase tracking-widest text-blue-400">
+                        <div className="flex items-start gap-3">
+                            <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-400" />
+                            <div className="flex-1">
+                                <span className="block text-[10px] font-bold uppercase tracking-widest text-cyan-400">
                                     Asistente Astronomico
                                 </span>
                                 {brief && (

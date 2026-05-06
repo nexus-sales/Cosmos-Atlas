@@ -125,7 +125,7 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                     className={cn(
                         'hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[10px] font-bold tracking-widest uppercase transition-all cursor-pointer',
                         isTourActive
-                            ? 'bg-blue-500/20 border-blue-500/40 text-blue-400 shadow-[0_0_16px_rgba(59,130,246,0.2)]'
+                            ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400 shadow-[0_0_16px_rgba(34,211,238,0.2)]'
                             : 'border-white/10 text-white/25 hover:text-white/60 hover:border-white/20'
                     )}
                 >
