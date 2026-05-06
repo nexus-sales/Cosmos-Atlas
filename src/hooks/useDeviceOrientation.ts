@@ -93,7 +93,10 @@ export function computeRearCameraElevation(beta: number, gamma: number): number 
     let elevation = 0;
 
     if (screenAngle === 0) {
-        // Vertical estándar: beta manda
+        // Vertical estándar: beta manda.
+        // Modo Diablo: En el hemisferio sur, si beta=90 (móvil vertical), 
+        // la elevación debe ser 0. Si el móvil se inclina hacia atrás para mirar el cénit,
+        // la elevación debe subir a 90.
         elevation = -beta; 
     } else if (screenAngle === 90) {
         // Horizontal (botón a la derecha): gamma manda

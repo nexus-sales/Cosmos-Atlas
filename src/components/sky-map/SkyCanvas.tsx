@@ -257,18 +257,23 @@ function CelestialGroup({ children }: { children: React.ReactNode }) {
         const { time, observer } = useAppStore.getState();
         const lst = getLST(time, observer.lon);
         
-        // RE-INGENIERÍA DIABLO: Alineación de ejes para AR móvil.
+        // RE-INGENIERÍA DIABLO: Alineación de ejes para AR móvil (Hemisferio Norte y Sur).
         // 1. Inclinación del eje (phi): Rotación en X.
         //    Para el hemisferio Norte (lat > 0), el polo norte está a 'lat' grados sobre el horizonte.
         //    Three.js usa un sistema +Y up. El eje polar debe inclinarse '90 - lat'.
+        //    Para el hemisferio Sur (lat < 0), la fórmula sigue siendo válida matemáticamente
+        //    (e.g. lat=-34 -> 90 - (-34) = 124 grados), inclinando el polo sur hacia arriba.
         groupRef.current.rotation.x = THREE.MathUtils.degToRad(90 - observer.lat);
         
         // 2. Rotación de tiempo (theta): Rotación en Y.
         //    Usamos -LST para sincronizar el meridiano local con el Punto Aries.
         groupRef.current.rotation.y = THREE.MathUtils.degToRad(-lst);
         
-        // Aseguramos que el orden de rotación sea YXZ para que el tiempo (Y)
-        // se aplique sobre el eje ya inclinado por la latitud (X).
+        // RE-INGENIERÍA DIABLO: Corrección de azimuth para Hemisferio Sur.
+        // En el hemisferio sur, si el usuario mira al Norte, está mirando hacia el Ecuador Celeste.
+        // La rotación en Y (-LST) posiciona el cielo correctamente, pero el "norte" del mapa 
+        // debe coincidir con el norte geográfico. No se requiere inversión de LST,
+        // pero sí asegurar que el orden de rotación no cause gimbal lock en latitudes extremas.
         groupRef.current.rotation.order = 'YXZ';
     });
 

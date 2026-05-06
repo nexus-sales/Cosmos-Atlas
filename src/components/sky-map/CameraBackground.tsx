@@ -1,13 +1,9 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
 import { cn } from '@/lib/utils';
 
-/**
- * Componente que gestiona el stream de video de la cámara trasera.
- * Se utiliza para el modo Realidad Aumentada (AR).
- */
 export default function CameraBackground() {
     const videoRef = useRef<HTMLVideoElement>(null);
     const viewMode = useAppStore((s) => s.viewMode);
@@ -15,7 +11,6 @@ export default function CameraBackground() {
     const [streamActive, setStreamActive] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Velo de contraste dinámico para mejorar legibilidad de estrellas sobre el video
     const overlayStyle = useMemo(() => ({
         background: 'radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0.4) 100%)',
     }), []);
@@ -43,7 +38,7 @@ export default function CameraBackground() {
         async function startCamera() {
             try {
                 if (!navigator.mediaDevices?.getUserMedia) {
-                    setError('Cámara no disponible');
+                    setError('Camara no disponible');
                     return;
                 }
 
@@ -67,32 +62,21 @@ export default function CameraBackground() {
                     
                     video.onloadedmetadata = () => {
                         setStreamActive(true);
-                        
-                        // Sincronización de FOV (Campo de Visión)
-                        // La mayoría de móviles tienen un FOV horizontal de ~60-75°.
-                        // Intentamos obtener el FOV real si el navegador lo soporta,
-                        // o usamos un valor estándar realista para AR.
                         const track = stream.getVideoTracks()[0];
                         const settings = track.getSettings();
-                        
-                        // Si el navegador reporta el FOV (poco común aún pero estándar en progreso)
-                        // lo usamos. Si no, calculamos uno basado en la focal típica de móviles.
-                        // Un valor de 60-70 es seguro para evitar "objetos voladores" desincronizados.
                         if (settings.aspectRatio) {
-                            // Ajuste agresivo: el FOV de Three.js es Vertical.
-                            // Si el móvil está en portrait, queremos que el FOV vertical sea amplio.
                             const defaultHorizontalFov = 70; 
                             const verticalFov = defaultHorizontalFov / (settings.aspectRatio || 1.77);
                             setCamFov(verticalFov);
                         } else {
-                            setCamFov(45); // FOV vertical conservador para 16:9
+                            setCamFov(45);
                         }
                     };
                 }
             } catch (err: unknown) {
-                console.error("Error al acceder a la cámara:", err);
+                console.error('Error al acceder a la camara:', err);
                 const name = err instanceof Error ? err.name : '';
-                setError(name === 'NotAllowedError' ? 'Permiso denegado' : 'Cámara no disponible');
+                setError(name === 'NotAllowedError' ? 'Permiso denegado' : 'Camara no disponible');
             }
         }
 
@@ -119,10 +103,9 @@ export default function CameraBackground() {
                 muted
                 className={cn(
                     "w-full h-full object-cover transition-opacity duration-700",
-                    streamActive ? "opacity-100 scale-105" : "opacity-0 scale-100" // Pequeño overscan para evitar bordes al rotar
+                    streamActive ? "opacity-100 scale-105" : "opacity-0 scale-100"
                 )}
             />
-            {/* Velo de contraste: Oscurece ligeramente los bordes para resaltar el HUD y las estrellas */}
             <div 
                 className="absolute inset-0 z-10 pointer-events-none transition-opacity duration-1000"
                 style={{
@@ -130,36 +113,26 @@ export default function CameraBackground() {
                     opacity: streamActive ? 1 : 0
                 }}
             />
-            {error && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/80 text-white p-4 text-center z-20">
-                    <p>{error}</p>
-                </div>
-            )}
-        </div>
-    );
-}
-            
-            {/* Overlay de carga o error */}
+
             {!streamActive && !error && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/60 backdrop-blur-sm">
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/60 backdrop-blur-sm z-20">
                     <div className="w-10 h-10 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
                     <p className="text-[10px] font-bold tracking-[0.2em] text-blue-400">INICIALIZANDO LENTE AR</p>
                 </div>
             )}
 
             {error && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-red-950/40 backdrop-blur-md px-10 text-center">
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-red-950/40 backdrop-blur-md px-10 text-center z-20">
                     <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center border border-red-500/30">
-                        <span className="text-xl">⚠️</span>
+                        <span className="text-xl">!</span>
                     </div>
                     <p className="text-[11px] font-bold tracking-widest text-red-200 uppercase">{error}</p>
-                    <p className="text-[9px] text-red-100/40">ASEGÚRATE DE DAR PERMISOS DE CÁMARA EN TU NAVEGADOR</p>
+                    <p className="text-[9px] text-red-100/40">ASEGURATE DE DAR PERMISOS DE CAMARA EN TU NAVEGADOR</p>
                 </div>
             )}
 
-            {/* Guía visual sutil para AR */}
             {streamActive && (
-                <div className="absolute inset-0 pointer-events-none border-[40px] border-black/5 opacity-50" />
+                <div className="absolute inset-0 pointer-events-none border-[40px] border-black/5 opacity-50 z-10" />
             )}
         </div>
     );
