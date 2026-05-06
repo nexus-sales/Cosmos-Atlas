@@ -198,8 +198,8 @@ function ShowerRow({
 function ShowerIndicator({ color }: { color: string }) {
     return (
         <div 
-            className="shower-indicator" 
-            style={{ color }}
+            className="w-1.5 h-1.5 rounded-full shrink-0" 
+            style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}` }}
         />
     );
 }

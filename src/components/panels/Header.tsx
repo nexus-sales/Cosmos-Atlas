@@ -120,7 +120,7 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                 <button
                     onClick={() => setIsTourActive(!isTourActive)}
                     aria-label={isTourActive ? 'Detener tour del cielo' : 'Iniciar tour cinematografico del cielo'}
-                    aria-pressed={isTourActive ? 'true' : 'false'}
+                    {...(isTourActive ? { 'aria-pressed': true } : { 'aria-pressed': false })}
                     title={isTourActive ? 'Detener tour' : 'Tour del cielo'}
                     className={cn(
                         'hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[10px] font-bold tracking-widest uppercase transition-all cursor-pointer',

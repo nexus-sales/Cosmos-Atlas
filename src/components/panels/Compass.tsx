@@ -130,6 +130,7 @@ export default function Compass() {
                         : 'relative w-16 h-16 rounded-full bg-black/60 glass-blur border border-white/20 hover:border-blue-400/50 shadow-lg shadow-black/50 transition-all duration-200 flex items-center justify-center'
                     }
                     title={followOrientation ? 'Orientacion AR activa' : 'Clic: Cenit | Doble clic: Norte'}
+                    {...(followOrientation ? { 'aria-pressed': true } : { 'aria-pressed': false })}
                 >
                     <svg viewBox="0 0 100 100" className="w-14 h-14">
                         <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />

@@ -107,20 +107,22 @@ function CardinalPoint({ label, az, color, isNorth }: { label: string; az: numbe
     return (
         <Html position={[x, isMain ? 1.8 : 0.8, z]} center zIndexRange={[10, 0]}>
             <div 
-                className="flex flex-col items-center pointer-events-none select-none transition-all duration-500"
-                style={{
-                    color,
-                    opacity: isMain ? 0.9 : 0.4,
-                    transform: `scale(${isMain ? 1 : 0.85})`,
-                }}
+                className={cn(
+                    "flex flex-col items-center pointer-events-none select-none transition-all duration-500",
+                    isMain ? "opacity-90 scale-100" : "opacity-40 scale-[0.85]"
+                )}
+                style={{ color }}
             >
-                <div style={{
-                    fontSize: isMain ? '18px' : '11px',
-                    fontFamily: "'Outfit', sans-serif",
-                    fontWeight: isNorth ? '900' : '600',
-                    letterSpacing: '0.1em',
-                    textShadow: `0 0 15px ${color}66, 0 0 30px ${color}33`,
-                }}>
+                <div 
+                    className={cn(
+                        "font-sans tracking-widest",
+                        isNorth ? "font-[900]" : "font-[600]"
+                    )}
+                    style={{
+                        fontSize: isMain ? '18px' : '11px',
+                        textShadow: `0 0 15px ${color}66, 0 0 30px ${color}33`,
+                    }}
+                >
                     {label}
                 </div>
                 {isMain && (

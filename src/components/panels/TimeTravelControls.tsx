@@ -223,22 +223,25 @@ export default function TimeTravelControls() {
                                 <span className="text-[8px] text-white/20 font-mono tracking-widest uppercase mr-1.5" aria-hidden="true">
                                     VEL:
                                 </span>
-                                {SPEEDS.map((s, i) => (
-                                    <button
-                                        key={i}
-                                        onClick={() => setSpeedIdx(i)}
-                                        aria-label={`Velocidad ${s.label}`}
-                                        aria-pressed={speedIdx === i}
-                                        className={cn(
-                                            'text-[8px] font-mono px-1.5 py-0.5 rounded border transition-all',
-                                            speedIdx === i
-                                                ? 'text-blue-400 border-blue-500/50 bg-blue-500/10'
-                                                : 'text-white/25 border-white/8 hover:text-white/50 hover:border-white/20'
-                                        )}
-                                    >
-                                        {s.label}
-                                    </button>
-                                ))}
+                                {SPEEDS.map((s, i) => {
+                                    const isPressed = speedIdx === i;
+                                    return (
+                                        <button
+                                            key={i}
+                                            onClick={() => setSpeedIdx(i)}
+                                            aria-label={`Velocidad ${s.label}`}
+                                            {...(speedIdx === i ? { 'aria-pressed': true } : { 'aria-pressed': false })}
+                                            className={cn(
+                                                'text-[8px] font-mono px-1.5 py-0.5 rounded border transition-all',
+                                                isPressed
+                                                    ? 'text-blue-400 border-blue-500/50 bg-blue-500/10'
+                                                    : 'text-white/25 border-white/8 hover:text-white/50 hover:border-white/20'
+                                            )}
+                                        >
+                                            {s.label}
+                                        </button>
+                                    );
+                                })}
                             </div>
                             <button
                                 onClick={goLive}
@@ -255,7 +258,7 @@ export default function TimeTravelControls() {
             {/* Toggle pill */}
             <button
                 onClick={() => setExpanded((e) => !e)}
-                aria-expanded={expanded}
+                {...(expanded ? { 'aria-expanded': true } : { 'aria-expanded': false })}
                 aria-label={expanded ? 'Cerrar controles de tiempo' : 'Abrir controles de viaje temporal'}
                 className={cn(
                     'flex items-center gap-2.5 px-4 py-2 rounded-full border glass-blur transition-all shadow-lg',

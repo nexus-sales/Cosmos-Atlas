@@ -199,7 +199,7 @@ function PanelContent({
                             : 'text-white/35 hover:text-amber-200/85'
                     )}
                     aria-label={kidsMode ? 'Desactivar modo chicos' : 'Activar modo chicos'}
-                    aria-pressed={kidsMode}
+                    {...(kidsMode ? { 'aria-pressed': true } : { 'aria-pressed': false })}
                     title={kidsMode ? 'Modo chicos activo' : 'Modo chicos'}
                 >
                     <Sparkles className="w-4 h-4" />

@@ -614,7 +614,7 @@ export default function AIAstronoma() {
                                                 ? 'bg-cyan-400/18 text-cyan-100'
                                                 : 'text-white/30 hover:text-white/60'
                                         )}
-                                        aria-pressed={astronomerMode === mode}
+                                        {...(astronomerMode === mode ? { 'aria-pressed': true } : { 'aria-pressed': false })}
                                     >
                                         {mode === 'openai' ? 'IA real' : 'Local'}
                                     </button>
