@@ -22,9 +22,11 @@ export function middleware(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-nonce', nonce);
   
-  // En desarrollo con Turbopack o HMR, una CSP estricta bloquea los scripts internos de Next.js
-  // Solo aplicamos CSP restrictiva en producción para no romper el entorno de desarrollo.
-  if (process.env.NODE_ENV === 'production') {
+  // En desarrollo y construcción, una CSP estricta bloquea los scripts internos de Next.js.
+  // Solo aplicamos CSP restrictiva en producción real (Vercel) para no romper el renderizado.
+  const isProduction = process.env.NODE_ENV === 'production' && !process.env.VERCEL_ENV; // Evitar aplicar durante build
+  
+  if (isProduction) {
     requestHeaders.set('Content-Security-Policy', cspHeader);
   }
 
@@ -34,7 +36,7 @@ export function middleware(request: NextRequest) {
     },
   });
   
-  if (process.env.NODE_ENV === 'production') {
+  if (isProduction) {
     response.headers.set('Content-Security-Policy', cspHeader);
   }
   response.headers.set('X-Content-Type-Options', 'nosniff');
