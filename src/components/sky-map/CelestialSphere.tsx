@@ -14,47 +14,54 @@ const SKY_TWILIGHT   = new THREE.Color('#150d30');
 const SKY_SUNRISE    = new THREE.Color('#3c1408');
 const SKY_DAY        = new THREE.Color('#183c70');
 
-function getSkyColor(alt: number): THREE.Color {
-    const c = new THREE.Color();
+const TEMP_COLOR = new THREE.Color();
+const SHARED_OBSERVER = new Astronomy.Observer(0, 0, 0);
+
+function getSkyColor(alt: number, target: THREE.Color): THREE.Color {
     if (alt < -18) {
-        return SKY_NIGHT.clone();
+        return target.copy(SKY_NIGHT);
     } else if (alt < -12) {
         const t = (alt + 18) / 6;
-        return c.lerpColors(SKY_NIGHT, SKY_ASTRO, t);
+        return target.lerpColors(SKY_NIGHT, SKY_ASTRO, t);
     } else if (alt < -6) {
         const t = (alt + 12) / 6;
-        return c.lerpColors(SKY_ASTRO, SKY_NAUTICAL, t);
+        return target.lerpColors(SKY_ASTRO, SKY_NAUTICAL, t);
     } else if (alt < 0) {
         const t = (alt + 6) / 6;
-        return c.lerpColors(SKY_NAUTICAL, SKY_CIVIL, t);
+        return target.lerpColors(SKY_NAUTICAL, SKY_CIVIL, t);
     } else if (alt < 4) {
         const t = alt / 4;
-        return c.lerpColors(SKY_CIVIL, SKY_TWILIGHT, t);
+        return target.lerpColors(SKY_CIVIL, SKY_TWILIGHT, t);
     } else if (alt < 10) {
         const t = (alt - 4) / 6;
-        return c.lerpColors(SKY_TWILIGHT, SKY_SUNRISE, t);
+        return target.lerpColors(SKY_TWILIGHT, SKY_SUNRISE, t);
     } else if (alt < 20) {
         const t = (alt - 10) / 10;
-        return c.lerpColors(SKY_SUNRISE, SKY_DAY, t);
+        return target.lerpColors(SKY_SUNRISE, SKY_DAY, t);
     } else {
-        return SKY_DAY.clone();
+        return target.copy(SKY_DAY);
     }
 }
 
 export default function CelestialSphere() {
     const matRef = useRef<THREE.MeshBasicMaterial>(null);
-    const currentColor = useRef(SKY_NIGHT.clone());
+    const currentColor = useRef(new THREE.Color('#04091a'));
     const viewMode = useAppStore(s => s.viewMode);
 
     useFrame(() => {
         if (!matRef.current) return;
         const { time, observer } = useAppStore.getState();
         try {
-            const obs = new Astronomy.Observer(observer.lat, observer.lon, 0);
-            const eq = Astronomy.Equator(Astronomy.Body.Sun, time, obs, true, true);
-            const hor = Astronomy.Horizon(time, obs, eq.ra, eq.dec, 'normal');
-            const targetColor = getSkyColor(hor.altitude);
-            currentColor.current.lerp(targetColor, 0.02);
+            // Reutilizamos el objeto Observer
+            SHARED_OBSERVER.latitude = observer.lat;
+            SHARED_OBSERVER.longitude = observer.lon;
+            SHARED_OBSERVER.height = 0;
+
+            const eq = Astronomy.Equator(Astronomy.Body.Sun, time, SHARED_OBSERVER, true, true);
+            const hor = Astronomy.Horizon(time, SHARED_OBSERVER, eq.ra, eq.dec, 'normal');
+            
+            getSkyColor(hor.altitude, TEMP_COLOR);
+            currentColor.current.lerp(TEMP_COLOR, 0.02);
             matRef.current.color.copy(currentColor.current);
         } catch { }
     });

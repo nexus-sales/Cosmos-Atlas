@@ -264,7 +264,9 @@ function CelestialGroup({ children }: { children: React.ReactNode }) {
         if (!groupRef.current) return;
         const { time, observer } = useAppStore.getState();
         const lst = getLST(time, observer.lon);
-        groupRef.current.rotation.x = THREE.MathUtils.degToRad(observer.lat - 90);
+        // La inclinación del eje polar debe ser 90 - lat para que el polo apunte 
+        // a la elevación correcta sobre el horizonte.
+        groupRef.current.rotation.x = THREE.MathUtils.degToRad(90 - observer.lat);
         groupRef.current.rotation.y = THREE.MathUtils.degToRad(-lst);
     });
 

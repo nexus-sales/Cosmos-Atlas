@@ -54,16 +54,28 @@ export function applyPrecession(ra: number, dec: number, date: Date): { ra: numb
 }
 
 /**
- * Rough atmospheric refraction correction
+ * Standard atmospheric refraction correction using Bennett's formula
+ * refined by Saemundsson with a sigmoid fade-out to prevent "micro-jumps" 
+ * at the deep horizon limit (-2° to -5°).
  * @param h true altitude in degrees
  * @returns corrected (apparent) altitude in degrees
  */
 export function applyRefraction(h: number): number {
-    if (h < -2) return h; // Below horizon (approx)
+    // If we're deep below the horizon, refraction is negligible and 
+    // constant to avoid discontinuities in the celestial sphere rotation.
+    if (h < -5) return h;
 
     // Formula from Saemundsson (1986) for altitude in degrees
     // R = 1.02 / tan(h + 10.3 / (h + 5.11)) arcmin
     const R = 1.02 / Math.tan(toRad(h + 10.3 / (h + 5.11))) / 60.0;
+
+    // Diablo Fix: Sigmoid fade-out between -2 and -5 degrees.
+    // This prevents stars from "popping" or snapping when crossing the -2 limit.
+    if (h < 0) {
+        const weight = Math.max(0, Math.min(1, (h + 5) / 5));
+        return h + (R * weight);
+    }
+
     return h + R;
 }
 

@@ -4,8 +4,9 @@ import { z } from 'zod';
 // --- Zod Schemas -------------------------------------------------------------
 
 const observerSchema = z.object({
-  lat: z.number().min(-90).max(90),
-  lon: z.number().min(-180).max(180),
+  // Redondeamos a 1 decimal para proteger la PII (precisión ~11km)
+  lat: z.number().min(-90).max(90).transform(v => Math.round(v * 10) / 10),
+  lon: z.number().min(-180).max(180).transform(v => Math.round(v * 10) / 10),
 }).optional();
 
 const astronomerContextSchema = z.object({

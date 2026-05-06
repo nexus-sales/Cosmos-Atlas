@@ -24,32 +24,30 @@ export default function Horizon() {
         <group>
             {/* ── Suelo Profundo ─── */}
             <mesh
-                position={[0, -0.5, 0]}
+                position={[0, -0.05, 0]}
                 rotation={[-Math.PI / 2, 0, 0]}
                 renderOrder={2}
             >
                 <circleGeometry args={[120, 64]} />
                 <meshBasicMaterial
-                    color="#02040a"
+                    color="#010205"
                     side={THREE.FrontSide}
                     depthWrite={true}
+                    transparent
+                    opacity={0.98}
                 />
             </mesh>
 
-            {/* ── Bruma de horizonte amplia: difumina la línea dura ─── */}
-            <mesh
-                position={[0, -0.3, 0]}
-                rotation={[-Math.PI / 2, 0, 0]}
-                renderOrder={3}
-            >
-                <ringGeometry args={[70, 118, 128]} />
+            {/* ── Extinción Atmosférica / Gradiente de Horizonte ─── */}
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} renderOrder={1}>
+                <ringGeometry args={[99, 105, 128]} />
                 <meshBasicMaterial
-                    color={nightMode ? '#0a0510' : '#1a3050'}
+                    color={nightMode ? '#220000' : '#1e3a5a'}
                     transparent
-                    opacity={0.55}
+                    opacity={0.8}
                     side={THREE.DoubleSide}
-                    blending={THREE.NormalBlending}
                     depthWrite={false}
+                    blending={THREE.NormalBlending}
                 />
             </mesh>
 

@@ -77,10 +77,40 @@ export function computeRearCameraHeading(alpha: number, beta: number, gamma: num
 }
 
 export function computeRearCameraElevation(beta: number, gamma: number): number {
-    // Android/Chrome reports portrait pitch with beta=90 at the horizon and
-    // beta trending toward 0 as the rear camera is raised toward the sky.
-    const rearZWorld = Math.cos(beta * Math.PI / 180) * Math.cos(gamma * Math.PI / 180);
-    return Math.asin(Math.max(-1, Math.min(1, rearZWorld))) * (180 / Math.PI);
+    // Modo Diablo: Detección de orientación de pantalla para compensar beta/gamma.
+    // En Landscape, el eje de elevación se intercambia entre beta y gamma.
+    // Usamos la proyección del vector Z del dispositivo en el mundo.
+    
+    // Obtenemos el ángulo de rotación de la pantalla (0, 90, -90, 180)
+    const screenAngle = typeof window !== 'undefined' ? (window.screen.orientation?.angle || 0) : 0;
+    
+    const b = beta * Math.PI / 180;
+    const g = gamma * Math.PI / 180;
+
+    // Vector que apunta "hacia afuera" de la pantalla (Eje Z del móvil)
+    // En Portrait: elevación depende mayormente de beta.
+    // En Landscape: elevación depende mayormente de gamma.
+    let elevation = 0;
+
+    if (screenAngle === 0) {
+        // Vertical estándar: beta manda
+        elevation = -beta; 
+    } else if (screenAngle === 90) {
+        // Horizontal (botón a la derecha): gamma manda
+        elevation = -gamma;
+    } else if (screenAngle === -90 || screenAngle === 270) {
+        // Horizontal (botón a la izquierda): gamma invertido manda
+        elevation = gamma;
+    } else {
+        // Invertido: beta invertido
+        elevation = beta;
+    }
+
+    // Normalizar: 0 en el horizonte, +90 en el cénit.
+    // La mayoría de sensores devuelven el móvil plano (mesa) como beta=0.
+    // Si lo levantas vertical hacia el horizonte, beta sube a 90.
+    // Queremos que "mirar al frente" sea 0 y "mirar arriba" sea 90.
+    return elevation + 90;
 }
 
 function extractMagneticHeading(e: CompassCapableEvent, alpha: number, beta: number, gamma: number): number {
