@@ -3,8 +3,8 @@ import { computeRearCameraElevation, computeRearCameraHeading } from '../useDevi
 
 describe('device orientation rear camera axis', () => {
     it('uses the rear camera -Z axis for heading instead of the screen +Z axis', () => {
-        expect(computeRearCameraHeading(0, 90, 0)).toBeCloseTo(180, 5);
-        expect(computeRearCameraHeading(180, 90, 0)).toBeCloseTo(0, 5);
+        expect(computeRearCameraHeading(0, 90, 0)).toBeCloseTo(0, 5);
+        expect(computeRearCameraHeading(180, 90, 0)).toBeCloseTo(180, 5);
     });
 
     it('maps rear camera elevation to down, horizon, and up poses', () => {

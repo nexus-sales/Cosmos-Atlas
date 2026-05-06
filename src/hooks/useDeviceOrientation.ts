@@ -70,9 +70,10 @@ export function computeRearCameraHeading(alpha: number, beta: number, gamma: num
     const vx = -cZ * sY - sZ * sX * cY;
     const vy = -sZ * sY + cZ * sX * cY;
 
-    // vx/vy are the horizontal projection of the device +Z axis (out of the
-    // screen). The rear camera looks along -Z, so use the opposite vector.
-    return (Math.atan2(-vx, -vy) * (180 / Math.PI) + 360) % 360;
+    // vx/vy are the horizontal projection of the rear-camera optical axis in
+    // the browser orientation frame. Use it directly so 0 deg remains North;
+    // flipping it here makes AR point to the opposite horizon.
+    return (Math.atan2(vx, vy) * (180 / Math.PI) + 360) % 360;
 }
 
 export function computeRearCameraElevation(beta: number, gamma: number): number {
@@ -84,9 +85,9 @@ export function computeRearCameraElevation(beta: number, gamma: number): number 
 
 function extractMagneticHeading(e: CompassCapableEvent, alpha: number, beta: number, gamma: number): number {
     if (typeof e.webkitCompassHeading === 'number' && Number.isFinite(e.webkitCompassHeading)) {
-        // Safari's compass heading follows the device-facing axis used by
-        // compass UIs. AR camera mode needs the rear camera axis instead.
-        return (e.webkitCompassHeading + 180) % 360;
+        // Safari already reports the camera-facing compass direction for this
+        // AR pose; adding 180 deg points the overlay at the opposite horizon.
+        return e.webkitCompassHeading;
     }
 
     return computeRearCameraHeading(alpha, beta, gamma);
