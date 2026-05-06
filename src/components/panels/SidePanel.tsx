@@ -40,14 +40,11 @@ import { getArHealthSummary, getArToneClasses } from '@/lib/arHealth';
 type TabType = 'challenge' | 'info' | 'guide' | 'passport';
 
 function useIsMobile() {
-    const [isMobile, setIsMobile] = useState(() => (
-        typeof window !== 'undefined'
-            ? window.matchMedia('(max-width: 767px)').matches
-            : false
-    ));
+    const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
         const mq = window.matchMedia('(max-width: 767px)');
+        setIsMobile(mq.matches);
         const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
         mq.addEventListener('change', handler);
         return () => mq.removeEventListener('change', handler);
@@ -478,10 +475,14 @@ function BottomSheet({
     activeTab: TabType;
     setActiveTab: (t: TabType) => void;
 }) {
-    const sheetHeight = typeof window !== 'undefined' ? window.innerHeight * 0.8 : 600;
-    const y = useMotionValue(open ? 0 : sheetHeight);
-    const dragHandleOpacity = useTransform(y, [0, sheetHeight * 0.5], [1, 0.3]);
+    const [sheetHeight, setSheetHeight] = useState(600);
+    const y = useMotionValue(open ? 0 : 600);
+    const dragHandleOpacity = useTransform(y, [0, 300], [1, 0.3]);
     const isDraggingRef = useRef(false);
+
+    useEffect(() => {
+        setSheetHeight(window.innerHeight * 0.8);
+    }, []);
 
     useEffect(() => {
         if (!open) y.set(sheetHeight);
