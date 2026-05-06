@@ -173,7 +173,7 @@ function ShowerRow({
     return (
         <div className="atlas-card flex items-center justify-between gap-3 rounded-2xl px-3 py-3">
             <div className="flex min-w-0 items-center gap-3">
-                <div className="h-3 w-3 rounded-full shadow-[0_0_10px_currentColor]" style={{ color: accentColor, background: accentColor }} />
+                <ShowerIndicator color={accentColor} />
                 <div className="min-w-0">
                     <div className="truncate text-[12px] font-semibold text-white">{label}</div>
                     <div className="text-[11px] text-white/50">{meta}</div>
@@ -192,6 +192,15 @@ function ShowerRow({
                 {badge}
             </div>
         </div>
+    );
+}
+
+function ShowerIndicator({ color }: { color: string }) {
+    return (
+        <div 
+            className="shower-indicator" 
+            style={{ color }}
+        />
     );
 }
 
