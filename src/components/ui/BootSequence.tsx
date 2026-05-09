@@ -22,11 +22,11 @@ export default function BootSequence() {
     useEffect(() => {
         // Prevent boot sequence from running more than once per session
         if (sessionStorage.getItem('cosmos_booted')) {
-            setIsBooting(false);
+            Promise.resolve().then(() => setIsBooting(false));
             return;
         }
 
-        let timeouts: NodeJS.Timeout[] = [];
+        const timeouts: NodeJS.Timeout[] = [];
 
         BOOT_SEQUENCE.forEach(({ text, delay }, index) => {
             const timeout = setTimeout(() => {

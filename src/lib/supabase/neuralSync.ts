@@ -41,9 +41,9 @@ export async function syncPassportToCloud() {
 
         if (error) throw error;
         // console.log('Neural Uplink Successful'); // Silent success for immersion
-    } catch (err: any) {
+    } catch (err) {
         // Fallback elegante si la tabla no existe o no hay conexión
-        const errorMsg = err?.message || err?.details || 'Schema missing or connection failed';
+        const errorMsg = err instanceof Error ? err.message : String(err);
         console.warn(`[Neural Uplink] Modo Local: ${errorMsg}. Asegúrate de crear la tabla 'profiles' en Supabase.`);
     }
 }

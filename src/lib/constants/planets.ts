@@ -21,5 +21,5 @@ export const PLANET_LIST = Object.values(PLANET_NAMES);
  * Helper to check if a string is a valid planet name.
  */
 export const isPlanetName = (name: string): name is typeof PLANET_LIST[number] => {
-    return PLANET_LIST.includes(name as any);
+    return (PLANET_LIST as readonly string[]).includes(name);
 };

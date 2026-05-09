@@ -84,9 +84,6 @@ export function computeRearCameraElevation(beta: number, gamma: number): number 
     // Obtenemos el ángulo de rotación de la pantalla (0, 90, -90, 180)
     const screenAngle = typeof window !== 'undefined' ? (window.screen.orientation?.angle || 0) : 0;
     
-    const b = beta * Math.PI / 180;
-    const g = gamma * Math.PI / 180;
-
     // Vector que apunta "hacia afuera" de la pantalla (Eje Z del móvil)
     // En Portrait: elevación depende mayormente de beta.
     // En Landscape: elevación depende mayormente de gamma.
@@ -182,12 +179,6 @@ export function useDeviceOrientation() {
             deviceOrientationRef.alpha = rawAlpha;
             deviceOrientationRef.beta = rawBeta;
             deviceOrientationRef.gamma = rawGamma;
-
-            // 0=portrait, 90=landscape-left, 270=landscape-right
-            const screenAngle: number =
-                (typeof screen !== 'undefined' && screen.orientation?.angle != null)
-                    ? screen.orientation.angle
-                    : (window.orientation || 0) as number;
 
             // Norte magnético del eje -Z (cámara trasera)
             const magneticHeading = extractMagneticHeading(

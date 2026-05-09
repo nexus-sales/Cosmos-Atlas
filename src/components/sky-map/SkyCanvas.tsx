@@ -33,6 +33,7 @@ import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { getLST } from '@/lib/astronomy/time';
 import { deviceOrientationRef } from '@/hooks/useDeviceOrientation';
+import ISSPassPredictor from '@/components/sky-map/ISSPassPredictor';
 import { cn } from '@/lib/utils';
 
 /**
@@ -244,71 +245,58 @@ function CelestialGroup({ children }: { children: React.ReactNode }) {
 /**
  * OrientationDriver — Mapea los sensores del dispositivo a la cámara celeste.
  *
- * FÓRMULA CORRECTA para modo cámara trasera (portrait):
- *   beta=90  → el=0   (móvil vertical = horizonte)
- *   beta=135 → el=45  (inclinado hacia el cielo)
- *   beta=180 → el=90  (apuntando al cénit)
- *   => targetEl = beta - 90
+ * FÓRMULA UNIFICADA (todos los modos de sujeción):
+ *   beta=0   (plano, pantalla arriba) → el=90  (cénit)    ← tablet como atlas
+ *   beta=45  (inclinado desde plano)  → el=45
+ *   beta=90  (vertical)               → el=0   (horizonte)
+ *   beta=135 (levantado hacia el cielo) → el=45            ← AR apuntando arriba
+ *   beta=180 (boca abajo, cámara arriba) → el=90 (cénit)
+ *   => targetEl = |beta - 90|
  *
- * La cámara se orienta mediante QUATERNIONES para evitar el gimbal lock
- * que ocurría al llegar al cénit con el método position+lookAt anterior.
- *
- * Sistema de coordenadas horizontal (coincide con CelestialGroup):
- *   +Y = cénit
- *   az=0 = Norte  (alpha=0 del compás)
- *   az=90 = Este
+ * Usa position + lookAt (compatible con Html/OrbitControls de drei).
+ * El gimbal lock al cénit se resuelve ajustando camera.up según el azimut.
  */
 function OrientationDriver() {
     const { camera } = useThree();
     const followOrientation = useAppStore((s) => s.followOrientation);
 
-    // Valores suavizados (actualizados en cada frame sin re-render)
     const azRef = useRef(0);
     const elRef = useRef(0);
-
-    // Quaterniones y vectores reutilizables — evitan allocations en cada frame
-    const qAz   = useRef(new THREE.Quaternion());
-    const qEl   = useRef(new THREE.Quaternion());
-    const qFin  = useRef(new THREE.Quaternion());
-    const axisY = useRef(new THREE.Vector3(0, 1, 0));
-    const axisX = useRef(new THREE.Vector3(1, 0, 0));
 
     useFrame(() => {
         if (!followOrientation) return;
 
         const { alpha, beta } = deviceOrientationRef;
 
-        // ── Elevación ──────────────────────────────────────────────────────
-        // Fórmula unificada: beta=0 (plano)→el=90 (cénit) | beta=90 (vertical)→el=0 | beta=135 (cielo)→el=45
-        // Math.abs(beta-90) es continua en todo el rango sin discontinuidades.
+        // |beta - 90|: fórmula continua para portrait, horizontal y AR
         const targetEl = THREE.MathUtils.clamp(Math.abs(beta - 90), 0, 90);
 
-        // ── Azimut (wrap-around seguro 0–360) ─────────────────────────────
+        // Azimut wrap-around seguro
         const dAz = ((alpha - azRef.current) % 360 + 540) % 360 - 180;
         azRef.current = (azRef.current + dAz * 0.12 + 360) % 360;
-
-        // ── Suavizado de elevación ─────────────────────────────────────────
         elRef.current += (targetEl - elRef.current) * 0.12;
 
-        const elRad  = THREE.MathUtils.degToRad(elRef.current);
-        // Azimut del compás: 0=Norte, 90=Este, 180=Sur, 270=Oeste.
-        // En nuestro sistema de coordenadas la cámara mira en -Z por defecto,
-        // y az=0 debe apuntar al Norte, por eso negamos el azimut en la rotación Y.
-        const azRad  = THREE.MathUtils.degToRad(-azRef.current);
+        const el  = elRef.current;
+        const az  = azRef.current;
+        const elR = THREE.MathUtils.degToRad(el);
+        const azR = THREE.MathUtils.degToRad(az);
 
-        // ── Orientación por quaternion (sin gimbal lock) ───────────────────
-        // Paso 1: girar en torno a Y para apuntar al azimut correcto
-        qAz.current.setFromAxisAngle(axisY.current, azRad);
-        // Paso 2: inclinar en torno a X para el ángulo de elevación
-        //   elRad positivo = inclinar la cámara hacia arriba
-        qEl.current.setFromAxisAngle(axisX.current, elRad);
-        // Composición: primero azimut, luego elevación en el espacio local
-        qFin.current.multiplyQuaternions(qAz.current, qEl.current);
+        // La cámara está dentro de la esfera y mira al origen.
+        // lookDir apunta hacia donde miramos; position es su inversa.
+        const lx =  Math.cos(elR) * Math.sin(azR);
+        const ly =  Math.sin(elR);
+        const lz = -Math.cos(elR) * Math.cos(azR);
+        camera.position.set(-lx * 0.01, -ly * 0.01, -lz * 0.01);
 
-        // Mover la cámara cerca del origen y aplicar la orientación
-        // (la cámara mira al centro de la esfera celeste desde muy cerca)
-        camera.position.set(0, 0, 0.01);
-        camera.quaternion.copy(qFin.current);
+        // Evitar gimbal lock al apuntar al cénit (el > 75°):
+        // usamos Norte proyectado como vector "arriba" de la cámara.
+        if (el > 75) {
+            camera.up.set(-Math.sin(azR), 0, Math.cos(azR));
+        } else {
+            camera.up.set(0, 1, 0);
+        }
+
+        camera.lookAt(0, 0, 0);
     });
 
     return null;
@@ -339,7 +327,6 @@ export default function SkyCanvas() {
     const showGrid = useAppStore((state) => state.settings.showGrid);
     const showMilkyWay = useAppStore((state) => state.settings.showMilkyWay);
     const showEcliptic = useAppStore((state) => state.settings.showEcliptic);
-    const showConstellations = useAppStore((state) => state.settings.showConstellations);
     const followOrientation = useAppStore((state) => state.followOrientation);
     const setTargetedObject = useAppStore((state) => state.setTargetedObject);
 
@@ -430,6 +417,8 @@ export default function SkyCanvas() {
 
                     {/* Satélites en espacio mundo horizontal (Alt/Az), NO dentro del CelestialGroup */}
                     <ErrorBoundary label="Satellites"><Satellites /></ErrorBoundary>
+                    {/* ISS: predicción de paso + arco de trayectoria */}
+                    <ErrorBoundary label="ISSPassPredictor"><ISSPassPredictor /></ErrorBoundary>
 
                     <CameraNavigator
                         controlsRef={controlsRef}

@@ -11,6 +11,7 @@ import GuideTab from '@/components/panels/GuideTab';
 import MeteorShowerInfo from '@/components/panels/MeteorShowerInfo';
 import DailyEventsPanel from '@/components/panels/DailyEventsPanel';
 import UpcomingConjunctions from '@/components/panels/UpcomingConjunctions';
+import ObservationJournal from '@/components/panels/ObservationJournal';
 
 type TabType = 'challenge' | 'info' | 'guide';
 
@@ -89,6 +90,7 @@ function PanelContent({
     const [eventsOpen, setEventsOpen] = useState(false);
     const [meteorsOpen, setMeteorsOpen] = useState(false);
     const [conjOpen, setConjOpen] = useState(false);
+    const [journalOpen, setJournalOpen] = useState(false);
 
     return (
         <>
@@ -235,6 +237,9 @@ function PanelContent({
 
                     <AccordionSection title="Conjunciones Próximas" icon={<Sparkles className="w-4 h-4" />} isOpen={conjOpen} onToggle={() => setConjOpen(!conjOpen)}>
                         <UpcomingConjunctions />
+                    </AccordionSection>
+                    <AccordionSection title="Diario de Observación" icon={<BookOpen className="w-4 h-4" />} isOpen={journalOpen} onToggle={() => setJournalOpen(!journalOpen)}>
+                        <ObservationJournal />
                     </AccordionSection>
                     <AccordionSection title="Meteoros" icon={<CloudRain className="w-4 h-4" />} isOpen={meteorsOpen} onToggle={() => setMeteorsOpen(!meteorsOpen)}>
                         <MeteorShowerInfo />

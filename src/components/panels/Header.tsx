@@ -1,20 +1,24 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
+const SolarSystemMap = dynamic(() => import('@/components/sky-map/SolarSystemMap'), { ssr: false });
 import { useAppStore } from '@/stores/useAppStore';
-import { Stars, MapPin, Play, Square, ShieldCheck, Search, X } from 'lucide-react';
+import { Stars, MapPin, Play, Square } from 'lucide-react';
 import CelestialSearch from './CelestialSearch';
 import { cn } from '@/lib/utils';
-import { getArHealthSummary, getArToneClasses } from '@/lib/arHealth';
 
-function Clock() {
-    // Initialize to null to avoid SSR/client hydration mismatch.
-    // The real time is set exclusively on the client after mount.
-    const [time, setTime] = useState<Date | null>(null);
+export default function Header() {
+    const time = useAppStore((state) => state.time);
+    const observer = useAppStore((state) => state.observer);
+    const isTourActive = useAppStore((state) => state.isTourActive);
+    const setIsTourActive = useAppStore((state) => state.setIsTourActive);
+    const [mounted, setMounted] = useState(false);
+    const [showSolar, setShowSolar] = useState(false);
 
     useEffect(() => {
-        const timer = setInterval(() => setTime(new Date()), 1000);
-        return () => clearInterval(timer);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setMounted(true);
     }, []);
 
     const formatTime = (date: Date) => {
@@ -22,7 +26,7 @@ function Clock() {
             hour: '2-digit',
             minute: '2-digit',
             second: '2-digit',
-            hour12: false,
+            hour12: false
         });
     };
 
@@ -35,55 +39,8 @@ function Clock() {
     };
 
     return (
-        <div className="flex flex-col items-end text-right" aria-live="polite" aria-atomic="true" aria-label="Hora actual del observatorio">
-            {/* suppressHydrationWarning prevents React from warning about the
-                one-frame difference between SSR placeholder and first paint */}
-            <div
-                suppressHydrationWarning
-                className="text-base md:text-[18px] text-blue-400 tabular-nums leading-none font-bold glow-text"
-            >
-                {time ? formatTime(time) : '--:--:--'}
-            </div>
-            <div
-                suppressHydrationWarning
-                className="hidden md:block text-[10px] text-white/30 uppercase mt-1 tracking-wider"
-                aria-hidden="true"
-            >
-                {time ? formatDate(time) : ''}
-            </div>
-        </div>
-    );
-}
-
-interface HeaderProps {
-    onRequestLocation: () => void;
-}
-
-export default function Header({ onRequestLocation }: HeaderProps) {
-    const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-    const observer = useAppStore((state) => state.observer);
-    const geolocation = useAppStore((state) => state.geolocation);
-    const arHealthHistory = useAppStore((state) => state.arHealthHistory);
-    const isTourActive = useAppStore((state) => state.isTourActive);
-    const setIsTourActive = useAppStore((state) => state.setIsTourActive);
-
-    const latHemisphere = observer.lat >= 0 ? 'N' : 'S';
-    const lonHemisphere = observer.lon < 0 ? 'O' : 'E';
-    const hasPreciseLocation = geolocation.source === 'gps' && geolocation.accuracyM !== null && geolocation.accuracyM <= 1000;
-    const mobileLocationLabel = hasPreciseLocation
-        ? `GPS +/-${Math.round(geolocation.accuracyM ?? 0)}m`
-        : geolocation.status === 'denied'
-          ? 'GPS bloqueado'
-          : geolocation.source === 'fallback'
-            ? `Fallback ${Math.abs(observer.lat).toFixed(1)}${latHemisphere}`
-            : 'Ubicacion aprox.';
-
-    const arSummary = getArHealthSummary(arHealthHistory);
-    const arBadgeClass = getArToneClasses(arSummary.tone);
-
-    return (
-        <div className="flex flex-col">
-        <header className="atlas-panel h-14 md:h-16 border-b border-white/10 flex items-center justify-between px-3 md:px-6 z-20 overflow-hidden shrink-0">
+        <>
+        <header className="h-14 md:h-16 border-b border-white/10 bg-black/60 backdrop-blur-md flex items-center justify-between px-3 md:px-6 z-20 overflow-hidden shrink-0">
             <div className="flex items-center gap-2 md:gap-4">
                 <div className="relative flex items-center justify-center w-8 h-8 md:w-10 md:h-10 border border-blue-500/30 rounded-full bg-blue-500/5 group">
                     <Stars className="w-4 h-4 md:w-6 md:h-6 text-blue-400 group-hover:scale-110 transition-transform" />
@@ -99,118 +56,61 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                 </div>
             </div>
 
+            {/* Central Search Bar */}
             <div className="flex-1 max-w-sm px-4 hidden sm:block">
                 <CelestialSearch />
             </div>
 
+            {/* Right Group: Tour button + Location & Time */}
             <div className="flex items-center gap-3 md:gap-6 font-mono">
-                {/* Botón de búsqueda — solo móvil */}
-                <button
-                    onClick={() => setMobileSearchOpen(v => !v)}
-                    aria-label="Buscar objeto celeste"
-                    className={cn(
-                        'sm:hidden flex items-center justify-center w-8 h-8 rounded-lg border transition-colors cursor-pointer',
-                        mobileSearchOpen
-                            ? 'border-blue-500/40 bg-blue-500/20 text-blue-400'
-                            : 'border-white/10 text-white/40 hover:text-white/70 hover:border-white/20'
-                    )}
-                >
-                    {mobileSearchOpen ? <X className="w-4 h-4" /> : <Search className="w-4 h-4" />}
-                </button>
+
+                {/* Cinematic Tour toggle */}
                 <button
                     onClick={() => setIsTourActive(!isTourActive)}
-                    aria-label={isTourActive ? 'Detener tour del cielo' : 'Iniciar tour cinematografico del cielo'}
-                    {...(isTourActive ? { 'aria-pressed': true } : { 'aria-pressed': false })}
+                    aria-label={isTourActive ? 'Detener tour del cielo' : 'Iniciar tour cinematográfico del cielo'}
+                    aria-pressed={isTourActive}
                     title={isTourActive ? 'Detener tour' : 'Tour del cielo'}
                     className={cn(
                         'hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[10px] font-bold tracking-widest uppercase transition-all cursor-pointer',
                         isTourActive
-                            ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400 shadow-[0_0_16px_rgba(34,211,238,0.2)]'
+                            ? 'bg-blue-500/20 border-blue-500/40 text-blue-400 shadow-[0_0_16px_rgba(59,130,246,0.2)]'
                             : 'border-white/10 text-white/25 hover:text-white/60 hover:border-white/20'
                     )}
                 >
                     {isTourActive ? <Square className="w-3 h-3" /> : <Play className="w-3 h-3" />}
-                    {isTourActive ? 'Detener' : 'Tour'}
+                    {isTourActive ? 'Stop' : 'Tour'}
                 </button>
-
+                {/* Sistema Solar button */}
+                <button
+                    onClick={() => setShowSolar(true)}
+                    title="Vista del Sistema Solar"
+                    className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[10px] font-bold tracking-widest uppercase transition-all cursor-pointer border-white/10 text-white/25 hover:text-white/60 hover:border-white/20"
+                >
+                    🌌 Sistema Solar
+                </button>
+                {/* Location Overlay */}
                 <div className="hidden lg:flex flex-col items-end text-right">
                     <div className="flex items-center gap-2 text-[10px] text-white/40 tracking-[0.2em] uppercase mb-0.5">
                         <MapPin className="w-3 h-3" />
-                        Ubicacion
+                        Ubicación
                     </div>
                     <div className="text-sm text-blue-200/70">
-                        {Math.abs(observer.lat).toFixed(2)}°{latHemisphere} {Math.abs(observer.lon).toFixed(2)}°{lonHemisphere}
+                        {observer.lat.toFixed(2)}°N {Math.abs(observer.lon).toFixed(2)}°{observer.lon < 0 ? 'O' : 'E'}
                     </div>
-                    <div
-                        className={cn(
-                            'text-[9px] mt-0.5 font-mono uppercase tracking-wider',
-                            hasPreciseLocation ? 'text-emerald-300/70' : 'text-amber-300/70'
-                        )}
-                    >
-                        {hasPreciseLocation
-                            ? `GPS +/-${Math.round(geolocation.accuracyM ?? 0)}m`
-                            : geolocation.source === 'fallback'
-                                ? `Fallback ${Math.abs(observer.lat).toFixed(1)}°${latHemisphere}`
-                                : 'Ubicación aproximada'}
+                </div>
+
+                {/* Time Display */}
+                <div className="flex flex-col items-end text-right" aria-live="polite" aria-atomic="true" aria-label="Hora actual del observatorio">
+                    <div className="text-base md:text-[18px] text-blue-400 tabular-nums leading-none font-bold glow-text">
+                        {mounted ? formatTime(time) : '--:--:--'}
                     </div>
-                    {!hasPreciseLocation && geolocation.status !== 'denied' && (
-                        <button
-                            onClick={onRequestLocation}
-                            className="mt-1 text-[9px] font-bold uppercase tracking-[0.16em] text-cyan-300/75 hover:text-cyan-200"
-                        >
-                            Activar GPS
-                        </button>
-                    )}
-                </div>
-
-                <div
-                    className={cn(
-                        'hidden md:flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[9px] font-bold tracking-[0.18em] uppercase',
-                        arBadgeClass
-                    )}
-                >
-                    <ShieldCheck className="w-3 h-3" />
-                    AR {arSummary.score == null ? 'N/A' : `${arSummary.score}/100`}
-                </div>
-
-                <Clock />
-
-                <div
-                    className={cn(
-                        'lg:hidden text-[9px] uppercase tracking-wider font-mono rounded px-1.5 py-0.5 border',
-                        hasPreciseLocation
-                            ? 'text-emerald-300/80 border-emerald-400/30 bg-emerald-500/10'
-                            : 'text-amber-300/80 border-amber-400/30 bg-amber-500/10'
-                    )}
-                >
-                    <button
-                        onClick={!hasPreciseLocation && geolocation.status !== 'denied' ? onRequestLocation : undefined}
-                        disabled={hasPreciseLocation || geolocation.status === 'denied'}
-                        className="disabled:cursor-default"
-                        title={hasPreciseLocation ? 'GPS activo' : 'Activar ubicación precisa'}
-                    >
-                        {mobileLocationLabel}
-                    </button>
-                </div>
-
-                <div
-                    className={cn(
-                        'md:hidden flex items-center gap-1 text-[9px] uppercase tracking-wider font-mono rounded-full px-1.5 py-0.5 border',
-                        arBadgeClass
-                    )}
-                >
-                    <ShieldCheck className="w-3 h-3" />
-                    {arSummary.score == null ? 'AR N/A' : `AR ${arSummary.score}`}
+                    <div className="hidden md:block text-[10px] text-white/30 uppercase mt-1 tracking-wider" aria-hidden="true">
+                        {mounted ? formatDate(time) : '...'}
+                    </div>
                 </div>
             </div>
         </header>
-
-        {/* Barra de búsqueda móvil — se despliega bajo el header */}
-        {mobileSearchOpen && (
-            <div className="sm:hidden atlas-panel border-b border-white/10 px-4 py-2.5">
-                <CelestialSearch />
-            </div>
-        )}
-        </div>
+            {showSolar && <SolarSystemMap onClose={() => setShowSolar(false)} />}
+        </>
     );
 }
