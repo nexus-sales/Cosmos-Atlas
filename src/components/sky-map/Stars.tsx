@@ -1,11 +1,10 @@
 'use client';
 
-import { memo, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
-import { useCatalog } from '@/stores/useCatalogStore';
-import type { Star } from '@/types/celestial';
+import { STARS } from '@/data/stars';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { useAppStore } from '@/stores/useAppStore';
 import type { ThreeEvent } from '@react-three/fiber';
@@ -40,21 +39,18 @@ const starVertexShader = `
 
     float depthFactor = 1.0 - distanceFactor * 0.2;
 
-    float twinkleSpeed = 2.2 + airmass * 0.4;
-    float twinkleAmp = 0.08 + airmass * 0.06; 
-    
-    // Ruido multicapa para centelleo atmosférico
-    float noise = sin(uTime * twinkleSpeed + position.x * 120.0 + position.y * 45.0) * 0.5
-                + sin(uTime * twinkleSpeed * 1.4 + position.z * 80.0) * 0.3
-                + cos(uTime * 8.0 + position.y * 200.0) * 0.2;
-                
-    vOpacity = varFactor * depthFactor * ((1.0 - twinkleAmp) + twinkleAmp * noise);
+    float twinkleSpeed = 2.0 + airmass * 0.3;
+    float twinkleAmp = 0.15 + airmass * 0.1;
+    float noise = sin(uTime * twinkleSpeed + position.x * 50.0) * 0.6
+                + sin(uTime * twinkleSpeed * 0.7 + position.y * 50.0) * 0.4;
+    // Extinción atmosférica: las estrellas cerca del horizonte se atenúan
+    // exp(-k*(X-1)) con k=0.28 → ~1 mag a X=5 (h≈12°), ~2 mag a X=10 (h≈6°)
+    float extinction = exp(-0.28 * max(0.0, airmass - 1.0));
+    vOpacity = varFactor * depthFactor * ((1.0 - twinkleAmp) + twinkleAmp * noise) * extinction;
     vAirmass = airmass;
 
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-    // Tamaño dinámico sutil con el centelleo para simular difracción atmosférica
-    float sizeTwinkle = 1.0 + (noise * 0.15 * airmass / 10.0);
-    gl_PointSize = size * sizeTwinkle * 0.9 * (vOpacity * 0.2 + 0.8) * (1000.0 / -mvPosition.z);
+    gl_PointSize = size * 1.5 * (vOpacity * 0.3 + 0.7) * (1000.0 / -mvPosition.z);
     gl_Position = projectionMatrix * mvPosition;
   }
 `;
@@ -76,11 +72,16 @@ const starFragmentShader = `
         baseColor = vec3(lum * 2.0, 0.0, 0.0);
     }
 
-    // Realistic core and subtle halo, NO SPIKES
-    float core = exp(-r * 18.0) * 1.8;
-    float halo = exp(-r * 25.0) * 0.1;
+    float core = exp(-r * 8.0) * 2.0;
+    float halo = exp(-r * 15.0) * 0.4;
 
-    float finalAlpha = (core + halo) * vOpacity;
+    vec2 centered = gl_PointCoord - vec2(0.5);
+    float spikeX = exp(-abs(centered.x) * 60.0) * exp(-abs(centered.y) * 4.0);
+    float spikeY = exp(-abs(centered.y) * 60.0) * exp(-abs(centered.x) * 4.0);
+    float brightFactor = smoothstep(4.0, 9.0, vSize);
+    float spikes = (spikeX + spikeY) * 0.15 * brightFactor;
+
+    float finalAlpha = (core + halo + spikes) * vOpacity;
     vec3 finalColor = mix(baseColor, vec3(1.0), core * 0.5);
 
     gl_FragColor = vec4(finalColor, clamp(finalAlpha, 0.0, 1.0));
@@ -100,102 +101,70 @@ function getRaycastThreshold(fov: number): number {
     );
 }
 
-const DynamicStarLabels = memo(function DynamicStarLabels({
+function DynamicStarLabels({
     visibleStars,
     starPositions,
 }: {
-    visibleStars: Star[];
+    visibleStars: typeof STARS;
     starPositions: [number, number, number][];
 }) {
     const camFov   = useAppStore(s => s.camFov);
     const nightMode = useAppStore(s => s.settings.nightMode);
-    const focusedConstellation = useAppStore(s => s.focusedConstellation);
 
     const overallOpacity = THREE.MathUtils.clamp(
         THREE.MathUtils.mapLinear(camFov, 80, 50, 0, 1), 0.1, 1
     );
 
-    const labelCandidates = useMemo(() => {
-        const baseThreshold = THREE.MathUtils.mapLinear(camFov, 75, 20, 1.2, 5.0);
-        const maxLabels = focusedConstellation ? 140 : Math.round(THREE.MathUtils.mapLinear(camFov, 75, 20, 18, 90));
-        const candidates: Array<{
-            key: string;
-            name: string;
-            pos: [number, number, number];
-            color: string;
-            opacity: number;
-            priority: number;
-        }> = [];
-
-        for (let i = 0; i < visibleStars.length; i++) {
-            const star = visibleStars[i];
-            const isFromFocused = focusedConstellation === star.constellation;
-            const magThreshold = isFromFocused ? Math.max(6.0, baseThreshold + 3.0) : baseThreshold;
-            if (star.mag > magThreshold) continue;
-
-            const opacity = THREE.MathUtils.clamp(
-                THREE.MathUtils.mapLinear(magThreshold - star.mag, 0, 1.0, 0, 1), 0, 1
-            ) * (isFromFocused ? 1.0 : overallOpacity);
-
-            candidates.push({
-                key: star.name,
-                name: star.name,
-                pos: starPositions[i],
-                color: nightMode ? '#ff4444' : (isFromFocused ? '#ffffff' : '#e0e8ff'),
-                opacity,
-                priority: (isFromFocused ? 100 : 0) - star.mag,
-            });
-        }
-
-        candidates.sort((a, b) => b.priority - a.priority);
-        return candidates.slice(0, maxLabels);
-    }, [camFov, focusedConstellation, nightMode, overallOpacity, starPositions, visibleStars]);
-
     return (
         <group renderOrder={50}>
-            {labelCandidates.map((label) => {
+            {visibleStars.map((star, i) => {
+                const magThreshold = THREE.MathUtils.mapLinear(camFov, 75, 20, 1.2, 5.0);
+                if (star.mag > magThreshold) return null;
+
+                const pos     = starPositions[i];
+                const color   = nightMode ? '#ff4444' : '#e0e8ff';
+                const opacity = THREE.MathUtils.clamp(
+                    THREE.MathUtils.mapLinear(magThreshold - star.mag, 0, 1.0, 0, 1), 0, 1
+                ) * overallOpacity;
+
                 return (
-                    <Html key={label.key} position={label.pos} center distanceFactor={15} zIndexRange={[150, 50]}>
+                    <Html key={star.name} position={pos} center distanceFactor={15} zIndexRange={[150, 50]}>
                         <div
-                            className="font-sans font-medium tracking-[0.05em] pointer-events-none select-none translate-y-3.5 text-center text-[10px] [text-shadow:0_1px_4px_rgba(0,0,0,0.8)]"
+                            className="font-sans font-medium tracking-[0.05em] pointer-events-none select-none translate-y-3.5 text-center"
                             style={{
-                                color: label.color,
-                                opacity: label.opacity,
+                                color,
+                                opacity,
+                                fontSize: '10px',
+                                textShadow: '0 1px 4px rgba(0,0,0,0.8)',
                             }}
                         >
-                            {label.name}
+                            {star.name}
                         </div>
                     </Html>
                 );
             })}
         </group>
     );
-});
+}
 
 export default function Stars() {
     const pointsRef = useRef<THREE.Points>(null);
-    const hoveredIndexRef = useRef<number | null>(null);
-    const stars = useCatalog(s => s.stars);
     const bortleScale = useAppStore(s => s.settings.bortleScale);
     const nightMode   = useAppStore(s => s.settings.nightMode);
     const camFov      = useAppStore(s => s.camFov);
-    const focusedConstellation = useAppStore(s => s.focusedConstellation);
     const setSelectedObject = useAppStore(s => s.setSelectedObject);
     const { raycaster } = useThree();
 
-    // Zona de fade: 0.8 mag por encima del límite las estrellas empiezan a desaparecer
-    const FADE_RANGE = 0.8;
-    const limitingMag = 8.2 - (bortleScale - 1) * 0.75;
+    const limitingMag = 5.5 - (bortleScale - 1) * 0.45;
 
     // Estado del tooltip hover — una sola instancia para toda la nube de puntos
     const [hovered, setHovered] = useState<{
-        star: Star;
+        star: typeof STARS[0];
         pos: [number, number, number];
     } | null>(null);
 
     const [geometry, material, visibleStars, starPositions] = useMemo(() => {
-        // Incluir estrellas hasta limitingMag (zona de fade ya manejada por tamaño)
-        const filteredStars = stars.filter(s => s.mag <= limitingMag);
+        const filteredStars = STARS.filter(s => s.mag <= limitingMag);
 
         const pos         = new Float32Array(filteredStars.length * 3);
         const col         = new Float32Array(filteredStars.length * 3);
@@ -218,21 +187,10 @@ export default function Stars() {
             col[i * 3 + 1] = color.g;
             col[i * 3 + 2] = color.b;
 
-            const refMag    = -1.5;
+            const refMag   = -1.5;
             const brightness = Math.pow(2.512, refMag - star.mag);
-            const normB     = Math.min(1.0, brightness);
-            // Fade suave: estrellas cercanas al límite se achican progresivamente
-            const fadeFactor = star.mag > (limitingMag - FADE_RANGE)
-                ? Math.max(0, (limitingMag - star.mag) / FADE_RANGE)
-                : 1.0;
-            
-            // Highlight stars of the focused constellation (subtle floor)
-            const isFromFocused = focusedConstellation === star.constellation;
-            const focusBoost = isFromFocused ? 1.8 : 1.0;
-            
-            const baseSize = (0.5 + Math.pow(normB, 0.4) * 4.5) * fadeFactor;
-            sz[i] = isFromFocused ? Math.max(3.2, baseSize * focusBoost) : baseSize;
-            
+            const normB    = Math.min(1.0, brightness);
+            sz[i]          = 0.8 + Math.pow(normB, 0.4) * 7.0;
             distFactArr[i] = Math.min(1.0, Math.max(0.0, (star.mag + 1.5) / 7.5));
         });
 
@@ -258,7 +216,7 @@ export default function Stars() {
         });
 
         return [geom, mat, filteredStars, positions3D];
-    }, [limitingMag, focusedConstellation, stars]);
+    }, [limitingMag]);
 
     useFrame((state) => {
         const mat     = material as THREE.ShaderMaterial;
@@ -277,17 +235,13 @@ export default function Stars() {
     const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
         e.stopPropagation();
         if (e.index === undefined || e.index >= visibleStars.length) return;
-        if (hoveredIndexRef.current === e.index) return;
-
         const star = visibleStars[e.index];
         const pos  = starPositions[e.index];
-        hoveredIndexRef.current = e.index;
         setHovered({ star, pos });
         document.body.style.cursor = 'pointer';
     };
 
     const handlePointerOut = () => {
-        hoveredIndexRef.current = null;
         setHovered(null);
         document.body.style.cursor = 'default';
     };
