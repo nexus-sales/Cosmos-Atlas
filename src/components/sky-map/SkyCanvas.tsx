@@ -35,6 +35,7 @@ import { getLST } from '@/lib/astronomy/time';
 import { deviceOrientationRef } from '@/hooks/useDeviceOrientation';
 import ISSPassPredictor from '@/components/sky-map/ISSPassPredictor';
 import { cn } from '@/lib/utils';
+import { cameraHeadingRef, cameraRef } from '@/lib/skyRefs';
 
 /**
  * Zoom por FOV — rueda de ratón + pinch táctil.
@@ -222,21 +223,23 @@ function SetupRenderer() {
 
 /**
  * Rota toda la esfera celeste (coordenadas ecuatoriales) al sistema
- * horizontal local del observador:
- *   - rotation.x = 90 - lat   → inclina el polo norte celeste
- *   - rotation.y = -LST        → gira para la hora sidérea local
- * Con esto las estrellas se mueven correctamente según la ubicación
- * y la hora real, exactamente como en el cielo nocturno.
+ * horizontal local del observador.
+ *
+ * Euler orden 'YXZ': primero Ry(-LST) alinea el meridiano local,
+ * luego Rx(lat-90) inclina el polo norte al azimut 0° y altitud lat.
+ * Con 'XYZ' el orden se invierte y el NCP aparece en el Sur — bug clásico.
  */
 function CelestialGroup({ children }: { children: React.ReactNode }) {
     const groupRef = useRef<THREE.Group>(null);
 
     useFrame(() => {
-        if (!groupRef.current) return;
+        const group = groupRef.current;
+        if (!group) return;
+        if (group.rotation.order !== 'YXZ') group.rotation.order = 'YXZ';
         const { time, observer } = useAppStore.getState();
         const lst = getLST(time, observer.lon);
-        groupRef.current.rotation.x = THREE.MathUtils.degToRad(90 - observer.lat);
-        groupRef.current.rotation.y = THREE.MathUtils.degToRad(-lst);
+        group.rotation.x = THREE.MathUtils.degToRad(observer.lat - 90);
+        group.rotation.y = THREE.MathUtils.degToRad(-lst);
     });
 
     return <group ref={groupRef}>{children}</group>;
@@ -266,13 +269,13 @@ function OrientationDriver() {
     useFrame(() => {
         if (!followOrientation) return;
 
-        const { alpha, beta } = deviceOrientationRef;
+        // Usar heading y elevation ya corregidos y suavizados del sensor
+        const { heading, elevation } = deviceOrientationRef;
 
-        // |beta - 90|: fórmula continua para portrait, horizontal y AR
-        const targetEl = THREE.MathUtils.clamp(Math.abs(beta - 90), 0, 90);
+        const targetEl = THREE.MathUtils.clamp(elevation, 0, 90);
 
         // Azimut wrap-around seguro
-        const dAz = ((alpha - azRef.current) % 360 + 540) % 360 - 180;
+        const dAz = ((heading - azRef.current) % 360 + 540) % 360 - 180;
         azRef.current = (azRef.current + dAz * 0.12 + 360) % 360;
         elRef.current += (targetEl - elRef.current) * 0.12;
 
@@ -299,6 +302,20 @@ function OrientationDriver() {
         camera.lookAt(0, 0, 0);
     });
 
+    return null;
+}
+
+/**
+ * Actualiza cameraRef y cameraHeadingRef en cada frame para que
+ * componentes fuera del Canvas (Compass) puedan acceder a la cámara.
+ */
+function CameraSync() {
+    const { camera } = useThree();
+    useEffect(() => { cameraRef.current = camera; }, [camera]);
+    useFrame(() => {
+        const lookDir = camera.position.clone().negate().normalize();
+        cameraHeadingRef.value = (Math.atan2(lookDir.x, -lookDir.z) * (180 / Math.PI) + 360) % 360;
+    });
     return null;
 }
 
@@ -439,10 +456,12 @@ export default function SkyCanvas() {
 
                     {/* FOVOverlay maneja su propio Html wrapper internamente */}
                     <FOVOverlay />
-                    {/* Brújula con reset de orientación */}
-                    <Compass />
+                    <CameraSync />
                 </Suspense>
             </Canvas>
+
+            {/* Brújula y botón AR — fuera del Canvas para evitar transforms de drei/Html */}
+            <Compass />
         </div>
     );
 }
