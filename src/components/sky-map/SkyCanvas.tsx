@@ -279,10 +279,9 @@ function OrientationDriver() {
         const { alpha, beta } = deviceOrientationRef;
 
         // ── Elevación ──────────────────────────────────────────────────────
-        // beta=90 (vertical) → el=0 (horizonte)
-        // beta>90 (inclinado al cielo) → el>0
-        // Clamp a [-90, 90] para no sobrepasar cénit/nadir
-        const targetEl = THREE.MathUtils.clamp(beta - 90, -90, 90);
+        // Fórmula unificada: beta=0 (plano)→el=90 (cénit) | beta=90 (vertical)→el=0 | beta=135 (cielo)→el=45
+        // Math.abs(beta-90) es continua en todo el rango sin discontinuidades.
+        const targetEl = THREE.MathUtils.clamp(Math.abs(beta - 90), 0, 90);
 
         // ── Azimut (wrap-around seguro 0–360) ─────────────────────────────
         const dAz = ((alpha - azRef.current) % 360 + 540) % 360 - 180;
