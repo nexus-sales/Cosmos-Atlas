@@ -116,3 +116,21 @@ export function equatorialTo3D(ra: number, dec: number, radius: number): [number
         radius * Math.sin(phi) * Math.sin(theta)
     ];
 }
+
+export function equatorialToHorizontal3D(
+    ra: number,
+    dec: number,
+    lat: number,
+    lst: number,
+    radius: number,
+): [number, number, number] {
+    const [x, y, z] = equatorialTo3D(ra, dec, radius);
+    const v = new THREE.Vector3(x, y, z);
+    v.applyEuler(new THREE.Euler(
+        toRad(lat - 90),
+        toRad(-lst),
+        0,
+        'XYZ',
+    ));
+    return [v.x, v.y, v.z];
+}

@@ -225,9 +225,8 @@ function SetupRenderer() {
  * Rota toda la esfera celeste (coordenadas ecuatoriales) al sistema
  * horizontal local del observador.
  *
- * Euler orden 'YXZ': primero Ry(-LST) alinea el meridiano local,
- * luego Rx(lat-90) inclina el polo norte al azimut 0° y altitud lat.
- * Con 'XYZ' el orden se invierte y el NCP aparece en el Sur — bug clásico.
+ * Euler orden 'XYZ': aplica Ry(-LST) y después Rx(lat-90), que deja
+ * el norte celeste a azimut 0° y altura igual a la latitud del observador.
  */
 function CelestialGroup({ children }: { children: React.ReactNode }) {
     const groupRef = useRef<THREE.Group>(null);
@@ -235,7 +234,7 @@ function CelestialGroup({ children }: { children: React.ReactNode }) {
     useFrame(() => {
         const group = groupRef.current;
         if (!group) return;
-        if (group.rotation.order !== 'YXZ') group.rotation.order = 'YXZ';
+        if (group.rotation.order !== 'XYZ') group.rotation.order = 'XYZ';
         const { time, observer } = useAppStore.getState();
         const lst = getLST(time, observer.lon);
         group.rotation.x = THREE.MathUtils.degToRad(observer.lat - 90);

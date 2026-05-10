@@ -332,6 +332,16 @@ export default function AIAstronoma() {
     const chatEndRef = useRef<HTMLDivElement | null>(null);
     const currentSelection = selected || targetedObject;
 
+    useEffect(() => {
+        const openFromHeader = () => {
+            setChatOpen(true);
+            setShowBubble(false);
+        };
+
+        window.addEventListener('cosmos:open-ai-astronomer', openFromHeader);
+        return () => window.removeEventListener('cosmos:open-ai-astronomer', openFromHeader);
+    }, []);
+
     const objectEnrichment = useMemo<EnrichedObjectContext | null>(() => {
         if (!currentSelection) return null;
 
@@ -583,7 +593,7 @@ export default function AIAstronoma() {
         <div className={cn(
             'fixed z-[60] flex flex-col items-end gap-3 pointer-events-none',
             'md:bottom-24 md:right-6',
-            sidebarOpen ? 'hidden md:flex' : 'bottom-40 right-4'
+            sidebarOpen && !chatOpen ? 'hidden md:flex' : 'bottom-24 right-4'
         )}>
             <AnimatePresence>
                 {chatOpen && (
@@ -785,7 +795,7 @@ export default function AIAstronoma() {
                 )}
             </AnimatePresence>
 
-            <div className="pointer-events-auto relative">
+            <div className="pointer-events-auto relative hidden md:block">
                 <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}

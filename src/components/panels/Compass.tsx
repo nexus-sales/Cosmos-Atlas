@@ -131,7 +131,7 @@ export default function Compass() {
 
     return (
         <div
-            className="fixed bottom-28 left-4 z-[80] pointer-events-auto flex flex-col items-center gap-2 md:bottom-6 md:left-4"
+            className="fixed bottom-28 left-4 z-[80] pointer-events-auto hidden flex-col items-center gap-2 md:bottom-6 md:left-4 md:flex"
             style={{ paddingBottom: 'env(safe-area-inset-bottom)', paddingLeft: 'env(safe-area-inset-left)' }}
         >
             <button
