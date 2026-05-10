@@ -1,6 +1,18 @@
 # Cosmos Atlas
 
-## Version 3.5.0 — 2026-04-29
+## Version 3.5.1 - 2026-05-10
+
+Esta version corrige la experiencia movil y la orientacion astronomica de la boveda. El objetivo es que Cosmos Atlas deje respirar el cielo: menos botones flotando sobre el mapa y mas confianza en que lo que ves corresponde al hemisferio y a la latitud reales.
+
+- **Header movil simplificado** - El nombre/logo grande sale de la barra superior y los controles principales quedan reunidos en una tira compacta: brujula, busqueda, reloj, AR, GPS, IA astronomica y panel.
+- **Menos controles encima del cielo** - En movil se ocultan los widgets flotantes de boveda/camara, foto, tiempo real, brujula grande, IA y FAB del panel; en escritorio siguen disponibles.
+- **Brujula compacta con calibracion** - La brujula del header abre acciones para mirar al cenit, mirar al norte, calibrar con Polaris y borrar el offset manual.
+- **Correccion Alt/Az del SkyCanvas** - La boveda celeste usa ahora la rotacion `XYZ` correcta para alinear RA/Dec con Alt/Az local. Polaris queda sobre el norte en Canarias/Galway y bajo el horizonte en Argentina.
+- **Navegacion asistida corregida** - `CameraNavigator` usa el mismo signo de latitud al iniciar el vuelo hacia objetos y al hacer seguimiento.
+- **Tests de hemisferio** - `transforms.test.ts` cubre Canarias, Galway y Argentina, comparando la posicion 3D con el calculo astronomico Alt/Az.
+- **Verificacion** - Validado con `npm run test -- transforms useDeviceOrientation` y `npm run build`.
+
+## Version 3.5.0 - 2026-04-29
 
 Esta version consolida en `main` la rama provisional `feature/milkyway-skydome` y deja Cosmos Atlas como una experiencia mas completa, limpia y preparada para produccion.
 
@@ -530,6 +542,14 @@ Clic de nuevo en el mismo objeto lo deselecciona.
 ---
 
 ## Changelog
+
+### v3.5.1 - 2026-05-10 (UI movil limpia y orientacion Alt/Az corregida)
+- **Header como mando principal** - Brujula, busqueda, reloj, AR, GPS, IA astronomica y panel quedan en la barra superior para liberar el cielo en movil.
+- **Controles flotantes reducidos** - En movil se retiran brujula grande, boveda/camara, foto, tiempo real, IA flotante y FAB del panel; escritorio conserva esos widgets.
+- **Calibracion en brujula compacta** - El menu de brujula permite mirar cenit, mirar norte, calibrar Polaris y borrar offset manual.
+- **SkyCanvas alineado con Alt/Az** - La esfera celeste cambia a rotacion `XYZ`, corrigiendo hemisferio, azimut y latitud local.
+- **CameraNavigator consistente** - La navegacion asistida usa el mismo signo de latitud al iniciar vuelo y al seguir objetos.
+- **Cobertura de hemisferios** - Tests nuevos validan Canarias, Galway y Argentina contra el calculo astronomico.
 
 ### v3.5 — 2026-04-29 (Via Lactea fotografica, Bortle real e IA Kids)
 - **MilkyWaySkyDome real** — Textura panoramica fotografica de la Via Lactea renderizada sobre la boveda celeste, con orientacion galactica completa y continuidad visual por hemisferios.

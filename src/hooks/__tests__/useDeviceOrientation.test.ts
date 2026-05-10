@@ -8,13 +8,15 @@ describe('device orientation rear camera axis', () => {
     });
 
     it('maps rear camera elevation to down, horizon, and up poses', () => {
-        expect(computeRearCameraElevation(180, 0)).toBeCloseTo(-90, 5);
         expect(computeRearCameraElevation(90, 0)).toBeCloseTo(0, 5);
         expect(computeRearCameraElevation(0, 0)).toBeCloseTo(90, 5);
+        expect(computeRearCameraElevation(180, 0)).toBeCloseTo(90, 5);
     });
 
     it('raises visual elevation when an Android portrait device tilts upward', () => {
         expect(computeRearCameraElevation(60, 0)).toBeGreaterThan(computeRearCameraElevation(90, 0));
         expect(computeRearCameraElevation(30, 0)).toBeGreaterThan(computeRearCameraElevation(60, 0));
+        expect(computeRearCameraElevation(120, 0)).toBeGreaterThan(computeRearCameraElevation(90, 0));
+        expect(computeRearCameraElevation(150, 0)).toBeGreaterThan(computeRearCameraElevation(120, 0));
     });
 });

@@ -303,6 +303,7 @@ export default function AIAstronoma() {
     const selected = useAppStore((s) => s.selectedObject);
     const incrementMythologyBuff = useAppStore((s) => s.incrementMythologyBuff);
     const kidsMode = useAppStore((s) => s.settings.kidsMode);
+    const aiAstronomerEnabled = useAppStore((s) => s.settings.aiAstronomer ?? true);
     const bortleScale = useAppStore((s) => s.settings.bortleScale);
     const sidebarOpen = useAppStore((s) => s.sidebarOpen);
     const observer = useAppStore((s) => s.observer);
@@ -334,13 +335,37 @@ export default function AIAstronoma() {
 
     useEffect(() => {
         const openFromHeader = () => {
+            if (!useAppStore.getState().settings.aiAstronomer) return;
             setChatOpen(true);
             setShowBubble(false);
         };
+        const closeFromHeader = () => {
+            setChatOpen(false);
+            setShowBubble(false);
+            setBrief(null);
+            setMessage('');
+            synthRef.current?.cancel();
+            setIsSpeaking(false);
+        };
 
         window.addEventListener('cosmos:open-ai-astronomer', openFromHeader);
-        return () => window.removeEventListener('cosmos:open-ai-astronomer', openFromHeader);
+        window.addEventListener('cosmos:close-ai-astronomer', closeFromHeader);
+        return () => {
+            window.removeEventListener('cosmos:open-ai-astronomer', openFromHeader);
+            window.removeEventListener('cosmos:close-ai-astronomer', closeFromHeader);
+        };
     }, []);
+
+    useEffect(() => {
+        if (aiAstronomerEnabled) return;
+        setChatOpen(false);
+        setShowBubble(false);
+        setBrief(null);
+        setMessage('');
+        synthRef.current?.cancel();
+        setIsSpeaking(false);
+        lastMessageRef.current = '';
+    }, [aiAstronomerEnabled]);
 
     const objectEnrichment = useMemo<EnrichedObjectContext | null>(() => {
         if (!currentSelection) return null;
@@ -448,6 +473,7 @@ export default function AIAstronoma() {
     }, [currentBrief, brief, objectEnrichment, bortleScale, observer, time, kidsMode]);
 
     const askAstronomer = useCallback(async (rawQuestion?: string) => {
+        if (!aiAstronomerEnabled) return;
         const text = (rawQuestion ?? question).trim();
         if (!text || chatLoading) return;
 
@@ -494,7 +520,7 @@ export default function AIAstronoma() {
         } finally {
             setChatLoading(false);
         }
-    }, [question, chatLoading, buildChatContext, astronomerMode]);
+    }, [aiAstronomerEnabled, question, chatLoading, buildChatContext, astronomerMode]);
 
     const achievements = useAppStore((s) => s.achievements);
     const prevAchievementsRef = useRef(achievements);
@@ -516,6 +542,8 @@ export default function AIAstronoma() {
     }, [achievements, setAiMessage]);
 
     useEffect(() => {
+        if (!aiAstronomerEnabled) return;
+
         if (globalAiMessage) {
             const msg = globalAiMessage;
             setAiMessage('');
@@ -582,6 +610,7 @@ export default function AIAstronoma() {
         muted,
         speak,
         kidsMode,
+        aiAstronomerEnabled,
         globalAiMessage,
         setAiMessage,
         currentSelection,
@@ -795,7 +824,7 @@ export default function AIAstronoma() {
                 )}
             </AnimatePresence>
 
-            <div className="pointer-events-auto relative hidden md:block">
+            <div className={cn('pointer-events-auto relative hidden md:block', !aiAstronomerEnabled && 'md:hidden')}>
                 <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}

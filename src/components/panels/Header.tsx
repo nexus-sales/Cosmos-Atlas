@@ -154,6 +154,10 @@ export default function Header({ onRequestLocation }: HeaderProps) {
     const setFollowOrientation = useAppStore((state) => state.setFollowOrientation);
     const viewMode = useAppStore((state) => state.viewMode);
     const setViewMode = useAppStore((state) => state.setViewMode);
+    const isLive = useAppStore((state) => state.isLive);
+    const setIsLive = useAppStore((state) => state.setIsLive);
+    const aiAstronomer = useAppStore((state) => state.settings.aiAstronomer ?? true);
+    const toggleSetting = useAppStore((state) => state.toggleSetting);
     const [mounted, setMounted] = useState(false);
     const [showSolar, setShowSolar] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
@@ -194,9 +198,12 @@ export default function Header({ onRequestLocation }: HeaderProps) {
         setFollowOrientation(granted && !!deviceOrientationRef.active);
     }, [followOrientation, isSupported, requestAndStart, setFollowOrientation, setViewMode, stop, viewMode]);
 
-    const openAstronomer = useCallback(() => {
-        window.dispatchEvent(new CustomEvent('cosmos:open-ai-astronomer'));
-    }, []);
+    const toggleAstronomer = useCallback(() => {
+        const nextEnabled = !aiAstronomer;
+        toggleSetting('aiAstronomer');
+        if (nextEnabled) window.dispatchEvent(new CustomEvent('cosmos:open-ai-astronomer'));
+        else window.dispatchEvent(new CustomEvent('cosmos:close-ai-astronomer'));
+    }, [aiAstronomer, toggleSetting]);
 
     const gpsLabel = geolocation.source === 'gps' && geolocation.accuracyM != null
         ? `±${Math.round(geolocation.accuracyM)}m`
@@ -206,7 +213,7 @@ export default function Header({ onRequestLocation }: HeaderProps) {
 
     return (
         <>
-            <header className="h-14 md:h-16 border-b border-white/10 bg-black/68 backdrop-blur-xl flex items-center gap-2 px-2.5 md:px-6 z-20 overflow-hidden shrink-0">
+            <header className="h-14 md:h-16 border-b border-white/10 bg-black/68 backdrop-blur-xl flex items-center gap-2 px-2.5 md:px-6 z-20 overflow-visible shrink-0">
                 <MiniCompass />
 
                 <div className="hidden min-w-0 flex-1 sm:block md:max-w-sm">
@@ -258,14 +265,25 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                         </div>
                     </div>
 
-                    <div className="flex w-[72px] shrink-0 flex-col items-center text-center md:w-[92px]" aria-live="polite" aria-atomic="true" aria-label="Hora actual del observatorio">
+                    <button
+                        onClick={() => setIsLive(true)}
+                        title={isLive ? 'Tiempo real activo' : 'Volver a tiempo real'}
+                        aria-label={isLive ? 'Tiempo real activo' : 'Volver a tiempo real'}
+                        className={cn(
+                            'flex w-[72px] shrink-0 flex-col items-center rounded-xl px-1 py-1 text-center transition-colors md:w-[92px]',
+                            isLive ? 'text-blue-400' : 'border border-amber-400/35 bg-amber-500/12 text-amber-200'
+                        )}
+                        aria-live="polite"
+                        aria-atomic="true"
+                    >
                         <div className="text-[17px] md:text-[18px] text-blue-400 tabular-nums leading-none font-bold glow-text">
                             {mounted ? formatTime(time) : '--:--:--'}
                         </div>
-                        <div className="hidden md:block text-[10px] text-white/30 uppercase mt-1 tracking-wider" aria-hidden="true">
-                            {mounted ? formatDate(time) : '...'}
+                        <div className="hidden md:block text-[10px] text-white/30 uppercase mt-1 tracking-wider">
+                            {isLive ? (mounted ? formatDate(time) : '...') : 'Tiempo real'}
                         </div>
-                    </div>
+                        {!isLive && <span className="mt-0.5 text-[8px] font-bold uppercase tracking-widest text-amber-200 md:hidden">Real</span>}
+                    </button>
 
                     <button
                         onClick={handleARToggle}
@@ -299,10 +317,16 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                     </button>
 
                     <button
-                        onClick={openAstronomer}
-                        title="IA astronomica"
-                        aria-label="Abrir IA astronomica"
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/60 transition-colors hover:border-cyan-400/40 hover:text-cyan-100 md:h-11 md:w-11"
+                        onClick={toggleAstronomer}
+                        title={aiAstronomer ? 'Desactivar IA astronomica' : 'Activar IA astronomica'}
+                        aria-label={aiAstronomer ? 'Desactivar IA astronomica' : 'Activar IA astronomica'}
+                        aria-pressed={aiAstronomer}
+                        className={cn(
+                            'flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors md:h-11 md:w-11',
+                            aiAstronomer
+                                ? 'border-cyan-400/45 bg-cyan-500/12 text-cyan-100'
+                                : 'border-white/10 bg-white/[0.04] text-white/35 hover:border-cyan-400/40 hover:text-cyan-100'
+                        )}
                     >
                         <Bot className="h-5 w-5" />
                     </button>

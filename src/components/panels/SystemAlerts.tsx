@@ -1,13 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle2, Compass, MapPinned } from 'lucide-react';
+import { AlertTriangle, Compass, MapPinned } from 'lucide-react';
 import { useAppStore } from '@/stores/useAppStore';
 import { deviceOrientationRef } from '@/hooks/useDeviceOrientation';
 import { cn } from '@/lib/utils';
 import { getArHealthSummary } from '@/lib/arHealth';
 
-type AlertTone = 'ok' | 'warning' | 'critical';
+type AlertTone = 'warning' | 'critical';
 
 type SystemAlert = {
     id: string;
@@ -18,7 +18,6 @@ type SystemAlert = {
 };
 
 function toneClasses(tone: AlertTone) {
-    if (tone === 'ok') return 'border-emerald-400/30 bg-emerald-500/10 text-emerald-100';
     if (tone === 'warning') return 'border-amber-400/30 bg-amber-500/10 text-amber-100';
     return 'border-rose-400/30 bg-rose-500/10 text-rose-100';
 }
@@ -59,17 +58,15 @@ export default function SystemAlerts() {
                 id: 'gps-denied',
                 tone: 'critical',
                 title: 'GPS bloqueado',
-                detail: 'La posición usa fallback. Activa ubicación precisa en el navegador para alinear el cielo real.',
+                detail: 'La posicion usa fallback. Activa ubicacion precisa en el navegador para alinear el cielo real.',
                 icon: MapPinned,
             });
-        } else if (geolocation.source === 'fallback') {
+        } else if (geolocation.source === 'fallback' && geolocation.status !== 'idle') {
             nextAlerts.push({
                 id: 'gps-fallback',
-                tone: geolocation.status === 'idle' ? 'ok' : 'warning',
-                title: geolocation.status === 'idle' ? 'Ubicacion manual' : 'Ubicacion fallback',
-                detail: geolocation.status === 'idle'
-                    ? `Cielo calculado para ${observer.lat.toFixed(1)}°, ${observer.lon.toFixed(1)}°. Activa GPS solo si quieres alinear con tu posición real.`
-                    : `Mostrando cielo para ${observer.lat.toFixed(1)}°, ${observer.lon.toFixed(1)}°. Polaris cambiará de altura hasta que entre tu GPS real.`,
+                tone: 'warning',
+                title: 'Ubicacion fallback',
+                detail: `Mostrando cielo para ${observer.lat.toFixed(1)}°, ${observer.lon.toFixed(1)}°. Polaris cambiara de altura hasta que entre tu GPS real.`,
                 icon: MapPinned,
             });
         } else if (geolocation.status === 'granted' && (geolocation.accuracyM ?? Infinity) > 1200) {
@@ -77,7 +74,7 @@ export default function SystemAlerts() {
                 id: 'gps-weak',
                 tone: 'warning',
                 title: 'GPS impreciso',
-                detail: `Precisión actual ${Math.round(geolocation.accuracyM ?? 0)} m. Espera unos segundos o busca cielo abierto.`,
+                detail: `Precision actual ${Math.round(geolocation.accuracyM ?? 0)} m. Espera unos segundos o busca cielo abierto.`,
                 icon: MapPinned,
             });
         }
@@ -96,16 +93,8 @@ export default function SystemAlerts() {
                     id: 'ar-drift',
                     tone: arSummary.score != null && arSummary.score < 45 ? 'critical' : 'warning',
                     title: 'Deriva magnetica',
-                    detail: `Jitter ${Math.round(deviceOrientationRef.headingJitter)}°. Recalibra lejos de metal para recuperar precisión.`,
+                    detail: `Jitter ${Math.round(deviceOrientationRef.headingJitter)}°. Recalibra lejos de metal para recuperar precision.`,
                     icon: AlertTriangle,
-                });
-            } else {
-                nextAlerts.push({
-                    id: 'ar-ok',
-                    tone: 'ok',
-                    title: 'AR estable',
-                    detail: `Seguimiento activo con jitter ${Math.round(deviceOrientationRef.headingJitter)}°.`,
-                    icon: CheckCircle2,
                 });
             }
         }

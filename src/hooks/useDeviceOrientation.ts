@@ -94,23 +94,23 @@ export function computeRearCameraElevation(beta: number, gamma: number): number 
         // Modo Diablo: En el hemisferio sur, si beta=90 (móvil vertical), 
         // la elevación debe ser 0. Si el móvil se inclina hacia atrás para mirar el cénit,
         // la elevación debe subir a 90.
-        elevation = -beta; 
+        elevation = Math.abs(beta - 90);
     } else if (screenAngle === 90) {
         // Horizontal (botón a la derecha): gamma manda
-        elevation = -gamma;
+        elevation = Math.abs(gamma - 90);
     } else if (screenAngle === -90 || screenAngle === 270) {
         // Horizontal (botón a la izquierda): gamma invertido manda
-        elevation = gamma;
+        elevation = Math.abs(gamma + 90);
     } else {
         // Invertido: beta invertido
-        elevation = beta;
+        elevation = Math.abs(beta + 90);
     }
 
     // Normalizar: 0 en el horizonte, +90 en el cénit.
     // La mayoría de sensores devuelven el móvil plano (mesa) como beta=0.
     // Si lo levantas vertical hacia el horizonte, beta sube a 90.
     // Queremos que "mirar al frente" sea 0 y "mirar arriba" sea 90.
-    return elevation + 90;
+    return Math.max(0, Math.min(90, elevation));
 }
 
 function extractMagneticHeading(e: CompassCapableEvent, alpha: number, beta: number, gamma: number): number {

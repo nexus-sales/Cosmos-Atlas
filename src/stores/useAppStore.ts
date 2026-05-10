@@ -76,6 +76,7 @@ interface AppState {
         followTarget: boolean;
         kidsMode: boolean;
         soundscape: boolean;
+        aiAstronomer: boolean;
     };
     toggleSetting: (key: keyof AppState['settings']) => void;
     setBortleScale: (scale: number) => void;
@@ -238,6 +239,7 @@ export const useAppStore = create<AppState>()(
                 followTarget: true,
                 kidsMode: false,
                 soundscape: true,
+                aiAstronomer: true,
             },
             toggleSetting: (key) =>
                 set((state) => ({
@@ -382,6 +384,12 @@ export const useAppStore = create<AppState>()(
                 if (!persisted || typeof persisted !== 'object') return persisted;
                 const safeState = { ...(persisted as Record<string, unknown>) };
                 delete safeState.geolocation;
+                if (safeState.settings && typeof safeState.settings === 'object') {
+                    safeState.settings = {
+                        ...(safeState.settings as Record<string, unknown>),
+                        aiAstronomer: (safeState.settings as Record<string, unknown>).aiAstronomer ?? true,
+                    };
+                }
                 return safeState;
             },
         }
