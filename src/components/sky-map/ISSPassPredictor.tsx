@@ -13,6 +13,7 @@ import { Html } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import * as satellite from 'satellite.js';
+import { X } from 'lucide-react';
 import { useAppStore } from '@/stores/useAppStore';
 import { cn } from '@/lib/utils';
 
@@ -144,11 +145,13 @@ function countdown(ms: number): string {
 export default function ISSPassPredictor() {
     const observer  = useAppStore((s) => s.observer);
     const nightMode = useAppStore((s) => s.settings.nightMode);
+    const showSatellites = useAppStore((s) => s.settings.showSatellites);
 
     const [satrec, setSatrec] = useState<satellite.SatRec | null>(null);
     const [passes, setPasses] = useState<ISSPass[]>([]);
     const [arcPoints, setArcPoints] = useState<ArcPoint[]>([]);
     const [now, setNow] = useState(new Date());
+    const [panelHidden, setPanelHidden] = useState(false);
 
     const lineRef    = useRef<THREE.Line>(null);
     const dotRef     = useRef<THREE.Mesh>(null);
@@ -235,7 +238,7 @@ export default function ISSPassPredictor() {
 
     const accent = nightMode ? '#ff4444' : '#00eeff';
 
-    if (!nextPass) return null;
+    if (!nextPass || !showSatellites) return null;
 
     return (
         <>
@@ -264,11 +267,12 @@ export default function ISSPassPredictor() {
             </mesh>
 
             {/* Panel UI */}
+            {!panelHidden && (
             <Html fullscreen style={{ pointerEvents: 'none' }}>
                 <div className="absolute bottom-6 right-4 z-30 pointer-events-auto w-[188px]">
                     <div
                         className={cn(
-                            "rounded-xl border backdrop-blur-md px-3 py-2.5 font-mono",
+                            "relative rounded-xl border backdrop-blur-md px-3 py-2.5 font-mono",
                             ongoing && "shadow-[0_0_18px_rgba(255,68,68,0.25)]"
                         )}
                         style={{
@@ -276,8 +280,18 @@ export default function ISSPassPredictor() {
                             borderColor: ongoing ? accent : 'rgba(255,255,255,0.10)',
                         }}
                     >
+                        <button
+                            type="button"
+                            onClick={() => setPanelHidden(true)}
+                            aria-label="Ocultar panel de la ISS"
+                            title="Ocultar ISS"
+                            className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white/35 transition-colors hover:border-white/25 hover:text-white/75"
+                        >
+                            <X className="h-3.5 w-3.5" />
+                        </button>
+
                         {/* Cabecera */}
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 pr-7">
                             <span className="text-[15px]">🛰️</span>
                             <span className="text-[11px] font-bold tracking-widest text-white/80">ISS</span>
                             {ongoing && (
@@ -341,6 +355,7 @@ export default function ISSPassPredictor() {
                     </div>
                 </div>
             </Html>
+            )}
         </>
     );
 }

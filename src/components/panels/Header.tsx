@@ -85,7 +85,7 @@ function MiniCompass() {
                 onClick={() => setOpen((value) => !value)}
                 title="Brujula"
                 aria-label="Abrir brujula"
-                aria-expanded={open}
+                {...{ 'aria-expanded': open }}
                 className={cn(
                     'flex h-10 w-10 shrink-0 items-center justify-center rounded-full border bg-white/[0.04] text-white/65 transition-colors md:h-11 md:w-11',
                     'hover:border-blue-400/40 hover:text-blue-100',
@@ -234,7 +234,7 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                     <button
                         onClick={() => setIsTourActive(!isTourActive)}
                         aria-label={isTourActive ? 'Detener tour del cielo' : 'Iniciar tour del cielo'}
-                        aria-pressed={isTourActive ? 'true' : 'false'}
+                        {...{ 'aria-pressed': isTourActive }}
                         title={isTourActive ? 'Detener tour' : 'Tour del cielo'}
                         className={cn(
                             'hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[10px] font-bold tracking-widest uppercase transition-all cursor-pointer',
@@ -290,7 +290,7 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                         onClick={handleARToggle}
                         title={arActive ? 'Desactivar AR' : 'Activar AR'}
                         aria-label={arActive ? 'Desactivar AR' : 'Activar AR'}
-                        aria-pressed={arActive ? 'true' : 'false'}
+                        {...{ 'aria-pressed': arActive }}
                         className={cn(
                             'flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-full border text-[10px] font-bold leading-none transition-colors md:h-11 md:w-11',
                             arActive
@@ -321,7 +321,7 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                         onClick={toggleAstronomer}
                         title={aiAstronomer ? 'Desactivar IA astronomica' : 'Activar IA astronomica'}
                         aria-label={aiAstronomer ? 'Desactivar IA astronomica' : 'Activar IA astronomica'}
-                        aria-pressed={aiAstronomer ? 'true' : 'false'}
+                        {...{ 'aria-pressed': aiAstronomer }}
                         className={cn(
                             'flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors md:h-11 md:w-11',
                             aiAstronomer
@@ -336,7 +336,7 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                         onClick={() => setSidebarOpen(!sidebarOpen)}
                         title={sidebarOpen ? 'Cerrar panel' : 'Abrir panel'}
                         aria-label={sidebarOpen ? 'Cerrar panel' : 'Abrir panel'}
-                        aria-pressed={sidebarOpen ? 'true' : 'false'}
+                        {...{ 'aria-pressed': sidebarOpen }}
                         className={cn(
                             'flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors md:h-11 md:w-11',
                             sidebarOpen
