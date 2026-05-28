@@ -114,29 +114,42 @@ void main() {
     float cygnus = smoothstep(0.75, 0.95, dot(dir, normalize(vec3(-0.35, 0.05, -0.92)))) * 0.8;
     float carina = smoothstep(0.75, 0.95, dot(dir, normalize(vec3(0.5, -0.05, 0.4)))) * 0.6;
 
-    vec3 colorCore   = vec3(1.0, 0.85, 0.6);
-    vec3 colorArms   = vec3(0.75, 0.88, 1.0);
-    vec3 colorGas    = vec3(1.0, 0.55, 0.65);
-    vec3 colorLMC    = vec3(0.6, 0.75, 1.0);
-    vec3 colorCoreBright = vec3(1.0, 0.95, 0.8);
+    // Regiones H-alpha: nebulosas de emisión rosadas/rojizas a lo largo del plano
+    // Orienta los puntos clave: Carina (RA~160°), Cygnus (RA~310°), Scutum (RA~275°), Orion (RA~84°)
+    float hAlphaCarina = smoothstep(0.82, 0.96, dot(dir, normalize(vec3(0.50, -0.05, 0.40))));
+    float hAlphaCygnus = smoothstep(0.82, 0.96, dot(dir, normalize(vec3(-0.35, 0.05, -0.92))));
+    float hAlphaScutum = smoothstep(0.82, 0.96, dot(dir, uScutumDir));
+    float hAlphaOrion  = smoothstep(0.86, 0.97, dot(dir, normalize(vec3(0.50, -0.09, 0.86))));
+    float hAlpha = (hAlphaCarina + hAlphaCygnus * 0.7 + hAlphaScutum * 0.6 + hAlphaOrion * 0.5)
+                   * mainBand;
+
+    vec3 colorCore       = vec3(1.0,  0.85, 0.60);
+    vec3 colorArms       = vec3(0.75, 0.88, 1.0);
+    vec3 colorGas        = vec3(1.0,  0.55, 0.65);
+    vec3 colorLMC        = vec3(0.6,  0.75, 1.0);
+    vec3 colorCoreBright = vec3(1.0,  0.95, 0.8);
+    vec3 colorHAlpha     = vec3(1.0,  0.32, 0.45); // rosa/rojo de nebulosas HII
 
     vec3 finalColor = mix(colorArms, colorCore, bulgeMask);
     finalColor = mix(finalColor, colorCoreBright, coreBright * 0.4);
-    finalColor = mix(finalColor, colorGas, cygnus * 0.3 + carina * 0.2);
-    finalColor = mix(finalColor, colorLMC, lmc + smc);
+    finalColor = mix(finalColor, colorGas,    cygnus * 0.3 + carina * 0.2);
+    finalColor = mix(finalColor, colorLMC,    lmc + smc);
+    finalColor = mix(finalColor, colorHAlpha, clamp(hAlpha * 0.5, 0.0, 0.45));
 
-    float bright = (mainBand * 0.55 + thickHalo + bulge * 0.75 + coreBright * 0.8);
-    bright += spiralArms * 0.4;
-    bright += (lmc + lmcHalo + smc + smcHalo) * 0.5;
-    bright += cygnus * 0.35 + carina * 0.25;
+    float bright = (mainBand * 0.70 + thickHalo * 1.2 + bulge * 0.90 + coreBright * 1.0);
+    bright += spiralArms * 0.55;
+    bright += (lmc + lmcHalo + smc + smcHalo) * 0.65;
+    bright += cygnus * 0.45 + carina * 0.35;
+    bright += hAlpha * 0.3;
 
-    float shadow = smoothstep(0.2, 0.8, dustNoise) * 0.85 * (bulgeMask * 0.5 + 0.5);
-    bright *= (1.0 - shadow * 1.1);
-    bright -= rift * 0.55;
+    // Calles de polvo — sombra más dramática
+    float shadow = smoothstep(0.1, 0.75, dustNoise) * 0.90 * (bulgeMask * 0.6 + 0.4);
+    bright *= (1.0 - shadow * 1.25);
+    bright -= rift * 0.70;
     bright = max(bright, 0.0);
 
-    float alpha = clamp(bright * 0.085, 0.0, 0.28);
-    if (alpha < 0.005) discard;
+    float alpha = clamp(bright * 0.115, 0.0, 0.38);
+    if (alpha < 0.004) discard;
 
     gl_FragColor = vec4(finalColor, alpha);
 }

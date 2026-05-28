@@ -131,8 +131,9 @@ function buildGeometry(stars: HipStar[]): [THREE.BufferGeometry, THREE.ShaderMat
 }
 
 export default function HipparcosStars() {
-    const bortleScale = useAppStore(s => s.settings.bortleScale);
-    const nightMode   = useAppStore(s => s.settings.nightMode);
+    const bortleScale     = useAppStore(s => s.settings.bortleScale);
+    const nightMode       = useAppStore(s => s.settings.nightMode);
+    const deviceQuality   = useAppStore(s => s.deviceQuality);
 
     const [allStars, setAllStars] = useState<HipStar[]>([]);
     const pointsRef = useRef<THREE.Points>(null);
@@ -142,8 +143,9 @@ export default function HipparcosStars() {
         loadHipparcos().then(setAllStars);
     }, []);
 
-    // Magnitud límite por escala Bortle (misma fórmula que Stars.tsx)
-    const limitingMag = 5.5 - (bortleScale - 1) * 0.45;
+    // Magnitud límite por Bortle + penalización en dispositivos de gama baja
+    const qualityOffset = deviceQuality === 'low' ? -2.0 : deviceQuality === 'medium' ? -1.0 : 0;
+    const limitingMag = 5.5 - (bortleScale - 1) * 0.45 + qualityOffset;
 
     // Filtrar por limitingMag y reconstruir geometría
     const [geometry, material] = useMemo(() => {

@@ -170,6 +170,76 @@ function usePlanetTexture(key: string): THREE.CanvasTexture {
     return useMemo(() => makeProceduralTexture(key), [key]);
 }
 
+// Textura radial de los anillos de Saturno: B ring brillante, división de Cassini
+// transparente, A ring exterior ligeramente más tenue.
+function makeSaturnRingTexture(): THREE.CanvasTexture {
+    const W = 512, H = 1;
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d')!;
+    const img = ctx.createImageData(W, H);
+    const d = img.data;
+
+    for (let x = 0; x < W; x++) {
+        const t = x / (W - 1); // 0=borde interior, 1=borde exterior (ringGeometry inner→outer)
+        let r = 220, g = 200, b = 155, a = 0;
+
+        if (t < 0.08) {
+            // C ring — muy tenue
+            a = Math.round(t / 0.08 * 35);
+        } else if (t < 0.12) {
+            // Rampa C→B
+            a = Math.round(35 + (t - 0.08) / 0.04 * 130);
+        } else if (t < 0.55) {
+            // B ring — más brillante (0.12-0.55)
+            const inner = (t - 0.12) / 0.43;
+            // Variación de densidad interna (B ring tiene bandas propias)
+            const banding = 0.9 + 0.1 * Math.sin(inner * Math.PI * 8);
+            a = Math.round(165 * banding);
+            r = Math.round(225 * banding); g = Math.round(205 * banding); b = Math.round(158 * banding);
+        } else if (t < 0.62) {
+            // División de Cassini — gap transparente (0.55-0.62)
+            const fade = Math.abs(t - 0.585) / 0.035;
+            a = Math.round(Math.max(0, 1 - fade * fade) * 15);
+        } else if (t < 0.87) {
+            // A ring — ligeramente más tenue y más amarilla que B (0.62-0.87)
+            const outer = (t - 0.62) / 0.25;
+            const banding = 0.85 + 0.15 * Math.sin(outer * Math.PI * 5);
+            a = Math.round(130 * banding * (1 - outer * 0.25));
+            r = Math.round(215 * banding); g = Math.round(196 * banding); b = Math.round(148 * banding);
+        } else {
+            // F ring y borde exterior — fade rápido
+            a = Math.round(Math.max(0, (1 - (t - 0.87) / 0.13)) * 18);
+        }
+
+        const i = x * 4;
+        d[i] = r; d[i + 1] = g; d[i + 2] = b; d[i + 3] = Math.min(255, a);
+    }
+
+    ctx.putImageData(img, 0, 0);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.needsUpdate = true;
+    return tex;
+}
+
+function useSaturnRingTexture(): THREE.CanvasTexture {
+    return useMemo(() => makeSaturnRingTexture(), []);
+}
+
+// Radios físicos ecuatoriales en km — para calcular tamaño angular real
+const PLANET_PHYS_RADIUS_KM: Record<string, number> = {
+    mercury: 2439.7,
+    venus:   6051.8,
+    mars:    3396.2,
+    jupiter: 71492,
+    saturn:  60268,
+    uranus:  25559,
+    neptune: 24764,
+};
+const AU_KM = 149597870.7;
+// Base de referencia: Júpiter a ~4.0 AU (oposición media) = ~49" → scale 0.9
+const REF_ARCSEC = 49.0;
+
 const PLANET_CONFIGS = [
     { body: Astronomy.Body.Mercury, name: "Mercurio", symbol: "☿", color: "#b0b0b0", textureKey: "mercury" as const, description: (mag: number) => `El planeta más cercano al Sol. Mag: ${mag.toFixed(1)}` },
     { body: Astronomy.Body.Venus,   name: "Venus",    symbol: "♀", color: "#f0e6c0", textureKey: "venus"   as const, description: (mag: number) => `El lucero del alba, cubierto de nubes. Mag: ${mag.toFixed(1)}` },
@@ -420,18 +490,22 @@ interface PlanetData {
     textureKey: string;
     ra: number;
     dec: number;
+    distAU: number;
 }
 
 function PlanetMesh({ planet }: { planet: PlanetData }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const camFov = useAppStore(state => state.camFov);
-    // time y observer se leen en useFrame desde getState() — sin re-renders innecesarios
     const texture = usePlanetTexture(planet.textureKey);
-    
-    const isGasGiant = ["Júpiter", "Saturno", "Urano", "Neptuno"].includes(planet.name);
-    const baseScale = isGasGiant ? 0.9 : 0.5;
-    
-    // ZoomBoost suavizado: aumenta el tamaño del planeta cuando el FOV es muy bajo
+    const ringTexture = useSaturnRingTexture();
+
+    // Tamaño angular real en arcsec = 2 * (physRadius_km / (dist_AU * AU_KM)) * 206265
+    const physRadius = PLANET_PHYS_RADIUS_KM[planet.textureKey] ?? 3000;
+    const angularArcsec = 2 * (physRadius / (Math.max(0.1, planet.distAU) * AU_KM)) * 206265;
+    // Normalizado respecto a Júpiter en oposición (referencia = 0.9)
+    const baseScale = 0.9 * (angularArcsec / REF_ARCSEC);
+
+    // ZoomBoost: hace visible el disco al acercar la cámara
     const zoomBoost = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 35, 2, 1.0, 30.0), 1.0, 30.0);
     const scale = baseScale * zoomBoost;
 
@@ -483,13 +557,15 @@ function PlanetMesh({ planet }: { planet: PlanetData }) {
                     />
                 </mesh>
                 {planet.name === "Saturno" && (
-                    <mesh rotation={[Math.PI / 2.5, 0, 0]} castShadow receiveShadow>
-                        <ringGeometry args={[scale * 1.4, scale * 2.4, 64]} />
-                        <meshStandardMaterial
-                            map={texture}
+                    <mesh rotation={[Math.PI / 2.5, 0, 0]}>
+                        <ringGeometry args={[scale * 1.4, scale * 2.4, 128]} />
+                        <meshBasicMaterial
+                            map={ringTexture}
                             transparent
-                            opacity={opacity * 0.8}
+                            opacity={opacity}
                             side={THREE.DoubleSide}
+                            depthWrite={false}
+                            blending={THREE.NormalBlending}
                         />
                     </mesh>
                 )}
@@ -550,6 +626,7 @@ export default function Planets() {
                     ...cfg,
                     ra: eq.ra * 15,
                     dec: eq.dec,
+                    distAU: eq.dist,
                     pos: equatorialTo3D(eq.ra * 15, eq.dec, PLANET_RADIUS) as [number, number, number],
                 } as PlanetData;
             } catch { return null; }

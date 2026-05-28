@@ -56,9 +56,10 @@ interface PrecomputedNGCObject {
 }
 
 export default function NGCObjects() {
-    const bortleScale = useAppStore((s) => s.settings.bortleScale);
-    const nightMode = useAppStore((s) => s.settings.nightMode);
-    const camFov = useAppStore((s) => s.camFov);
+    const bortleScale   = useAppStore((s) => s.settings.bortleScale);
+    const nightMode     = useAppStore((s) => s.settings.nightMode);
+    const camFov        = useAppStore((s) => s.camFov);
+    const deviceQuality = useAppStore((s) => s.deviceQuality);
     const [objects, setObjects] = useState<NGCObject[]>([]);
     const pointsRef = useRef<THREE.Points>(null);
     const lastLimitingMagRef = useRef<number | null>(null);
@@ -119,7 +120,8 @@ export default function NGCObjects() {
         shaderMaterial.uniforms.uFOV.value = camFov;
 
         const zoomBonus = Math.min(2.5, Math.max(0, (55 - camFov) / 18));
-        const limitingMag = 9.5 - (bortleScale - 1) * 0.55 + zoomBonus;
+        const qualityOffset = deviceQuality === 'low' ? -2.5 : deviceQuality === 'medium' ? -1.2 : 0;
+        const limitingMag = 9.5 - (bortleScale - 1) * 0.55 + zoomBonus + qualityOffset;
         const now = state.clock.elapsedTime;
         const dueForRefresh = now - lastUpdateTimeRef.current > 1 / 18;
         const thresholdChanged =
