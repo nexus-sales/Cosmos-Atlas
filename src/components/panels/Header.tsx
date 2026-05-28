@@ -164,6 +164,7 @@ export default function Header({ onRequestLocation }: HeaderProps) {
     const { isSupported, requestAndStart, stop } = useDeviceOrientation();
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true);
     }, []);
 
@@ -233,7 +234,7 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                     <button
                         onClick={() => setIsTourActive(!isTourActive)}
                         aria-label={isTourActive ? 'Detener tour del cielo' : 'Iniciar tour del cielo'}
-                        aria-pressed={isTourActive}
+                        aria-pressed={isTourActive ? 'true' : 'false'}
                         title={isTourActive ? 'Detener tour' : 'Tour del cielo'}
                         className={cn(
                             'hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[10px] font-bold tracking-widest uppercase transition-all cursor-pointer',
@@ -289,7 +290,7 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                         onClick={handleARToggle}
                         title={arActive ? 'Desactivar AR' : 'Activar AR'}
                         aria-label={arActive ? 'Desactivar AR' : 'Activar AR'}
-                        aria-pressed={arActive}
+                        aria-pressed={arActive ? 'true' : 'false'}
                         className={cn(
                             'flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-full border text-[10px] font-bold leading-none transition-colors md:h-11 md:w-11',
                             arActive
@@ -320,7 +321,7 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                         onClick={toggleAstronomer}
                         title={aiAstronomer ? 'Desactivar IA astronomica' : 'Activar IA astronomica'}
                         aria-label={aiAstronomer ? 'Desactivar IA astronomica' : 'Activar IA astronomica'}
-                        aria-pressed={aiAstronomer}
+                        aria-pressed={aiAstronomer ? 'true' : 'false'}
                         className={cn(
                             'flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors md:h-11 md:w-11',
                             aiAstronomer
@@ -335,7 +336,7 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                         onClick={() => setSidebarOpen(!sidebarOpen)}
                         title={sidebarOpen ? 'Cerrar panel' : 'Abrir panel'}
                         aria-label={sidebarOpen ? 'Cerrar panel' : 'Abrir panel'}
-                        aria-pressed={sidebarOpen}
+                        aria-pressed={sidebarOpen ? 'true' : 'false'}
                         className={cn(
                             'flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-colors md:h-11 md:w-11',
                             sidebarOpen

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ThreeClockPatch from "@/components/ThreeClockPatch";
 import CatalogLoader from "@/components/CatalogLoader";
+import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -49,6 +50,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased digital-grit`}
       >
+        <ServiceWorkerRegistration />
         <ThreeClockPatch />
         <CatalogLoader />
         {children}

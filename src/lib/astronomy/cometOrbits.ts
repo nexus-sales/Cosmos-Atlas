@@ -87,7 +87,7 @@ export interface OrbitalElements {
  * Compute geocentric equatorial RA (degrees, 0-360) and Dec (degrees)
  * for a comet at a given Julian Date.
  */
-export function cometRaDec(el: OrbitalElements, jd: number): { ra: number; dec: number; dist: number } {
+export function cometRaDec(el: OrbitalElements, jd: number): { ra: number; dec: number; dist: number; r: number } {
     const dt = jd - el.tp;
     const { nu, r } = solveKepler(el.e, el.q, dt);
 
@@ -131,7 +131,7 @@ export function cometRaDec(el: OrbitalElements, jd: number): { ra: number; dec: 
     const ra = ((Math.atan2(Yeq, Xeq) * 180 / Math.PI) + 360) % 360;
     const dec = Math.asin(Zeq / dist) * 180 / Math.PI;
 
-    return { ra, dec, dist };
+    return { ra, dec, dist, r };
 }
 
 /** Convert a JS Date to Julian Date */

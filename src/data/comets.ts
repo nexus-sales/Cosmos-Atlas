@@ -192,12 +192,12 @@ export const COMETS: Comet[] = [
  * Usa elementos orbitales Keplerianos si están disponibles; de lo contrario
  * usa una aproximación basada en período.
  */
-export function getCometPosition(comet: Comet, date: Date): { ra: number; dec: number; distance: number } {
+export function getCometPosition(comet: Comet, date: Date): { ra: number; dec: number; distance: number; heliocentricDist: number } {
     const jd = toJD(date);
 
     if (comet.elements) {
-        const { ra, dec, dist } = cometRaDec(comet.elements, jd);
-        return { ra, dec, distance: dist };
+        const { ra, dec, dist, r } = cometRaDec(comet.elements, jd);
+        return { ra, dec, distance: dist, heliocentricDist: r };
     }
 
     // Fallback approximation (no orbital elements available)
@@ -206,7 +206,7 @@ export function getCometPosition(comet: Comet, date: Date): { ra: number; dec: n
     const ra = (phase * 180 / Math.PI + comet.inclination) % 360;
     const dec = Math.sin(phase) * comet.inclination * 0.3;
     const distance = comet.perihelion + (comet.aphelion - comet.perihelion) * (1 + Math.sin(phase)) / 2;
-    return { ra, dec, distance };
+    return { ra, dec, distance, heliocentricDist: distance };
 }
 
 /**
@@ -221,16 +221,14 @@ export function getActiveComets(): Comet[] {
  */
 export function getCometMagnitude(comet: Comet, date: Date): number {
     const pos = getCometPosition(comet, date);
-    // Fórmula simplificada de magnitud
-    const delta = pos.distance; // distancia a la Tierra (UA)
-    const r = pos.distance; // distancia al Sol (UA)
-    
-    // m = H + 5 log(delta) + 2.5 n log(r)
-    // n = 4 para cometas típicos
+    const delta = Math.max(0.001, pos.distance);         // geocéntrica (UA)
+    const r     = Math.max(0.001, pos.heliocentricDist); // heliocéntrica (UA)
+
+    // m = H + 5·log(Δ) + 2.5·n·log(r),  n = 4 para cometas típicos
     const H = comet.magnitude;
     const m = H + 5 * Math.log10(delta) + 10 * Math.log10(r);
-    
-    return Math.min(m, 15); // Límite de visibilidad
+
+    return Math.min(m, 15);
 }
 
 /**

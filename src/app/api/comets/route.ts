@@ -32,9 +32,8 @@ export interface CometLiveData {
 const SBDB_URL =
     'https://ssd-api.jpl.nasa.gov/sbdb_query.api' +
     '?fields=pdes,full_name,e,q,i,om,w,tp,per,M1' +
-    '&sb-kind=c' +           // kind=comet (replaces deprecated sb-class)
-    '&sb-cdata=1' +          // include comet-specific data
-    '&limit=30' +
+    '&sb-kind=c' +           // comets only
+    '&limit=60' +            // wider net to filter post-process
     '&sort=tp&dir=desc' +    // most recent perihelion first
     '&full-prec=true';
 
@@ -119,7 +118,17 @@ export async function GET() {
                     M1: parseOptionalField(row[iM1]),
                 } satisfies CometLiveData;
             })
-            .filter((c) => c.tp > 0 && c.q > 0 && c.e > 0);
+            .filter((c) => {
+                if (c.tp <= 0 || c.q <= 0 || c.e <= 0) return false;
+                // Perihelio en ventana ±3 años desde hoy (JD actual ≈ 2451545 + days since J2000)
+                const nowJD = Date.now() / 86_400_000 + 2440587.5;
+                const windowDays = 3 * 365.25;
+                if (c.tp < nowJD - windowDays || c.tp > nowJD + windowDays) return false;
+                // Solo cometas brillantes (M1 < 13 o desconocido — dejamos pasar)
+                if (c.M1 !== null && c.M1 > 13) return false;
+                return true;
+            })
+            .slice(0, 30);
 
         _cache = { ts: Date.now(), data: comets };
         return NextResponse.json({ ok: true, comets }, { headers: CACHE_HEADERS });

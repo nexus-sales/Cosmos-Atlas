@@ -27,6 +27,7 @@ export default function CameraBackground() {
                 stopStream(stream);
                 video.srcObject = null;
             }
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setStreamActive(false);
             setError(null);
             return;

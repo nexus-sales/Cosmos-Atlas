@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
 import { useDeviceOrientation, deviceOrientationRef } from '@/hooks/useDeviceOrientation';
 import { computeMagneticDeclination } from '@/lib/astronomy/magneticDeclination';

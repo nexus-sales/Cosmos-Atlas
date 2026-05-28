@@ -2,7 +2,7 @@
 
 import { useAppStore } from '@/stores/useAppStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Database, Zap, Cpu, ShieldCheck, Terminal as TerminalIcon } from 'lucide-react';
+import { Zap, Cpu, ShieldCheck, Terminal as TerminalIcon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 /**
@@ -16,10 +16,12 @@ export default function NeuralLink() {
     
     const [isSyncing, setIsSyncing] = useState(false);
     const [lastSync, setLastSync] = useState<string>('STABLE');
+    const syncPid = (visitedCount * 7919 + (achievements.mythologyBuff ?? 0) * 13) % 10000;
 
     // Simular sincronización cuando cambian datos importantes (Modo Diablo visual)
     useEffect(() => {
         if (visitedCount > 0) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setIsSyncing(true);
             const timer = setTimeout(() => {
                 setIsSyncing(false);
@@ -95,7 +97,7 @@ export default function NeuralLink() {
                                 exit={{ opacity: 0 }}
                                 className="text-amber-400/80 animate-glitch"
                             >
-                                {`> WRITING_TO_CLOUD... [PID: ${Math.floor(Math.random() * 9999)}]`}
+                                {`> WRITING_TO_CLOUD... [PID: ${syncPid}]`}
                                 <br />
                                 {`> PUSHING_FAVORITES_CACHE...`}
                             </motion.div>

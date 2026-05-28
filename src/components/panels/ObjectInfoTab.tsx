@@ -288,26 +288,22 @@ function HolographicText({ text, speed = 1 }: { text: string, speed?: number }) 
     const [displayed, setDisplayed] = useState('');
     
     useEffect(() => {
-        if (!text) {
-            setDisplayed('');
-            return;
-        }
+        if (!text) return;
 
         let iteration = 0;
         const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+";
-        let interval: NodeJS.Timeout;
 
-        // Reset on new text
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setDisplayed('');
 
-        interval = setInterval(() => {
+        const interval = setInterval(() => {
             setDisplayed(text.split('').map((char, index) => {
                 if(index < iteration) {
                     return text[index];
                 }
                 return char === ' ' ? ' ' : letters[Math.floor(Math.random() * letters.length)];
             }).join(''));
-            
+
             if(iteration >= text.length){
                 clearInterval(interval);
             }

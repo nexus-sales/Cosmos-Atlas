@@ -75,7 +75,7 @@ export default function ObservationJournal() {
     const observer       = useAppStore((s) => s.observer);
     const nightMode      = useAppStore((s) => s.settings.nightMode);
 
-    const [entries, setEntries] = useState<ObsEntry[]>([]);
+    const [entries, setEntries] = useState<ObsEntry[]>(() => loadEntries());
     const [view, setView]       = useState<'list' | 'add'>('list');
     const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -92,8 +92,6 @@ export default function ObservationJournal() {
         notes: '',
     });
 
-    // Cargar diario al montar
-    useEffect(() => { setEntries(loadEntries()); }, []);
 
     // Pre-rellenar cuando cambia el objeto seleccionado
     useEffect(() => {
@@ -102,6 +100,7 @@ export default function ObservationJournal() {
             'kind' in selectedObject && selectedObject.kind === 'planet' ? 'planet'
             : 'type' in selectedObject ? 'dso'
             : 'star';
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setForm(f => ({
             ...f,
             objectName: selectedObject.name,
@@ -277,7 +276,7 @@ export default function ObservationJournal() {
             {entries.length === 0 ? (
                 <div className="text-center py-4 text-[10px]" style={{ color: dim }}>
                     Sin observaciones aún.<br />
-                    <span className="opacity-60">Selecciona un objeto y pulsa "+ Nueva observación"</span>
+                    <span className="opacity-60">{'Selecciona un objeto y pulsa "+ Nueva observación"'}</span>
                 </div>
             ) : (
                 entries.map(e => (

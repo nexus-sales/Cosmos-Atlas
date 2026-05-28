@@ -135,9 +135,9 @@ async function checkRateLimit(key: string) {
 
 // --- Data Fetching & Enrichment ----------------------------------------------
 
-function compactDetails(row: Record<string, any> | null | undefined) {
+function compactDetails(row: Record<string, unknown> | null | undefined) {
   if (!row) return undefined;
-  const details: Record<string, any> = {};
+  const details: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(row)) {
     if (!DETAIL_FIELD_ALLOWLIST.has(key)) continue;
     if (value == null) continue;
@@ -178,14 +178,20 @@ async function fetchSupabaseDetails(context: AstronomerContext) {
 
 // --- AI Response Handling ----------------------------------------------------
 
-function extractOutputText(data: any): string {
+function extractOutputText(data: unknown): string {
   if (!data || typeof data !== 'object') return '';
-  if (typeof data.output_text === 'string') return data.output_text;
-  if (Array.isArray(data.output)) {
-    for (const item of data.output) {
-      if (Array.isArray(item.content)) {
-        for (const part of item.content) {
-          if (typeof part.text === 'string') return part.text;
+  const d = data as Record<string, unknown>;
+  if (typeof d.output_text === 'string') return d.output_text;
+  if (Array.isArray(d.output)) {
+    for (const item of d.output) {
+      if (item && typeof item === 'object') {
+        const { content } = item as Record<string, unknown>;
+        if (Array.isArray(content)) {
+          for (const part of content) {
+            if (part && typeof part === 'object' && typeof (part as Record<string, unknown>).text === 'string') {
+              return (part as Record<string, unknown>).text as string;
+            }
+          }
         }
       }
     }
@@ -208,7 +214,7 @@ function localAstronomerAnswer(question: string, context: AstronomerContext) {
 async function createOpenAIResponse({
   apiKey, model, question, context, supabaseDetails, signal
 }: {
-  apiKey: string, model: string, question: string, context: AstronomerContext, supabaseDetails?: any, signal: AbortSignal
+  apiKey: string, model: string, question: string, context: AstronomerContext, supabaseDetails?: Record<string, unknown>, signal: AbortSignal
 }) {
   const kidsMode = context.kidsMode;
   const response = await fetch('https://api.openai.com/v1/responses', {
@@ -284,7 +290,7 @@ export async function POST(req: Request) {
     } finally {
       clearTimeout(timer);
     }
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'internal server error' }, { status: 500, headers: JSON_HEADERS });
   }
 }

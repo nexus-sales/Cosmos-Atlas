@@ -13,11 +13,14 @@ const MAX_VISIBLE = 2000;
 const vertexShader = `
   attribute float size;
   attribute vec3 color;
+  attribute float brightness;
   varying vec3 vColor;
+  varying float vBrightness;
   uniform float uFOV;
 
   void main() {
     vColor = color;
+    vBrightness = brightness;
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
 
     float fovFactor = clamp(60.0 / uFOV, 1.0, 4.0);
@@ -28,16 +31,19 @@ const vertexShader = `
 
 const fragmentShader = `
   varying vec3 vColor;
+  varying float vBrightness;
   uniform bool uNightMode;
 
   void main() {
     float r = distance(gl_PointCoord, vec2(0.5));
     if (r > 0.5) discard;
 
-    vec3 baseColor = vColor;
-    if (uNightMode) baseColor = vec3(1.0, 0.0, 0.0);
+    vec3 baseColor = uNightMode ? vec3(0.9, 0.2, 0.0) : vColor;
 
-    float alpha = exp(-r * 8.0) * 0.4;
+    // Núcleo brillante + halo difuso
+    float core  = exp(-r * 12.0);
+    float halo  = exp(-r * 4.5) * 0.3;
+    float alpha = (core + halo) * vBrightness;
     gl_FragColor = vec4(baseColor, alpha);
   }
 `;
@@ -85,9 +91,10 @@ export default function NGCObjects() {
 
     const [geometry, material] = useMemo(() => {
         const geom = new THREE.BufferGeometry();
-        geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(MAX_VISIBLE * 3), 3));
-        geom.setAttribute('color', new THREE.BufferAttribute(new Float32Array(MAX_VISIBLE * 3), 3));
-        geom.setAttribute('size', new THREE.BufferAttribute(new Float32Array(MAX_VISIBLE), 1));
+        geom.setAttribute('position',   new THREE.BufferAttribute(new Float32Array(MAX_VISIBLE * 3), 3));
+        geom.setAttribute('color',      new THREE.BufferAttribute(new Float32Array(MAX_VISIBLE * 3), 3));
+        geom.setAttribute('size',       new THREE.BufferAttribute(new Float32Array(MAX_VISIBLE), 1));
+        geom.setAttribute('brightness', new THREE.BufferAttribute(new Float32Array(MAX_VISIBLE), 1));
 
         const mat = new THREE.ShaderMaterial({
             vertexShader,
@@ -111,7 +118,8 @@ export default function NGCObjects() {
         shaderMaterial.uniforms.uNightMode.value = nightMode;
         shaderMaterial.uniforms.uFOV.value = camFov;
 
-        const limitingMag = (60 / camFov) * 2.5 + (10.0 - bortleScale);
+        const zoomBonus = Math.min(2.5, Math.max(0, (55 - camFov) / 18));
+        const limitingMag = 9.5 - (bortleScale - 1) * 0.55 + zoomBonus;
         const now = state.clock.elapsedTime;
         const dueForRefresh = now - lastUpdateTimeRef.current > 1 / 18;
         const thresholdChanged =
@@ -123,18 +131,23 @@ export default function NGCObjects() {
         lastUpdateTimeRef.current = now;
         lastLimitingMagRef.current = limitingMag;
 
-        const posAttr = geometry.getAttribute('position') as THREE.BufferAttribute;
-        const colAttr = geometry.getAttribute('color') as THREE.BufferAttribute;
-        const sizAttr = geometry.getAttribute('size') as THREE.BufferAttribute;
+        const posAttr = geometry.getAttribute('position')   as THREE.BufferAttribute;
+        const colAttr = geometry.getAttribute('color')      as THREE.BufferAttribute;
+        const sizAttr = geometry.getAttribute('size')       as THREE.BufferAttribute;
+        const briAttr = geometry.getAttribute('brightness') as THREE.BufferAttribute;
 
         let count = 0;
         for (let i = 0; i < precomputedObjects.length && count < MAX_VISIBLE; i++) {
             const obj = precomputedObjects[i];
             if (obj.mag > limitingMag) break;
 
+            // Objetos más brillantes tienen más alpha; fade suave al límite
+            const brightness = Math.max(0.1, Math.min(1.0, 1.2 - (obj.mag - (limitingMag - 5)) / 5));
+
             posAttr.setXYZ(count, obj.pos[0], obj.pos[1], obj.pos[2]);
             colAttr.setXYZ(count, obj.color[0], obj.color[1], obj.color[2]);
             sizAttr.setX(count, obj.size);
+            briAttr.setX(count, brightness);
             count++;
         }
 
@@ -142,6 +155,7 @@ export default function NGCObjects() {
         posAttr.needsUpdate = true;
         colAttr.needsUpdate = true;
         sizAttr.needsUpdate = true;
+        briAttr.needsUpdate = true;
     });
 
     return <points ref={pointsRef} geometry={geometry} material={material} />;

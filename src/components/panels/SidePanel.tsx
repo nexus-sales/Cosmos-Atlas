@@ -261,6 +261,13 @@ function PanelContent({
 }
 
 // ── Bottom Sheet (mobile) ─────────────────────────────────────────────────────
+// Altura via CSS dvh — se adapta a rotación y colapso de barra de dirección
+// sin necesitar JS ni listeners de resize.
+const SHEET_HEIGHT_CSS = '82svh';
+// Valor numérico usado sólo para la motion value inicial y los dragConstraints.
+// Se sobreescribe con CSS — no importa si no refleja el tamaño exacto.
+const SHEET_HEIGHT_PX = 700;
+
 function BottomSheet({
     open,
     onClose,
@@ -272,19 +279,18 @@ function BottomSheet({
     activeTab: TabType;
     setActiveTab: (t: TabType) => void;
 }) {
-    const sheetHeight = typeof window !== 'undefined' ? window.innerHeight * 0.80 : 600;
-    const y = useMotionValue(open ? 0 : sheetHeight);
-    const dragHandleOpacity = useTransform(y, [0, sheetHeight * 0.5], [1, 0.3]);
+    const y = useMotionValue(open ? 0 : SHEET_HEIGHT_PX);
+    const dragHandleOpacity = useTransform(y, [0, SHEET_HEIGHT_PX * 0.4], [1, 0.3]);
     const isDraggingRef = useRef(false);
 
-    // Sync open state → y value
+    // Sync open state → y
     useEffect(() => {
         if (!open) {
-            y.set(sheetHeight);
+            y.set(SHEET_HEIGHT_PX);
         } else {
             y.set(0);
         }
-    }, [open, sheetHeight, y]);
+    }, [open, y]);
 
     return (
         <AnimatePresence>
@@ -301,48 +307,68 @@ function BottomSheet({
                         onClick={onClose}
                     />
 
-                    {/* Sheet */}
+                    {/* Sheet — altura CSS para que respete dvh y safe-area */}
                     <motion.div
                         key="bs-sheet"
-                        className="fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-3xl overflow-hidden shadow-2xl border-t border-white/10"
+                        className="fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-3xl shadow-2xl border-t border-white/10"
                         style={{
-                            height: sheetHeight,
+                            height: SHEET_HEIGHT_CSS,
                             y,
                             background: 'linear-gradient(180deg, rgba(4,12,28,0.98) 0%, rgba(2,6,18,1) 100%)',
+                            paddingBottom: 'env(safe-area-inset-bottom)',
                         }}
-                        initial={{ y: sheetHeight }}
+                        initial={{ y: SHEET_HEIGHT_PX }}
                         animate={{ y: 0 }}
-                        exit={{ y: sheetHeight }}
+                        exit={{ y: SHEET_HEIGHT_PX }}
                         transition={{ type: 'spring', stiffness: 380, damping: 38 }}
                         drag="y"
-                        dragConstraints={{ top: 0, bottom: sheetHeight }}
-                        dragElastic={0.12}
+                        dragConstraints={{ top: 0, bottom: SHEET_HEIGHT_PX }}
+                        dragElastic={0.1}
+                        dragListener={false}
                         onDragStart={() => { isDraggingRef.current = true; }}
                         onDragEnd={(_, info) => {
                             isDraggingRef.current = false;
-                            // Close if dragged down more than 30% or velocity > 500
-                            if (info.offset.y > sheetHeight * 0.3 || info.velocity.y > 500) {
+                            if (info.offset.y > SHEET_HEIGHT_PX * 0.28 || info.velocity.y > 500) {
                                 onClose();
                             } else {
-                                // Snap back
                                 y.set(0);
                             }
                         }}
                     >
-                        {/* Drag handle */}
+                        {/* Drag handle — único punto de arrastre */}
                         <motion.div
-                            className="flex justify-center pt-3 pb-1 shrink-0 cursor-grab active:cursor-grabbing"
+                            className="flex justify-center pt-3 pb-1 shrink-0 cursor-grab active:cursor-grabbing touch-none"
                             style={{ opacity: dragHandleOpacity }}
+                            onPointerDown={(e) => {
+                                // Activar drag solo desde el handle
+                                isDraggingRef.current = false;
+                                const target = e.currentTarget.closest('[data-framer-drag]') as HTMLElement | null;
+                                if (target) target.dispatchEvent(new PointerEvent('pointerdown', e.nativeEvent));
+                            }}
+                            drag="y"
+                            dragConstraints={{ top: 0, bottom: SHEET_HEIGHT_PX }}
+                            dragElastic={0.1}
+                            onDrag={(_, info) => { y.set(Math.max(0, info.offset.y)); }}
+                            onDragEnd={(_, info) => {
+                                if (info.offset.y > SHEET_HEIGHT_PX * 0.28 || info.velocity.y > 500) {
+                                    onClose();
+                                } else {
+                                    y.set(0);
+                                }
+                            }}
                         >
                             <div className="w-10 h-1 rounded-full bg-white/25" />
                         </motion.div>
 
-                        <PanelContent
-                            activeTab={activeTab}
-                            setActiveTab={setActiveTab}
-                            onClose={onClose}
-                            isMobile={true}
-                        />
+                        {/* Contenido — dragListener=false evita conflicto con scroll */}
+                        <motion.div className="flex flex-col flex-1 overflow-hidden" dragListener={false}>
+                            <PanelContent
+                                activeTab={activeTab}
+                                setActiveTab={setActiveTab}
+                                onClose={onClose}
+                                isMobile={true}
+                            />
+                        </motion.div>
                     </motion.div>
                 </>
             )}

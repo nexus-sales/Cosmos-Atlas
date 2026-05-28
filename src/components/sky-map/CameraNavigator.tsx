@@ -130,6 +130,7 @@ export default function CameraNavigator({
             setIsFlying(true);
             
             const warpFovBoost = wf * 45;
+            // eslint-disable-next-line react-hooks/immutability
             cam.fov = THREE.MathUtils.lerp(cam.fov, desiredFov + warpFovBoost, 0.15);
             cam.updateProjectionMatrix();
             setCamFov(cam.fov);

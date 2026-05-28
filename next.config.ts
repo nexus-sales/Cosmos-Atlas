@@ -1,7 +1,28 @@
+import withSerwist from "@serwist/next";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+    // Headers de caché para los catálogos binarios grandes
+    async headers() {
+        return [
+            {
+                source: "/(hipparcos|ngc)\\.bin",
+                headers: [
+                    {
+                        key: "Cache-Control",
+                        value: "public, max-age=7776000, immutable", // 90 días
+                    },
+                ],
+            },
+        ];
+    },
 };
 
-export default nextConfig;
+const withPWA = withSerwist({
+    swSrc: "src/app/sw.ts",
+    swDest: "public/sw.js",
+    // En desarrollo no registramos SW para no interferir con HMR
+    disable: process.env.NODE_ENV === "development",
+});
+
+export default withPWA(nextConfig);

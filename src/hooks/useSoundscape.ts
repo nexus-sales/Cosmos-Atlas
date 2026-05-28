@@ -22,7 +22,7 @@ export function useSoundscape() {
     useEffect(() => {
         const initAudio = () => {
             if (audioCtxRef.current) return;
-            const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+            const AudioContext = window.AudioContext || (window as Window & { webkitAudioContext?: typeof window.AudioContext }).webkitAudioContext;
             const ctx = new AudioContext();
             audioCtxRef.current = ctx;
 

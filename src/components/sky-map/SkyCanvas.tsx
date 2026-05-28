@@ -25,6 +25,7 @@ import TelescopeEffect from '@/components/sky-map/TelescopeEffect';
 import CameraNavigator from '@/components/sky-map/CameraNavigator';
 import CameraBackground from '@/components/sky-map/CameraBackground';
 import HipparcosStars from '@/components/sky-map/HipparcosStars';
+import NGCObjects from '@/components/sky-map/NGCObjects';
 import CinematicTour from '@/components/sky-map/CinematicTour';
 import ConstellationArt from '@/components/sky-map/ConstellationArt';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -418,6 +419,8 @@ export default function SkyCanvas() {
                         <ErrorBoundary label="HipparcosStars"><HipparcosStars /></ErrorBoundary>
                         {/* Estrellas nombradas (355) con hitboxes e interacción — encima del catálogo */}
                         <ErrorBoundary label="Stars"><Stars /></ErrorBoundary>
+                        {/* Catálogo NGC/IC — 10.000 objetos, puntos difusos, renderOrder=0 (debajo de DSOs nombrados) */}
+                        <ErrorBoundary label="NGCObjects"><NGCObjects /></ErrorBoundary>
                         <ErrorBoundary label="DeepSkyObjects"><DeepSkyObjects /></ErrorBoundary>
                         <ErrorBoundary label="Constellations"><Constellations /></ErrorBoundary>
                         <ErrorBoundary label="ConstellationArt"><ConstellationArt /></ErrorBoundary>
