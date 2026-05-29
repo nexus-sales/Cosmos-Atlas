@@ -4,7 +4,7 @@ import { useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { useAppStore } from '@/stores/useAppStore';
-import * as Astronomy from 'astronomy-engine';
+import { sunHorRef } from '@/lib/skyRefs';
 
 const SKY_NIGHT      = new THREE.Color('#04091a');
 const SKY_ASTRO      = new THREE.Color('#060c20');
@@ -15,7 +15,6 @@ const SKY_SUNRISE    = new THREE.Color('#3c1408');
 const SKY_DAY        = new THREE.Color('#183c70');
 
 const TEMP_COLOR = new THREE.Color();
-const SHARED_OBSERVER = new Astronomy.Observer(0, 0, 0);
 
 function getSkyColor(alt: number, target: THREE.Color): THREE.Color {
     if (alt < -18) {
@@ -50,20 +49,10 @@ export default function CelestialSphere() {
 
     useFrame(() => {
         if (!matRef.current) return;
-        const { time, observer } = useAppStore.getState();
-        try {
-            // Reutilizamos el objeto Observer
-            SHARED_OBSERVER.latitude = observer.lat;
-            SHARED_OBSERVER.longitude = observer.lon;
-            SHARED_OBSERVER.height = 0;
-
-            const eq = Astronomy.Equator(Astronomy.Body.Sun, time, SHARED_OBSERVER, true, true);
-            const hor = Astronomy.Horizon(time, SHARED_OBSERVER, eq.ra, eq.dec, 'normal');
-            
-            getSkyColor(hor.altitude, TEMP_COLOR);
-            currentColor.current.lerp(TEMP_COLOR, 0.02);
-            matRef.current.color.copy(currentColor.current);
-        } catch { }
+        // sunHorRef se actualiza 1x/seg por SunLight en SkyCanvas — sin Astronomy aquí
+        getSkyColor(sunHorRef.alt, TEMP_COLOR);
+        currentColor.current.lerp(TEMP_COLOR, 0.02);
+        matRef.current.color.copy(currentColor.current);
     });
 
     if (viewMode === 'camera') return null;

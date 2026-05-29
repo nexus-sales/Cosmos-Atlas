@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { useAppStore } from '@/stores/useAppStore';
+import { sunHorRef } from '@/lib/skyRefs';
 import * as Astronomy from 'astronomy-engine';
 
 
@@ -471,22 +472,13 @@ function MoonMesh({ planet, phase }: { planet: { pos: [number, number, number] }
         const material = meshRef.current.material as THREE.ShaderMaterial;
         if (texture) material.uniforms.uMap.value = texture;
         material.uniforms.uOpacity.value = sphereOpacity;
-
-        try {
-            const { time: t, observer: obs } = useAppStore.getState();
-            const astObs = new Astronomy.Observer(obs.lat, obs.lon, 0);
-            const sunEq = Astronomy.Equator(Astronomy.Body.Sun, t, astObs, true, true);
-            const sunHor = Astronomy.Horizon(t, astObs, sunEq.ra, sunEq.dec, 'normal');
-
-            const el = THREE.MathUtils.degToRad(sunHor.altitude);
-            const az = THREE.MathUtils.degToRad(sunHor.azimuth);
-
-            material.uniforms.uLightDirection.value.set(
-                Math.cos(el) * Math.sin(az),
-                Math.sin(el),
-                -Math.cos(el) * Math.cos(az)
-            ).normalize();
-        } catch {}
+        const el = THREE.MathUtils.degToRad(sunHorRef.alt);
+        const az = THREE.MathUtils.degToRad(sunHorRef.az);
+        material.uniforms.uLightDirection.value.set(
+            Math.cos(el) * Math.sin(az),
+            Math.sin(el),
+            -Math.cos(el) * Math.cos(az)
+        ).normalize();
     });
 
     return (
@@ -568,20 +560,14 @@ function PlanetMesh({ planet }: { planet: PlanetData }) {
         const material = meshRef.current.material as THREE.ShaderMaterial;
         if (texture) material.uniforms.uMap.value = texture;
         material.uniforms.uOpacity.value = sphereOpacity;
-
-        try {
-            const { time: t, observer: obs } = useAppStore.getState();
-            const astObs = new Astronomy.Observer(obs.lat, obs.lon, 0);
-            const sunEq = Astronomy.Equator(Astronomy.Body.Sun, t, astObs, true, true);
-            const sunHor = Astronomy.Horizon(t, astObs, sunEq.ra, sunEq.dec, 'normal');
-            const el = THREE.MathUtils.degToRad(sunHor.altitude);
-            const az = THREE.MathUtils.degToRad(sunHor.azimuth);
-            material.uniforms.uLightDirection.value.set(
-                Math.cos(el) * Math.sin(az),
-                Math.sin(el),
-                -Math.cos(el) * Math.cos(az)
-            ).normalize();
-        } catch {}
+        // sunHorRef actualizado 1x/seg por SunLight — sin llamadas Astronomy aquí
+        const el = THREE.MathUtils.degToRad(sunHorRef.alt);
+        const az = THREE.MathUtils.degToRad(sunHorRef.az);
+        material.uniforms.uLightDirection.value.set(
+            Math.cos(el) * Math.sin(az),
+            Math.sin(el),
+            -Math.cos(el) * Math.cos(az)
+        ).normalize();
     });
 
     return (

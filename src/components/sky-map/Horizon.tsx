@@ -1,10 +1,111 @@
 'use client';
 
+import { useRef, useMemo } from 'react';
 import * as THREE from 'three';
 import { Html } from '@react-three/drei';
+import { useFrame } from '@react-three/fiber';
 import { cn } from '@/lib/utils';
-
 import { useAppStore } from '@/stores/useAppStore';
+import { sunHorRef } from '@/lib/skyRefs';
+
+/**
+ * Resplandor direccional en el horizonte durante el crepúsculo.
+ * Visible cuando el Sol está entre −18° y +12° de altitud.
+ * El abanico de luz apunta hacia el azimut solar.
+ */
+function SunriseGlow() {
+    const meshRef  = useRef<THREE.Mesh>(null);
+    const mesh2Ref = useRef<THREE.Mesh>(null);
+
+    // Abanico horizontal (fan en el plano XZ) — 120° de apertura
+    const fanGeom = useMemo(() => {
+        const segments = 24;
+        const halfAngle = Math.PI * (60 / 180); // 60° a cada lado
+        const r = 92;
+        const verts: number[] = [];
+        const idx: number[] = [];
+
+        verts.push(0, 1, 0); // apex ligeramente sobre el horizonte
+        for (let i = 0; i <= segments; i++) {
+            const t = i / segments;
+            const a = -halfAngle + t * 2 * halfAngle;
+            verts.push(Math.sin(a) * r, 0, -Math.cos(a) * r);
+        }
+        for (let i = 0; i < segments; i++) idx.push(0, i + 1, i + 2);
+
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(verts), 3));
+        g.setIndex(idx);
+        return g;
+    }, []);
+
+    // Haz vertical más estrecho — efecto columna de luz
+    const beamGeom = useMemo(() => {
+        const r = 88;
+        const halfW = Math.PI * (18 / 180);
+        const h = 30;
+        const verts = [
+            0, h, 0,
+            Math.sin(-halfW) * r, 0, -Math.cos(-halfW) * r,
+            Math.sin(halfW) * r, 0, -Math.cos(halfW) * r,
+        ];
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(verts), 3));
+        g.setIndex([0, 1, 2]);
+        return g;
+    }, []);
+
+    useFrame(() => {
+        const { alt, az } = sunHorRef;
+        const visible = alt > -18 && alt < 12;
+
+        [meshRef.current, mesh2Ref.current].forEach(m => {
+            if (m) m.visible = visible;
+        });
+        if (!visible) return;
+
+        // Intensidad: máxima en alt=0, cero en los extremos
+        const t = alt < 0 ? 1 + alt / 18 : 1 - alt / 12;
+        const intensity = Math.max(0, Math.pow(t, 1.4));
+
+        const azRad = -THREE.MathUtils.degToRad(az);
+        if (meshRef.current) {
+            meshRef.current.rotation.y = azRad;
+            (meshRef.current.material as THREE.MeshBasicMaterial).opacity = intensity * 0.28;
+        }
+        if (mesh2Ref.current) {
+            mesh2Ref.current.rotation.y = azRad;
+            (mesh2Ref.current.material as THREE.MeshBasicMaterial).opacity = intensity * 0.40;
+        }
+    });
+
+    return (
+        <>
+            {/* Abanico amplio */}
+            <mesh ref={meshRef} geometry={fanGeom} renderOrder={3}>
+                <meshBasicMaterial
+                    color="#ff6622"
+                    transparent
+                    opacity={0}
+                    side={THREE.DoubleSide}
+                    depthWrite={false}
+                    blending={THREE.AdditiveBlending}
+                />
+            </mesh>
+            {/* Haz central más brillante */}
+            <mesh ref={mesh2Ref} geometry={beamGeom} renderOrder={4}>
+                <meshBasicMaterial
+                    color="#ffaa44"
+                    transparent
+                    opacity={0}
+                    side={THREE.DoubleSide}
+                    depthWrite={false}
+                    blending={THREE.AdditiveBlending}
+                />
+            </mesh>
+        </>
+    );
+}
 
 /**
  * Horizonte en espacio MUNDO (sin rotación con el cielo).
@@ -23,6 +124,9 @@ export default function Horizon() {
 
     return (
         <group>
+            {/* ── Resplandor crepuscular direccional ─── */}
+            <SunriseGlow />
+
             {/* ── Suelo Profundo ─── */}
             <mesh
                 position={[0, -0.05, 0]}

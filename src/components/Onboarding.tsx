@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '@/stores/useAppStore';
-import { ChevronRight, X, Star, Search, Layers, Clock } from 'lucide-react';
+import { ChevronRight, X, Star, Search, Layers, Clock, Camera } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Step {
@@ -47,6 +47,14 @@ const STEPS: Step[] = [
         hint: 'Pulsa el botón "Tiempo Real" en la parte inferior',
         accent: 'text-amber-400',
         bg: 'from-amber-900/30 to-transparent',
+    },
+    {
+        icon: <Camera className="w-8 h-8" />,
+        title: 'Modo Cámara AR',
+        body: 'Activa la cámara trasera y apunta tu teléfono al cielo. Cosmos Atlas superpone en tiempo real constelaciones, planetas y satélites sobre lo que ves, con precisión de brújula y giroscopio.',
+        hint: 'Panel lateral → selector BÓVEDA / CÁMARA',
+        accent: 'text-sky-400',
+        bg: 'from-sky-900/30 to-transparent',
     },
 ];
 

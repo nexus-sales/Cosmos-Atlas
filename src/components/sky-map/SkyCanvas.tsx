@@ -36,7 +36,49 @@ import { getLST } from '@/lib/astronomy/time';
 import { deviceOrientationRef } from '@/hooks/useDeviceOrientation';
 import ISSPassPredictor from '@/components/sky-map/ISSPassPredictor';
 import { cn } from '@/lib/utils';
-import { cameraHeadingRef, cameraRef } from '@/lib/skyRefs';
+import { cameraHeadingRef, cameraRef, sunHorRef } from '@/lib/skyRefs';
+import * as Astronomy from 'astronomy-engine';
+
+// Observador reutilizable — evita allocations en useFrame
+const _sunObserver = new Astronomy.Observer(0, 0, 0);
+let _lastSunUpdateMs = 0;
+
+/**
+ * Calcula la posición horizontal del Sol máximo 1x/segundo,
+ * actualiza sunHorRef y posiciona el directionalLight en world-space.
+ * Priority=-1 garantiza que corre antes que cualquier consumidor de sunHorRef.
+ */
+function SunLight() {
+    const lightRef = useRef<THREE.DirectionalLight>(null);
+
+    useFrame(() => {
+        const now = Date.now();
+        if (now - _lastSunUpdateMs >= 1000) {
+            const { time, observer } = useAppStore.getState();
+            try {
+                _sunObserver.latitude  = observer.lat;
+                _sunObserver.longitude = observer.lon;
+                const eq  = Astronomy.Equator(Astronomy.Body.Sun, time, _sunObserver, true, true);
+                const hor = Astronomy.Horizon(time, _sunObserver, eq.ra, eq.dec, 'normal');
+                sunHorRef.alt = hor.altitude;
+                sunHorRef.az  = hor.azimuth;
+                _lastSunUpdateMs = now;
+            } catch {}
+        }
+
+        if (lightRef.current) {
+            const el = THREE.MathUtils.degToRad(sunHorRef.alt);
+            const az = THREE.MathUtils.degToRad(sunHorRef.az);
+            lightRef.current.position.set(
+                Math.sin(az) * Math.cos(el) * 100,
+                Math.sin(el) * 100,
+                -Math.cos(az) * Math.cos(el) * 100
+            );
+        }
+    }, -1); // priority -1 → corre antes que todos los demás useFrame
+
+    return <directionalLight ref={lightRef} intensity={3.5} color="#ffffff" position={[100, 0, 0]} />;
+}
 
 function SubHorizonAlert() {
     const alert = useAppStore(s => s.subHorizonAlert);
@@ -391,15 +433,10 @@ export default function SkyCanvas() {
                 <Suspense fallback={null}>
                     <SetupRenderer />
 
-                    {/* Iluminación para planetas y Luna (meshStandardMaterial) */}
-                    {/* Luz ambiental suave para el lado oscuro */}
+                    {/* Iluminación para planetas y Luna */}
                     <ambientLight intensity={0.15} />
-                    {/* Luz direccional que simula el Sol - viene desde +X (Este) */}
-                    <directionalLight
-                        position={[100, 0, 0]}
-                        intensity={3.5}
-                        color="#ffffff"
-                    />
+                    {/* SunLight: directional light que sigue la posición real del Sol */}
+                    <SunLight />
 
                     {/* OrbitControls ya no usa key para evitar re-mounting que corta el drag */}
                     <OrbitControls
