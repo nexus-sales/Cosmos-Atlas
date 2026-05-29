@@ -118,7 +118,6 @@ function FigureMesh({ figure, opacity, highlighted }: {
 
         return { fillGeom: fillMesh, lineObjects };
     // opacity y highlighted cambian cada frame al hacer zoom — reconstruir solo cuando cambian
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [figure, opacity, highlighted]);
 
     return (

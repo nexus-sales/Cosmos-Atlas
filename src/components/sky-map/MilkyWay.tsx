@@ -223,7 +223,7 @@ function MilkyWayParticles() {
             siz[i] = (0.15 + rng() * 0.4) * (1.0 + coreFrac * 0.5);
         }
         return [pos, col, siz];
-    }, []);
+    }, [deviceQuality]);
 
     return (
         <points ref={pointsRef} renderOrder={-1}>

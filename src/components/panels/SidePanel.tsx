@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useSyncExternalStore } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { useAppStore } from '@/stores/useAppStore';
 import { Target, Info, BookOpen, Layers, Grid3X3, ChevronRight, ChevronLeft, ChevronDown, X, Moon, Mountain, Camera, Satellite, Globe, CloudRain, Settings2, Crosshair, Sparkles } from 'lucide-react';
@@ -16,20 +16,15 @@ import ObservationJournal from '@/components/panels/ObservationJournal';
 type TabType = 'challenge' | 'info' | 'guide';
 
 function useIsMobile() {
-    const [isMobile, setIsMobile] = useState(() => {
-        if (typeof window === 'undefined') return false;
-        return window.matchMedia('(max-width: 767px)').matches;
-    });
-
-    useEffect(() => {
-        const mq = window.matchMedia('(max-width: 767px)');
-        const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-
-        mq.addEventListener('change', handler);
-        return () => mq.removeEventListener('change', handler);
-    }, []);
-
-    return isMobile;
+    return useSyncExternalStore(
+        (onStoreChange) => {
+            const mq = window.matchMedia('(max-width: 767px)');
+            mq.addEventListener('change', onStoreChange);
+            return () => mq.removeEventListener('change', onStoreChange);
+        },
+        () => window.matchMedia('(max-width: 767px)').matches,
+        () => false
+    );
 }
 
 // ── Shared panel content ─────────────────────────────────────────────────────

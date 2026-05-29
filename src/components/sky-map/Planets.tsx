@@ -171,6 +171,37 @@ function usePlanetTexture(key: string): THREE.CanvasTexture {
     return useMemo(() => makeProceduralTexture(key), [key]);
 }
 
+function makeGlowTexture(): THREE.CanvasTexture {
+    const size = 128;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d')!;
+    const half = size / 2;
+    const gradient = ctx.createRadialGradient(half, half, 0, half, half, half);
+
+    gradient.addColorStop(0, 'rgba(255,255,255,1)');
+    gradient.addColorStop(0.35, 'rgba(255,255,255,0.75)');
+    gradient.addColorStop(0.7, 'rgba(255,255,255,0.18)');
+    gradient.addColorStop(1, 'rgba(255,255,255,0)');
+
+    ctx.clearRect(0, 0, size, size);
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, size, size);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.generateMipmaps = false;
+    tex.needsUpdate = true;
+    return tex;
+}
+
+function useGlowTexture(): THREE.CanvasTexture {
+    return useMemo(() => makeGlowTexture(), []);
+}
+
 // Textura radial de los anillos de Saturno: B ring brillante, división de Cassini
 // transparente, A ring exterior ligeramente más tenue.
 function makeSaturnRingTexture(): THREE.CanvasTexture {
@@ -384,6 +415,7 @@ function SunMesh({ pos }: { pos: [number, number, number] }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const glowRef = useRef<THREE.Mesh>(null);
     const texture = usePlanetTexture('sun');
+    const glowTexture = useGlowTexture();
     const camFov = useAppStore(state => state.camFov);
     // 3D sphere al hacer zoom; sprite de glow siempre visible
     const sphereOpacity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 55, 35, 0, 1), 0, 1);
@@ -414,6 +446,7 @@ function SunMesh({ pos }: { pos: [number, number, number] }) {
             {glowOpacity > 0.01 && (
                 <sprite scale={[3.5, 3.5, 1]}>
                     <spriteMaterial
+                        map={glowTexture}
                         color="#ffcc44"
                         transparent
                         opacity={glowOpacity}
@@ -456,6 +489,7 @@ function MoonMesh({ planet, phase }: { planet: { pos: [number, number, number] }
     const meshRef = useRef<THREE.Mesh>(null);
     const camFov = useAppStore(state => state.camFov);
     const texture = usePlanetTexture('moon');
+    const glowTexture = useGlowTexture();
     const sphereOpacity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 55, 35, 0, 1), 0, 1);
     const glowOpacity   = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 35, 55, 0, 1), 0, 1);
     // Iluminación lunar: 0-1 según fase (0°=Luna Nueva, 180°=Luna Llena)
@@ -487,6 +521,7 @@ function MoonMesh({ planet, phase }: { planet: { pos: [number, number, number] }
             {glowOpacity > 0.01 && (
                 <sprite scale={[2.5, 2.5, 1]}>
                     <spriteMaterial
+                        map={glowTexture}
                         color="#e8e8d8"
                         transparent
                         opacity={glowOpacity * moonBrightness}
@@ -532,6 +567,7 @@ function PlanetMesh({ planet }: { planet: PlanetData }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const camFov = useAppStore(state => state.camFov);
     const texture = usePlanetTexture(planet.textureKey);
+    const glowTexture = useGlowTexture();
     const ringTexture = useSaturnRingTexture();
 
     // Tamaño angular real en arcsec = 2 * (physRadius_km / (dist_AU * AU_KM)) * 206265
@@ -576,6 +612,7 @@ function PlanetMesh({ planet }: { planet: PlanetData }) {
             {glowOpacity > 0.01 && (
                 <sprite scale={[glowScale, glowScale, 1]}>
                     <spriteMaterial
+                        map={glowTexture}
                         color={planet.color}
                         transparent
                         opacity={glowOpacity}

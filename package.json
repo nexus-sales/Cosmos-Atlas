@@ -7,7 +7,7 @@
     "email": "salvador.munoz@masvoip.com"
   },
   "scripts": {
-    "dev": "next dev -p 5174",
+    "dev": "next dev --webpack -p 5174",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
