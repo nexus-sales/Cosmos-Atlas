@@ -1,6 +1,6 @@
 'use client';
 
-import { Html, Float } from '@react-three/drei';
+import { Html } from '@react-three/drei';
 import { useMemo, useRef } from 'react';
 import type { CSSProperties } from 'react';
 import * as THREE from 'three';
@@ -383,7 +383,10 @@ function SunMesh({ pos }: { pos: [number, number, number] }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const glowRef = useRef<THREE.Mesh>(null);
     const texture = usePlanetTexture('sun');
-    const opacity = useAppStore(state => state.camFov < 45 ? 1.0 : 0.0);
+    const camFov = useAppStore(state => state.camFov);
+    // 3D sphere al hacer zoom; sprite de glow siempre visible
+    const sphereOpacity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 55, 35, 0, 1), 0, 1);
+    const glowOpacity   = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 35, 55, 0, 1), 0, 1);
 
     const uniforms = useMemo(() => ({
         uMap: { value: null as THREE.Texture | null },
@@ -396,7 +399,7 @@ function SunMesh({ pos }: { pos: [number, number, number] }) {
             const material = meshRef.current.material as THREE.ShaderMaterial;
             material.uniforms.uTime.value = state.clock.elapsedTime;
             if (texture) material.uniforms.uMap.value = texture;
-            material.uniforms.uOpacity.value = opacity;
+            material.uniforms.uOpacity.value = sphereOpacity;
             meshRef.current.rotation.y += 0.002;
         }
         if (glowRef.current) {
@@ -405,36 +408,58 @@ function SunMesh({ pos }: { pos: [number, number, number] }) {
     });
 
     return (
-        <group position={pos} visible={opacity > 0.01}>
-            <mesh ref={meshRef}>
-                <sphereGeometry args={[0.5, 64, 64]} />
-                <shaderMaterial
-                    vertexShader={SUN_VERTEX_SHADER}
-                    fragmentShader={SUN_FRAGMENT_SHADER}
-                    uniforms={uniforms}
-                    transparent
-                />
-            </mesh>
-            <mesh ref={glowRef}>
-                <sphereGeometry args={[0.5, 32, 32]} />
-                <meshBasicMaterial
-                    color="#ffaa44"
-                    transparent
-                    opacity={opacity * 0.4}
-                    blending={THREE.AdditiveBlending}
-                    side={THREE.BackSide}
-                />
-            </mesh>
-            <pointLight intensity={5} color="#fff4d0" distance={15} decay={2} castShadow />
+        <group position={pos}>
+            {/* Sprite de glow — siempre visible a FOV amplio */}
+            {glowOpacity > 0.01 && (
+                <sprite scale={[3.5, 3.5, 1]}>
+                    <spriteMaterial
+                        color="#ffcc44"
+                        transparent
+                        opacity={glowOpacity}
+                        blending={THREE.AdditiveBlending}
+                        depthWrite={false}
+                        toneMapped={false}
+                    />
+                </sprite>
+            )}
+            {/* Esfera 3D al hacer zoom */}
+            {sphereOpacity > 0.01 && (
+                <>
+                    <mesh ref={meshRef}>
+                        <sphereGeometry args={[0.5, 64, 64]} />
+                        <shaderMaterial
+                            vertexShader={SUN_VERTEX_SHADER}
+                            fragmentShader={SUN_FRAGMENT_SHADER}
+                            uniforms={uniforms}
+                            transparent
+                        />
+                    </mesh>
+                    <mesh ref={glowRef}>
+                        <sphereGeometry args={[0.5, 32, 32]} />
+                        <meshBasicMaterial
+                            color="#ffaa44"
+                            transparent
+                            opacity={sphereOpacity * 0.4}
+                            blending={THREE.AdditiveBlending}
+                            side={THREE.BackSide}
+                        />
+                    </mesh>
+                    <pointLight intensity={5} color="#fff4d0" distance={15} decay={2} castShadow />
+                </>
+            )}
         </group>
     );
 }
 
-function MoonMesh({ planet, phase, opacity }: { planet: { pos: [number, number, number] }, phase: number, opacity: number }) {
+function MoonMesh({ planet, phase }: { planet: { pos: [number, number, number] }, phase: number }) {
     const meshRef = useRef<THREE.Mesh>(null);
-    // time y observer se leen en useFrame desde getState() — sin re-renders innecesarios
+    const camFov = useAppStore(state => state.camFov);
     const texture = usePlanetTexture('moon');
-    
+    const sphereOpacity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 55, 35, 0, 1), 0, 1);
+    const glowOpacity   = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 35, 55, 0, 1), 0, 1);
+    // Iluminación lunar: 0-1 según fase (0°=Luna Nueva, 180°=Luna Llena)
+    const moonBrightness = 0.3 + 0.7 * Math.abs(Math.sin(THREE.MathUtils.degToRad(phase / 2)));
+
     const uniforms = useMemo(() => ({
         uMap: { value: null as THREE.Texture | null },
         uOpacity: { value: 0 },
@@ -445,7 +470,7 @@ function MoonMesh({ planet, phase, opacity }: { planet: { pos: [number, number, 
         if (!meshRef.current) return;
         const material = meshRef.current.material as THREE.ShaderMaterial;
         if (texture) material.uniforms.uMap.value = texture;
-        material.uniforms.uOpacity.value = opacity;
+        material.uniforms.uOpacity.value = sphereOpacity;
 
         try {
             const { time: t, observer: obs } = useAppStore.getState();
@@ -465,16 +490,32 @@ function MoonMesh({ planet, phase, opacity }: { planet: { pos: [number, number, 
     });
 
     return (
-        <group position={planet.pos} visible={opacity > 0.01}>
-            <mesh ref={meshRef}>
-                <sphereGeometry args={[0.4, 64, 64]} />
-                <shaderMaterial
-                    vertexShader={PLANET_VERTEX_SHADER}
-                    fragmentShader={MOON_FRAGMENT_SHADER}
-                    uniforms={uniforms}
-                    transparent
-                />
-            </mesh>
+        <group position={planet.pos}>
+            {/* Sprite de glow — siempre visible a FOV amplio */}
+            {glowOpacity > 0.01 && (
+                <sprite scale={[2.5, 2.5, 1]}>
+                    <spriteMaterial
+                        color="#e8e8d8"
+                        transparent
+                        opacity={glowOpacity * moonBrightness}
+                        blending={THREE.AdditiveBlending}
+                        depthWrite={false}
+                        toneMapped={false}
+                    />
+                </sprite>
+            )}
+            {/* Esfera 3D al hacer zoom */}
+            {sphereOpacity > 0.01 && (
+                <mesh ref={meshRef}>
+                    <sphereGeometry args={[0.4, 64, 64]} />
+                    <shaderMaterial
+                        vertexShader={PLANET_VERTEX_SHADER}
+                        fragmentShader={MOON_FRAGMENT_SHADER}
+                        uniforms={uniforms}
+                        transparent
+                    />
+                </mesh>
+            )}
             <Html distanceFactor={120} zIndexRange={[90, 0]}>
                 <div className="pointer-events-none whitespace-nowrap rounded border border-yellow-200/20 bg-black/80 px-2 py-1 text-[10px] font-bold font-mono text-yellow-100/80 -translate-x-1/2 -translate-y-8">
                     LUNA ({phase.toFixed(0)}°)
@@ -486,8 +527,10 @@ function MoonMesh({ planet, phase, opacity }: { planet: { pos: [number, number, 
 
 interface PlanetData {
     name: string;
+    symbol: string;
     pos: [number, number, number];
     textureKey: string;
+    color: string;
     ra: number;
     dec: number;
     distAU: number;
@@ -502,15 +545,17 @@ function PlanetMesh({ planet }: { planet: PlanetData }) {
     // Tamaño angular real en arcsec = 2 * (physRadius_km / (dist_AU * AU_KM)) * 206265
     const physRadius = PLANET_PHYS_RADIUS_KM[planet.textureKey] ?? 3000;
     const angularArcsec = 2 * (physRadius / (Math.max(0.1, planet.distAU) * AU_KM)) * 206265;
-    // Normalizado respecto a Júpiter en oposición (referencia = 0.9)
     const baseScale = 0.9 * (angularArcsec / REF_ARCSEC);
 
-    // ZoomBoost: hace visible el disco al acercar la cámara
-    const zoomBoost = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 35, 2, 1.0, 30.0), 1.0, 30.0);
+    // ZoomBoost arranca desde FOV=55 para agrandar el disco al hacer zoom
+    const zoomBoost = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 55, 8, 1.0, 8.0), 1.0, 8.0);
     const scale = baseScale * zoomBoost;
 
-    // Opacidad: aparece cuando nos acercamos, pero no queremos que sea transparente si ya estamos cerca
-    const opacity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 65, 55, 0, 1), 0, 1);
+    // Esfera 3D aparece al hacer zoom (FOV < 55); sprite de glow siempre visible
+    const sphereOpacity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 55, 35, 0, 1), 0, 1);
+    const glowOpacity   = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 35, 55, 0, 1), 0, 1);
+    // Sprite: mínimo 1.2 unidades de radio visual, proporcional al tamaño angular
+    const glowScale = THREE.MathUtils.clamp(baseScale * 2.8, 1.2, 2.8);
 
     const uniforms = useMemo(() => ({
         uMap: { value: null as THREE.Texture | null },
@@ -522,18 +567,15 @@ function PlanetMesh({ planet }: { planet: PlanetData }) {
         if (!meshRef.current) return;
         const material = meshRef.current.material as THREE.ShaderMaterial;
         if (texture) material.uniforms.uMap.value = texture;
-        material.uniforms.uOpacity.value = opacity;
+        material.uniforms.uOpacity.value = sphereOpacity;
 
         try {
             const { time: t, observer: obs } = useAppStore.getState();
             const astObs = new Astronomy.Observer(obs.lat, obs.lon, 0);
             const sunEq = Astronomy.Equator(Astronomy.Body.Sun, t, astObs, true, true);
             const sunHor = Astronomy.Horizon(t, astObs, sunEq.ra, sunEq.dec, 'normal');
-
             const el = THREE.MathUtils.degToRad(sunHor.altitude);
             const az = THREE.MathUtils.degToRad(sunHor.azimuth);
-
-            // Dirección sol -> observador en coordenadas locales
             material.uniforms.uLightDirection.value.set(
                 Math.cos(el) * Math.sin(az),
                 Math.sin(el),
@@ -543,37 +585,64 @@ function PlanetMesh({ planet }: { planet: PlanetData }) {
     });
 
     return (
-        <group position={planet.pos} visible={opacity > 0.01}>
-            <Float speed={1.5} rotationIntensity={0.2} floatIntensity={0.2}>
-                <mesh ref={meshRef}>
-                    <sphereGeometry args={[scale, 64, 64]} />
-                    <shaderMaterial
-                        vertexShader={PLANET_VERTEX_SHADER}
-                        fragmentShader={PLANET_FRAGMENT_SHADER}
-                        uniforms={uniforms}
+        <group position={planet.pos}>
+            {/* Punto de luz — siempre visible como una estrella de color */}
+            {glowOpacity > 0.01 && (
+                <sprite scale={[glowScale, glowScale, 1]}>
+                    <spriteMaterial
+                        color={planet.color}
                         transparent
-                        depthTest={true}
-                        depthWrite={true}
+                        opacity={glowOpacity}
+                        blending={THREE.AdditiveBlending}
+                        depthWrite={false}
+                        toneMapped={false}
                     />
-                </mesh>
-                {planet.name === "Saturno" && (
-                    <mesh rotation={[Math.PI / 2.5, 0, 0]}>
-                        <ringGeometry args={[scale * 1.4, scale * 2.4, 128]} />
-                        <meshBasicMaterial
-                            map={ringTexture}
+                </sprite>
+            )}
+            {/* Disco 3D — aparece al hacer zoom */}
+            {sphereOpacity > 0.01 && (
+                <>
+                    <mesh ref={meshRef}>
+                        <sphereGeometry args={[scale, 32, 32]} />
+                        <shaderMaterial
+                            vertexShader={PLANET_VERTEX_SHADER}
+                            fragmentShader={PLANET_FRAGMENT_SHADER}
+                            uniforms={uniforms}
                             transparent
-                            opacity={opacity}
-                            side={THREE.DoubleSide}
-                            depthWrite={false}
-                            blending={THREE.NormalBlending}
+                            depthTest={true}
+                            depthWrite={true}
                         />
                     </mesh>
-                )}
-            </Float>
+                    {planet.name === "Saturno" && (
+                        <mesh rotation={[Math.PI / 2.5, 0, 0]}>
+                            <ringGeometry args={[scale * 1.4, scale * 2.4, 128]} />
+                            <meshBasicMaterial
+                                map={ringTexture}
+                                transparent
+                                opacity={sphereOpacity}
+                                side={THREE.DoubleSide}
+                                depthWrite={false}
+                                blending={THREE.NormalBlending}
+                            />
+                        </mesh>
+                    )}
+                </>
+            )}
             <Html distanceFactor={150}>
-                <div className="pointer-events-none whitespace-nowrap rounded border border-white/20 bg-black/80 px-2 py-1 text-[10px] font-bold font-mono text-white -translate-x-1/2 -translate-y-12">
-                    {planet.name.toUpperCase()}
-                </div>
+                {sphereOpacity > 0.15
+                    ? (
+                        <div className="pointer-events-none whitespace-nowrap rounded border border-white/20 bg-black/80 px-2 py-1 text-[10px] font-bold font-mono text-white -translate-x-1/2 -translate-y-12">
+                            {planet.symbol} {planet.name.toUpperCase()}
+                        </div>
+                    ) : (
+                        <div
+                            className="pointer-events-none -translate-x-1/2 -translate-y-5 text-[11px] font-bold font-mono select-none"
+                            style={{ color: planet.color, textShadow: `0 0 6px ${planet.color}` }}
+                        >
+                            {planet.symbol}
+                        </div>
+                    )
+                }
             </Html>
         </group>
     );
@@ -588,7 +657,7 @@ interface MoonData {
 
 function JupiterMoonMesh({ moon }: { moon: MoonData }) {
     const camFov = useAppStore(state => state.camFov);
-    const opacity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 15, 5, 0, 1), 0, 1);
+    const opacity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 25, 12, 0, 1), 0, 1);
     
     if (opacity < 0.01) return null;
 
@@ -615,7 +684,6 @@ export default function Planets() {
     // timeMinute solo cambia 1x/min — evita recalcular VSOP87 cada segundo
     const time = useAppStore(state => state.timeMinute);
     const observer = useAppStore(state => state.observer);
-    const camFov = useAppStore(state => state.camFov);
 
     const data = useMemo(() => {
         const bs = new Astronomy.Observer(observer.lat, observer.lon, 0);
@@ -627,6 +695,8 @@ export default function Planets() {
                     ra: eq.ra * 15,
                     dec: eq.dec,
                     distAU: eq.dist,
+                    color: cfg.color,
+                    symbol: cfg.symbol,
                     pos: equatorialTo3D(eq.ra * 15, eq.dec, PLANET_RADIUS) as [number, number, number],
                 } as PlanetData;
             } catch { return null; }
@@ -690,7 +760,7 @@ export default function Planets() {
                 <PlanetMesh key={p.name} planet={p} />
             ))}
             {data.moon && (
-                <MoonMesh planet={data.moon.planet} phase={data.moon.phase} opacity={camFov < 50 ? Math.min(1, (50 - camFov) / 15) : 0} />
+                <MoonMesh planet={data.moon.planet} phase={data.moon.phase} />
             )}
             {data.jMoons.map(m => (
                 <JupiterMoonMesh key={m.id} moon={m} />

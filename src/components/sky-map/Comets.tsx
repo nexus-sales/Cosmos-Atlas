@@ -7,6 +7,7 @@ import { useFrame } from '@react-three/fiber';
 import { COMETS, getCometPosition, getCometInfo, type Comet } from '@/data/comets';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { useAppStore } from '@/stores/useAppStore';
+import * as Astronomy from 'astronomy-engine';
 import { Html } from '@react-three/drei';
 import type { CometLiveData } from '@/app/api/comets/route';
 import type { OrbitalElements } from '@/lib/astronomy/cometOrbits';
@@ -142,6 +143,7 @@ interface CometData {
     name: string;
     designation: string;
     pos: [number, number, number];
+    sunPos: [number, number, number];
     magnitude: number;
     visible: boolean;
     tailAngle: number;
@@ -149,19 +151,49 @@ interface CometData {
     color: string;
 }
 
+// Pre-allocated vectors for tail orientation — avoids per-render allocations
+const _cometVec = new THREE.Vector3();
+const _sunVec   = new THREE.Vector3();
+const _antiSolar = new THREE.Vector3();
+const _dustAxis  = new THREE.Vector3();
+const _Z = new THREE.Vector3(0, 0, -1);
+
 function CometItem({ comet }: { comet: CometData }) {
     const [hovered, setHovered] = useState(false);
     const setSelectedObject = useAppStore((state) => state.setSelectedObject);
     const nightMode = useAppStore((state) => state.settings.nightMode);
+    const ionTailRef = useRef<THREE.Group>(null);
+    const dustTailRef = useRef<THREE.Group>(null);
 
     const displayColor = nightMode ? '#ff4444' : comet.color;
+
+    // Orient tails using the real Sun position computed in the parent useMemo
+    useEffect(() => {
+        _cometVec.set(...comet.pos).normalize();
+        _sunVec.set(...comet.sunPos).normalize();
+        // Anti-solar: direction from Sun toward comet (tail points away from Sun)
+        _antiSolar.subVectors(_cometVec, _sunVec).normalize();
+        if (_antiSolar.lengthSq() < 1e-6) _antiSolar.copy(_cometVec);
+
+        if (ionTailRef.current) {
+            ionTailRef.current.quaternion.setFromUnitVectors(_Z, _antiSolar);
+        }
+        if (dustTailRef.current) {
+            // Dust tail: ~18° offset from anti-solar in the orbital plane (trailing the orbit)
+            // Approximate by rotating around the "up" cross product
+            _dustAxis.crossVectors(_antiSolar, _cometVec).normalize();
+            if (_dustAxis.lengthSq() < 1e-6) _dustAxis.set(0, 1, 0);
+            const dustQ = new THREE.Quaternion().setFromAxisAngle(_dustAxis, -0.32); // ~18°
+            dustTailRef.current.quaternion.copy(ionTailRef.current!.quaternion).premultiply(dustQ);
+        }
+    }, [comet.pos, comet.sunPos]);
 
     return (
         <group position={comet.pos}>
             {/* Hitbox invisible */}
             <mesh
-                onClick={(e) => { 
-                    e.stopPropagation(); 
+                onClick={(e) => {
+                    e.stopPropagation();
                     setSelectedObject({
                         name: comet.name,
                         ra: 0,
@@ -180,17 +212,14 @@ function CometItem({ comet }: { comet: CometData }) {
                 <meshBasicMaterial transparent opacity={0} depthWrite={false} />
             </mesh>
 
-            {/* Cometa con cola orientada anti-solar */}
-            <group onUpdate={(self) => {
-                // Orientar la cola en dirección opuesta al origen (el Sol está cerca del origen en coord ec)
-                // En una app pro usaríamos la posición real del Sol, aquí simplificamos a vector radial inverso
-                const dir = new THREE.Vector3().copy(new THREE.Vector3(...comet.pos)).normalize();
-                self.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, -1), dir);
-            }}>
-                <CometTail 
-                    comet={{ color: comet.color, tailLength: comet.tailAngle }}
-                    position={[0, 0, 0]}
-                />
+            {/* Cola iónica: azul-blanca, recta, anti-solar exacta */}
+            <group ref={ionTailRef}>
+                <CometTail comet={{ color: '#aad4ff', tailLength: comet.tailAngle * 1.2 }} position={[0, 0, 0]} />
+            </group>
+
+            {/* Cola de polvo: amarillenta, ~18° desviada, más corta */}
+            <group ref={dustTailRef}>
+                <CometTail comet={{ color: '#ffe8aa', tailLength: comet.tailAngle * 0.7 }} position={[0, 0, 0]} />
             </group>
 
             {/* Label en hover */}
@@ -255,24 +284,36 @@ export function mergeLiveData(live: CometLiveData[]): Comet[] {
 export default function Comets() {
     const COMET_RADIUS = 92;
     // timeMinute solo cambia 1x/min — posiciones de cometas no requieren precisión de segundo
-    const time = useAppStore((state) => state.timeMinute);
+    const time     = useAppStore((state) => state.timeMinute);
+    const observer = useAppStore((state) => state.observer);
     const [liveComets, setLiveComets] = useState<Comet[]>(COMETS);
 
     // Fetch live data from our API route once on mount
     useEffect(() => {
-        fetch('/api/comets')
+        const ctrl = new AbortController();
+        fetch('/api/comets', { signal: ctrl.signal })
             .then(r => r.ok ? r.json() : null)
             .then(data => {
                 if (data?.ok && Array.isArray(data.comets)) {
                     setLiveComets(mergeLiveData(data.comets));
                 }
             })
-            .catch(() => {
+            .catch((err) => {
+                if (err instanceof Error && err.name === 'AbortError') return;
                 // Network error: keep using static catalog
             });
+        return () => ctrl.abort();
     }, []);
 
     const cometData = useMemo(() => {
+        // Posición del Sol en la esfera celeste — necesaria para orientar las colas anti-solar
+        let sunPos: [number, number, number] = [0, COMET_RADIUS, 0];
+        try {
+            const bs = new Astronomy.Observer(observer.lat, observer.lon, 0);
+            const sunEq = Astronomy.Equator(Astronomy.Body.Sun, time, bs, true, true);
+            sunPos = equatorialTo3D(sunEq.ra * 15, sunEq.dec, COMET_RADIUS) as [number, number, number];
+        } catch {}
+
         return liveComets
             .filter(c => c.active)
             .map((comet) => {
@@ -283,13 +324,14 @@ export default function Comets() {
                 return {
                     ...comet,
                     pos: spherePos,
+                    sunPos,
                     magnitude: info.magnitude,
                     visible: info.visible,
                     tailAngle: info.tailAngle,
                     description: info.description
                 };
             });
-    }, [liveComets, time]);
+    }, [liveComets, time, observer]);
 
     return (
         <group>

@@ -5,7 +5,7 @@ import { useRef } from 'react';
 import * as THREE from 'three';
 import { useAppStore } from '@/stores/useAppStore';
 import { getLST } from '@/lib/astronomy/time';
-import { equatorialTo3D } from '@/lib/astronomy/transforms';
+import { equatorialTo3D, equToHor } from '@/lib/astronomy/transforms';
 import type { Star, DSO, Planet } from '@/types/celestial';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 
@@ -28,6 +28,7 @@ export default function CameraNavigator({
     const setCamFov = useAppStore((state) => state.setCamFov);
     const setIsFlying = useAppStore((state) => state.setIsFlying);
     const setWarpFactor = useAppStore((state) => state.setWarpFactor);
+    const setSubHorizonAlert = useAppStore((state) => state.setSubHorizonAlert);
 
     const isFlying = useRef(false);
     const prevTarget = useRef<Star | DSO | Planet | null>(null);
@@ -60,6 +61,17 @@ export default function CameraNavigator({
             isFlying.current = true;
             trackingRef.current = true;
             const { time, observer } = useAppStore.getState();
+
+            // Comprobar si el objeto está bajo el horizonte y avisar al usuario
+            const altData = equToHor(targetedObject.ra, targetedObject.dec, observer.lat, observer.lon, time);
+            if (altData.alt < -3) {
+                const altStr = altData.alt.toFixed(0);
+                setSubHorizonAlert(`${targetedObject.name} está bajo el horizonte (${altStr}°)`);
+                // Auto-limpiar el aviso tras 6 segundos
+                setTimeout(() => setSubHorizonAlert(null), 6000);
+            } else {
+                setSubHorizonAlert(null);
+            }
             const lst = getLST(time, observer.lon);
             const euler = new THREE.Euler(
                 THREE.MathUtils.degToRad(observer.lat - 90),

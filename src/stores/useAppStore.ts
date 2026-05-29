@@ -141,6 +141,9 @@ interface AppState {
     setIsFlying: (v: boolean) => void;
     warpFactor: number;
     setWarpFactor: (v: number) => void;
+    /** Mensaje de aviso cuando el objeto navegado está bajo el horizonte */
+    subHorizonAlert: string | null;
+    setSubHorizonAlert: (v: string | null) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -363,6 +366,8 @@ export const useAppStore = create<AppState>()(
             setIsFlying: (isFlying) => set({ isFlying }),
             warpFactor: 0,
             setWarpFactor: (warpFactor) => set({ warpFactor }),
+            subHorizonAlert: null,
+            setSubHorizonAlert: (subHorizonAlert) => set({ subHorizonAlert }),
         }),
         {
             name: 'cosmos-atlas-storage',

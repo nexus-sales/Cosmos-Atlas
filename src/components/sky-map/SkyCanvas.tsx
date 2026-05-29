@@ -38,6 +38,19 @@ import ISSPassPredictor from '@/components/sky-map/ISSPassPredictor';
 import { cn } from '@/lib/utils';
 import { cameraHeadingRef, cameraRef } from '@/lib/skyRefs';
 
+function SubHorizonAlert() {
+    const alert = useAppStore(s => s.subHorizonAlert);
+    if (!alert) return null;
+    return (
+        <div className="pointer-events-none absolute bottom-24 left-1/2 -translate-x-1/2 z-50
+                        rounded-xl border border-amber-400/30 bg-amber-950/80 px-4 py-2.5
+                        text-[13px] font-semibold font-mono text-amber-200 backdrop-blur-sm
+                        animate-fade-in shadow-lg">
+            ⚠ {alert}
+        </div>
+    );
+}
+
 /**
  * Zoom por FOV — rueda de ratón + pinch táctil.
  *
@@ -464,6 +477,9 @@ export default function SkyCanvas() {
 
             {/* Brújula y botón AR — fuera del Canvas para evitar transforms de drei/Html */}
             <Compass />
+
+            {/* Alerta objeto bajo el horizonte */}
+            <SubHorizonAlert />
         </div>
     );
 }

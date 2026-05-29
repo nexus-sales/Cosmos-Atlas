@@ -58,6 +58,27 @@ const SATELLITES_TLE: SatelliteData[] = [
 
 const RADIUS = 95;
 const MAX_SATS = 6000;
+
+// ── TLE localStorage cache ──────────────────────────────────────────────────
+const TLE_CACHE_TTL = 48 * 60 * 60 * 1000; // 48 horas
+
+function loadTLECache(key: string): string | null {
+    if (typeof window === 'undefined') return null;
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        const { text, ts } = JSON.parse(raw) as { text: string; ts: number };
+        if (Date.now() - ts > TLE_CACHE_TTL) return null;
+        return text;
+    } catch { return null; }
+}
+
+function saveTLECache(key: string, text: string): void {
+    if (typeof window === 'undefined') return;
+    try {
+        localStorage.setItem(key, JSON.stringify({ text, ts: Date.now() }));
+    } catch { /* quota exceeded — no pasa nada */ }
+}
 const STARLINK_CAP_BY_QUALITY = {
     high: 2000,
     medium: 900,
@@ -127,7 +148,7 @@ export default function Satellites() {
 
     // ── 1. Carga de TLEs ────────────────────────────────────────────────────
     useEffect(() => {
-        // ISS y Hubble desde TLEs hardcodeados como fallback inmediato
+        // Fallback inmediato con TLEs hardcodeados
         const initial = SATELLITES_TLE.map(s => ({
             name: s.name,
             satrec: satellite.twoline2satrec(s.tle1, s.tle2),
@@ -138,27 +159,24 @@ export default function Satellites() {
         setSpecialSats(initial);
         setSatelliteInfo({ loadedSpecial: initial.length });
 
-        // Intentar actualizar ISS con TLE real via proxy interno (evita 403 de Celestrak)
-        const issUrl = '/api/tle/iss';
-        fetchWithTimeout(issUrl)
-            .then(t => {
-                const lines = t.split('\n').filter(l => l.trim().length > 0);
-                if (lines.length >= 3) {
-                    setSpecialSats(prev => [
-                        {
-                            name: lines[0].trim(),
-                            satrec: satellite.twoline2satrec(lines[1], lines[2]),
-                            color: '#ffffff',
-                            size: 4.0,
-                            kind: 'special'
-                        },
-                        ...prev.filter(s => !s.name.includes('ISS'))
-                    ]);
-                }
-            })
-            .catch(() => {
-                // Sin red: los TLEs de fallback ya están cargados, no se hace nada
-            });
+        const applyIssTLE = (t: string) => {
+            const lines = t.split('\n').filter(l => l.trim().length > 0);
+            if (lines.length >= 3) {
+                setSpecialSats(prev => [
+                    { name: lines[0].trim(), satrec: satellite.twoline2satrec(lines[1], lines[2]), color: '#ffffff', size: 4.0, kind: 'special' },
+                    ...prev.filter(s => !s.name.includes('ISS'))
+                ]);
+            }
+        };
+
+        // Usar cache localStorage si está fresco (<48h)
+        const cached = loadTLECache('cosmos-atlas-tle-iss');
+        if (cached) applyIssTLE(cached);
+
+        // Siempre intentar fetch en background para mantener TLEs actualizados
+        fetchWithTimeout('/api/tle/iss')
+            .then(t => { saveTLECache('cosmos-atlas-tle-iss', t); applyIssTLE(t); })
+            .catch(() => { /* sin red: cache o fallback ya aplicados */ });
     }, [setSatelliteInfo]);
 
     useEffect(() => {
@@ -188,32 +206,45 @@ export default function Satellites() {
         }
         setSatelliteInfo({ starlinkStatus: 'loading' });
 
-        // Fetch Starlink via proxy interno (evita 403 de Celestrak desde el browser)
-        const starlinkUrl = '/api/tle/starlink';
-        fetchWithTimeout(starlinkUrl)
-            .then(text => {
-                const lines = text.split('\n').filter(l => l.trim().length > 0);
-                const records = [];
-                for (let i = 0; i < lines.length; i += 3) {
-                    if (lines[i + 1] && lines[i + 2]) {
-                        records.push({
-                            name: lines[i].trim(),
-                            satrec: satellite.twoline2satrec(lines[i + 1], lines[i + 2]),
-                            color: '#88aaff',
-                            size: 1.2,
-                            kind: 'starlink' as const
-                        });
-                    }
+        const parseStarlink = (text: string) => {
+            const lines = text.split('\n').filter(l => l.trim().length > 0);
+            const records = [];
+            for (let i = 0; i < lines.length; i += 3) {
+                if (lines[i + 1] && lines[i + 2]) {
+                    records.push({
+                        name: lines[i].trim(),
+                        satrec: satellite.twoline2satrec(lines[i + 1], lines[i + 2]),
+                        color: '#88aaff',
+                        size: 1.2,
+                        kind: 'starlink' as const
+                    });
                 }
-                // Limitar por calidad de dispositivo para reducir calor/jank en móviles
-                const cap = STARLINK_CAP_BY_QUALITY[useAppStore.getState().deviceQuality];
-                const capped = records.slice(0, cap);
+            }
+            const cap = STARLINK_CAP_BY_QUALITY[useAppStore.getState().deviceQuality];
+            return records.slice(0, cap);
+        };
+
+        // Aplicar cache Starlink si está fresco
+        const cachedStarlink = loadTLECache('cosmos-atlas-tle-starlink');
+        if (cachedStarlink) {
+            const capped = parseStarlink(cachedStarlink);
+            setStarlinkSats(capped);
+            setSatelliteInfo({ loadedStarlink: capped.length, starlinkStatus: 'ok' });
+        }
+
+        // Fetch Starlink via proxy interno (evita 403 de Celestrak desde el browser)
+        fetchWithTimeout('/api/tle/starlink')
+            .then(text => {
+                saveTLECache('cosmos-atlas-tle-starlink', text);
+                const capped = parseStarlink(text);
                 setStarlinkSats(capped);
                 setSatelliteInfo({ loadedStarlink: capped.length, starlinkStatus: 'ok' });
             })
             .catch(() => {
-                setStarlinkSats([]);
-                setSatelliteInfo({ loadedStarlink: 0, visibleStarlink: 0, starlinkStatus: 'error' });
+                if (!cachedStarlink) {
+                    setStarlinkSats([]);
+                    setSatelliteInfo({ loadedStarlink: 0, visibleStarlink: 0, starlinkStatus: 'error' });
+                }
             });
     }, [setSatelliteInfo, showStarlink]);
 

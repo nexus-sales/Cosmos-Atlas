@@ -108,7 +108,7 @@ void main() {
     float smcHalo = smoothstep(0.85, 0.98, smcDot) * 0.18;
 
     vec2 dustUV = vec2(lRad * 1.8, bDeg * 0.08);
-    float dustNoise = fbm(dustUV + vec2(uTime * 0.005, 0.0));
+    float dustNoise = fbm(dustUV);
     float rift = smoothstep(0.0, 0.5, gcDot) * exp(-abs(bDeg + dustNoise * 2.0) / 4.0);
 
     float cygnus = smoothstep(0.75, 0.95, dot(dir, normalize(vec3(-0.35, 0.05, -0.92)))) * 0.8;
@@ -173,12 +173,15 @@ function createGlowTexture(): THREE.Texture {
     return texture;
 }
 
+const MW_PARTICLES_BY_QUALITY = { high: 22000, medium: 11000, low: 5000 } as const;
+
 function MilkyWayParticles() {
     const pointsRef = useRef<THREE.Points>(null);
     const glowTexture = useMemo(() => createGlowTexture(), []);
+    const deviceQuality = useAppStore(s => s.deviceQuality);
 
     const [positions, colors, sizes] = useMemo(() => {
-        const count = 22000;
+        const count = MW_PARTICLES_BY_QUALITY[deviceQuality];
         const pos = new Float32Array(count * 3);
         const col = new Float32Array(count * 3);
         const siz = new Float32Array(count);

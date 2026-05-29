@@ -69,12 +69,13 @@ export default function CelestialSphere() {
     if (viewMode === 'camera') return null;
 
     return (
-        <mesh scale={[-100, 100, 100]}>
+        <mesh scale={[100, 100, 100]}>
             <sphereGeometry args={[1, 64, 64]} />
             <meshBasicMaterial
                 ref={matRef}
                 color="#04091a"
                 side={THREE.BackSide}
+                depthWrite={false}
             />
         </mesh>
     );
