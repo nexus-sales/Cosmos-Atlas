@@ -40,9 +40,31 @@ const SBDB_URL =
 // Simple in-process cache: TTL 24 hours
 let _cache: { ts: number; data: CometLiveData[] } | null = null;
 const CACHE_TTL = 24 * 3600 * 1000;
+let _retryAfter = 0;
+const FAILURE_RETRY_DELAY = 5 * 60 * 1000;
+const UPSTREAM_TIMEOUT = 10_000;
 const CACHE_HEADERS = {
     'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=43200',
 };
+const DEGRADED_CACHE_HEADERS = {
+    'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600',
+};
+
+function degradedResponse() {
+    return NextResponse.json(
+        {
+            ok: true,
+            comets: _cache?.data ?? [],
+            stale: Boolean(_cache),
+            degraded: true,
+        },
+        { headers: DEGRADED_CACHE_HEADERS }
+    );
+}
+
+function isAbortError(err: unknown): boolean {
+    return err instanceof Error && err.name === 'AbortError';
+}
 
 function parseField(v: string | null | undefined, fallback = 0): number {
     if (v == null) return fallback;
@@ -69,12 +91,16 @@ export async function GET() {
         return NextResponse.json({ ok: true, comets: _cache.data }, { headers: CACHE_HEADERS });
     }
 
+    // JPL can occasionally be slow or unavailable. Avoid making every client
+    // wait for the same timeout while the local static catalog remains usable.
+    if (Date.now() < _retryAfter) return degradedResponse();
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 10_000);
+        timer = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT);
 
         const res = await fetch(SBDB_URL, { signal: controller.signal });
-        clearTimeout(timer);
 
         if (!res.ok) throw new Error(`SBDB HTTP ${res.status}`);
 
@@ -131,19 +157,15 @@ export async function GET() {
             .slice(0, 30);
 
         _cache = { ts: Date.now(), data: comets };
+        _retryAfter = 0;
         return NextResponse.json({ ok: true, comets }, { headers: CACHE_HEADERS });
     } catch (err) {
-        console.error('[/api/comets] fetch error:', err);
-        if (_cache) {
-            return NextResponse.json(
-                { ok: true, comets: _cache.data, stale: true },
-                { headers: CACHE_HEADERS }
-            );
+        _retryAfter = Date.now() + FAILURE_RETRY_DELAY;
+        if (!isAbortError(err)) {
+            console.error('[/api/comets] JPL fetch failed:', err);
         }
-        return NextResponse.json(
-            { ok: false, error: 'JPL fetch failed', comets: [] },
-            { status: 502 }
-        );
+        return degradedResponse();
+    } finally {
+        if (timer) clearTimeout(timer);
     }
 }
-
