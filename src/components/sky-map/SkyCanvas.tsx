@@ -3,7 +3,7 @@
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { Suspense, useEffect, useRef } from 'react';
-import CelestialSphere from '@/components/sky-map/CelestialSphere';
+import AtmosphericSky from '@/components/sky-map/AtmosphericSky';
 import Stars from '@/components/sky-map/Stars';
 import DeepSkyObjects from '@/components/sky-map/DeepSkyObjects';
 import Constellations from '@/components/sky-map/Constellations';
@@ -378,16 +378,32 @@ function SeeingJitter() {
     const { camera } = useThree();
     const camFov = useAppStore((s) => s.camFov);
     const telescopeMode = useAppStore((s) => s.settings.telescopeMode);
+    // Track last applied jitter to compute delta each frame (avoids cumulative drift)
+    const lastJitter = useRef({ x: 0, y: 0 });
 
     useFrame((state) => {
-        if (!telescopeMode || camFov > 25) return;
+        const active = telescopeMode && camFov <= 25;
+
+        if (!active) {
+            // Undo any residual jitter on deactivation so camera returns to clean position
+            if (lastJitter.current.x !== 0 || lastJitter.current.y !== 0) {
+                camera.translateX(-lastJitter.current.x);
+                camera.translateY(-lastJitter.current.y);
+                lastJitter.current = { x: 0, y: 0 };
+            }
+            return;
+        }
+
         const time = state.clock.getElapsedTime();
         const zoomFactor = 1.0 - (camFov / 25.0);
         const intensity = 0.00004 * (1.0 + zoomFactor * 3.0);
-        const jitterX = Math.sin(time * 15.0) * intensity;
-        const jitterY = Math.cos(time * 18.0) * intensity;
-        camera.translateX(jitterX);
-        camera.translateY(jitterY);
+        const jx = Math.sin(time * 15.0) * intensity;
+        const jy = Math.cos(time * 18.0) * intensity;
+
+        // Apply only the delta from last frame: net offset = jx, jy (no accumulation)
+        camera.translateX(jx - lastJitter.current.x);
+        camera.translateY(jy - lastJitter.current.y);
+        lastJitter.current = { x: jx, y: jy };
     });
     return null;
 }
@@ -401,6 +417,10 @@ export default function SkyCanvas() {
     const showEcliptic = useAppStore((state) => state.settings.showEcliptic);
     const followOrientation = useAppStore((state) => state.followOrientation);
     const setTargetedObject = useAppStore((state) => state.setTargetedObject);
+    const deviceQuality = useAppStore((state) => state.deviceQuality);
+
+    // Cap DPR by quality tier to avoid rendering at 3× on flagship Android phones
+    const maxDpr = deviceQuality === 'low' ? 1.0 : deviceQuality === 'medium' ? 1.5 : 2.0;
 
     // Create a ref for OrbitControls to sync it
     const controlsRef = useRef<OrbitControlsImpl | null>(null);
@@ -417,10 +437,11 @@ export default function SkyCanvas() {
             <CameraBackground />
 
             <Canvas
+                dpr={[1, maxDpr]}
                 shadows={{ type: THREE.PCFShadowMap }}
-                gl={{ 
-                    antialias: true, 
-                    stencil: false, 
+                gl={{
+                    antialias: true,
+                    stencil: false,
                     powerPreference: 'high-performance',
                     alpha: true // Permitir fondo transparente para ver la cámara
                 }}
@@ -458,8 +479,8 @@ export default function SkyCanvas() {
                         manualFovHoldRef={manualFovHoldRef}
                     />
 
-                    {/* Esfera Atmosférica Pro — reemplaza a CelestialSphere */}
-                    <CelestialSphere />
+                    {/* Esfera atmosférica con scattering Rayleigh/Mie y posición real del Sol */}
+                    <AtmosphericSky />
 
                     {/* Grupo rotado al sistema horizontal del observador */}
                     <CelestialGroup>

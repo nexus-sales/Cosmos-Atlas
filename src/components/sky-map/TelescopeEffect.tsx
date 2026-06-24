@@ -15,6 +15,10 @@ import * as THREE from 'three';
 export default function TelescopeEffect() {
     const telescopeMode = useAppStore((s) => s.settings.telescopeMode);
     const viewMode = useAppStore((s) => s.viewMode);
+    const deviceQuality = useAppStore((s) => s.deviceQuality);
+
+    // Skip expensive postprocessing entirely on low-end devices
+    if (deviceQuality === 'low') return null;
 
     if (viewMode === 'camera') {
         return (
