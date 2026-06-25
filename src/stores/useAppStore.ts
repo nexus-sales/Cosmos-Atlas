@@ -241,7 +241,7 @@ export const useAppStore = create<AppState>()(
                 telescopeMode: false,
                 followTarget: true,
                 kidsMode: false,
-                soundscape: true,
+                soundscape: false,
                 aiAstronomer: true,
             },
             toggleSetting: (key) =>
