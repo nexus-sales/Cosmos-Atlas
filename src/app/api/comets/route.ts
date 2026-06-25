@@ -42,7 +42,9 @@ let _cache: { ts: number; data: CometLiveData[] } | null = null;
 const CACHE_TTL = 24 * 3600 * 1000;
 let _retryAfter = 0;
 const FAILURE_RETRY_DELAY = 5 * 60 * 1000;
-const UPSTREAM_TIMEOUT = 10_000;
+// 5 s is enough for JPL (responds in <3 s when healthy).
+// Keeping under 6 s avoids the Next.js dev-proxy timeout (≈10 s including ~4 s compilation overhead).
+const UPSTREAM_TIMEOUT = 5_000;
 const CACHE_HEADERS = {
     'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=43200',
 };

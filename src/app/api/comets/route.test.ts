@@ -20,7 +20,7 @@ describe('GET /api/comets', () => {
 
         const { GET } = await import('./route');
         const responsePromise = GET();
-        await vi.advanceTimersByTimeAsync(10_000);
+        await vi.advanceTimersByTimeAsync(5_000);
 
         const response = await responsePromise;
         expect(response.status).toBe(200);
