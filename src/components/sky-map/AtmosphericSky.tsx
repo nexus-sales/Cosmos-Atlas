@@ -85,6 +85,12 @@ const SKY_FRAGMENT_SHADER = `
     }
 `;
 
+// Module-scope observer — avoids allocating a new Astronomy.Observer every frame.
+// Same pattern as SunLight in SkyCanvas.tsx.
+const _atmoObserver = new Astronomy.Observer(0, 0, 0);
+let _lastAtmoMs = 0;
+const _lastSunAltAz = { alt: 0, az: 0 };
+
 export default function AtmosphericSky() {
     const meshRef = useRef<THREE.Mesh>(null);
     const camFov = useAppStore((s) => s.camFov);
@@ -112,21 +118,31 @@ export default function AtmosphericSky() {
         const { time, observer, settings } = useAppStore.getState();
         uniforms.uBortle.value = settings.bortleScale;
 
-        try {
-            const obs = new Astronomy.Observer(observer.lat, observer.lon, 0);
-            const eq = Astronomy.Equator(Astronomy.Body.Sun, time, obs, true, true);
-            const hor = Astronomy.Horizon(time, obs, eq.ra, eq.dec, 'normal');
+        // Throttle: recalculate solar position at most 1×/second to avoid
+        // 60 Astronomy.Observer allocations per second (GC pressure on low-end).
+        const now = Date.now();
+        if (now - _lastAtmoMs >= 1000) {
+            try {
+                _atmoObserver.latitude  = observer.lat;
+                _atmoObserver.longitude = observer.lon;
+                const eq  = Astronomy.Equator(Astronomy.Body.Sun, time, _atmoObserver, true, true);
+                const hor = Astronomy.Horizon(time, _atmoObserver, eq.ra, eq.dec, 'normal');
+                _lastSunAltAz.alt = hor.altitude;
+                _lastSunAltAz.az  = hor.azimuth;
+                _lastAtmoMs = now;
+            } catch { /* keep previous position on error */ }
+        }
 
-            const el = THREE.MathUtils.degToRad(hor.altitude);
-            const az = THREE.MathUtils.degToRad(hor.azimuth);
+        const el = THREE.MathUtils.degToRad(_lastSunAltAz.alt);
+        const az = THREE.MathUtils.degToRad(_lastSunAltAz.az);
+        uniforms.uSunPos.value.set(
+            Math.cos(el) * Math.sin(az),
+            Math.sin(el),
+            -Math.cos(el) * Math.cos(az)
+        );
 
-            uniforms.uSunPos.value.set(
-                Math.cos(el) * Math.sin(az),
-                Math.sin(el),
-                -Math.cos(el) * Math.cos(az)
-            );
-        } catch { /* ignore error, keep previous sun pos */ }
-
+        // These must stay every frame — uTime drives shader animation,
+        // position.copy keeps the sky dome centered on the camera.
         uniforms.uTime.value = state.clock.getElapsedTime();
         meshRef.current.position.copy(state.camera.position);
     });
@@ -135,7 +151,9 @@ export default function AtmosphericSky() {
 
     return (
         <mesh ref={meshRef} renderOrder={-5}>
-            <sphereGeometry args={[115, 64, 64]} />
+            {/* 32×32 = 1.056 vértices vs 64×64 = 4.096. The sky is a smooth color
+                gradient — no banding visible at this tessellation. */}
+            <sphereGeometry args={[115, 32, 32]} />
             <shaderMaterial
                 vertexShader={SKY_VERTEX_SHADER}
                 fragmentShader={SKY_FRAGMENT_SHADER}
