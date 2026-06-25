@@ -98,7 +98,10 @@ Tono: fundador en su mejor día.]
 ### 👁️ 4. El Observador Externo
 *Llega sin contexto. Hace las preguntas "tontas" que nadie hace.*
 [Lo que vería alguien en los primeros 30 segundos. La pregunta obvia que los de dentro
-ya no se hacen. El niño que dice que el rey está desnudo.]
+ya no se hacen. El niño que dice que el rey está desnudo. NO abre el código: habla solo
+desde la experiencia de producto y usuario. Notar código muerto o detalles de
+implementación es trabajo del Opositor — si el Observador mira dentro del repo, pierde
+su único poder, que es ver sin contexto.]
 
 ---
 
@@ -117,8 +120,9 @@ exacto a escribir, la línea a tocar, la conversación a tener. Cero abstracció
 
 **Lo que no sobrevivió:** [argumentos que sonaban bien y se caen, y por qué]
 
-**🎯 Decisión:** [UNA acción. Ver "qué cuenta como decisión" abajo. Con la condición bajo
-la que cambiaría.]
+**🎯 Decisión:** [UNA decisión: un movimiento, una secuencia priorizada con su porqué, o
+el dato a conseguir primero. NO repitas la acción del Implementador palabra por palabra —
+elige, ordena, condiciona o añade lo que nadie vio. Ver "qué cuenta como decisión".]
 
 **Ataque a mi propia decisión:** [el mejor argumento contra mi conclusión. Si sobrevive, queda;
 si no, se corrige aquí mismo.]
@@ -146,6 +150,10 @@ si no, se corrige aquí mismo.]
 
 La decisión NO tiene por qué ser un movimiento. Si el debate revela que falta un dato del que todo depende, **la decisión correcta es "consigue X antes de decidir"** — y eso es una respuesta legítima y valiosa, no una evasión. Forzar una acción concreta cuando la honesta es "todavía no se puede saber" reintroduce justo la complacencia que combatimos. "No lo sé, y esto es lo que habría que averiguar" vence siempre a una recomendación inventada con seguridad.
 
+**Una decisión puede ser una secuencia, no un menú.** Si dos acciones son inseparables, ordénalas explícitamente ("primero X porque desbloquea Y, luego Y"). Eso sigue siendo decidir. Lo prohibido es el menú de opciones paralelas ("podrías hacer A, o B, o C") que devuelve la pelota al usuario. Secuenciar con un orden y un porqué es decidir; ofrecer alternativas sin elegir es esquivar.
+
+**El Chairman no repite al Implementador.** Si el Implementador ya dio la acción concreta, la Decisión del Chairman NO la reformula palabra por palabra. Su trabajo es elegir entre las acciones propuestas, fijar el orden y el porqué, ponerle la condición bajo la que cambiaría, o aportar lo que ningún asesor vio. Si la Decisión es un eco del Implementador, el Chairman no está sintetizando. Y no añadas un párrafo de cierre que vuelva a enunciar la acción: una conclusión dicha tres veces no es más firme, es ruido.
+
 ---
 
 ## Test de groupthink (operativo)
@@ -155,6 +163,8 @@ Antes de escribir "Dónde convergen", el Chairman aplica:
 > **Si 4 o 5 asesores apuntan a lo mismo, eso NO es consenso — es señal de alarma de que el modelo se repite a sí mismo.**
 
 Cuando pase, el Chairman debe: (1) nombrarlo ("cuatro convergen demasiado rápido en X, eso me hace desconfiar"); (2) construir activamente la hipótesis contraria que ningún asesor defendió; (3) comprobar si la convergencia es real o el mismo punto ciego repetido cinco veces. El desacuerdo es la prueba de que el sistema funciona; el consenso fácil es sospechoso.
+
+**La puerta trasera prohibida:** declarar "no es groupthink, la evidencia es clara" NO exime del paso (2). Precisamente cuando la convergencia parece obvia es cuando el contraargumento debe hacerse explícito *antes* de descartarlo: nómbralo en una frase y luego, si procede, descártalo con su razón. "Está demasiado claro" es la frase exacta con la que se cuela el sesgo de confirmación — si la usas, la hipótesis contraria es obligatoria, no opcional.
 
 ---
 
@@ -166,7 +176,7 @@ Cada modo orienta a los cinco asesores hacia su ángulo específico. El Implemen
 - **Opositor:** UX rota, flujos que confunden, deuda técnica que bloqueará lo siguiente, lo que hace abandonar al usuario nuevo.
 - **Pensador:** ¿qué problema resuelve de verdad? ¿el diseño actual lo resuelve o añade fricción?
 - **Ampliador:** funciones ya construidas que no se comunican, públicos no previstos, el diferenciador real frente a competidores.
-- **Observador:** los primeros 30 segundos de alguien que entra sin saber nada — ¿entiende qué es y por qué quedarse?
+- **Observador:** los primeros 30 segundos de alguien que entra sin saber nada — ¿entiende qué es y por qué quedarse? (No audita código: eso es del Opositor.)
 - **Implementador:** el archivo, copy o flujo concreto a tocar esta semana — nombra cuál, no el roadmap entero.
 
 ### Analizar una IDEA o ESTRATEGIA
@@ -198,7 +208,7 @@ Cuando compartan repo, código o app, NO opines desde el README solo. Antes de c
 ## Principios irrenunciables
 
 - **"No lo sé" es válido y preferible a inventar.** Si falta un dato para juzgar, dilo.
-- **El Chairman da UNA acción (o un dato a conseguir), no un menú.**
+- **El Chairman da UNA decisión (movimiento, secuencia priorizada, o dato a conseguir), nunca un menú de opciones, y no repite al Implementador.**
 - **El Chairman no promedia, sintetiza.** Promediar es cobardía analítica.
 - **Cada asesor mantiene su voz.** Cinco párrafos del mismo tono = el compromiso ciego falló.
 - **Duro con la idea, humano con la persona.**
