@@ -21,7 +21,7 @@ const PRESET_JUMPS = [
     { label: '-1d', days: -1 },
 ];
 
-export default function TimeTravelControls() {
+export default function TimeTravelControls({ embedded = false }: { embedded?: boolean }) {
     const setTime = useAppStore((s) => s.setTime);
     const isLive = useAppStore((s) => s.isLive);
     const setIsLive = useAppStore((s) => s.setIsLive);
@@ -117,7 +117,10 @@ export default function TimeTravelControls() {
     const sliderValue = isLive ? 0 : Math.max(-3650, Math.min(3650, offsetDays));
 
     return (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-2 select-none pointer-events-auto">
+        <div className={embedded
+            ? "relative w-full flex flex-col items-center gap-2 select-none pointer-events-auto"
+            : "absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-2 select-none pointer-events-auto"
+        }>
             <AnimatePresence>
                 {expanded && (
                     <motion.div
@@ -125,7 +128,10 @@ export default function TimeTravelControls() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 8, scale: 0.98 }}
                         transition={{ duration: 0.15 }}
-                        className="bg-black/90 glass-blur-heavy border border-white/10 rounded-2xl px-5 py-4 w-[520px] shadow-[0_8px_32px_rgba(0,0,0,0.6)]"
+                        className={embedded
+                            ? "bg-black/90 glass-blur-heavy border border-white/10 rounded-2xl px-5 py-4 w-full shadow-[0_8px_32px_rgba(0,0,0,0.6)]"
+                            : "bg-black/90 glass-blur-heavy border border-white/10 rounded-2xl px-5 py-4 w-[520px] shadow-[0_8px_32px_rgba(0,0,0,0.6)]"
+                        }
                     >
                         {/* Date / time header */}
                         <div className="flex items-start justify-between mb-3.5">
