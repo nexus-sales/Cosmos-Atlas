@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e ':*)",
+      "Bash(npx next:*)",
+      "Bash(echo \"Server starting in background with PID $!\")",
+      "Bash(npm test:*)",
+      "Bash(npx eslint:*)"
+    ]
+  }
+}

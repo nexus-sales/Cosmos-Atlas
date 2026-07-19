@@ -41,7 +41,8 @@ yarn-error.log*
 next-env.d.ts
 
 # local AI tool caches & notes (never commit)
-.claude/
+# .claude/skills/ and .claude/settings.json ARE versioned on purpose
+.claude/*.local.json
 .qwen/
 _notas/
 
