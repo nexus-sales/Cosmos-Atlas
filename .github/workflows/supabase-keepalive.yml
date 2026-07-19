@@ -1,0 +1,43 @@
+name: Supabase Keep-Alive
+
+# Plan FREE de Supabase pausa el proyecto tras 7 dias sin actividad real de
+# base de datos (un HEAD request o visitar el dashboard no cuenta). Este
+# workflow hace una consulta SELECT real dos veces por semana -- margen de
+# sobra contra el limite de 7 dias -- para que el proyecto nunca se pause.
+
+on:
+  schedule:
+    # Domingo y miercoles a las 03:00 UTC. GitHub Actions corre en UTC;
+    # no hace falta ajustar zona horaria, solo caer dentro de la ventana de 7 dias.
+    - cron: "0 3 * * 0,3"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    name: Consulta real a Supabase
+    runs-on: ubuntu-latest
+    env:
+      # URL del proyecto: publica por diseno (va en el bundle JS de la app).
+      SUPABASE_URL: "https://pyxmpgkuvkejzgeudclx.supabase.co"
+      # La anon/publishable key hoy no tiene GRANT de lectura sobre las
+      # tablas de catalogo (401 permission denied), asi que el ping usa la
+      # service-role key -- esta SI es sensible, se guarda como secret
+      # cifrado del repo, nunca en texto plano.
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - name: SELECT real sobre planets_cos
+        run: |
+          status=$(curl -s -o /tmp/response.json -w "%{http_code}" \
+            -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+            "${SUPABASE_URL}/rest/v1/planets_cos?select=id&limit=1")
+
+          echo "HTTP status: $status"
+          cat /tmp/response.json
+
+          if [ "$status" != "200" ]; then
+            echo "::error::Supabase no respondio 200 (status=$status) -- revisar si el proyecto esta pausado o la tabla/clave cambiaron."
+            exit 1
+          fi
+
+          echo "OK -- consulta real contra la base de datos completada, el proyecto sigue activo."
