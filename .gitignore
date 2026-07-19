@@ -46,5 +46,7 @@ next-env.d.ts
 .qwen/
 _notas/
 
-# supabase local dev (opt-in manually if needed)
-/supabase/
+# supabase local dev -- migrations/ y README.md SI se versionan a proposito,
+# solo se ignora el estado local efimero de la CLI (supabase start/link)
+/supabase/.branches
+/supabase/.temp
