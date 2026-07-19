@@ -67,6 +67,19 @@ function getClientKey(req: Request) {
   return forwarded || realIp || 'local';
 }
 
+// Rechaza solo cuando el navegador SI envia un Origin y no coincide con el
+// origin real de la request. Sin header Origin (llamadas server-to-server,
+// curl) se deja pasar - hoy no hay ninguna, pero no lo forzamos.
+function isAllowedOrigin(req: Request): boolean {
+  const origin = req.headers.get('origin');
+  if (!origin) return true;
+  try {
+    return new URL(origin).origin === new URL(req.url).origin;
+  } catch {
+    return false;
+  }
+}
+
 function checkMemoryRateLimit(key: string) {
   const now = Date.now();
   for (const [entryKey, entry] of rateLimit) {
@@ -246,8 +259,9 @@ async function createOpenAIResponse({
 // --- Main Handler ------------------------------------------------------------
 
 export async function POST(req: Request) {
-  const contentLength = Number(req.headers.get('content-length') ?? 0);
-  if (contentLength > MAX_REQUEST_BYTES) return NextResponse.json({ error: 'request too large' }, { status: 413, headers: JSON_HEADERS });
+  if (!isAllowedOrigin(req)) {
+    return NextResponse.json({ error: 'forbidden origin' }, { status: 403, headers: JSON_HEADERS });
+  }
 
   const limit = await checkRateLimit(getClientKey(req));
   if (!limit.ok) {
@@ -256,7 +270,15 @@ export async function POST(req: Request) {
   }
 
   try {
-    const rawBody = await req.json();
+    // Medimos el tamano real del texto en vez de confiar en el header
+    // content-length: sin ese header (p.ej. chunked encoding) el valor
+    // declarado puede ser 0 y el limite quedaba sin aplicar nunca.
+    const bodyText = await req.text();
+    if (new TextEncoder().encode(bodyText).length > MAX_REQUEST_BYTES) {
+      return NextResponse.json({ error: 'request too large' }, { status: 413, headers: JSON_HEADERS });
+    }
+
+    const rawBody = JSON.parse(bodyText);
     const body = astronomerRequestSchema.safeParse(rawBody);
 
     if (!body.success) {
