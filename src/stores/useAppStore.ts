@@ -180,9 +180,6 @@ export const useAppStore = create<AppState>()(
             targetedObject: null,
             setTargetedObject: (obj) => set((state) => {
                 const challenges = useCatalog.getState().challenges
-                
-                // Trigger sync to cloud
-                import('../lib/supabase/neuralSync').then(m => m.syncPassportToCloud());
 
                 return {
                     targetedObject: obj,
@@ -314,11 +311,9 @@ export const useAppStore = create<AppState>()(
             },
             renderErrors: [],
             toggleFavorite: (id) => set((s) => {
-                const nextFavorites = s.favorites.includes(id) 
-                    ? s.favorites.filter(x => x !== id) 
+                const nextFavorites = s.favorites.includes(id)
+                    ? s.favorites.filter(x => x !== id)
                     : [...s.favorites, id];
-                
-                import('../lib/supabase/neuralSync').then(m => m.syncPassportToCloud());
 
                 return { favorites: nextFavorites };
             }),
@@ -333,10 +328,7 @@ export const useAppStore = create<AppState>()(
                 // Si el ID empieza por 'M' y tiene un número después, es un Messier.
                 const messierCount = nextVisited.filter(v => /^M\d+/.test(v)).length;
 
-                // Trigger sync to cloud
-                import('../lib/supabase/neuralSync').then(m => m.syncPassportToCloud());
-
-                return { 
+                return {
                     visited: nextVisited,
                     achievements: {
                         ...s.achievements,
