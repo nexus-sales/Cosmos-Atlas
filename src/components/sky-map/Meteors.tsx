@@ -8,6 +8,13 @@ import { useAppStore } from '@/stores/useAppStore';
 import { getBestShower, getShowerActivity } from '@/data/meteorShowers';
 import { useCatalog } from '@/stores/useCatalogStore';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
+import { sunHorRef } from '@/lib/skyRefs';
+
+// Umbral de oscuridad real: -18 grados = noche astronomica (cielo
+// completamente oscuro), mismo umbral que ya usa el resto de la app
+// para "de verdad esta oscuro" (ver CelestialSphere.tsx y la etiqueta
+// "Noche astronomica" en dailyEvents.ts) -- no un valor nuevo.
+const ASTRONOMICAL_NIGHT_ALT = -18;
 
 const METEOR_COUNT = 8;
 
@@ -154,60 +161,53 @@ export default function Meteors() {
             if (!m.active) {
                 m.waitDelay -= delta;
                 if (m.waitDelay <= 0) {
+                    const radiantDir = cache.radiantDir;
+                    const isDarkEnough = sunHorRef.alt < ASTRONOMICAL_NIGHT_ALT;
+
+                    if (!radiantDir || !isDarkEnough) {
+                        // Sin lluvia real activa y visible, o el cielo aun no
+                        // esta oscuro de verdad -- no simulamos nada, solo
+                        // esperamos y volvemos a comprobar mas tarde.
+                        m.waitDelay = 5 + Math.random() * 5;
+                        continue;
+                    }
+
                     m.active = true;
                     m.progress = 0;
                     m.speed = 1.5 + Math.random() * 2.0;
                     m.length = 15 + Math.random() * 25;
 
-                    const radiantDir = cache.radiantDir;
+                    // SHOWER MODE — meteors radiate from the shower's radiant point
+                    // Build an orthonormal basis around the radiant direction
+                    _perpA.set(1, 0, 0);
+                    if (Math.abs(radiantDir.dot(_perpA)) > 0.9) _perpA.set(0, 1, 0);
+                    _perpB.crossVectors(radiantDir, _perpA).normalize();
+                    _perpA.crossVectors(_perpB, radiantDir).normalize();
 
-                    if (radiantDir) {
-                        // SHOWER MODE — meteors radiate from the shower's radiant point
-                        // Build an orthonormal basis around the radiant direction
-                        _perpA.set(1, 0, 0);
-                        if (Math.abs(radiantDir.dot(_perpA)) > 0.9) _perpA.set(0, 1, 0);
-                        _perpB.crossVectors(radiantDir, _perpA).normalize();
-                        _perpA.crossVectors(_perpB, radiantDir).normalize();
+                    // Random start position 23°–52° from the radiant
+                    const spreadAngle = 0.4 + Math.random() * 0.5;
+                    const rotAngle = Math.random() * Math.PI * 2;
 
-                        // Random start position 23°–52° from the radiant
-                        const spreadAngle = 0.4 + Math.random() * 0.5;
-                        const rotAngle = Math.random() * Math.PI * 2;
+                    _startDir
+                        .copy(radiantDir)
+                        .addScaledVector(_perpA, Math.sin(spreadAngle) * Math.cos(rotAngle))
+                        .addScaledVector(_perpB, Math.sin(spreadAngle) * Math.sin(rotAngle))
+                        .normalize();
 
-                        _startDir
-                            .copy(radiantDir)
-                            .addScaledVector(_perpA, Math.sin(spreadAngle) * Math.cos(rotAngle))
-                            .addScaledVector(_perpB, Math.sin(spreadAngle) * Math.sin(rotAngle))
-                            .normalize();
+                    m.startPos.copy(_startDir).multiplyScalar(90);
 
-                        m.startPos.copy(_startDir).multiplyScalar(90);
+                    // Direction: away from radiant with a small angular spread
+                    _awayDir.copy(_startDir).sub(radiantDir).normalize();
+                    _perturbation.set(
+                        (Math.random() - 0.5) * 0.12,
+                        (Math.random() - 0.5) * 0.12,
+                        (Math.random() - 0.5) * 0.12,
+                    );
+                    _awayDir.add(_perturbation).normalize();
+                    m.endPos.copy(m.startPos).add(_awayDir.multiplyScalar(m.length));
 
-                        // Direction: away from radiant with a small angular spread
-                        _awayDir.copy(_startDir).sub(radiantDir).normalize();
-                        _perturbation.set(
-                            (Math.random() - 0.5) * 0.12,
-                            (Math.random() - 0.5) * 0.12,
-                            (Math.random() - 0.5) * 0.12,
-                        );
-                        _awayDir.add(_perturbation).normalize();
-                        m.endPos.copy(m.startPos).add(_awayDir.multiplyScalar(m.length));
-
-                        // Higher shower activity → shorter wait between meteors
-                        m.waitDelay = (Math.random() * 12 + 3) / Math.max(0.3, cache.activityFactor);
-                    } else {
-                        // RANDOM MODE — generic sporadic meteors
-                        const theta = Math.random() * Math.PI * 2;
-                        const phi = Math.random() * Math.PI * 0.4;
-                        m.startPos.setFromSphericalCoords(90, phi, theta);
-
-                        const dir = new THREE.Vector3(
-                            (Math.random() - 0.5) * 0.5,
-                            -1 - Math.random(),
-                            (Math.random() - 0.5) * 0.5,
-                        ).normalize();
-                        m.endPos.copy(m.startPos).add(dir.multiplyScalar(m.length));
-
-                        m.waitDelay = Math.random() * 15 + 5;
-                    }
+                    // Higher shower activity → shorter wait between meteors
+                    m.waitDelay = (Math.random() * 12 + 3) / Math.max(0.3, cache.activityFactor);
 
                     // eslint-disable-next-line react-hooks/immutability
                     opacityArray[i] = 0;

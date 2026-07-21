@@ -18,7 +18,7 @@ import TargetPointer from '@/components/sky-map/TargetPointer';
 import FOVOverlay from '@/components/sky-map/FOVOverlay';
 import Compass from '@/components/panels/Compass';
 import Satellites from '@/components/sky-map/Satellites';
-import MeteorShower from '@/components/effects/MeteorShower';
+import Meteors from '@/components/sky-map/Meteors';
 import Comets from '@/components/sky-map/Comets';
 import SimbadOverlay from '@/components/sky-map/SimbadOverlay';
 import TelescopeEffect from '@/components/sky-map/TelescopeEffect';
@@ -520,8 +520,8 @@ export default function SkyCanvas() {
                     {/* Horizonte en espacio mundo (plano horizontal fijo) */}
                     <ErrorBoundary label="Horizon"><Horizon /></ErrorBoundary>
 
-                    {/* Lluvia de meteoros real */}
-                    <ErrorBoundary label="MeteorShower"><MeteorShower /></ErrorBoundary>
+                    {/* Lluvia de meteoros real: solo con radiante real activo y cielo oscuro, sin simulacion */}
+                    <ErrorBoundary label="Meteors"><Meteors /></ErrorBoundary>
 
                     <CinematicTour />
                     <SeeingJitter />
