@@ -80,13 +80,23 @@ del proyecto correcto.
 
 **Estado real de datos (verificado 2026-07-21, conteo exacto vía Data API):**
 `constellations_cos` (88), `stars_cos` (879), `deep_sky_objects_cos` (135),
-`planets_cos` (8), `meteor_showers_cos` (10), `challenges_cos` (10) y
-`comets_cos` (10, migración 004) tienen datos reales. **Vacías (0 filas):**
-`astronomical_events_cos`, `fun_facts_cos`, `kids_content_cos`,
-`kids_challenges_cos`, `kids_quiz_questions_cos`, `passport_stamps_cos` —
-el esquema y los grants existen, pero nadie ha cargado contenido todavía.
-`moons_cos` tiene solo **1 fila** para 8 planetas (muy incompleto — solo
-Júpiter tiene ~95 lunas conocidas).
+`planets_cos` (8), `meteor_showers_cos` (10), `challenges_cos` (10),
+`comets_cos` (10, migración 004) y `moons_cos` (20, migración 005 — 1 luna de
+Marte×2, Júpiter×4, Saturno×7, Urano×5, Neptuno×1, más la Luna ya existente)
+tienen datos reales. **Vacías (0 filas):** `astronomical_events_cos`,
+`fun_facts_cos`, `kids_content_cos`, `kids_challenges_cos`,
+`kids_quiz_questions_cos`, `passport_stamps_cos` — el esquema y los grants
+existen, pero nadie ha cargado contenido todavía.
+
+`moons_cos` cubre las lunas "notables" (mayores/clásicas) de cada planeta
+que ya tiene lunas en `planets_cos` — no las 288 lunas conocidas del sistema
+solar (solo Júpiter tiene ~95). Mercurio y Venus no tienen lunas, no aplica.
+
+**Bug corregido (migración 005):** `src/stores/useCatalogStore.ts` pedía una
+columna `observation_tips` en su query a `moons_cos` que nunca existió ahí
+(sí existe en `planets_cos`, de donde se copió por error) — la query fallaba
+siempre con `42703` y la app caía en silencio al catálogo local de una sola
+luna. Confirmado con curl antes (400) y después (200) del fix.
 
 **Gap de conexión — `comets_cos` no alimenta la app todavía:**
 `src/components/sky-map/Comets.tsx` importa directamente de
@@ -150,7 +160,8 @@ la Data API.
 2. Copia y ejecuta en orden: `001_cosmos_atlas_schema.sql`,
    `002_catalog_schema_baseline_and_grants.sql`,
    `003_kids_and_passport_public_grants.sql`,
-   `004_comets_data.sql`
+   `004_comets_data.sql`,
+   `005_moons_data.sql`
 3. O con la CLI de Supabase enlazada al proyecto: `supabase db push`
 
 ## Verificado

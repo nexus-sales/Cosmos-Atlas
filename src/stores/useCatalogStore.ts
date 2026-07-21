@@ -246,7 +246,7 @@ export const useCatalog = create<CatalogState>()((set) => ({
         supabase.from('meteor_showers_cos').select('id,name_es,name_en,short_name,radiant_ra,radiant_dec,constellation_id,date_start,date_end,peak_date,zhr_max,speed_kms,parent_body,desc_short,color_hex').order('zhr_max', { ascending: false }),
         supabase.from('challenges_cos').select('target_id,hint_es,fun_fact_es,award_name_es,sort_order').order('sort_order'),
         supabase.from('planets_cos').select('id,name_es,symbol,color_hex,desc_short,desc_long,mythology,order_from_sun,planet_type,moons_count,has_rings,has_atmosphere,atmosphere_main,radius_km,radius_earth,mass_earth,gravity_ms2,density_gcc,semi_major_axis_au,orbital_period_days,rotation_period_h,axial_tilt_deg,eccentricity,inclination_deg,surface_temp_min_k,surface_temp_max_k,surface_temp_avg_k,image_url,thumb_url,fun_fact,observation_tips').order('order_from_sun'),
-        supabase.from('moons_cos').select('id,name,planet_id,desc_short,desc_long,radius_km,orbital_period_days,semi_major_axis_km,mag_visual,image_url,observation_tips,discovery_year,discoverer,fun_fact').order('name'),
+        supabase.from('moons_cos').select('id,name,planet_id,desc_short,desc_long,radius_km,orbital_period_days,semi_major_axis_km,mag_visual,image_url,discovery_year,discoverer,fun_fact').order('name'),
       ])
 
       const errors = [starsRes, dsosRes, showersRes, challengesRes, planetsRes, moonsRes]
