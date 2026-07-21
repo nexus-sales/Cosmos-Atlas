@@ -31,28 +31,28 @@ const SATELLITES_TLE: SatelliteData[] = [
         tle1: '1 25544U 98067A   26054.56458333  .00015000  00000-0  25000-3 0  9999',
         tle2: '2 25544  51.6400 123.4500 0005000 270.0000 180.0000 15.5000000000001',
         color: '#ffffff',
-        size: 3.8
+        size: 50
     },
     {
         name: 'Hubble Space Telescope',
         tle1: '1 20580U 90037B   26054.50000000  .00001000  00000-0  10000-3 0  9999',
         tle2: '2 20580  28.4700 250.1200 0003000 150.0000 210.0000 15.1000000000001',
         color: '#aaddff',
-        size: 2.2
+        size: 32
     },
     {
         name: 'CSS Tiangong',
         tle1: '1 48274U 21035A   26054.50000000  .00006000  00000-0  30000-3 0  9999',
         tle2: '2 48274  41.4700 100.0000 0005000 200.0000 160.0000 15.7300000000001',
         color: '#ff8833',
-        size: 2.8
+        size: 40
     },
     {
         name: 'NOAA 18',
         tle1: '1 28654U 05018A   26054.50000000  .00000088  00000-0  50000-4 0  9999',
         tle2: '2 28654  98.7000 150.1200 0012000 120.0000 240.0000 14.1000000000001',
         color: '#aaffaa',
-        size: 1.8
+        size: 28
     }
 ];
 
@@ -163,7 +163,7 @@ export default function Satellites() {
             const lines = t.split('\n').filter(l => l.trim().length > 0);
             if (lines.length >= 3) {
                 setSpecialSats(prev => [
-                    { name: lines[0].trim(), satrec: satellite.twoline2satrec(lines[1], lines[2]), color: '#ffffff', size: 4.0, kind: 'special' },
+                    { name: lines[0].trim(), satrec: satellite.twoline2satrec(lines[1], lines[2]), color: '#ffffff', size: 50, kind: 'special' },
                     ...prev.filter(s => !s.name.includes('ISS'))
                 ]);
             }
@@ -214,8 +214,8 @@ export default function Satellites() {
                     records.push({
                         name: lines[i].trim(),
                         satrec: satellite.twoline2satrec(lines[i + 1], lines[i + 2]),
-                        color: '#88aaff',
-                        size: 1.2,
+                        color: '#00e5ff',
+                        size: 16,
                         kind: 'starlink' as const
                     });
                 }
@@ -248,14 +248,74 @@ export default function Satellites() {
             });
     }, [setSatelliteInfo, showStarlink]);
 
+    const [satelliteTexture, setSatelliteTexture] = useState<THREE.Texture | null>(null);
+
+    // ── Generador del icono del satélite ────────────────────────────────────
+    useEffect(() => {
+        const size = 128;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        
+        ctx.clearRect(0, 0, size, size);
+        ctx.translate(64, 64);
+        ctx.rotate(Math.PI / 4); // 45 grados de inclinación
+        ctx.translate(-64, -64);
+        
+        ctx.fillStyle = '#ffffff';
+        
+        // Paneles solares
+        ctx.fillRect(16, 44, 32, 40);
+        ctx.fillRect(80, 44, 32, 40);
+        
+        // Cuadrícula de paneles (usando destination-out para transparencia)
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        // Izquierdo
+        ctx.moveTo(16, 64); ctx.lineTo(48, 64);
+        ctx.moveTo(32, 44); ctx.lineTo(32, 84);
+        // Derecho
+        ctx.moveTo(80, 64); ctx.lineTo(112, 64);
+        ctx.moveTo(96, 44); ctx.lineTo(96, 84);
+        ctx.stroke();
+        ctx.globalCompositeOperation = 'source-over';
+        
+        // Brazos conectores
+        ctx.fillRect(48, 60, 32, 8);
+        
+        // Cuerpo central
+        ctx.beginPath();
+        ctx.arc(64, 44, 12, 0, Math.PI * 2);
+        ctx.arc(64, 84, 12, 0, Math.PI * 2);
+        ctx.fillRect(52, 44, 24, 40);
+        ctx.fill();
+        
+        // Antena
+        ctx.beginPath();
+        ctx.arc(64, 20, 16, Math.PI, 0); 
+        ctx.fill();
+        ctx.fillRect(61, 20, 6, 12); // mástil
+        
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        setSatelliteTexture(tex);
+        
+        return () => {
+            tex.dispose();
+        };
+    }, []);
+
     const [geometry, material] = useMemo(() => {
         const geom = new THREE.BufferGeometry();
         geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(MAX_SATS * 3), 3));
         geom.setAttribute('color', new THREE.BufferAttribute(new Float32Array(MAX_SATS * 3), 3));
-        geom.setAttribute('size', new THREE.BufferAttribute(new Float32Array(MAX_SATS), 1));
+        geom.setAttribute('customSize', new THREE.BufferAttribute(new Float32Array(MAX_SATS), 1));
 
         const mat = new THREE.PointsMaterial({
-            size: 3.2,
+            size: 1.0,
             vertexColors: true,
             transparent: true,
             opacity: 1.0,
@@ -263,11 +323,23 @@ export default function Satellites() {
             depthWrite: false,
             depthTest: false,
             toneMapped: false,
-            blending: THREE.AdditiveBlending
+            blending: THREE.AdditiveBlending,
+            map: satelliteTexture,
+            alphaTest: 0.05
         });
 
+        mat.onBeforeCompile = (shader) => {
+            shader.vertexShader = `
+                attribute float customSize;
+                ${shader.vertexShader}
+            `.replace(
+                'gl_PointSize = size;',
+                'gl_PointSize = size * customSize;'
+            );
+        };
+
         return [geom, mat];
-    }, []);
+    }, [satelliteTexture]);
 
     // ── 2. Loop de Propagación y Culling ────────────────────────────────────
     useFrame(() => {
@@ -282,7 +354,7 @@ export default function Satellites() {
 
         const posAttr = geometry.getAttribute('position') as THREE.BufferAttribute;
         const colAttr = geometry.getAttribute('color') as THREE.BufferAttribute;
-        const sizAttr = geometry.getAttribute('size') as THREE.BufferAttribute;
+        const sizAttr = geometry.getAttribute('customSize') as THREE.BufferAttribute;
 
         let count = 0;
         let visibleSpecial = 0;
