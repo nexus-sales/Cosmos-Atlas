@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import ThreeClockPatch from "@/components/ThreeClockPatch";
 import CatalogLoader from "@/components/CatalogLoader";
@@ -13,6 +13,14 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+// Fuente display para titulares/nombre de la app/titulos de seccion --
+// no para cuerpo de texto (ese sigue siendo Geist Sans).
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
+  subsets: ["latin"],
+  weight: ["500", "700"],
 });
 
 export const viewport: Viewport = {
@@ -48,7 +56,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased digital-grit`}
+        className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} antialiased digital-grit`}
       >
         <ServiceWorkerRegistration />
         <ThreeClockPatch />

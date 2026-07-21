@@ -123,7 +123,7 @@ export default function ObjectInfoTab() {
                     </span>
                 </div>
 
-                <h3 className="object-title mb-1 text-2xl font-bold tracking-wide text-white">
+                <h3 className="object-title font-display mb-1 text-2xl font-bold tracking-wide text-white">
                     {selected.name}
                 </h3>
 

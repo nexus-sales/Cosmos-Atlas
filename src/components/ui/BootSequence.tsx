@@ -76,7 +76,7 @@ export default function BootSequence() {
                             <div className="w-8 h-8 border-2 border-blue-500 rounded-full flex items-center justify-center animate-spin" style={{ animationDuration: '3s' }}>
                                 <div className="w-2 h-2 bg-blue-500 rounded-full" />
                             </div>
-                            <span className="text-2xl font-black tracking-[0.3em] uppercase">Cosmos Atlas</span>
+                            <span className="font-display text-2xl font-bold tracking-[0.3em] uppercase">Cosmos Atlas</span>
                         </div>
 
                         <div className="space-y-2 text-[11px] tracking-widest text-emerald-400/80 drop-shadow-[0_0_5px_rgba(52,211,153,0.5)]">
