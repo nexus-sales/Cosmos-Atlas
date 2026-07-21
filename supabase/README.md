@@ -78,6 +78,27 @@ tablas de esta sección tienen `GRANT SELECT` a `anon`/`authenticated` —
 dos veces: por curl (401→200) y por `has_table_privilege()` en el SQL Editor
 del proyecto correcto.
 
+**Estado real de datos (verificado 2026-07-21, conteo exacto vía Data API):**
+`constellations_cos` (88), `stars_cos` (879), `deep_sky_objects_cos` (135),
+`planets_cos` (8), `meteor_showers_cos` (10), `challenges_cos` (10) y
+`comets_cos` (10, migración 004) tienen datos reales. **Vacías (0 filas):**
+`astronomical_events_cos`, `fun_facts_cos`, `kids_content_cos`,
+`kids_challenges_cos`, `kids_quiz_questions_cos`, `passport_stamps_cos` —
+el esquema y los grants existen, pero nadie ha cargado contenido todavía.
+`moons_cos` tiene solo **1 fila** para 8 planetas (muy incompleto — solo
+Júpiter tiene ~95 lunas conocidas).
+
+**Gap de conexión — `comets_cos` no alimenta la app todavía:**
+`src/components/sky-map/Comets.tsx` importa directamente de
+`src/data/comets.ts` (el catálogo local), no de Supabase — y
+`src/stores/useCatalogStore.ts` no tiene ningún fetch de `comets_cos`. Poblar
+la tabla (migración 004) documenta el catálogo real para uso futuro, pero
+**no cambia lo que renderiza la app hoy**. Además, el esquema de `comets_cos`
+no tiene columnas para elementos keplerianos completos (e, i, om, w) — solo
+`perihelion_au`/`aphelion_au`/`orbital_period_yr`/`perihelion_date` — así que
+no podría sustituir a `comets.ts` para el cálculo de posición real aunque se
+conectara.
+
 ---
 
 ## Tablas de usuarios y gamificación
@@ -128,7 +149,8 @@ la Data API.
 1. Abre el **SQL Editor** en tu proyecto de Supabase
 2. Copia y ejecuta en orden: `001_cosmos_atlas_schema.sql`,
    `002_catalog_schema_baseline_and_grants.sql`,
-   `003_kids_and_passport_public_grants.sql`
+   `003_kids_and_passport_public_grants.sql`,
+   `004_comets_data.sql`
 3. O con la CLI de Supabase enlazada al proyecto: `supabase db push`
 
 ## Verificado
