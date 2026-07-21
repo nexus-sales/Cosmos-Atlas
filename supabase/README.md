@@ -68,14 +68,15 @@ ese esquema sin sufijo **nunca se implementó**; el código de la app
 | `kids_quiz_questions_cos` | Preguntas de quiz del modo niños |
 | `passport_stamps_cos` | Definición de sellos/logros (no los ganados) |
 
-**Estado real de acceso (verificado con curl contra la Data API, 2026-07-19):**
+**Estado real de acceso (verificado con curl contra la Data API):** las 14
+tablas de esta sección tienen `GRANT SELECT` a `anon`/`authenticated` —
 `planets_cos`, `stars_cos`, `deep_sky_objects_cos`, `moons_cos`,
 `meteor_showers_cos`, `challenges_cos`, `constellations_cos`, `comets_cos`,
-`astronomical_events_cos`, `fun_facts_cos` tienen `GRANT SELECT` a
-`anon`/`authenticated` (corregido el 2026-07-19, ver migración 002).
-`kids_content_cos`, `kids_challenges_cos`, `kids_quiz_questions_cos` y
-`passport_stamps_cos` **siguen sin ese grant** — el mismo problema no
-corregido todavía.
+`astronomical_events_cos`, `fun_facts_cos` corregidas el 2026-07-19 (migración
+002); `kids_content_cos`, `kids_challenges_cos`, `kids_quiz_questions_cos` y
+`passport_stamps_cos` corregidas el 2026-07-21 (migración 003). Confirmado
+dos veces: por curl (401→200) y por `has_table_privilege()` en el SQL Editor
+del proyecto correcto.
 
 ---
 
@@ -100,9 +101,12 @@ real se ha podido escribir nunca en ellas.
 ## Limitación conocida: `profiles` vs `user_profiles_cos`
 
 Existen **dos tablas de perfil distintas y no relacionadas**: `profiles`
-(migración 001, "Modo Diablo"/invitado, usada por
-`src/lib/supabase/neuralSync.ts`) y `user_profiles_cos` (arriba, pensada para
-usuarios con Supabase Auth real). Ninguna de las dos tiene datos reales hoy.
+(migración 001, "Modo Diablo"/invitado) y `user_profiles_cos` (arriba,
+pensada para usuarios con Supabase Auth real). Ninguna de las dos tiene
+datos reales hoy. El único código que escribía en `profiles`
+(`src/lib/supabase/neuralSync.ts`) se eliminó — disparaba llamadas de red
+que siempre fallaban en silencio por este mismo motivo de permisos, sin
+ningún flujo de Supabase Auth que las respaldara.
 Además, `profiles` devuelve `permission denied` incluso con la service-role
 key — un problema de GRANT más profundo que el de las tablas de catálogo,
 sin corregir todavía.
@@ -122,17 +126,22 @@ la Data API.
 ## Cómo aplicar las migraciones
 
 1. Abre el **SQL Editor** en tu proyecto de Supabase
-2. Copia el contenido de `supabase/migrations/001_cosmos_atlas_schema.sql`,
-   ejecútalo, y luego el de `002_catalog_schema_baseline_and_grants.sql`
+2. Copia y ejecuta en orden: `001_cosmos_atlas_schema.sql`,
+   `002_catalog_schema_baseline_and_grants.sql`,
+   `003_kids_and_passport_public_grants.sql`
 3. O con la CLI de Supabase enlazada al proyecto: `supabase db push`
+
+## Verificado
+
+- **Grants de las 14 tablas de catálogo** (10 de la migración 002 + 4 de la
+  003): confirmados el 2026-07-21 con
+  `has_table_privilege('anon'/'authenticated', 'public.<tabla>', 'SELECT')`
+  corrido en el SQL Editor del proyecto correcto — las 14 devuelven `true`
+  para ambos roles, y por curl (401→200) contra la Data API real.
 
 ## Pendiente de verificar (no confirmado por este documento)
 
 - Políticas RLS reales de las tablas `*_cos` — no expuestas vía Data API,
-  requieren revisión directa en el dashboard (Database → Policies) o
-  `information_schema.role_table_grants` / `pg_policies` vía SQL Editor.
-- Grant de lectura pública para `kids_content_cos`, `kids_challenges_cos`,
-  `kids_quiz_questions_cos`, `passport_stamps_cos` (mismo problema que las
-  demás tablas de catálogo, sin corregir).
+  requieren revisión directa en el dashboard (Database → Policies).
 - Causa raíz exacta de por qué estas tablas se crearon sin los grants
   automáticos que Supabase aplica vía el Table Editor del dashboard.

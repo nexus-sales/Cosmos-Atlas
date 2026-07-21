@@ -44,9 +44,16 @@
 -- passport_stamps_cos, profiles, user_profiles_cos, observations_cos,
 -- user_favorites_cos) cambio de estado -- siguen en 401 tras el cambio,
 -- consistente con que el GRANT fue exactamente este alcance y no mas amplio.
--- Verificacion definitiva pendiente via:
---   SELECT grantee, table_name, privilege_type FROM information_schema.role_table_grants
---   WHERE table_schema = 'public' AND table_name IN (...);
+-- Verificacion definitiva: CONFIRMADA el 2026-07-21 via has_table_privilege()
+-- corrido en el SQL Editor del proyecto correcto (pyxmpgkuvkejzgeudclx) --
+-- las 10 tablas de abajo devuelven anon_select=true y authenticated_select=true.
+-- (information_schema.role_table_grants habia dado 0 filas en un intento
+-- previo, pero esa consulta se corrio por error contra OTRO proyecto de
+-- Supabase -- la pestana del SQL Editor tenia abierto un proyecto distinto,
+-- con su propio esquema "alarmasv6" sin ninguna tabla *_cos. No era una
+-- restriccion de visibilidad de information_schema ni un problema real del
+-- GRANT -- una vez corrida la consulta contra el proyecto correcto, el
+-- resultado coincidio exactamente con el comportamiento observado por curl.)
 --
 -- Sobre la causa raiz: no es el cambio de plataforma de Supabase de GRANTs
 -- explicitos para la Data API (rollout: opt-in 2026-04-28, default proyectos
