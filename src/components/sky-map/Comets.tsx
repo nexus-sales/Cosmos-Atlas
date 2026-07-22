@@ -312,7 +312,9 @@ export default function Comets() {
             const bs = new Astronomy.Observer(observer.lat, observer.lon, 0);
             const sunEq = Astronomy.Equator(Astronomy.Body.Sun, time, bs, true, true);
             sunPos = equatorialTo3D(sunEq.ra * 15, sunEq.dec, COMET_RADIUS) as [number, number, number];
-        } catch {}
+        } catch (err) {
+            console.warn('[Comets] fallo calculando posicion del Sol:', err);
+        }
 
         return liveComets
             .filter(c => c.active)

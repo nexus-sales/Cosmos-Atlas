@@ -733,14 +733,18 @@ export default function Planets() {
                 planet: { name: 'Luna', pos: equatorialTo3D(eq.ra * 15, eq.dec, PLANET_RADIUS) as [number, number, number] },
                 phase
             };
-        } catch {}
+        } catch (err) {
+            console.warn('[Planets] fallo calculando posicion de la Luna:', err);
+        }
 
         // Posición astronómica del Sol (para renderizarlo en el lugar correcto)
         let sunPos: [number, number, number] = [0, PLANET_RADIUS, 0];
         try {
             const eq = Astronomy.Equator(Astronomy.Body.Sun, time, bs, true, true);
             sunPos = equatorialTo3D(eq.ra * 15, eq.dec, PLANET_RADIUS) as [number, number, number];
-        } catch {}
+        } catch (err) {
+            console.warn('[Planets] fallo calculando posicion del Sol:', err);
+        }
 
         // Lunas galileanas de Júpiter — efemérides reales via astronomy-engine
         const jupiter = planets.find(p => p.name === "Júpiter");
