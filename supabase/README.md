@@ -79,14 +79,23 @@ dos veces: por curl (401→200) y por `has_table_privilege()` en el SQL Editor
 del proyecto correcto.
 
 **Estado real de datos (verificado 2026-07-21, conteo exacto vía Data API):**
-`constellations_cos` (88), `stars_cos` (879), `deep_sky_objects_cos` (135),
-`planets_cos` (8), `meteor_showers_cos` (10), `challenges_cos` (10),
-`comets_cos` (10, migración 004) y `moons_cos` (20, migración 005 — 1 luna de
-Marte×2, Júpiter×4, Saturno×7, Urano×5, Neptuno×1, más la Luna ya existente)
-tienen datos reales. **Vacías (0 filas):** `astronomical_events_cos`,
-`fun_facts_cos`, `kids_content_cos`, `kids_challenges_cos`,
-`kids_quiz_questions_cos`, `passport_stamps_cos` — el esquema y los grants
-existen, pero nadie ha cargado contenido todavía.
+`constellations_cos` (88), `stars_cos` (882, migración 006 — Theta/Kappa/Iota
+Gem, ver más abajo), `deep_sky_objects_cos` (135), `planets_cos` (8),
+`meteor_showers_cos` (10), `challenges_cos` (10), `comets_cos` (10, migración
+004) y `moons_cos` (20, migración 005 — 1 luna de Marte×2, Júpiter×4,
+Saturno×7, Urano×5, Neptuno×1, más la Luna ya existente) tienen datos reales.
+**Vacías (0 filas):** `astronomical_events_cos`, `fun_facts_cos`,
+`kids_content_cos`, `kids_challenges_cos`, `kids_quiz_questions_cos`,
+`passport_stamps_cos` — el esquema y los grants existen, pero nadie ha
+cargado contenido todavía.
+
+**Bug corregido (migración 006):** `stars_cos` tenía 879 filas frente a las
+882 de `src/data/stars.ts`. Faltaban Theta Gem, Kappa Gem e Iota Gem (mag
+3.57–3.78, al borde del corte de ~3.5 que menciona el comentario del archivo
+local) — como `useCatalogStore.loadFromSupabase` reemplaza el array completo
+de estrellas en cuanto Supabase responde, estas 3 se veían un instante en la
+carga inicial y desaparecían al llegar la respuesta de Supabase. Mismo patrón
+de drift silencioso que el gap de `moons_cos` (migración 005).
 
 `moons_cos` cubre las lunas "notables" (mayores/clásicas) de cada planeta
 que ya tiene lunas en `planets_cos` — no las 288 lunas conocidas del sistema
