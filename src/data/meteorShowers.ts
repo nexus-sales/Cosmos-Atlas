@@ -1,5 +1,3 @@
-import { Observer } from '../types/celestial';
-
 export interface MeteorShower {
     id: string;
     name: string;
@@ -224,24 +222,6 @@ export function getBestShower(showers: MeteorShower[], date: Date): MeteorShower
         const showerActivity = getShowerActivity(shower, date) * shower.thz;
         return showerActivity > bestActivity ? shower : best;
     });
-}
-
-/**
- * Calcula la tasa de meteoros por hora visible (ajustada por altura del radiante)
- */
-export function getVisibleMeteorRate(shower: MeteorShower, observer: Observer, date: Date): number {
-    const activity = getShowerActivity(shower, date);
-    const thz = shower.thz;
-    
-    // Estimación simplificada: el radiante debe estar sobre el horizonte
-    // En realidad necesitaríamos calcular la altura del radiante
-    const baseRate = thz * activity;
-    
-    // Factor de corrección por altura (simplificado: asumiendo radiante visible de noche)
-    const hour = date.getHours();
-    const isVisible = hour >= 22 || hour <= 5; // Noche
-    
-    return isVisible ? baseRate * 0.6 : 0; // 60% del THZ cuando es visible
 }
 
 /**

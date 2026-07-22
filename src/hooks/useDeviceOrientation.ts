@@ -32,7 +32,7 @@ export const deviceOrientationRef = {
  * porque solo tenemos ángulos, no velocidades angulares en rad/s.
  *
  * Este filtro EMA elimina el ruido residual de alta frecuencia sin reintroducir
- * drift. FILTER_ALPHA = 0.85 a 60 Hz: respuesta ágil con jitter mínimo.
+ * drift. FILTER_ALPHA = 0.65 a 60 Hz: respuesta ágil con jitter mínimo.
  */
 const FILTER_ALPHA = 0.65; // 0 = sin suavizado, 1 = sin respuesta. τ = 1/(60×0.35) ≈ 48ms — equilibrio entre jitter y latencia AR
 
