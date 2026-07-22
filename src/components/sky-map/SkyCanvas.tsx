@@ -63,7 +63,9 @@ function SunLight() {
                 sunHorRef.alt = hor.altitude;
                 sunHorRef.az  = hor.azimuth;
                 _lastSunUpdateMs = now;
-            } catch {}
+            } catch (err) {
+                console.warn('[SkyCanvas] fallo calculando posicion del Sol:', err);
+            }
         }
 
         if (lightRef.current) {
