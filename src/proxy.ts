@@ -22,9 +22,16 @@ export function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-nonce', nonce);
   
-  // En desarrollo y construcción, una CSP estricta bloquea los scripts internos de Next.js.
-  // Solo aplicamos CSP restrictiva en producción real (Vercel) para no romper el renderizado.
-  const isProduction = process.env.NODE_ENV === 'production' && !process.env.VERCEL_ENV; // Evitar aplicar durante build
+  // En desarrollo, una CSP estricta bloquea los scripts internos de Next.js.
+  // Solo aplicamos CSP restrictiva en producción real para no romper el renderizado.
+  //
+  // OJO: VERCEL_ENV NO es "solo durante el build" -- Vercel la fija en tiempo de
+  // ejecucion para cualquier despliegue (production/preview/development), incluido
+  // el trafico real de produccion. La condicion anterior (`&& !process.env.VERCEL_ENV`)
+  // desactivaba la CSP para siempre en la produccion real de Vercel; solo parecia
+  // funcionar porque se verifico con `npm run build && npm run start` en local,
+  // donde VERCEL_ENV no existe.
+  const isProduction = process.env.NODE_ENV === 'production';
   
   if (isProduction) {
     requestHeaders.set('Content-Security-Policy', cspHeader);
