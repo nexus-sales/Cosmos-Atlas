@@ -6,6 +6,12 @@ import { Trophy, Star, Heart, Map as MapIcon, CheckCircle2, Eye } from 'lucide-r
 import { cn } from '@/lib/utils';
 import { useCatalog } from '@/stores/useCatalogStore';
 
+// El catalogo Messier "de libro" tiene 110 objetos, pero el catalogo local
+// (dsos.ts) solo incluye 108: se excluyen M40 (una simple estrella doble) y
+// M73 (un asterismo de 4 estrellas), ninguno un objeto real de cielo
+// profundo. El denominador refleja lo que de verdad se puede completar.
+const MESSIER_TOTAL = 108;
+
 export default function PassportTab() {
     const favorites = useAppStore((s) => s.favorites);
     const visited = useAppStore((s) => s.visited);
@@ -65,9 +71,9 @@ export default function PassportTab() {
                     <AchievementCard 
                         title="Maratón Messier"
                         desc="Observa objetos del catálogo Messier"
-                        progress={Math.min(100, (achievements.messierMarathon / 110) * 100)}
+                        progress={Math.min(100, (achievements.messierMarathon / MESSIER_TOTAL) * 100)}
                         icon={<MapIcon className="w-4 h-4" />}
-                        stat={`${achievements.messierMarathon}/110`}
+                        stat={`${achievements.messierMarathon}/${MESSIER_TOTAL}`}
                     />
                     <AchievementCard 
                         title="Bibliotecario del Olimpo"
