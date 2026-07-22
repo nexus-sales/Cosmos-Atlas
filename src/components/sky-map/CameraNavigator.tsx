@@ -13,14 +13,12 @@ interface CameraNavigatorProps {
     controlsRef: React.MutableRefObject<OrbitControlsImpl | null>;
     trackingRef: React.MutableRefObject<boolean>;
     manualFovRef: React.MutableRefObject<number | null>;
-    manualFovHoldRef: React.MutableRefObject<number>;
 }
 
 export default function CameraNavigator({
     controlsRef,
     trackingRef,
     manualFovRef,
-    manualFovHoldRef,
 }: CameraNavigatorProps) {
     const { camera } = useThree();
     const targetedObject = useAppStore((s) => s.targetedObject);
@@ -109,7 +107,11 @@ export default function CameraNavigator({
             } else {
                 targetFov.current = 60;
             }
-            
+
+            // Nuevo objetivo -> el zoom manual del vuelo anterior ya no aplica,
+            // empezamos con el encuadre por defecto de este objeto.
+            manualFovRef.current = null;
+
             prevTarget.current = targetedObject;
         }
 
@@ -121,14 +123,15 @@ export default function CameraNavigator({
 
         if (!targetedObject || !targetCamPosRef.current) return;
 
-        // FOV Transition
+        // FOV Transition — el zoom manual del usuario (manualFovRef) se
+        // mantiene indefinidamente mientras siga en el mismo objetivo; solo
+        // se descarta al fijar un objetivo nuevo (arriba) o al abandonar el
+        // seguimiento (trackingRef pasa a false). Antes expiraba solo con
+        // un temporizador de 1s, lo que hacia que la camara "saltara" de
+        // vuelta al encuadre original en cualquier pausa natural entre
+        // gestos de zoom.
         const cam = camera as THREE.PerspectiveCamera;
-        let desiredFov = targetFov.current;
-        if (manualFovRef.current !== null) {
-            desiredFov = manualFovRef.current;
-            manualFovHoldRef.current = Math.max(0, manualFovHoldRef.current - delta);
-            if (manualFovHoldRef.current === 0) manualFovRef.current = null;
-        }
+        const desiredFov = manualFovRef.current ?? targetFov.current;
 
         // Bézier arc flight or tracking snap
         if (isFlying.current) {

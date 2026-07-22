@@ -106,11 +106,9 @@ function SubHorizonAlert() {
 function FovZoom({
     trackingRef,
     manualFovRef,
-    manualFovHoldRef,
 }: {
     trackingRef: React.MutableRefObject<boolean>;
     manualFovRef: React.MutableRefObject<number | null>;
-    manualFovHoldRef: React.MutableRefObject<number>;
 }) {
     const { camera, gl } = useThree();
     const fovRef = useRef(60);
@@ -159,7 +157,6 @@ function FovZoom({
                 const current = manualFovRef.current ?? cam.fov;
                 const next = THREE.MathUtils.clamp(current + delta, 10, 90);
                 manualFovRef.current = next;
-                manualFovHoldRef.current = 1.0;
                 cam.fov = next;
                 cam.updateProjectionMatrix();
                 setCamFov(next);
@@ -206,7 +203,6 @@ function FovZoom({
                 const current = manualFovRef.current ?? cam.fov;
                 const next = THREE.MathUtils.clamp(current + delta, 10, 90);
                 manualFovRef.current = next;
-                manualFovHoldRef.current = 1.0;
                 cam.fov = next;
                 cam.updateProjectionMatrix();
                 setCamFov(next);
@@ -241,7 +237,7 @@ function FovZoom({
             canvas.removeEventListener('pointercancel', onPointerUp);
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [camera, gl, setCamFov]); // trackingRef/manualFovRef/manualFovHoldRef are refs — stable by design
+    }, [camera, gl, setCamFov]); // trackingRef/manualFovRef son refs — estables por diseño
 
     return null;
 }
@@ -426,7 +422,6 @@ export default function SkyCanvas() {
     const controlsRef = useRef<OrbitControlsImpl | null>(null);
     const trackingRef = useRef(false);
     const manualFovRef = useRef<number | null>(null);
-    const manualFovHoldRef = useRef(0);
 
     return (
         <div className={cn(
@@ -476,7 +471,6 @@ export default function SkyCanvas() {
                     <FovZoom
                         trackingRef={trackingRef}
                         manualFovRef={manualFovRef}
-                        manualFovHoldRef={manualFovHoldRef}
                     />
 
                     {/* Esfera atmosférica con scattering Rayleigh/Mie y posición real del Sol */}
@@ -514,7 +508,6 @@ export default function SkyCanvas() {
                         controlsRef={controlsRef}
                         trackingRef={trackingRef}
                         manualFovRef={manualFovRef}
-                        manualFovHoldRef={manualFovHoldRef}
                     />
 
                     {/* Horizonte en espacio mundo (plano horizontal fijo) */}
