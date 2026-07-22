@@ -262,7 +262,7 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                             Ubicacion
                         </div>
                         <div className="text-sm text-blue-200/70">
-                            {observer.lat.toFixed(2)}°N {Math.abs(observer.lon).toFixed(2)}°{observer.lon < 0 ? 'O' : 'E'}
+                            {Math.abs(observer.lat).toFixed(2)}°{observer.lat < 0 ? 'S' : 'N'} {Math.abs(observer.lon).toFixed(2)}°{observer.lon < 0 ? 'O' : 'E'}
                         </div>
                     </div>
 
