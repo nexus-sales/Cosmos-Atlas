@@ -57,8 +57,11 @@ export default function TargetPointer() {
             scanBarRef.current.position.y = scanPos;
             (scanBarRef.current.material as THREE.MeshBasicMaterial).opacity = 0.4 + Math.sin(t * 10.0) * 0.1;
         }
-        if (telemetryRef.current && t % 0.2 < 0.05) {
-            telemetryRef.current.innerText = `SIG: ${(90 + Math.random() * 10).toFixed(1)}% | DIST: ${Math.floor(1000 + Math.random() * 9000)} LY`;
+        if (telemetryRef.current && targetedObject && t % 0.2 < 0.05) {
+            const mag = targetedObject.mag;
+            const magLabel = `${mag >= 0 ? '+' : ''}${mag.toFixed(2)}`;
+            const decLabel = `${targetedObject.dec >= 0 ? '+' : ''}${targetedObject.dec.toFixed(1)}°`;
+            telemetryRef.current.innerText = `MAG ${magLabel} | RA ${targetedObject.ra.toFixed(1)}° DEC ${decLabel}`;
         }
     });
 
