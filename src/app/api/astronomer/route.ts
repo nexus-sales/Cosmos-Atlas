@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // --- Zod Schemas -------------------------------------------------------------
 
@@ -159,6 +160,28 @@ function compactDetails(row: Record<string, unknown> | null | undefined) {
   return Object.keys(details).length ? details : undefined;
 }
 
+// Busca primero por id y, si no hay match, por nombre -- dos consultas con
+// .eq() en vez de un .or() con string interpolado (evita que un objectId u
+// objectName con caracteres de la sintaxis de filtros de PostgREST, p.ej.
+// una coma o un operador, alteren la condicion de busqueda).
+async function lookupByIdThenName(
+  supabase: SupabaseClient,
+  table: string,
+  objectId: string | undefined,
+  objectName: string | undefined,
+  nameColumn: string,
+): Promise<Record<string, unknown> | null> {
+  if (objectId) {
+    const { data } = await supabase.from(table).select('*').eq('id', objectId).maybeSingle();
+    if (data) return data;
+  }
+  if (objectName) {
+    const { data } = await supabase.from(table).select('*').eq(nameColumn, objectName).maybeSingle();
+    if (data) return data;
+  }
+  return null;
+}
+
 async function fetchSupabaseDetails(context: AstronomerContext) {
   try {
     const { supabase } = await import('@/lib/supabase');
@@ -178,9 +201,9 @@ async function fetchSupabaseDetails(context: AstronomerContext) {
       return compactDetails(data);
     }
     if (kind === 'planet') {
-      const { data: p } = await supabase.from('planets_cos').select('*').or(`id.eq.${objectId},name_es.eq.${objectName}`).maybeSingle();
+      const p = await lookupByIdThenName(supabase, 'planets_cos', objectId, objectName, 'name_es');
       if (p) return compactDetails(p);
-      const { data: m } = await supabase.from('moons_cos').select('*').or(`id.eq.${objectId},name.eq.${objectName}`).maybeSingle();
+      const m = await lookupByIdThenName(supabase, 'moons_cos', objectId, objectName, 'name');
       return compactDetails(m);
     }
     return undefined;
