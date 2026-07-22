@@ -56,6 +56,17 @@ const SATELLITES_TLE: SatelliteData[] = [
     }
 ];
 
+// Fuentes de TLE en vivo para los "satelites especiales" -- antes solo la
+// ISS se actualizaba; Hubble/Tiangong/NOAA18 se quedaban para siempre con
+// el TLE hardcodeado de arriba (cada vez mas desfasado). Verificado que
+// Celestrak sirve los 4 NORAD ID individualmente antes de anadir esto.
+const LIVE_TLE_SOURCES: Array<{ match: string; endpoint: string; cacheKey: string; color: string; size: number }> = [
+    { match: 'ISS', endpoint: '/api/tle/iss', cacheKey: 'cosmos-atlas-tle-iss', color: '#ffffff', size: 50 },
+    { match: 'Hubble', endpoint: '/api/tle/hubble', cacheKey: 'cosmos-atlas-tle-hubble', color: '#aaddff', size: 32 },
+    { match: 'Tiangong', endpoint: '/api/tle/tiangong', cacheKey: 'cosmos-atlas-tle-tiangong', color: '#ff8833', size: 40 },
+    { match: 'NOAA 18', endpoint: '/api/tle/noaa18', cacheKey: 'cosmos-atlas-tle-noaa18', color: '#aaffaa', size: 28 },
+];
+
 const RADIUS = 95;
 const MAX_SATS = 6000;
 
@@ -159,24 +170,31 @@ export default function Satellites() {
         setSpecialSats(initial);
         setSatelliteInfo({ loadedSpecial: initial.length });
 
-        const applyIssTLE = (t: string) => {
+        // Mismo patron para los 4 satelites especiales: aplicar cache si esta
+        // fresco, y siempre intentar un fetch en background para sustituir el
+        // TLE hardcodeado por uno real y actualizado.
+        const applyLiveTLE = (matchName: string, color: string, size: number) => (t: string) => {
             const lines = t.split('\n').filter(l => l.trim().length > 0);
             if (lines.length >= 3) {
                 setSpecialSats(prev => [
-                    { name: lines[0].trim(), satrec: satellite.twoline2satrec(lines[1], lines[2]), color: '#ffffff', size: 50, kind: 'special' },
-                    ...prev.filter(s => !s.name.includes('ISS'))
+                    { name: lines[0].trim(), satrec: satellite.twoline2satrec(lines[1], lines[2]), color, size, kind: 'special' },
+                    ...prev.filter(s => !s.name.includes(matchName)),
                 ]);
             }
         };
 
-        // Usar cache localStorage si está fresco (<48h)
-        const cached = loadTLECache('cosmos-atlas-tle-iss');
-        if (cached) applyIssTLE(cached);
+        for (const src of LIVE_TLE_SOURCES) {
+            const apply = applyLiveTLE(src.match, src.color, src.size);
 
-        // Siempre intentar fetch en background para mantener TLEs actualizados
-        fetchWithTimeout('/api/tle/iss')
-            .then(t => { saveTLECache('cosmos-atlas-tle-iss', t); applyIssTLE(t); })
-            .catch(() => { /* sin red: cache o fallback ya aplicados */ });
+            // Usar cache localStorage si está fresco (<48h)
+            const cached = loadTLECache(src.cacheKey);
+            if (cached) apply(cached);
+
+            // Siempre intentar fetch en background para mantener TLEs actualizados
+            fetchWithTimeout(src.endpoint)
+                .then(t => { saveTLECache(src.cacheKey, t); apply(t); })
+                .catch(() => { /* sin red: cache o fallback ya aplicados */ });
+        }
     }, [setSatelliteInfo]);
 
     useEffect(() => {
