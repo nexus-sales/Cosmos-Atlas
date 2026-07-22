@@ -82,6 +82,7 @@ export default function TimeTravelControls({ embedded = false }: { embedded?: bo
         setPlaying(false);
         updateOffset(0);
         setIsLive(true);
+        setTime(new Date()); // sincroniza al instante, sin esperar al siguiente tick del reloj en vivo
     };
 
     // Playback animation
