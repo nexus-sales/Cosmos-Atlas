@@ -33,7 +33,16 @@ const SBDB_URL =
     'https://ssd-api.jpl.nasa.gov/sbdb_query.api' +
     '?fields=pdes,full_name,e,q,i,om,w,tp,per,M1' +
     '&sb-kind=c' +           // comets only
-    '&limit=60';             // wider net to filter post-process
+    '&limit=60' +            // wider net to filter post-process
+    '&sort=-tp' +            // most recent perihelion first -- current API syntax is a
+                             // single "sort=-field" param (minus prefix = descending);
+                             // the old "sort=tp&dir=desc" 400'd because `dir` was never a
+                             // real parameter. Without this, the default order is
+                             // alphabetical by pdes (1P, 2P, 3D...), so `limit=60` would
+                             // always return the same low-numbered periodic comets and
+                             // never anything with a "C/" designation or a high number --
+                             // exactly the ones actually relevant right now.
+    '&full-prec=true';       // valid boolean param, confirmed against the live API
 
 // Simple in-process cache: TTL 24 hours
 let _cache: { ts: number; data: CometLiveData[] } | null = null;
