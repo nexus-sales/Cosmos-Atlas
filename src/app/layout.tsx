@@ -5,6 +5,15 @@ import ThreeClockPatch from "@/components/ThreeClockPatch";
 import CatalogLoader from "@/components/CatalogLoader";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 
+// La CSP usa un nonce nuevo y aleatorio en cada request (ver proxy.ts). Si esta
+// pagina se sirve como HTML estatico (generado una vez en el build), el nonce
+// horneado en las etiquetas <script> nunca coincide con el nonce de la cabecera
+// CSP de cada visita real -- el navegador bloquea todos los scripts, siempre.
+// Forzar renderizado dinamico genera un nonce fresco y consistente en cada
+// request. Sin coste real aqui: toda la app es 'use client', no hay contenido
+// server-side que perder al dejar de ser estatica.
+export const dynamic = 'force-dynamic';
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
