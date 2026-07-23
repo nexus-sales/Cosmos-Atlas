@@ -102,11 +102,11 @@ function EventCard({ event, compact = false }: { event: CelestialEvent; compact?
         <div
             className={cn(
                 'atlas-card rounded-2xl px-3 py-3 transition-all',
-                isVisible ? 'border-emerald-400/18 bg-emerald-500/[0.04]' : 'border-white/8'
+                isVisible ? '!border-emerald-400/40 bg-emerald-500/[0.04]' : ''
             )}
         >
             <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/8 bg-white/[0.04] text-lg leading-none">
+                <div className="atlas-card flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg leading-none">
                     {event.icon}
                 </div>
 
@@ -145,7 +145,7 @@ function EventCard({ event, compact = false }: { event: CelestialEvent; compact?
 
 function Metric({ label, value, hint }: { label: string; value: string; hint: string }) {
     return (
-        <div className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2.5">
+        <div className="atlas-card rounded-xl px-3 py-2.5">
             <div className="text-[9px] uppercase tracking-[0.18em] text-white/38">{label}</div>
             <div className="mt-1 text-[14px] font-semibold text-white">{value}</div>
             <div className="text-[9px] uppercase tracking-[0.14em] text-white/32">{hint}</div>
