@@ -267,8 +267,15 @@ function buildNarrationBrief(
 
 function normalizeTextForSpeech(text: string) {
     return text
-        .replace(/\bal\./gi, 'años luz')
-        .replace(/\bal\b/gi, 'años luz')
+        // "al" solo es la abreviatura de "años luz" cuando sigue a un numero
+        // (p.ej. "310 al." o "(26 al)") -- sin el ancla numerica, esto
+        // tambien mutilaba la preposicion española "al" ("cercano al Sol",
+        // "se asemeja al disco de Jupiter"), presente en muchas descripciones
+        // reales del catalogo. El numero de catalogo NGC (p.ej. "NGC 2438 al
+        // fondo") se protege aparte para no confundirlo con una distancia.
+        .replace(/(NGC\s+\d+)|(\d)\s*al\.?\b/gi, (match, ngcMatch, digit) =>
+            ngcMatch ? ngcMatch : `${digit} años luz`
+        )
         .replace(/\bmag\b/gi, 'magnitud')
         .replace(/\bkm\/h\b/gi, 'kilometros por hora')
         .replace(/\bkm\b/gi, 'kilometros')
@@ -532,7 +539,7 @@ export default function AIAstronoma() {
         if (achievements.planetHunter && !prev.planetHunter) {
             celebration = 'Logro desbloqueado: Explorador de Planetas. Has visitado todos los mundos principales del Sistema Solar disponibles en el atlas.';
         } else if (achievements.messierMarathon > prev.messierMarathon) {
-            celebration = `Nuevo objeto Messier registrado. Llevas ${achievements.messierMarathon} de 110; estas construyendo una ruta de cielo profundo muy seria.`;
+            celebration = `Nuevo objeto Messier registrado. Llevas ${achievements.messierMarathon} de 108; estas construyendo una ruta de cielo profundo muy seria.`;
         } else if (achievements.mythologyBuff > prev.mythologyBuff) {
             celebration = 'Archivo de mitologia ampliado. Las constelaciones son historia cultural proyectada sobre fisica estelar real.';
         }
