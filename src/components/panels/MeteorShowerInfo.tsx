@@ -68,7 +68,7 @@ export default function MeteorShowerInfo() {
                         />
                     </div>
                 ) : (
-                    <div className="mt-4 rounded-xl border border-white/8 bg-white/[0.03] px-3 py-3 text-[11px] leading-5 text-white/54">
+                    <div className="atlas-card mt-4 rounded-xl px-3 py-3 text-[11px] leading-5 text-white/54">
                         La actividad está tranquila ahora mismo. Vigila los próximos máximos.
                     </div>
                 )}
@@ -206,7 +206,7 @@ function ShowerIndicator({ color }: { color: string }) {
 
 function Metric({ label, value, hint }: { label: string; value: string; hint: string }) {
     return (
-        <div className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2.5">
+        <div className="atlas-card rounded-xl px-3 py-2.5">
             <div className="text-[9px] uppercase tracking-[0.18em] text-white/38">{label}</div>
             <div className="mt-1 text-[14px] font-semibold text-white">{value}</div>
             <div className="text-[9px] uppercase tracking-[0.14em] text-white/32">{hint}</div>

@@ -90,7 +90,7 @@ function PanelContent({
     return (
         <>
             {/* Tab bar */}
-            <div className="flex border-b border-white/8 h-12 shrink-0 items-center">
+            <div className="flex border-b border-white/10 h-12 shrink-0 items-center">
                 {tabs.map((tab) => {
                     const Icon = tab.icon;
                     const isActive = activeTab === tab.id;
@@ -112,7 +112,7 @@ function PanelContent({
                 <button
                     onClick={onClose}
                     className={cn(
-                        "flex items-center justify-center transition-colors shrink-0 border-l border-white/8 h-full cursor-pointer",
+                        "flex items-center justify-center transition-colors shrink-0 border-l border-white/10 h-full cursor-pointer",
                         isMobile ? "w-16 bg-white/5 hover:bg-red-500/30 text-white/60" : "w-12 text-white/30 hover:text-white/60"
                     )}
                     aria-label="Cerrar panel"
@@ -125,7 +125,7 @@ function PanelContent({
             <div className="flex-1 overflow-y-auto custom-scrollbar">
                 <div className="p-5">
                     {/* Selector de Modo de Vista */}
-                    <div className="mb-6 bg-white/5 p-1 rounded-xl flex gap-1 border border-white/5">
+                    <div className="mb-6 bg-white/5 p-1 rounded-xl flex gap-1 border border-white/10">
                         <button
                             onClick={() => useAppStore.getState().setViewMode('vault')}
                             className={cn(
@@ -154,11 +154,11 @@ function PanelContent({
                 </div>
 
                 {/* Accordions */}
-                <div className="border-t border-white/8 divide-y divide-white/5">
+                <div className="border-t border-white/10 divide-y divide-white/10">
                     <AccordionSection title="Capas del Cielo" icon={<Settings2 className="w-4 h-4" />} isOpen={layersOpen} onToggle={() => setLayersOpen(!layersOpen)}>
                         <div className="grid grid-cols-2 gap-2">
                             {layerToggles.map(({ key, label, icon: Icon, active }) => (
-                                <button key={key} onClick={() => toggleSetting(key)} className={cn('flex flex-col items-center gap-1.5 py-2.5 rounded-lg text-[9px] font-bold tracking-wider transition-all border outline-none cursor-pointer', active ? 'text-blue-400 border-blue-500/30 bg-blue-500/10' : 'text-white/30 border-white/5 hover:text-white/50 hover:border-white/12')}>
+                                <button key={key} onClick={() => toggleSetting(key)} className={cn('flex flex-col items-center gap-1.5 py-2.5 rounded-lg text-[9px] font-bold tracking-wider transition-all border outline-none cursor-pointer', active ? 'text-blue-400 border-blue-500/30 bg-blue-500/10' : 'text-white/30 border-white/10 hover:text-white/50 hover:border-white/20')}>
                                     <Icon className="w-4 h-4" />
                                     {label}
                                 </button>
@@ -183,13 +183,13 @@ function PanelContent({
 
                     <AccordionSection title="Satélites" icon={<Satellite className="w-4 h-4" />} isOpen={satellitesOpen} onToggle={() => setSatellitesOpen(!satellitesOpen)}>
                         <div className="grid grid-cols-2 gap-2">
-                            <div className="rounded-lg border border-white/8 bg-white/2 p-2">
+                            <div className="atlas-card rounded-lg p-2">
                                 <div className="flex items-center gap-2 text-[10px] font-bold text-white/70 mb-1">
                                     <div className="w-2 h-2 rounded-full bg-white shadow-[0_0_6px_white]" /> ISS/HUBBLE
                                 </div>
                                 <div className="text-[11px] text-blue-300 font-mono">{satelliteInfo.visibleSpecial} visibles</div>
                             </div>
-                            <div className="rounded-lg border border-white/8 bg-white/2 p-2">
+                            <div className="atlas-card rounded-lg p-2">
                                 <div className="flex items-center gap-2 text-[10px] font-bold text-white/70 mb-1">
                                     <div className="w-2 h-2 rounded-full bg-[#88aaff] shadow-[0_0_6px_#88aaff]" /> STARLINK
                                 </div>
@@ -243,7 +243,7 @@ function PanelContent({
             </div>
 
             {/* Footer */}
-            <div className="mt-auto border-t border-white/8 p-4 shrink-0 bg-black/40">
+            <div className="mt-auto border-t border-white/10 p-4 shrink-0 bg-black/40">
                 <div className="flex items-center justify-between text-[10px] font-bold tracking-[0.2em] uppercase">
                     <span className="text-white/20">SISTEMA ATLAS</span>
                     <span className="flex items-center gap-1.5 text-emerald-500">
@@ -305,11 +305,10 @@ function BottomSheet({
                     {/* Sheet — altura CSS para que respete dvh y safe-area */}
                     <motion.div
                         key="bs-sheet"
-                        className="fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-3xl shadow-2xl border-t border-white/10"
+                        className="atlas-panel !border-x-0 !border-b-0 fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-3xl"
                         style={{
                             height: SHEET_HEIGHT_CSS,
                             y,
-                            background: 'linear-gradient(180deg, rgba(4,12,28,0.98) 0%, rgba(2,6,18,1) 100%)',
                             paddingBottom: 'env(safe-area-inset-bottom)',
                         }}
                         initial={{ y: SHEET_HEIGHT_PX }}
@@ -408,8 +407,7 @@ export default function SidePanel() {
             initial={false}
             animate={{ width: sidebarOpen ? 340 : 52 }}
             transition={{ type: 'spring', stiffness: 350, damping: 35 }}
-            className="relative h-full z-50 flex flex-col overflow-hidden shadow-2xl border-l border-white/5 shrink-0"
-            style={{ background: 'linear-gradient(180deg, rgba(4,12,28,0.98) 0%, rgba(2,6,18,1) 100%)' }}
+            className="atlas-panel !border-y-0 !border-r-0 relative h-full z-50 flex flex-col shrink-0"
         >
             {sidebarOpen ? (
                 // Expanded desktop
@@ -424,7 +422,7 @@ export default function SidePanel() {
                 <div className="flex flex-col items-center py-2 gap-1">
                     <button
                         onClick={() => setSidebarOpen(true)}
-                        className="flex items-center justify-center h-12 w-full text-white/30 hover:text-blue-400 hover:bg-white/5 transition-colors border-b border-white/8 cursor-pointer mb-1"
+                        className="flex items-center justify-center h-12 w-full text-white/30 hover:text-blue-400 hover:bg-white/5 transition-colors border-b border-white/10 cursor-pointer mb-1"
                         title="Abrir panel"
                         aria-label="Abrir panel"
                     >

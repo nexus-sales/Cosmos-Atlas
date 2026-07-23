@@ -18,10 +18,10 @@ export default function ChallengeTab() {
     return (
         <div className="space-y-6">
             <div className={cn(
-                "p-5 rounded-lg glass-card transition-all relative overflow-hidden",
+                "atlas-card p-5 rounded-lg transition-all relative overflow-hidden",
                 isFound
-                    ? 'border-green-500/30 shadow-[0_0_20px_rgba(34,197,94,0.1)]'
-                    : 'border-yellow-500/20'
+                    ? '!border-green-500/30 shadow-[0_0_20px_rgba(34,197,94,0.1)]'
+                    : '!border-yellow-500/20'
             )}>
                 <div className="flex items-center justify-between mb-4">
                     <div className={cn(
@@ -52,7 +52,7 @@ export default function ChallengeTab() {
                 )}
             </div>
 
-            <div className="p-5 rounded-lg glass-card border border-white/10">
+            <div className="atlas-card p-5 rounded-lg">
                 <div className="flex items-center gap-2 mb-3 text-blue-400">
                     <Lightbulb className="w-4 h-4" />
                     <span className="text-[10px] font-bold tracking-widest uppercase">Dato Curioso</span>
@@ -67,7 +67,7 @@ export default function ChallengeTab() {
                     <h4 className="text-[10px] font-bold text-white/30 tracking-widest uppercase px-1">Tus Logros</h4>
                     <div className="grid grid-cols-1 gap-2">
                         {foundChallenges.map((c, i) => (
-                            <div key={i} className="flex items-center gap-3 p-3 glass-card border-blue-500/20 rounded-md">
+                            <div key={i} className="atlas-card flex items-center gap-3 p-3 !border-blue-500/20 rounded-md">
                                 <Trophy className="w-4 h-4 text-yellow-500" />
                                 <span className="text-[11px] font-mono text-blue-200/70">{c} desbloqueado</span>
                             </div>

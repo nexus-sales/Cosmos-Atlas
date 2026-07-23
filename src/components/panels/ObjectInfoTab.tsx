@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import * as Astronomy from 'astronomy-engine';
 import { Globe, Heart, Moon as MoonIcon, MousePointer2, Navigation, Rocket, Star as StarIcon, Zap, Eye, EyeOff } from 'lucide-react';
@@ -75,7 +75,7 @@ export default function ObjectInfoTab() {
     if (!selected) {
         return (
             <div className="flex h-full flex-col items-center justify-center space-y-4 py-24 text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/8">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/10">
                     <MousePointer2 className="h-6 w-6 text-white/15" />
                 </div>
                 <div className="space-y-2">
@@ -148,7 +148,7 @@ export default function ObjectInfoTab() {
                 )}
 
                 <p className="text-[11px] leading-relaxed text-white/55 min-h-[40px]">
-                    <HolographicText text={primaryDescription} />
+                    {primaryDescription}
                 </p>
             </div>
 
@@ -181,7 +181,7 @@ export default function ObjectInfoTab() {
                         />
                     </div>
 
-                    <div className="rounded-xl border border-white/6 bg-white/3 p-4">
+                    <div className="atlas-card rounded-xl p-4">
                         <div className="mb-3 flex items-center gap-2">
                             {isVisible
                                 ? <Eye className="h-3.5 w-3.5 text-emerald-400" />
@@ -210,7 +210,7 @@ export default function ObjectInfoTab() {
                     {solarSystemInfo && (
                         <>
                             {(solarSystemInfo.longDesc || solarSystemInfo.observationTips) && (
-                                <div className="rounded-xl border border-white/6 bg-white/3 p-4 space-y-3">
+                                <div className="atlas-card rounded-xl p-4 space-y-3">
                                     {solarSystemInfo.longDesc && (
                                         <InfoBlock title="Contexto" text={solarSystemInfo.longDesc} />
                                     )}
@@ -221,7 +221,7 @@ export default function ObjectInfoTab() {
                             )}
 
                             {(solarSystemInfo.funFact || solarSystemInfo.mythology || solarSystemInfo.planetType || solarSystemInfo.moonsCount !== undefined || solarSystemInfo.hasRings !== undefined || solarSystemInfo.orbitalPeriodDays !== undefined) && (
-                                <div className="rounded-xl border border-white/6 bg-white/3 p-4 space-y-3">
+                                <div className="atlas-card rounded-xl p-4 space-y-3">
                                     <div className="grid grid-cols-2 gap-3">
                                         {solarSystemInfo.planetType && <DataPoint label="Tipo" value={solarSystemInfo.planetType} />}
                                         {solarSystemInfo.moonsCount !== undefined && <DataPoint label="Lunas" value={String(solarSystemInfo.moonsCount)} />}
@@ -261,7 +261,7 @@ function MetricCard({ label, value, sub, color, icon }: {
 }) {
     const metricVars = { '--metric-color': `${color}60` } as CSSProperties;
     return (
-        <div className="rounded-xl border border-white/6 bg-white/3 p-3.5">
+        <div className="atlas-card rounded-xl p-3.5">
             <div className="metric-label mb-2 flex items-center gap-1.5" style={metricVars}>
                 {icon}
                 <span className="text-[8px] font-bold uppercase tracking-wider">{label}</span>
@@ -277,43 +277,10 @@ function InfoBlock({ title, text }: { title: string; text: string }) {
         <div>
             <div className="mb-1 text-[8px] uppercase tracking-wider text-white/20">{title}</div>
             <p className="text-[11px] leading-relaxed text-white/65 min-h-[30px]">
-                <HolographicText text={text} speed={0.5} />
+                {text}
             </p>
         </div>
     );
-}
-
-// Phase 3: Holographic Terminal Decryption Effect
-function HolographicText({ text, speed = 1 }: { text: string, speed?: number }) {
-    const [displayed, setDisplayed] = useState('');
-    
-    useEffect(() => {
-        if (!text) return;
-
-        let iteration = 0;
-        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+";
-
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setDisplayed('');
-
-        const interval = setInterval(() => {
-            setDisplayed(text.split('').map((char, index) => {
-                if(index < iteration) {
-                    return text[index];
-                }
-                return char === ' ' ? ' ' : letters[Math.floor(Math.random() * letters.length)];
-            }).join(''));
-
-            if(iteration >= text.length){
-                clearInterval(interval);
-            }
-            iteration += speed;
-        }, 15);
-
-        return () => clearInterval(interval);
-    }, [text, speed]);
-
-    return <span className="font-mono tracking-tight">{displayed}</span>;
 }
 
 function DataPoint({ label, value }: { label: string; value: string }) {

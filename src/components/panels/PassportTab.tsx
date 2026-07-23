@@ -102,7 +102,7 @@ export default function PassportTab() {
                             <button 
                                 key={obj.name}
                                 onClick={() => setTargetedObject(obj)}
-                                className="flex items-center gap-3 p-2.5 rounded-lg bg-white/[0.03] border border-white/5 hover:border-white/20 transition-all text-left"
+                                className="atlas-card flex items-center gap-3 p-2.5 rounded-lg transition-all text-left"
                             >
                                 <div className="w-8 h-8 rounded bg-white/5 flex items-center justify-center">
                                     <Star className="w-4 h-4 text-white/40" />

@@ -630,7 +630,7 @@ export default function AIAstronoma() {
                         initial={{ opacity: 0, y: 12, scale: 0.96 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 12, scale: 0.96 }}
-                        className="pointer-events-auto w-[min(420px,calc(100vw-2rem))] rounded-2xl border border-cyan-400/20 bg-black/90 p-3 shadow-[0_16px_50px_rgba(0,0,0,0.55)] backdrop-blur-xl"
+                        className="atlas-panel pointer-events-auto w-[min(420px,calc(100vw-2rem))] rounded-2xl !border-cyan-400/20 p-3"
                     >
                         <div className="mb-3 flex items-center justify-between gap-3">
                             <div className="min-w-0">
@@ -670,7 +670,7 @@ export default function AIAstronoma() {
 
                         <div className="mb-3 flex max-h-[320px] flex-col gap-2 overflow-y-auto pr-1">
                             {chatMessages.length === 0 && (
-                                <div className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-3 text-[11px] leading-relaxed text-white/55">
+                                <div className="atlas-card rounded-xl px-3 py-3 text-[11px] leading-relaxed text-white/55">
                                     {astronomerMode === 'openai'
                                         ? 'Modo IA real: razonamiento remoto con el contexto actual del cielo, más rico y flexible.'
                                         : 'Modo local: respuestas instantaneas sin gastar API, utiles si hay limite, cortes o quieres ahorrar credito.'}
@@ -758,7 +758,7 @@ export default function AIAstronoma() {
                             synthRef.current?.cancel();
                             setIsSpeaking(false);
                         }}
-                        className="pointer-events-auto w-[min(360px,calc(100vw-2rem))] cursor-pointer rounded-2xl rounded-br-none border border-cyan-500/30 bg-black/85 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.5)] glass-blur transition-transform active:scale-95"
+                        className="atlas-panel pointer-events-auto w-[min(360px,calc(100vw-2rem))] cursor-pointer rounded-2xl rounded-br-none !border-cyan-500/30 p-4 transition-transform active:scale-95"
                     >
                         <div className="flex items-start gap-3">
                             <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-400" />

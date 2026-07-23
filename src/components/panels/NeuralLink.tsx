@@ -19,7 +19,7 @@ export default function NeuralLink() {
     const rankColor = rank === 'COMMANDER' ? 'text-purple-400' : rank === 'EXPLORER' ? 'text-blue-400' : 'text-emerald-400';
 
     return (
-        <div className="mt-4 p-4 atlas-panel rounded-xl border border-white/10 relative overflow-hidden group">
+        <div className="atlas-panel mt-4 p-4 rounded-xl relative overflow-hidden group">
             {/* Background scan animation */}
             <motion.div
                 className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/5 to-transparent -translate-x-full"
@@ -33,7 +33,7 @@ export default function NeuralLink() {
                         <div className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
                             <Cpu className="w-4 h-4 text-blue-400" />
                         </div>
-                        <span className="atlas-section-title !text-[9px]">Datos Locales</span>
+                        <span className="text-[9px] font-bold tracking-widest text-white/50 uppercase">Datos Locales</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
@@ -44,7 +44,7 @@ export default function NeuralLink() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-black/20 p-2 rounded-lg border border-white/5">
+                    <div className="atlas-card p-2 rounded-lg">
                         <div className="flex items-center gap-1.5 mb-1">
                             <HardDrive className="w-3 h-3 text-emerald-400" />
                             <span className="text-[8px] text-white/40 font-bold uppercase tracking-tighter">Storage</span>
@@ -53,7 +53,7 @@ export default function NeuralLink() {
                             ON DEVICE
                         </div>
                     </div>
-                    <div className="bg-black/20 p-2 rounded-lg border border-white/5">
+                    <div className="atlas-card p-2 rounded-lg">
                         <div className="flex items-center gap-1.5 mb-1">
                             <Zap className="w-3 h-3 text-blue-400" />
                             <span className="text-[8px] text-white/40 font-bold uppercase tracking-tighter">Rank</span>
@@ -64,7 +64,7 @@ export default function NeuralLink() {
                     </div>
                 </div>
 
-                <div className="bg-black/40 p-3 rounded-lg border border-white/5 font-mono text-[9px] min-h-[60px] flex flex-col gap-1">
+                <div className="atlas-card p-3 rounded-lg font-mono text-[9px] min-h-[60px] flex flex-col gap-1">
                     <div className="flex items-center gap-2 text-white/20">
                         <TerminalIcon className="w-3 h-3" />
                         <span className="text-[7px]">STORAGE_LOG</span>

@@ -110,7 +110,7 @@ function MiniCompass() {
 
             {open && (
                 <div
-                    className="absolute left-0 top-[calc(100%+0.65rem)] z-[95] w-48 rounded-2xl border border-white/10 bg-black/88 p-2 shadow-2xl backdrop-blur-xl"
+                    className="atlas-panel absolute left-0 top-[calc(100%+0.65rem)] z-[95] w-48 rounded-2xl p-2"
                 >
                     <button onClick={pointZenith} className="w-full rounded-xl px-3 py-2 text-left text-[11px] font-bold uppercase tracking-widest text-white/65 hover:bg-white/8 hover:text-white">
                         Mirar cenit
@@ -214,7 +214,7 @@ export default function Header({ onRequestLocation }: HeaderProps) {
 
     return (
         <>
-            <header className="h-14 md:h-16 border-b border-white/10 bg-black/68 backdrop-blur-xl flex items-center gap-2 px-2.5 md:px-6 z-20 overflow-visible shrink-0">
+            <header className="atlas-panel !overflow-visible h-14 md:h-16 !border-x-0 !border-t-0 flex items-center gap-2 px-2.5 md:px-6 z-20 shrink-0">
                 <MiniCompass />
 
                 <div className="hidden min-w-0 flex-1 sm:block md:max-w-sm">
@@ -350,7 +350,7 @@ export default function Header({ onRequestLocation }: HeaderProps) {
             </header>
 
             {searchOpen && (
-                <div className="fixed inset-x-3 top-[calc(env(safe-area-inset-top)+4.25rem)] z-[90] rounded-2xl border border-white/10 bg-black/88 p-3 shadow-2xl backdrop-blur-xl sm:hidden">
+                <div className="atlas-panel fixed inset-x-3 top-[calc(env(safe-area-inset-top)+4.25rem)] z-[90] rounded-2xl p-3 sm:hidden">
                     <CelestialSearch />
                     <button
                         onClick={() => setSearchOpen(false)}

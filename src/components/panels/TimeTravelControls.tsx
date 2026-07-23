@@ -190,7 +190,7 @@ export default function TimeTravelControls({ embedded = false }: { embedded?: bo
                                     key={p.label}
                                     onClick={() => handlePreset(p.days)}
                                     aria-label={`Retroceder ${p.label.slice(1)}`}
-                                    className="text-[9px] font-mono text-white/35 hover:text-blue-400 transition-all px-2 py-1 rounded-lg border border-white/8 hover:border-blue-500/40 hover:bg-blue-500/5"
+                                    className="text-[9px] font-mono text-white/35 hover:text-blue-400 transition-all px-2 py-1 rounded-lg border border-white/10 hover:border-blue-500/40 hover:bg-blue-500/5"
                                 >
                                     {p.label}
                                 </button>
@@ -217,7 +217,7 @@ export default function TimeTravelControls({ embedded = false }: { embedded?: bo
                                     key={`fwd-${p.label}`}
                                     onClick={() => handlePreset(-p.days)}
                                     aria-label={`Avanzar ${p.label.slice(1)}`}
-                                    className="text-[9px] font-mono text-white/35 hover:text-blue-400 transition-all px-2 py-1 rounded-lg border border-white/8 hover:border-blue-500/40 hover:bg-blue-500/5"
+                                    className="text-[9px] font-mono text-white/35 hover:text-blue-400 transition-all px-2 py-1 rounded-lg border border-white/10 hover:border-blue-500/40 hover:bg-blue-500/5"
                                 >
                                     +{p.label.slice(1)}
                                 </button>
@@ -225,7 +225,7 @@ export default function TimeTravelControls({ embedded = false }: { embedded?: bo
                         </div>
 
                         {/* Selector de velocidad + botón de tiempo real */}
-                        <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-white/5">
+                        <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-white/10">
                             <div className="flex items-center gap-1" role="group" aria-label="Velocidad de reproducción">
                                 <span className="text-[8px] text-white/20 font-mono tracking-widest uppercase mr-1.5" aria-hidden="true">
                                     VEL:
@@ -242,7 +242,7 @@ export default function TimeTravelControls({ embedded = false }: { embedded?: bo
                                                 'text-[8px] font-mono px-1.5 py-0.5 rounded border transition-all',
                                                 isPressed
                                                     ? 'text-blue-400 border-blue-500/50 bg-blue-500/10'
-                                                    : 'text-white/25 border-white/8 hover:text-white/50 hover:border-white/20'
+                                                    : 'text-white/25 border-white/10 hover:text-white/50 hover:border-white/20'
                                             )}
                                         >
                                             {s.label}

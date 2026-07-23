@@ -44,7 +44,7 @@ export default function SnapshotButton() {
             <div className="absolute top-6 right-6 z-30 pointer-events-auto">
                 <button
                     onClick={takeSnapshot}
-                    className="flex items-center justify-center w-11 h-11 bg-black/40 backdrop-blur-md border border-white/10 rounded-full text-white/50 hover:text-white hover:bg-white/10 hover:border-white/30 transition-all shadow-lg"
+                    className="flex items-center justify-center w-11 h-11 bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-full text-white/50 hover:text-white hover:bg-white/10 hover:border-white/30 transition-all shadow-lg"
                     title="Tomar Polaroid Estelar"
                 >
                     <Camera className="w-5 h-5" />
