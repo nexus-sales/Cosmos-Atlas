@@ -52,7 +52,7 @@ const STEPS: Step[] = [
         icon: <Camera className="w-8 h-8" />,
         title: 'Modo Cámara AR',
         body: 'Activa la cámara trasera y apunta tu teléfono al cielo. Cosmos Atlas superpone en tiempo real constelaciones, planetas y satélites sobre lo que ves, con precisión de brújula y giroscopio.',
-        hint: 'Panel lateral → selector BÓVEDA / CÁMARA',
+        hint: 'Botón AR (escudo) en la cabecera, o el selector BÓVEDA · CÁMARA en la esquina inferior derecha',
         accent: 'text-sky-400',
         bg: 'from-sky-900/30 to-transparent',
     },

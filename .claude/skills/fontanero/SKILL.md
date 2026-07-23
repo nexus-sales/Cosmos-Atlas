@@ -1,6 +1,6 @@
 ---
 name: fontanero
-version: "6.1"
+version: "6.2"
 description: >
   Audita la higiene y el funcionamiento técnico de un repositorio: código roto, imports y
   referencias inexistentes, errores de tipo, fallos de build, tests que fallan, duplicados,
@@ -45,7 +45,7 @@ Esto no es burocracia: un fontanero que repara tuberías sin que nadie se entere
 
 ## Mapa de fronteras (léelo antes de auditar)
 
-Los tres skills comparten una casa. Cada uno tiene una llave distinta. Si encuentras algo que no es tuyo, **no lo audites tú** — nómbralo en una línea y deriva:
+Los cuatro skills comparten una casa. Cada uno tiene una llave distinta. Si encuentras algo que no es tuyo, **no lo audites tú** — nómbralo en una línea y deriva:
 
 | Si encuentras... | No es tuyo, es de... |
 |---|---|
@@ -73,6 +73,7 @@ Si dudas si algo es tuyo, pregúntate: *¿esto es sobre si funciona y está limp
    **Si el repo es lo bastante grande como para no poder leerlo entero a fondo en una sesión, dilo explícitamente y propón el reparto por módulos cohesionados como los bloques a auditar uno por uno** (o en paralelo, si el usuario puede lanzar varias sesiones). No optes por "leo un poco de todo" — es la opción que parece más completa y es la que más fácil deja bugs de acoplamiento sin ver.
 5. **Prepara el ratio señal/ruido.** Cuenta hallazgos por severidad antes de escribir el informe — si vas a reportar 80 cosméticos y 2 críticos, eso se dice en el resumen, no se deja para que el lector lo descubra solo.
 6. **Si el repo se dividió en bloques, la síntesis final es un paso propio, no un simple pegado.** Antes de entregar: (a) **deduplica** — el mismo bug puede aparecer descrito desde dos bloques distintos si tocaba la costura entre ambos; fusiónalo en un solo hallazgo y nota que se confirmó dos veces (eso es señal de confianza, no ruido). (b) **reordena por severidad real combinada**, no por el orden en que se completó cada bloque. (c) **re-verifica con una segunda búsqueda los candidatos a código muerto o huérfano antes de darlos por buenos** — el Test del falso positivo (más abajo) aplica igual de fuerte cuando el hallazgo viene de un bloque ajeno que cuando lo encontraste tú.
+7. **Si existe un Mapa del Señalizador previo, úsalo como orden de lectura, no como verdad.** Sus señales ROJO/NARANJA dicen dónde mirar primero; tu trabajo sigue siendo confirmar o descartar cada una. Una señal del Señalizador que no se sostiene se reporta como descartada — eso también es información.
 
 ---
 
@@ -212,15 +213,22 @@ ni juicio de negocio — eso es del Council si se encadena.]
 
 ---
 
-## Cerrar el círculo — Fontanero → Auditor → Council
+## El circuito — Circuito v1 (21 de julio de 2026)
 
-Los tres skills forman un circuito para revisar una app entera. No se llaman entre sí (eso lo orquesta el modelo): cuando el usuario pide "revisa mi app completa", el orden es:
+> Este bloque es idéntico en los cuatro skills (Señalizador, Fontanero, Auditor, Council). Si el circuito cambia, se cambia aquí y se propaga a los cuatro con un nuevo número de Circuito. Un documento con otro número de Circuito está desactualizado.
 
-1. **Fontanero** (este skill) primero: el generalista que mapea qué está vivo, qué funciona y qué está roto. No tiene sentido auditar la seguridad de código muerto.
-2. **Auditor** después: el especialista que, sobre lo que está vivo, busca lo peligroso.
-3. **Council** al final, pero **solo sobre los hallazgos donde hay una decisión real con tensión** (coste/beneficio/timing) — no sobre la lista entera. "¿Refactorizo esta duplicación antes de lanzar o vivo con ella?" es del Council; borrar un `console.log` no lo es. Volcar el informe completo al Council produce teatro: cinco asesores deliberando sobre dónde va un log.
+Los cuatro skills forman un circuito para revisar una app entera. No se llaman entre sí — lo orquesta el modelo:
 
-Por eso este informe entrega "Orden por severidad técnica" sin plazos: si encadena con el Council, el orden temporal y de negocio es suyo. Tu trabajo termina en el mapa de qué está roto y qué tan grave es.
+0. **Señalizador** — solo si el repo no es trivial: primer pase de orientación, mapa de superficies vivas con encargos para Fontanero y Auditor. No confirma nada.
+1. **Fontanero** — funcionamiento e higiene: confirma roturas, placebos, huecos y sedimento. No tiene sentido auditar la seguridad de código muerto.
+2. **Auditor** — seguridad real sobre lo que está vivo y es alcanzable.
+3. **Council** — al final, y solo sobre los hallazgos donde hay una decisión real con tensión (coste/beneficio/timing), no sobre la lista entera.
+
+**Dueño del trigger "revisa mi app completa":** si el repo no es trivial, el circuito empieza en el Señalizador; si es pequeño (el Fontanero puede leerlo entero sin perderse), empieza directamente en el Fontanero. Ningún otro skill reclama ese trigger.
+
+**Frontera de severidad:** la severidad/criticidad técnica la fija quien auditó (Fontanero o Auditor). El Council puede reordenar por peso de negocio y coste de revertir, pero no la altera.
+
+Por eso este informe entrega "Orden por severidad técnica" sin plazos: si encadena con el Council, el orden temporal y de negocio es suyo. Volcar el informe completo al Council produce teatro: cinco asesores deliberando sobre dónde va un log. Tu trabajo termina en el mapa de qué está roto y qué tan grave es.
 
 ---
 
@@ -251,9 +259,9 @@ Por eso este informe entrega "Orden por severidad técnica" sin plazos: si encad
 
 **"¿Qué le falta a esto? / ¿Funcionaría la doc si alguien nuevo la sigue?"** → Activar, enfocado en la cuarta superficie (huecos): probar los ejemplos del README, mirar qué falta que un usuario razonable esperaría, trazar el recorrido de alguien instalando de cero.
 
-**"Revisa mi app completa de arriba a abajo"** → Activar el circuito: Fontanero, luego Auditor, luego Council sobre los hallazgos con decisión real.
+**"Revisa mi app completa de arriba a abajo"** → Este trigger es del Señalizador (ver "El circuito"): si el repo no es trivial, cede el primer pase al Señalizador y actúa después sobre su mapa; si el repo es pequeño, activar Fontanero directamente y seguir el circuito (Auditor, luego Council sobre los hallazgos con decisión real).
 
-**"Es un repo grande, revísalo entero"** → Activar. Mapear módulos por cohesión (Paso 0.4) antes de leer, no repartir por conteo de archivos. Si hace falta más de una sesión o varios agentes, decirlo y proponer el reparto por bloques cohesionados.
+**"Es un repo grande, revísalo entero"** → Activar. Mapear módulos por cohesión (Paso 0.4) antes de leer, no repartir por conteo de archivos. Si hace falta más de una sesión o varios agentes, decirlo y proponer el reparto por bloques cohesionados. Si existe un Mapa del Señalizador, usarlo como orden de lectura (Paso 0.7).
 
 **"Audita la seguridad de mi API"** → NO activar. Es Auditor.
 
@@ -265,7 +273,8 @@ Por eso este informe entrega "Orden por severidad técnica" sin plazos: si encad
 
 ## Créditos
 
-**Versión:** v6.1 — 6 de julio de 2026 (corrección de coherencia: tres→cuatro superficies)
+**Versión:** v6.2 — 21 de julio de 2026 (costura del circuito: bloque canónico "El circuito — Circuito v1" compartido con los otros tres skills sustituye a "Cerrar el círculo"; el trigger "revisa mi app completa" se cede al Señalizador cuando el repo no es trivial; nuevo Paso 0.7 para consumir el Mapa del Señalizador como orden de lectura sin tratarlo como verdad)
+**v6.1** — 6 de julio de 2026 (corrección de coherencia: tres→cuatro superficies)
 **Autor:** Salvador Muñoz Portillo
 **Coautor:** Claude Opus 4.8
 **Organización:** Grupo LMB — admin@nexus-sales.eu

@@ -230,15 +230,15 @@ Cada modo orienta a los cinco asesores hacia su ángulo específico. El Implemen
 - **Observador:** qué dato obvio falta para poder decidir.
 - **Implementador:** la primera señal concreta de que la decisión fue correcta o incorrecta — cuándo y cómo se sabrá.
 
-### Analizar una AUDITORÍA (cadena Auditor → Council)
-Cuando el input es el informe de otro skill de auditoría, el Council **no re-audita**: no vuelve a discutir si un hallazgo es explotable — eso ya lo zanjó el Auditor y su criticidad técnica no se toca. El Council **interroga la auditoría como decisión**: el orden de arreglo, los huecos, los trade-offs de negocio.
-- **Opositor:** el vector que la auditoría infravaloró, o el hallazgo cuyo arreglo propuesto NO lo cierra del todo. Aquí el chequeo de mecanismo es obligatorio: ¿el parche propuesto toca de verdad el fallo, o solo parece hacerlo?
-- **Pensador:** el problema de fondo bajo los hallazgos sueltos — ¿son N parches o una sola decisión de diseño (modelo de amenaza, modelo de confianza)?
-- **Ampliador:** lo que ya está bien construido y solo hay que activar — no lo que falta.
-- **Observador:** la pregunta de uso real que cambia la urgencia de media lista (¿quién accede de verdad a esto, hoy?).
+### Analizar el INFORME de otro skill (cadena Fontanero/Auditor → Council)
+Cuando el input es el informe de un skill técnico de la familia — la criticidad del **Auditor** o la severidad del **Fontanero** — el Council **no re-audita**: no vuelve a discutir si un hallazgo es explotable, si un placebo es real o si un hueco existe — eso ya lo zanjó quien auditó, y su severidad/criticidad técnica no se toca. El Council **interroga el informe como decisión**: el orden de arreglo, los huecos, los trade-offs de negocio.
+- **Opositor:** el hallazgo que el informe infravaloró, o aquel cuyo arreglo propuesto NO lo cierra del todo. Aquí el chequeo de mecanismo es obligatorio: ¿la acción propuesta toca de verdad el fallo, o solo parece hacerlo?
+- **Pensador:** el problema de fondo bajo los hallazgos sueltos — ¿son N parches o una sola decisión de diseño (modelo de amenaza, arquitectura, deuda estructural)?
+- **Ampliador:** lo que ya está bien construido y solo hay que activar — no lo que falta. (El "✅ Lo que está limpio" del Fontanero es su materia prima.)
+- **Observador:** la pregunta de uso real que cambia la urgencia de media lista (¿quién accede de verdad a esto, hoy? ¿quién pulsa ese botón placebo, y cuántas veces?).
 - **Implementador:** el orden de arreglo concreto, trazando que cada acción toca su hallazgo — sin fundir hallazgos distintos en un "queda cubierto".
 
-> **Frontera:** el Council puede REORDENAR la secuencia de arreglo según peso de negocio y coste de revertir, pero NO altera la criticidad técnica que fijó el Auditor. "Esto es explotable" lo dice el Auditor; "esto es lo que harías primero como negocio" lo dice el Council. Si el Council se limita a reformatear los hallazgos, es teatro — debe aportar lo que el Auditor estructuralmente no puede ver: el orden según negocio, el hueco en "lo que no pude verificar", y el coste de oportunidad de arreglar X antes que Y.
+> **Frontera:** el Council puede REORDENAR la secuencia de arreglo según peso de negocio y coste de revertir, pero NO altera la criticidad técnica que fijó el Auditor ni la severidad que fijó el Fontanero. "Esto es explotable" o "esto está roto" lo dice quien auditó; "esto es lo que harías primero como negocio" lo dice el Council. Si el Council se limita a reformatear los hallazgos, es teatro — debe aportar lo que el skill técnico estructuralmente no puede ver: el orden según negocio, el hueco en "lo que no pude verificar" / "fuera de alcance", y el coste de oportunidad de arreglar X antes que Y. El Mapa del Señalizador NO entra por este modo: es orientación previa, no un informe con hallazgos — no hay nada que deliberar sobre señales sin confirmar.
 
 ---
 
@@ -250,6 +250,23 @@ Cuando compartan repo, código o app, NO opines desde el README solo. Antes de c
 2. **Reconstruye el flujo del usuario nuevo:** qué es lo primero que ve, qué tiene que entender para empezar a usarlo.
 3. **Solo entonces convoca al Council.** Un análisis basado en lo que imaginas que hace la app, en vez de lo que hace, es exactamente la respuesta complaciente que este skill existe para evitar.
 4. **Separa la cáscara del motor.** Lo que se ve —UI, copy, estética, la pantalla que te enseñan— es lo más fácil de juzgar y casi nunca es donde está el valor o el riesgo. Lo que decide si el producto funciona suele ser lo que se ejecuta al pulsar el botón: latencia, coste por uso, consistencia entre ejecuciones, qué pasa cuando algo falla. Una captura, una demo o un README solo muestran la cáscara. Nombra explícitamente qué parte estás revisando y cuál queda fuera de vista, y resiste dar una nota global del producto cuando solo has visto una fracción. Un "9 sobre 10" sobre el envoltorio es la complacencia con otro disfraz.
+
+---
+
+## El circuito — Circuito v1 (21 de julio de 2026)
+
+> Este bloque es idéntico en los cuatro skills (Señalizador, Fontanero, Auditor, Council). Si el circuito cambia, se cambia aquí y se propaga a los cuatro con un nuevo número de Circuito. Un documento con otro número de Circuito está desactualizado.
+
+Los cuatro skills forman un circuito para revisar una app entera. No se llaman entre sí — lo orquesta el modelo:
+
+0. **Señalizador** — solo si el repo no es trivial: primer pase de orientación, mapa de superficies vivas con encargos para Fontanero y Auditor. No confirma nada.
+1. **Fontanero** — funcionamiento e higiene: confirma roturas, placebos, huecos y sedimento. No tiene sentido auditar la seguridad de código muerto.
+2. **Auditor** — seguridad real sobre lo que está vivo y es alcanzable.
+3. **Council** — al final, y solo sobre los hallazgos donde hay una decisión real con tensión (coste/beneficio/timing), no sobre la lista entera.
+
+**Dueño del trigger "revisa mi app completa":** si el repo no es trivial, el circuito empieza en el Señalizador; si es pequeño (el Fontanero puede leerlo entero sin perderse), empieza directamente en el Fontanero. Ningún otro skill reclama ese trigger.
+
+**Frontera de severidad:** la severidad/criticidad técnica la fija quien auditó (Fontanero o Auditor). El Council puede reordenar por peso de negocio y coste de revertir, pero no la altera.
 
 ---
 
@@ -275,6 +292,8 @@ Cuando compartan repo, código o app, NO opines desde el README solo. Antes de c
 
 **"tengo churn alto y no sé por qué, ¿qué hago?"** → Test del dato central: falta el pilar. NO convocar aún; pedir el dato de por qué se van, explicando que sin él el consejo sería adivinado.
 
+**"aquí está el informe del Fontanero, ¿qué arreglo primero?"** → Activar en modo "Analizar el INFORME de otro skill". Reordenar por negocio sin tocar la severidad técnica.
+
 **"¿cuál es el mejor lenguaje para una API REST?"** → NO activar. Recomendación técnica directa.
 
 **"tradúceme este texto"** → NO activar. Ejecución directa.
@@ -283,7 +302,8 @@ Cuando compartan repo, código o app, NO opines desde el README solo. Antes de c
 
 ## Créditos
 
-**Versión:** v16 — 6 de julio de 2026
+**Versión:** v17 — 21 de julio de 2026 (costura del circuito: el modo "Analizar una AUDITORÍA" se generaliza a "Analizar el INFORME de otro skill" para cubrir también al Fontanero, manteniendo la frontera de que la severidad/criticidad la fija quien auditó; añadido el bloque canónico "El circuito — Circuito v1" compartido con los otros tres skills; el Mapa del Señalizador queda explícitamente fuera de este modo por ser orientación, no hallazgos)
+**v16** — 6 de julio de 2026
 **Autor:** Salvador Muñoz Portillo
 **Coautor:** Claude Opus 4.8
 **Organización:** Grupo LMB — admin@nexus-sales.eu

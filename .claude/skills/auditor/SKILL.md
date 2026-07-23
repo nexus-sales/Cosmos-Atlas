@@ -1,6 +1,6 @@
 ---
 name: auditor
-version: "4.1"
+version: "4.2"
 description: >
   Audita la seguridad de un repositorio: encuentra vulnerabilidades, secretos expuestos, dependencias vulnerables, endpoints sin protección y datos sensibles mal gestionados, los ordena por criticidad real (no teórica) y PROPONE el arreglo de cada uno sin aplicarlo. Activa este skill cuando el usuario pida una auditoría de seguridad, revisar la seguridad de una app o repo, buscar secretos o vulnerabilidades, "es seguro esto", "qué agujeros tiene", "revisa antes de lanzar", o variaciones; y antes de un despliegue a producción. Trabaja apoyándose en herramientas (npm audit / pip-audit, gitleaks, semgrep) para lo mecánico y en lectura de código para el juicio contextual. NO aplica cambios: encuentra, explica y propone el parche; el usuario decide qué aplicar. NO uses este skill para escribir features nuevas, para auditorías de rendimiento o accesibilidad (es solo seguridad), ni para ejecutar los arreglos. Funciona en cualquier stack.
 ---
@@ -27,6 +27,7 @@ Esto no es burocracia: un arreglo de seguridad automático que el usuario no ent
 2. **Detecta el tipo de app, no solo el stack.** El stack te dice el lenguaje; el tipo te dice **qué superficies fijas aplican de verdad**. Un mismo framework (p. ej. Python) puede ser una API web, un CLI, una librería o un script de un solo uso — y no todas las seis superficies pesan igual en cada caso. Antes de auditar, identifica: ¿esto sirve HTTP a un navegador (web app/API pública)? ¿es un backend que solo habla con otros servicios (API interna)? ¿es un CLI o script sin servidor? ¿es una librería que otros importan? **Di explícitamente en el informe qué superficies fijas no aplican y por qué** — "Headers de seguridad HTTP: no aplica, este proyecto es un CLI sin servidor" es tan válido como un hallazgo, y mejor que forzar un MEDIO artificial sobre algo que no puede ocurrir. No inventes una checklist distinta para cada tipo de app — con las seis superficies de siempre basta; lo que cambia es cuáles se marcan como aplicables.
 3. **Ejecuta o propón las herramientas** según el stack (ver "Herramientas por stack"). Si puedes ejecutarlas, hazlo y parte de sus resultados. Si no, indica el comando exacto que el usuario debe correr y pídele la salida.
 4. **Define el alcance.** "Audita todo" en un repo grande diluye. Si el repo es grande, propón auditar por superficie de ataque (entrada de usuario, autenticación, datos, dependencias, configuración) y empezar por la de mayor riesgo. Una auditoría enfocada que llega al fondo vale más que un barrido superficial de todo. Si el repo es grande y hace falta cubrirlo entero, el reparto natural aquí es **un bloque por superficie de ataque sobre todo el repo** (no un bloque por módulo de negocio cubriendo las seis superficies) — porque tu objeto de estudio son las superficies, no los módulos. Es el mismo principio que en Fontanero (agrupar por lo que está realmente acoplado), aplicado a tu propio eje de trabajo.
+5. **Si existe un Mapa del Señalizador previo, úsalo como orden de trazado, no como verdad.** Sus señales de seguridad ROJO/NARANJA (entradas externas, secretos posibles, auth) dicen por dónde empezar a seguir el dato; tu trabajo sigue siendo trazar la explotabilidad real de cada una. Una señal que resulta no explotable se reporta como descartada — eso también es información.
 
 ---
 
@@ -121,6 +122,23 @@ Por eso el informe entrega "Orden por criticidad técnica", no un calendario. Da
 
 ---
 
+## El circuito — Circuito v1 (21 de julio de 2026)
+
+> Este bloque es idéntico en los cuatro skills (Señalizador, Fontanero, Auditor, Council). Si el circuito cambia, se cambia aquí y se propaga a los cuatro con un nuevo número de Circuito. Un documento con otro número de Circuito está desactualizado.
+
+Los cuatro skills forman un circuito para revisar una app entera. No se llaman entre sí — lo orquesta el modelo:
+
+0. **Señalizador** — solo si el repo no es trivial: primer pase de orientación, mapa de superficies vivas con encargos para Fontanero y Auditor. No confirma nada.
+1. **Fontanero** — funcionamiento e higiene: confirma roturas, placebos, huecos y sedimento. No tiene sentido auditar la seguridad de código muerto.
+2. **Auditor** — seguridad real sobre lo que está vivo y es alcanzable.
+3. **Council** — al final, y solo sobre los hallazgos donde hay una decisión real con tensión (coste/beneficio/timing), no sobre la lista entera.
+
+**Dueño del trigger "revisa mi app completa":** si el repo no es trivial, el circuito empieza en el Señalizador; si es pequeño (el Fontanero puede leerlo entero sin perderse), empieza directamente en el Fontanero. Ningún otro skill reclama ese trigger.
+
+**Frontera de severidad:** la severidad/criticidad técnica la fija quien auditó (Fontanero o Auditor). El Council puede reordenar por peso de negocio y coste de revertir, pero no la altera.
+
+---
+
 ## Principios irrenunciables
 
 - **Propón, no apliques.** Cada hallazgo lleva su parche, pero el archivo no se toca. (Ver regla de oro.)
@@ -154,7 +172,8 @@ Por eso el informe entrega "Orden por criticidad técnica", no un calendario. Da
 
 ## Créditos
 
-**Versión:** v4.1 — 6 de julio de 2026 (corrección de coherencia: "recorrer las seis superficies" → según tipo de app)
+**Versión:** v4.2 — 21 de julio de 2026 (costura del circuito: añadido el bloque canónico "El circuito — Circuito v1" compartido con los otros tres skills, y nuevo Paso 0.5 para consumir el Mapa del Señalizador como orden de trazado sin tratarlo como verdad)
+**v4.1** — 6 de julio de 2026 (corrección de coherencia: "recorrer las seis superficies" → según tipo de app)
 **Autor:** Salvador Muñoz Portillo
 **Coautor:** Claude Opus 4.8
 **Organización:** Grupo LMB — admin@nexus-sales.eu
