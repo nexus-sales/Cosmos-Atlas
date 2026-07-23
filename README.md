@@ -1,5 +1,33 @@
 # Cosmos Atlas
 
+## Version 3.6.0 - 2026-07-23
+
+Ronda de auditoria completa modulo a modulo (senalizador -> fontanero -> auditor) sobre todo el repositorio, mas una pasada de consistencia visual en los paneles. El objetivo era simple: verificar que lo que la app promete es lo que de verdad hace, sin forzar hallazgos donde no los habia.
+
+**Seguridad**
+- La CSP se desactivaba en produccion real de Vercel por un uso incorrecto de `VERCEL_ENV` (la variable existe en tiempo de ejecucion, no solo durante el build) -- corregido y verificado simulando las variables reales de Vercel.
+- Tras reactivar la CSP, salio a la luz un choque con el nonce en la pagina estatica (`/`): se fuerza renderizado dinamico para que el nonce coincida en cada visita. Verificado con Playwright contra un navegador real, no solo con curl a las cabeceras.
+- `/api/astronomer`: filtro `.or()` con string interpolado sustituido por `.eq()` encadenado (evita que caracteres de sintaxis de PostgREST alteren la busqueda).
+
+**Catalogos y datos**
+- `stars_cos` en Supabase le faltaban 3 estrellas de Geminis (Theta/Kappa/Iota Gem) frente al catalogo local -- rompian en silencio 4 segmentos de la figura de la constelacion.
+- 12 claves de imagen truncadas (`N7293` en vez de `NGC7293`) en `dsoImages.ts`: 5 nebulosas reales (Helice, Roseta, Creciente, Velo Este, Carina) nunca mostraban su imagen real de Hubble/ESO.
+- El logro "Maraton Messier" usaba `/110` como denominador en dos sitios distintos (Pasaporte y narracion de la IA), pero el catalogo local solo tiene 108 Messier reales (excluye M40 y M73, que no son objetos de cielo profundo). Corregido en ambos.
+
+**Astronomia y UX**
+- La latitud del observador se mostraba siempre como "N" en la cabecera, sin importar el hemisferio real -- cualquier usuario en el hemisferio sur veia coordenadas incorrectas.
+- Telemetria inventada (`Math.random()`) en el crosshair de objetivo, sustituida por magnitud y coordenadas reales del objeto.
+- La narracion por voz de la IA Astronoma mutilaba la preposicion espanola "al" ("cercano al Sol" sonaba como "cercano anos luz Sol") al confundirla con la abreviatura de anos-luz.
+- 3 de 4 satelites (Hubble, Tiangong, NOAA-18) nunca refrescaban su TLE, solo la ISS. El FOV manual durante el seguimiento expiraba a 1 s. "AHORA" esperaba al siguiente tick en vez de sincronizar al instante.
+
+**Codigo muerto e higiene**
+- 176 lineas de codigo muerto eliminadas en `GuideTab.tsx`: un bloque de JSX completo se construia y se descartaba con `void sectionContent` sin renderizarse nunca.
+- Dos clases CSS referenciadas pero nunca definidas (`glass-card`, `atlas-section-title`) dejaban varias tarjetas sin fondo de cristal real desde hace tiempo.
+- Sistema visual de paneles unificado: 13 componentes que reinventaban su propio fondo (`bg-black/40` a `/90`) y hasta 8 opacidades de borde distintas pasan a usar las clases compartidas `atlas-panel`/`atlas-card` y `border-white/10` como estandar, preservando los acentos de color intencionales (IA en cian, logros en dorado, etc.).
+
+**Nueva funcion**
+- Deseleccionar el objeto activo desde el cielo vacio (clic fuera de cualquier objeto), o con un boton dedicado en las pestanas Objeto y Guia.
+
 ## Version 3.5.1 - 2026-05-10
 
 Esta version corrige la experiencia movil y la orientacion astronomica de la boveda. El objetivo es que Cosmos Atlas deje respirar el cielo: menos botones flotando sobre el mapa y mas confianza en que lo que ves corresponde al hemisferio y a la latitud reales.
@@ -542,6 +570,20 @@ Clic de nuevo en el mismo objeto lo deselecciona.
 ---
 
 ## Changelog
+
+### v3.6.0 - 2026-07-23 (Auditoria completa: seguridad, catalogos y consistencia visual)
+- **CSP realmente activa en produccion** - Corregido el uso de `VERCEL_ENV` que la desactivaba en Vercel real, y el choque de nonce con la pagina estatica que rompia la ejecucion de scripts tras reactivarla.
+- **`/api/astronomer` endurecido** - `.or()` interpolado sustituido por `.eq()` encadenado.
+- **Gap de estrellas en Supabase** - Theta/Kappa/Iota Gem anadidas a `stars_cos`; rompian en silencio la figura de Geminis.
+- **Imagenes DSO recuperadas** - 12 claves truncadas (`N####` en vez de `NGC####`) corregidas; 5 nebulosas reales vuelven a mostrar su foto de Hubble/ESO.
+- **Denominador Messier corregido** - 108 reales (no 110) en Pasaporte y narracion de la IA.
+- **Latitud de hemisferio** - La cabecera mostraba siempre "N" sin importar el hemisferio real del observador.
+- **Telemetria falsa eliminada** - El crosshair de objetivo mostraba `Math.random()` como si fuera senal/distancia real; ahora usa magnitud y coordenadas reales.
+- **Narracion por voz corregida** - La normalizacion de texto mutilaba la preposicion "al" al confundirla con anos-luz.
+- **Satelites y viaje temporal** - Hubble/Tiangong/NOAA-18 ya refrescan su TLE; FOV manual no expira a 1s; "AHORA" sincroniza al instante.
+- **176 lineas de codigo muerto eliminadas** en `GuideTab.tsx`; dos clases CSS fantasma (`glass-card`, `atlas-section-title`) corregidas.
+- **Sistema visual de paneles unificado** - 13 componentes migrados a `atlas-panel`/`atlas-card` y `border-white/10` como estandar compartido.
+- **Nueva funcion** - Deseleccionar objeto desde el cielo vacio o con boton dedicado en Objeto/Guia.
 
 ### v3.5.1 - 2026-05-10 (UI movil limpia y orientacion Alt/Az corregida)
 - **Header como mando principal** - Brujula, busqueda, reloj, AR, GPS, IA astronomica y panel quedan en la barra superior para liberar el cielo en movil.
