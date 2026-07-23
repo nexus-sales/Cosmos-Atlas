@@ -33,9 +33,7 @@ const SBDB_URL =
     'https://ssd-api.jpl.nasa.gov/sbdb_query.api' +
     '?fields=pdes,full_name,e,q,i,om,w,tp,per,M1' +
     '&sb-kind=c' +           // comets only
-    '&limit=60' +            // wider net to filter post-process
-    '&sort=tp&dir=desc' +    // most recent perihelion first
-    '&full-prec=true';
+    '&limit=60';             // wider net to filter post-process
 
 // Simple in-process cache: TTL 24 hours
 let _cache: { ts: number; data: CometLiveData[] } | null = null;
