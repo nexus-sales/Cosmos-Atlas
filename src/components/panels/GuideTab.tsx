@@ -148,6 +148,7 @@ export default function GuideTab() {
 
     const targetedObject = useAppStore((s) => s.targetedObject);
     const setTargetedObject = useAppStore((s) => s.setTargetedObject);
+    const setSelectedObject = useAppStore((s) => s.setSelectedObject);
     const observer = useAppStore((s) => s.observer);
     const time = useAppStore((s) => s.timeMinute);
     const stars = useCatalog(s => s.stars);
@@ -326,7 +327,13 @@ export default function GuideTab() {
     const isTargeted = (obj: Star | DSO | Planet) => targetedObject?.name === obj.name;
 
     const handleSelect = (obj: Star | DSO | Planet) => {
-        setTargetedObject(isTargeted(obj) ? null : obj);
+        if (isTargeted(obj)) {
+            setTargetedObject(null);
+            setSelectedObject(null);
+        } else {
+            setTargetedObject(obj);
+            setSelectedObject(obj);
+        }
     };
 
     const orderedSectionKeys = [
@@ -338,184 +345,6 @@ export default function GuideTab() {
         return acc;
     }, {} as Record<SectionKey, number>);
     const getSectionOrder = (key: SectionKey) => sectionOrderMap[key] ?? SECTION_ORDER.length;
-
-    const sectionContent: Partial<Record<SectionKey, React.ReactNode>> = {
-        planets: (filter === 'all' || filter === 'planets') && planetList.length > 0 ? (
-            <section ref={(element) => { sectionRefs.current.planets = element; }}>
-                <SectionToggle label="Planetas" icon={<Globe2 className="w-3.5 h-3.5 text-orange-400/70" />}
-                    count={planetList.length} total={planetList.length}
-                    isOpen={openSections.planets} onToggle={() => toggleSection('planets')}
-                    isPinned={pinnedSections.includes('planets')} onTogglePinned={() => togglePinnedSection('planets')} />
-                <div className="overflow-hidden transition-all duration-200"
-                    style={{ maxHeight: openSections.planets ? '2000px' : '0px', opacity: openSections.planets ? 1 : 0 }}>
-                    <div className="space-y-0.5 pb-1">
-                        {planetList.map((planet) => {
-                            const active = isTargeted(planet);
-                            return (
-                                 <motion.div 
-                                    layout
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    key={skyObjectKey(planet, 'planet')}
-                                >
-                                    <button onClick={() => handleSelect(planet)}
-                                        className={cn('w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all border group relative overflow-hidden',
-                                            active ? 'border-orange-400/40 bg-orange-500/10 text-orange-200'
-                                                : 'border-transparent hover:border-white/12 hover:bg-white/4 text-white/75 hover:text-white')}>
-                                        {active && (
-                                            <motion.div 
-                                                layoutId="activePlanetGlow"
-                                                className="absolute inset-0 bg-orange-500/5 blur-xl pointer-events-none"
-                                            />
-                                        )}
-                                        <span
-                                            className="accent-color text-[14px] shrink-0 leading-none"
-                                            style={{ '--accent-color': planet.color } as CSSProperties}
-                                        >
-                                            {planet.symbol}
-                                        </span>
-                                        <div className="flex flex-col flex-1 min-w-0">
-                                            <span className="text-[13px] font-semibold truncate">{planet.name}</span>
-                                            {planet.phaseInfo && (
-                                                <span className="text-[9px] text-amber-200/80 font-bold tracking-wide">
-                                                    {planet.phaseInfo}
-                                                </span>
-                                            )}
-                                            {planet.dist && planet.name !== 'Luna' && (
-                                                <span className="text-[9px] text-white/30 font-mono">
-                                                    {(planet.dist * 149.6).toFixed(1)}M km
-                                                </span>
-                                            )}
-                                            {planet.name === 'Luna' && planet.dist && (
-                                                <span className="text-[9px] text-white/30 font-mono">
-                                                    {(planet.dist * 149597870 / 1000).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ".")} km
-                                                </span>
-                                            )}
-                                        </div>
-                                        <span className="text-[10px] text-white/40 shrink-0 font-mono">{planet.mag.toFixed(1)}</span>
-                                        <div suppressHydrationWarning title={planet.alt > 0 ? `Visible \u00b7 Alt ${planet.alt.toFixed(0)}\u00b0` : 'Bajo el horizonte'}
-                                            className={cn('w-1.5 h-1.5 rounded-full shrink-0 ml-0.5 transition-shadow duration-300', planet.alt > 0 ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'bg-white/15')} />
-                                    </button>
-                                    <AnimatePresence>
-                                        {active && (
-                                            <motion.div
-                                                initial={{ height: 0, opacity: 0 }}
-                                                animate={{ height: 'auto', opacity: 1 }}
-                                                exit={{ height: 0, opacity: 0 }}
-                                                className="overflow-hidden"
-                                            >
-                                                <InfoCard obj={planet} />
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </motion.div>
-                            );
-                        })}
-                    </div>
-                </div>
-            </section>
-        ) : null,
-        stars: (filter === 'all' || filter === 'stars') && starList.length > 0 ? (
-            <section ref={(element) => { sectionRefs.current.stars = element; }}>
-                <SectionToggle label="Estrellas" icon={<StarIcon className="w-3.5 h-3.5 text-yellow-400/70" />}
-                    count={starList.length} total={starTotal}
-                    isOpen={openSections.stars} onToggle={() => toggleSection('stars')}
-                    isPinned={pinnedSections.includes('stars')} onTogglePinned={() => togglePinnedSection('stars')} />
-                <div className="overflow-hidden transition-all duration-200"
-                    style={{ maxHeight: openSections.stars ? '2000px' : '0px', opacity: openSections.stars ? 1 : 0 }}>
-                    <div className="space-y-0.5 pb-1">
-                        {starList.map((star) => {
-                            const active = isTargeted(star);
-                            return (
-                                <div key={skyObjectKey(star, 'star')}>
-                                    <button onClick={() => handleSelect(star)}
-                                        className={cn('w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all border',
-                                            active ? 'border-yellow-400/40 bg-yellow-500/10 text-yellow-200'
-                                                : 'border-transparent hover:border-white/12 hover:bg-white/4 text-white/75 hover:text-white')}>
-                                        <div
-                                            className={cn('star-dot w-2.5 h-2.5 rounded-full shrink-0', active ? 'star-dot-active' : '')}
-                                            style={{ '--accent-color': star.color } as CSSProperties}
-                                        />
-                                        <span className="text-[13px] font-semibold flex-1 truncate">{star.name}</span>
-                                        <span className="text-[10px] text-white/40 shrink-0 font-mono">{star.mag.toFixed(1)}</span>
-                                        <span className="text-[10px] text-white/35 shrink-0 italic hidden sm:block truncate max-w-[64px]">
-                                            {getConstellationDisplayName(star.constellation)}
-                                        </span>
-                                        <div suppressHydrationWarning title={star.alt > 0 ? `Visible \u00b7 Alt ${star.alt.toFixed(0)}\u00b0` : 'Bajo el horizonte'}
-                                            className={cn('w-1.5 h-1.5 rounded-full shrink-0 ml-0.5', star.alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15')} />
-                                    </button>
-                                    {active && <InfoCard obj={star} />}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            </section>
-        ) : null,
-        galaxies: (filter === 'all' || filter === 'galaxies') && dsoList.filter(d => d.type === 'galaxy').length > 0 ? (
-            <DSOSection title="Galaxias" items={dsoList.filter(d => d.type === 'galaxy').slice(0, limit)}
-                total={galaxyTotal} isOpen={openSections.galaxies} onToggle={() => toggleSection('galaxies')}
-                isTargeted={isTargeted} onSelect={handleSelect}
-                isPinned={pinnedSections.includes('galaxies')} onTogglePinned={() => togglePinnedSection('galaxies')}
-                sectionRef={(element) => { sectionRefs.current.galaxies = element; }} />
-        ) : null,
-        nebulae: (filter === 'all' || filter === 'nebulae') && dsoList.filter(d => d.type === 'nebula').length > 0 ? (
-            <DSOSection title="Nebulosas" items={dsoList.filter(d => d.type === 'nebula').slice(0, limit)}
-                total={nebulaTotal} isOpen={openSections.nebulae} onToggle={() => toggleSection('nebulae')}
-                isTargeted={isTargeted} onSelect={handleSelect}
-                isPinned={pinnedSections.includes('nebulae')} onTogglePinned={() => togglePinnedSection('nebulae')}
-                sectionRef={(element) => { sectionRefs.current.nebulae = element; }} />
-        ) : null,
-        clusters: (filter === 'all' || filter === 'clusters') && dsoList.filter(d => d.type === 'cluster').length > 0 ? (
-            <DSOSection title="Cúmulos" items={dsoList.filter(d => d.type === 'cluster').slice(0, limit)}
-                total={clusterTotal} isOpen={openSections.clusters} onToggle={() => toggleSection('clusters')}
-                isTargeted={isTargeted} onSelect={handleSelect}
-                isPinned={pinnedSections.includes('clusters')} onTogglePinned={() => togglePinnedSection('clusters')}
-                sectionRef={(element) => { sectionRefs.current.clusters = element; }} />
-        ) : null,
-        constellations: (filter === 'all' || filter === 'constellations') && constellationList.length > 0 ? (
-            <section ref={(element) => { sectionRefs.current.constellations = element; }}>
-                <SectionToggle label="Constelaciones" icon={<Share2 className="w-3.5 h-3.5 text-indigo-400/70" />}
-                    count={constellationList.length} total={constellationTotal}
-                    isOpen={openSections.constellations} onToggle={() => toggleSection('constellations')}
-                    isPinned={pinnedSections.includes('constellations')} onTogglePinned={() => togglePinnedSection('constellations')} />
-                <div className="overflow-hidden transition-all duration-200"
-                    style={{ maxHeight: openSections.constellations ? '2000px' : '0px', opacity: openSections.constellations ? 1 : 0 }}>
-                    <div className="space-y-0.5 pb-1">
-                        {constellationList.map((c) => {
-                            const active = isTargeted(c);
-                            return (
-                                <div key={skyObjectKey(c, 'constellation')}>
-                                    <button
-                                        onClick={() => handleSelect(c)}
-                                        className={cn(
-                                            'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all border',
-                                            active
-                                                ? 'border-indigo-400/40 bg-indigo-500/10 text-indigo-200'
-                                                : 'border-transparent hover:border-white/12 hover:bg-white/4 text-white/75 hover:text-white'
-                                        )}
-                                    >
-                                        <span className="text-[11px] text-indigo-400/60 shrink-0">&#10038;</span>
-                                        <span className="text-[13px] font-semibold flex-1 truncate">{getConstellationDisplayName(c.name)}</span>
-                                        <div
-                                            suppressHydrationWarning
-                                            title={c.alt > 0 ? `Visible \u00b7 Alt ${c.alt.toFixed(0)}\u00b0` : 'Bajo el horizonte'}
-                                            className={cn(
-                                                'w-1.5 h-1.5 rounded-full shrink-0 ml-0.5',
-                                                c.alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15'
-                                            )}
-                                        />
-                                    </button>
-                                    {active && <InfoCard obj={c} />}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            </section>
-        ) : null,
-    };
-    void sectionContent;
 
     return (
         <div className="flex flex-col gap-3">

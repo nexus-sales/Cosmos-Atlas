@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import * as Astronomy from 'astronomy-engine';
-import { Globe, Heart, Moon as MoonIcon, MousePointer2, Navigation, Rocket, Star as StarIcon, Zap, Eye, EyeOff } from 'lucide-react';
+import { Globe, Heart, Moon as MoonIcon, MousePointer2, Navigation, Rocket, Star as StarIcon, Zap, Eye, EyeOff, BookOpen, X } from 'lucide-react';
 
 import { useAppStore } from '@/stores/useAppStore';
 import { useCatalog } from '@/stores/useCatalogStore';
@@ -13,8 +13,9 @@ import { getSolarSystemBodyByName } from '@/data/solarSystemCatalog';
 import { getMoonPhaseIcon, getMoonPhaseName } from '@/lib/astronomy/moon';
 import type { DSO, Planet, Star } from '@/types/celestial';
 
-export default function ObjectInfoTab() {
+export default function ObjectInfoTab({ onGoToGuide }: { onGoToGuide?: () => void }) {
     const selected = useAppStore((state) => state.selectedObject) as Star | DSO | Planet | null;
+    const setSelectedObject = useAppStore((state) => state.setSelectedObject);
     const setTargetedObject = useAppStore((state) => state.setTargetedObject);
     const targetedObject = useAppStore((state) => state.targetedObject);
     const favorites = useAppStore((state) => state.favorites);
@@ -74,14 +75,25 @@ export default function ObjectInfoTab() {
 
     if (!selected) {
         return (
-            <div className="flex h-full flex-col items-center justify-center space-y-4 py-24 text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/10">
-                    <MousePointer2 className="h-6 w-6 text-white/15" />
+            <div className="flex h-full flex-col items-center justify-center space-y-4 py-20 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/10 bg-white/5 shadow-inner">
+                    <MousePointer2 className="h-6 w-6 text-white/30" />
                 </div>
-                <div className="space-y-2">
-                    <div className="text-[10px] font-mono uppercase tracking-[0.25em] text-white/20">Sin selección</div>
-                    <div className="text-[9px] font-mono text-white/10">Haz clic en cualquier<br />estrella o planeta</div>
+                <div className="space-y-1">
+                    <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-white/40">Sin selección</div>
+                    <div className="text-[10px] font-mono text-white/25 leading-relaxed">
+                        Haz clic en cualquier estrella, planeta<br />u objeto en el mapa del cielo
+                    </div>
                 </div>
+                {onGoToGuide && (
+                    <button
+                        onClick={onGoToGuide}
+                        className="mt-2 flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-bold text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500/30 transition-all cursor-pointer shadow-sm"
+                    >
+                        <BookOpen className="h-4 w-4" />
+                        <span>Explorar en la Guía</span>
+                    </button>
+                )}
             </div>
         );
     }
@@ -109,6 +121,17 @@ export default function ObjectInfoTab() {
                     >
                         <Navigation className={`h-3.5 w-3.5 ${isTargeted ? 'fill-black text-black' : 'text-white/40'}`} />
                     </button>
+
+                    <button
+                        onClick={() => {
+                            setSelectedObject(null);
+                            setTargetedObject(null);
+                        }}
+                        className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/40 hover:border-red-500/40 hover:bg-red-500/20 hover:text-red-400 transition-all duration-300 cursor-pointer"
+                        title="Desmarcar / Volver al inicio"
+                    >
+                        <X className="h-3.5 w-3.5" />
+                    </button>
                 </div>
 
                 <div className="object-orb absolute right-0 top-0 h-32 w-32 translate-x-8 -translate-y-8 rounded-full blur-3xl" />
@@ -118,9 +141,21 @@ export default function ObjectInfoTab() {
                         {typeLabel}
                         {isPlanet ? ` ${(selected as Planet).symbol}` : ''}
                     </span>
-                    <span className={`text-[9px] font-mono ${isVisible ? 'text-green-400' : 'text-red-400'}`}>
-                        {isVisible ? '▲ VISIBLE' : '▽ OCULTO'}
-                    </span>
+                    <div className="flex items-center gap-2">
+                        <span className={`text-[9px] font-mono ${isVisible ? 'text-green-400' : 'text-red-400'}`}>
+                            {isVisible ? '▲ VISIBLE' : '▽ OCULTO'}
+                        </span>
+                        <button
+                            onClick={() => {
+                                setSelectedObject(null);
+                                setTargetedObject(null);
+                            }}
+                            className="flex h-5 w-5 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/40 hover:border-red-500/40 hover:bg-red-500/20 hover:text-red-400 transition-all cursor-pointer"
+                            title="Desmarcar objeto"
+                        >
+                            <X className="h-3 w-3" />
+                        </button>
+                    </div>
                 </div>
 
                 <h3 className="object-title font-display mb-1 text-2xl font-bold tracking-wide text-white">

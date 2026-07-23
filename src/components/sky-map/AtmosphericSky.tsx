@@ -95,6 +95,8 @@ export default function AtmosphericSky() {
     const meshRef = useRef<THREE.Mesh>(null);
     const camFov = useAppStore((s) => s.camFov);
     const viewMode = useAppStore((s) => s.viewMode);
+    const setSelectedObject = useAppStore((s) => s.setSelectedObject);
+    const setTargetedObject = useAppStore((s) => s.setTargetedObject);
     const sunPos = useMemo(() => new THREE.Vector3(100, 0, 0), []);
 
     // Stable uniforms object — mutate values in useFrame, never recreate
@@ -150,7 +152,15 @@ export default function AtmosphericSky() {
     if (viewMode === 'camera') return null;
 
     return (
-        <mesh ref={meshRef} renderOrder={-5}>
+        <mesh
+            ref={meshRef}
+            renderOrder={-5}
+            onClick={(e) => {
+                e.stopPropagation();
+                setSelectedObject(null);
+                setTargetedObject(null);
+            }}
+        >
             {/* 32×32 = 1.056 vértices vs 64×64 = 4.096. The sky is a smooth color
                 gradient — no banding visible at this tessellation. */}
             <sphereGeometry args={[115, 32, 32]} />

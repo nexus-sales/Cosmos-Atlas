@@ -149,7 +149,7 @@ function PanelContent({
                     </div>
 
                     {activeTab === 'challenge' && <ChallengeTab />}
-                    {activeTab === 'info' && <ObjectInfoTab />}
+                    {activeTab === 'info' && <ObjectInfoTab onGoToGuide={() => setActiveTab('guide')} />}
                     {activeTab === 'guide' && <GuideTab />}
                 </div>
 

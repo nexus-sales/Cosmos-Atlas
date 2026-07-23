@@ -183,7 +183,7 @@ export const useAppStore = create<AppState>()(
 
                 return {
                     targetedObject: obj,
-                    selectedObject: obj ?? state.selectedObject,
+                    selectedObject: obj,
                     foundChallenges: foundChallengesForObject(obj, state.foundChallenges, challenges),
                     followOrientation: obj ? false : state.followOrientation
                 }
