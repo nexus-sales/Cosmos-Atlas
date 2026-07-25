@@ -272,6 +272,23 @@ const AU_KM = 149597870.7;
 // Base de referencia: Júpiter a ~4.0 AU (oposición media) = ~49" → scale 0.9
 const REF_ARCSEC = 49.0;
 
+/**
+ * Radio 3D renderizado de un planeta (mismo calculo que usa PlanetMesh para su
+ * disco). Se extrae aqui porque JupiterMoonMesh tambien lo necesita: las lunas
+ * galileanas se posicionan como multiplo de ESTE radio, no de una constante
+ * fija en UA, para que nunca queden dentro del disco sea cual sea el zoom.
+ */
+function computePlanetBaseScale(distAU: number, textureKey: string): number {
+    const physRadius = PLANET_PHYS_RADIUS_KM[textureKey] ?? 3000;
+    const angularArcsec = 2 * (physRadius / (Math.max(0.1, distAU) * AU_KM)) * 206265;
+    return 0.9 * (angularArcsec / REF_ARCSEC);
+}
+
+function computePlanetScale(distAU: number, textureKey: string, camFov: number): number {
+    const zoomBoost = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 55, 8, 1.0, 8.0), 1.0, 8.0);
+    return computePlanetBaseScale(distAU, textureKey) * zoomBoost;
+}
+
 const PLANET_CONFIGS = [
     { body: Astronomy.Body.Mercury, name: "Mercurio", symbol: "☿", color: "#b0b0b0", textureKey: "mercury" as const, description: (mag: number) => `El planeta más cercano al Sol. Mag: ${mag.toFixed(1)}` },
     { body: Astronomy.Body.Venus,   name: "Venus",    symbol: "♀", color: "#f0e6c0", textureKey: "venus"   as const, description: (mag: number) => `El lucero del alba, cubierto de nubes. Mag: ${mag.toFixed(1)}` },
@@ -410,6 +427,18 @@ const MOON_FRAGMENT_SHADER = `
 
 const PLANET_RADIUS = 95;
 
+// Atenuacion diurna: en la realidad, planetas y Luna se pierden en el resplandor
+// del cielo cuando el Sol esta alto (o muy cerca angularmente). No los ocultamos
+// del todo -- eso rompe la exploracion libre a cualquier hora, que es como la
+// mayoria abre la app -- solo los atenuamos hasta un suelo minimo. Mismo rango
+// de altitud solar que ya usa Constellations.tsx (dayVisibility), pero aqui
+// resta en vez de sumar: de dia, planetas menos visibles; constelaciones, mas.
+const DAY_DIM_FLOOR = 0.35;
+function computeDayDimming(sunAltitudeDeg: number): number {
+    const dayVisibility = THREE.MathUtils.smoothstep(sunAltitudeDeg, -6, 10);
+    return 1 - dayVisibility * (1 - DAY_DIM_FLOOR);
+}
+
 
 function SunMesh({ pos }: { pos: [number, number, number] }) {
     const meshRef = useRef<THREE.Mesh>(null);
@@ -485,13 +514,13 @@ function SunMesh({ pos }: { pos: [number, number, number] }) {
     );
 }
 
-function MoonMesh({ planet, phase }: { planet: { pos: [number, number, number] }, phase: number }) {
+function MoonMesh({ planet, phase, dayDimming }: { planet: { pos: [number, number, number] }, phase: number, dayDimming: number }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const camFov = useAppStore(state => state.camFov);
     const texture = usePlanetTexture('moon');
     const glowTexture = useGlowTexture();
-    const sphereOpacity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 55, 35, 0, 1), 0, 1);
-    const glowOpacity   = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 35, 55, 0, 1), 0, 1);
+    const sphereOpacity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 55, 35, 0, 1), 0, 1) * dayDimming;
+    const glowOpacity   = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 35, 55, 0, 1), 0, 1) * dayDimming;
     // Iluminación lunar: 0-1 según fase (0°=Luna Nueva, 180°=Luna Llena)
     const moonBrightness = 0.3 + 0.7 * Math.abs(Math.sin(THREE.MathUtils.degToRad(phase / 2)));
 
@@ -563,27 +592,20 @@ interface PlanetData {
     distAU: number;
 }
 
-function PlanetMesh({ planet }: { planet: PlanetData }) {
+function PlanetMesh({ planet, dayDimming }: { planet: PlanetData, dayDimming: number }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const camFov = useAppStore(state => state.camFov);
     const texture = usePlanetTexture(planet.textureKey);
     const glowTexture = useGlowTexture();
     const ringTexture = useSaturnRingTexture();
 
-    // Tamaño angular real en arcsec = 2 * (physRadius_km / (dist_AU * AU_KM)) * 206265
-    const physRadius = PLANET_PHYS_RADIUS_KM[planet.textureKey] ?? 3000;
-    const angularArcsec = 2 * (physRadius / (Math.max(0.1, planet.distAU) * AU_KM)) * 206265;
-    const baseScale = 0.9 * (angularArcsec / REF_ARCSEC);
-
-    // ZoomBoost arranca desde FOV=55 para agrandar el disco al hacer zoom
-    const zoomBoost = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 55, 8, 1.0, 8.0), 1.0, 8.0);
-    const scale = baseScale * zoomBoost;
+    const scale = computePlanetScale(planet.distAU, planet.textureKey, camFov);
 
     // Esfera 3D aparece al hacer zoom (FOV < 55); sprite de glow siempre visible
-    const sphereOpacity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 55, 35, 0, 1), 0, 1);
-    const glowOpacity   = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 35, 55, 0, 1), 0, 1);
+    const sphereOpacity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 55, 35, 0, 1), 0, 1) * dayDimming;
+    const glowOpacity   = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 35, 55, 0, 1), 0, 1) * dayDimming;
     // Sprite: mínimo 1.2 unidades de radio visual, proporcional al tamaño angular
-    const glowScale = THREE.MathUtils.clamp(baseScale * 2.8, 1.2, 2.8);
+    const glowScale = THREE.MathUtils.clamp(computePlanetBaseScale(planet.distAU, planet.textureKey) * 2.8, 1.2, 2.8);
 
     const uniforms = useMemo(() => ({
         uMap: { value: null as THREE.Texture | null },
@@ -675,19 +697,33 @@ interface MoonData {
     id: string;
     name: string;
     color: string;
-    pos: [number, number, number];
+    dir: [number, number, number];    // direccion real normalizada desde Jupiter
+    separationFactor: number;         // multiplo del radio renderizado de Jupiter
+    radiusScale: number;               // tamano relativo real (Io=1)
 }
 
-function JupiterMoonMesh({ moon }: { moon: MoonData }) {
+function JupiterMoonMesh({ moon, jupiter }: { moon: MoonData; jupiter: PlanetData }) {
     const camFov = useAppStore(state => state.camFov);
     const opacity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 25, 12, 0, 1), 0, 1);
-    
+
     if (opacity < 0.01) return null;
 
+    // La orbita se ancla al radio RENDERIZADO de Jupiter (que ya incluye el
+    // zoomBoost cinematico), no a una constante fija en UA -- asi la luna
+    // nunca queda dentro del disco, sea cual sea el nivel de zoom.
+    const jupiterScale = computePlanetScale(jupiter.distAU, jupiter.textureKey, camFov);
+    const offset = jupiterScale * moon.separationFactor;
+    const pos: [number, number, number] = [
+        jupiter.pos[0] + moon.dir[0] * offset,
+        jupiter.pos[1] + moon.dir[1] * offset,
+        jupiter.pos[2] + moon.dir[2] * offset,
+    ];
+    const moonRadius = 0.05 * moon.radiusScale;
+
     return (
-        <group position={moon.pos}>
+        <group position={pos}>
             <mesh>
-                <sphereGeometry args={[0.08, 32, 32]} />
+                <sphereGeometry args={[moonRadius, 32, 32]} />
                 <meshBasicMaterial color={moon.color} />
             </mesh>
             <Html distanceFactor={80}>
@@ -746,52 +782,71 @@ export default function Planets() {
             console.warn('[Planets] fallo calculando posicion del Sol:', err);
         }
 
-        // Lunas galileanas de Júpiter — efemérides reales via astronomy-engine
+        // Lunas galileanas de Júpiter — efemérides reales via astronomy-engine.
+        // La posicion final (dependiente del zoom) se calcula en JupiterMoonMesh
+        // a partir de la direccion real + un factor de separacion; aqui solo
+        // se guarda la direccion normalizada y la distancia orbital relativa
+        // real (para diferenciar Io/Europa/Ganimedes/Calisto entre si).
         const jupiter = planets.find(p => p.name === "Júpiter");
         let jMoons: MoonData[] = [];
         if (jupiter) {
             try {
-                // GalileanMoons devuelve posiciones en UA relativas a Júpiter
-                // en coordenadas ecuatoriales geocéntricas. Escalamos para la escena.
-                const MOON_SCALE = 4.0; // amplificador visual para que sean visibles
                 const gm = Astronomy.JupiterMoons(time);
                 const moonConfigs = [
-                    { id: 'io',       name: 'Io',        color: '#ffffaa', data: gm.io },
-                    { id: 'europa',   name: 'Europa',    color: '#eef1ff', data: gm.europa },
-                    { id: 'ganymede', name: 'Ganímedes', color: '#d1d1d1', data: gm.ganymede },
-                    { id: 'callisto', name: 'Calisto',   color: '#a2a2a2', data: gm.callisto },
+                    { id: 'io',       name: 'Io',        color: '#ffffaa', data: gm.io,       radiusKm: 1821.6 },
+                    { id: 'europa',   name: 'Europa',    color: '#eef1ff', data: gm.europa,   radiusKm: 1560.8 },
+                    { id: 'ganymede', name: 'Ganímedes', color: '#d1d1d1', data: gm.ganymede, radiusKm: 2634.1 },
+                    { id: 'callisto', name: 'Calisto',   color: '#a2a2a2', data: gm.callisto, radiusKm: 2410.3 },
                 ];
-                jMoons = moonConfigs.map(m => ({
-                    id: m.id,
-                    name: m.name,
-                    color: m.color,
-                    pos: [
-                        jupiter.pos[0] + m.data.x * MOON_SCALE,
-                        jupiter.pos[1] + m.data.y * MOON_SCALE,
-                        jupiter.pos[2] + m.data.z * MOON_SCALE,
-                    ] as [number, number, number]
-                }));
+                const orbitalDistAU = moonConfigs.map(m => Math.hypot(m.data.x, m.data.y, m.data.z));
+                const closestAU = Math.min(...orbitalDistAU);
+
+                jMoons = moonConfigs.map((m, i) => {
+                    const dist = orbitalDistAU[i] || closestAU;
+                    const dir: [number, number, number] = [m.data.x / dist, m.data.y / dist, m.data.z / dist];
+                    // Comprimido con raiz cuadrada: Calisto (la mas externa) queda
+                    // a ~1.4x la separacion de Io en vez de ~4.5x -- suficiente
+                    // para distinguirlas sin que la orbita mas externa se salga
+                    // de encuadre a zoom alto.
+                    const separationFactor = 1.5 + Math.sqrt(dist / closestAU) * 0.9;
+                    return {
+                        id: m.id,
+                        name: m.name,
+                        color: m.color,
+                        dir,
+                        separationFactor,
+                        radiusScale: m.radiusKm / 1821.6, // relativo a Io
+                    };
+                });
             } catch {
                 // Fallback visual si falla astronomy-engine en un tick concreto
                 jMoons = [];
             }
         }
 
-        return { planets, moon, jMoons, sunPos };
+        // sunHorRef.alt lo mantiene SunLight (SkyCanvas.tsx) ~1x/seg -- suficiente
+        // granularidad para una magnitud que cambia despacio como la altitud solar.
+        const dayDimming = computeDayDimming(sunHorRef.alt);
+
+        return { planets, moon, jMoons, sunPos, dayDimming };
     }, [time, observer]);
 
     return (
         <group>
             <SunMesh pos={data.sunPos} />
             {data.planets.map(p => (
-                <PlanetMesh key={p.name} planet={p} />
+                <PlanetMesh key={p.name} planet={p} dayDimming={data.dayDimming} />
             ))}
             {data.moon && (
-                <MoonMesh planet={data.moon.planet} phase={data.moon.phase} />
+                <MoonMesh planet={data.moon.planet} phase={data.moon.phase} dayDimming={data.dayDimming} />
             )}
-            {data.jMoons.map(m => (
-                <JupiterMoonMesh key={m.id} moon={m} />
-            ))}
+            {data.jMoons.length > 0 && (() => {
+                const jupiter = data.planets.find(p => p.name === "Júpiter");
+                if (!jupiter) return null;
+                return data.jMoons.map(m => (
+                    <JupiterMoonMesh key={m.id} moon={m} jupiter={jupiter} />
+                ));
+            })()}
         </group>
     );
 }
