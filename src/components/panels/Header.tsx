@@ -29,13 +29,15 @@ function cardinalFromAz(az: number): string {
 
 function MiniCompass() {
     const [open, setOpen] = useState(false);
-    const needleRef = useRef<SVGSVGElement>(null);
-    const labelRef = useRef<HTMLSpanElement>(null);
+    const roseRef = useRef<SVGSVGElement>(null);
+    const degLabelRef = useRef<HTMLSpanElement>(null);
     const followOrientation = useAppStore((s) => s.followOrientation);
     const compassCalibrationOffset = useAppStore((s) => s.compassCalibrationOffset);
     const setCompassCalibrationOffset = useAppStore((s) => s.setCompassCalibrationOffset);
     const zeroCompassCalibrationOffset = useAppStore((s) => s.zeroCompassCalibrationOffset);
     const followOrientationRef = useRef(followOrientation);
+    const sensorActiveRef = useRef(false);
+    const dotRef = useRef<HTMLSpanElement>(null);
 
     useEffect(() => {
         followOrientationRef.current = followOrientation;
@@ -45,12 +47,26 @@ function MiniCompass() {
         let rafId: number;
 
         const tick = () => {
-            const az = followOrientationRef.current && deviceOrientationRef.active
+            const usingGyro = followOrientationRef.current && deviceOrientationRef.active;
+            const az = usingGyro
                 ? ((deviceOrientationRef.heading % 360) + 360) % 360
                 : cameraHeadingRef.value;
 
-            needleRef.current?.style.setProperty('--heading', `${-az}deg`);
-            if (labelRef.current) labelRef.current.textContent = `${cardinalFromAz(az)} ${Math.round(az)}°`;
+            roseRef.current?.style.setProperty('--heading', `${-az}deg`);
+
+            const card = cardinalFromAz(az);
+            if (degLabelRef.current) {
+                degLabelRef.current.textContent = `${card} ${Math.round(az)}°`;
+            }
+
+            const active = usingGyro;
+            if (sensorActiveRef.current !== active) {
+                sensorActiveRef.current = active;
+                if (dotRef.current) {
+                    dotRef.current.style.opacity = active ? '1' : '0';
+                }
+            }
+
             rafId = requestAnimationFrame(tick);
         };
 
@@ -87,30 +103,78 @@ function MiniCompass() {
                 aria-label="Abrir brujula"
                 {...{ 'aria-expanded': open }}
                 className={cn(
-                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-full border bg-white/[0.04] text-white/65 transition-colors md:h-11 md:w-11',
-                    'hover:border-blue-400/40 hover:text-blue-100',
-                    followOrientation ? 'border-blue-400/45 shadow-[0_0_18px_rgba(96,165,250,0.18)]' : 'border-white/10'
+                    'relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border bg-white/[0.04] transition-colors md:h-11 md:w-11',
+                    'hover:border-blue-400/40',
+                    followOrientation
+                        ? 'border-blue-400/45 shadow-[0_0_18px_rgba(96,165,250,0.18)]'
+                        : 'border-white/10'
                 )}
             >
-                <span className="relative flex h-8 w-8 items-center justify-center">
-                    <svg
-                        ref={needleRef}
-                        viewBox="0 0 32 32"
-                        className="h-8 w-8 [transform:rotate(var(--heading,0deg))] transition-transform duration-100"
-                        aria-hidden="true"
-                    >
-                        <circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" strokeOpacity="0.22" />
-                        <path d="M16 4l3 12-3-2-3 2 3-12Z" fill={followOrientation ? '#60a5fa' : '#f87171'} />
-                        <path d="M16 28l-3-12 3 2 3-2-3 12Z" fill="currentColor" opacity="0.35" />
-                        <circle cx="16" cy="16" r="2" fill="currentColor" opacity="0.6" />
-                    </svg>
-                    <span ref={labelRef} className="sr-only">N 0°</span>
-                </span>
+                <svg
+                    ref={roseRef}
+                    viewBox="0 0 40 40"
+                    className="h-9 w-9 md:h-10 md:w-10"
+                    style={{ transform: 'rotate(var(--heading, 0deg))', transition: 'transform 0.12s ease-out' }}
+                    aria-hidden="true"
+                >
+                    <circle cx="20" cy="20" r="19" fill="none" stroke="white" strokeOpacity="0.06" strokeWidth="1" />
+
+                    {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => {
+                        const rad = (deg * Math.PI) / 180;
+                        const isMajor = deg % 90 === 0;
+                        const r1 = isMajor ? 14 : 15.5;
+                        const r2 = 18;
+                        return (
+                            <line
+                                key={deg}
+                                x1={20 + r1 * Math.sin(rad)}
+                                y1={20 - r1 * Math.cos(rad)}
+                                x2={20 + r2 * Math.sin(rad)}
+                                y2={20 - r2 * Math.cos(rad)}
+                                stroke="white"
+                                strokeOpacity={isMajor ? 0.5 : 0.22}
+                                strokeWidth={isMajor ? 1.4 : 0.8}
+                                strokeLinecap="round"
+                            />
+                        );
+                    })}
+
+                    <text x="20" y="8.5" textAnchor="middle" dominantBaseline="middle"
+                        fontSize="6" fontWeight="900" fill="#f87171" fontFamily="system-ui,sans-serif"
+                        letterSpacing="-0.5">N</text>
+                    <text x="20" y="33" textAnchor="middle" dominantBaseline="middle"
+                        fontSize="4.5" fontWeight="700" fill="white" fillOpacity="0.35" fontFamily="system-ui,sans-serif">S</text>
+                    <text x="33" y="20.5" textAnchor="middle" dominantBaseline="middle"
+                        fontSize="4.5" fontWeight="700" fill="white" fillOpacity="0.35" fontFamily="system-ui,sans-serif">E</text>
+                    <text x="7" y="20.5" textAnchor="middle" dominantBaseline="middle"
+                        fontSize="4.5" fontWeight="700" fill="white" fillOpacity="0.35" fontFamily="system-ui,sans-serif">O</text>
+
+                    <path d="M20 3.5 L21.8 17.5 L20 15.8 L18.2 17.5 Z" fill="#f87171" />
+                    <path d="M20 36.5 L18.2 22.5 L20 24.2 L21.8 22.5 Z" fill="white" opacity="0.22" />
+
+                    <circle cx="20" cy="20" r="2.6" fill="#1e1e2e" stroke="white" strokeOpacity="0.25" strokeWidth="0.8" />
+                    <circle cx="20" cy="20" r="1.3" fill="#f87171" opacity="0.85" />
+                </svg>
+
+                <span
+                    ref={dotRef}
+                    style={{ opacity: 0, transition: 'opacity 0.3s' }}
+                    className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-blue-400 shadow-[0_0_6px_rgba(96,165,250,0.9)] animate-pulse"
+                />
             </button>
+
+            <span
+                ref={degLabelRef}
+                className="pointer-events-none absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap select-none
+                           text-[8px] font-mono font-bold tabular-nums text-white/45"
+                aria-live="off"
+            >
+                N 0°
+            </span>
 
             {open && (
                 <div
-                    className="atlas-panel absolute left-0 top-[calc(100%+0.65rem)] z-[95] w-48 rounded-2xl p-2"
+                    className="atlas-panel absolute left-0 top-[calc(100%+1.25rem)] z-[95] w-52 rounded-2xl p-2"
                 >
                     <button onClick={pointZenith} className="w-full rounded-xl px-3 py-2 text-left text-[11px] font-bold uppercase tracking-widest text-white/65 hover:bg-white/8 hover:text-white">
                         Mirar cenit
