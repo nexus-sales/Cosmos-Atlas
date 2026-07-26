@@ -305,7 +305,7 @@ function BottomSheet({
                     {/* Sheet — altura CSS para que respete dvh y safe-area */}
                     <motion.div
                         key="bs-sheet"
-                        className="atlas-panel !border-x-0 !border-b-0 fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-3xl"
+                        className="atlas-panel digital-grit !border-x-0 !border-b-0 fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-3xl"
                         style={{
                             height: SHEET_HEIGHT_CSS,
                             y,
@@ -407,7 +407,7 @@ export default function SidePanel() {
             initial={false}
             animate={{ width: sidebarOpen ? 340 : 52 }}
             transition={{ type: 'spring', stiffness: 350, damping: 35 }}
-            className="atlas-panel !border-y-0 !border-r-0 relative h-full z-50 flex flex-col shrink-0"
+            className="atlas-panel digital-grit !border-y-0 !border-r-0 relative h-full z-50 flex flex-col shrink-0"
         >
             {sidebarOpen ? (
                 // Expanded desktop
