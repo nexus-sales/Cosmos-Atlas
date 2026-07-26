@@ -1,13 +1,16 @@
 'use client';
 
 import { Html } from '@react-three/drei';
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useCallback } from 'react';
 import type { CSSProperties } from 'react';
 import * as THREE from 'three';
+import type { ThreeEvent } from '@react-three/fiber';
 import { useFrame } from '@react-three/fiber';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { useAppStore } from '@/stores/useAppStore';
+import { useCatalog } from '@/stores/useCatalogStore';
 import { sunHorRef } from '@/lib/skyRefs';
+import { buildSolarSystemTarget } from '@/lib/solarSystem';
 import * as Astronomy from 'astronomy-engine';
 
 
@@ -440,7 +443,7 @@ function computeDayDimming(sunAltitudeDeg: number): number {
 }
 
 
-function SunMesh({ pos }: { pos: [number, number, number] }) {
+function SunMesh({ pos, onSelect }: { pos: [number, number, number]; onSelect: () => void }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const glowRef = useRef<THREE.Mesh>(null);
     const texture = usePlanetTexture('sun');
@@ -469,8 +472,13 @@ function SunMesh({ pos }: { pos: [number, number, number] }) {
         }
     });
 
+    const handleClick = useCallback((e: ThreeEvent<MouseEvent>) => {
+        e.stopPropagation();
+        onSelect();
+    }, [onSelect]);
+
     return (
-        <group position={pos}>
+        <group position={pos} onClick={handleClick}>
             {/* Sprite de glow — siempre visible a FOV amplio */}
             {glowOpacity > 0.01 && (
                 <sprite scale={[3.5, 3.5, 1]}>
@@ -514,7 +522,7 @@ function SunMesh({ pos }: { pos: [number, number, number] }) {
     );
 }
 
-function MoonMesh({ planet, phase, dayDimming }: { planet: { pos: [number, number, number] }, phase: number, dayDimming: number }) {
+function MoonMesh({ planet, phase, dayDimming, onSelect }: { planet: { pos: [number, number, number] }, phase: number, dayDimming: number, onSelect: () => void }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const camFov = useAppStore(state => state.camFov);
     const texture = usePlanetTexture('moon');
@@ -544,8 +552,13 @@ function MoonMesh({ planet, phase, dayDimming }: { planet: { pos: [number, numbe
         ).normalize();
     });
 
+    const handleClick = useCallback((e: ThreeEvent<MouseEvent>) => {
+        e.stopPropagation();
+        onSelect();
+    }, [onSelect]);
+
     return (
-        <group position={planet.pos}>
+        <group position={planet.pos} onClick={handleClick}>
             {/* Sprite de glow — siempre visible a FOV amplio */}
             {glowOpacity > 0.01 && (
                 <sprite scale={[2.5, 2.5, 1]}>
@@ -592,7 +605,7 @@ interface PlanetData {
     distAU: number;
 }
 
-function PlanetMesh({ planet, dayDimming }: { planet: PlanetData, dayDimming: number }) {
+function PlanetMesh({ planet, dayDimming, onSelect }: { planet: PlanetData, dayDimming: number, onSelect: () => void }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const camFov = useAppStore(state => state.camFov);
     const texture = usePlanetTexture(planet.textureKey);
@@ -628,8 +641,13 @@ function PlanetMesh({ planet, dayDimming }: { planet: PlanetData, dayDimming: nu
         ).normalize();
     });
 
+    const handleClick = useCallback((e: ThreeEvent<MouseEvent>) => {
+        e.stopPropagation();
+        onSelect();
+    }, [onSelect]);
+
     return (
-        <group position={planet.pos}>
+        <group position={planet.pos} onClick={handleClick}>
             {/* Punto de luz — siempre visible como una estrella de color */}
             {glowOpacity > 0.01 && (
                 <sprite scale={[glowScale, glowScale, 1]}>
@@ -702,9 +720,14 @@ interface MoonData {
     radiusScale: number;               // tamano relativo real (Io=1)
 }
 
-function JupiterMoonMesh({ moon, jupiter }: { moon: MoonData; jupiter: PlanetData }) {
+function JupiterMoonMesh({ moon, jupiter, onSelect }: { moon: MoonData; jupiter: PlanetData; onSelect: () => void }) {
     const camFov = useAppStore(state => state.camFov);
     const opacity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 25, 12, 0, 1), 0, 1);
+
+    const handleClick = useCallback((e: ThreeEvent<MouseEvent>) => {
+        e.stopPropagation();
+        onSelect();
+    }, [onSelect]);
 
     if (opacity < 0.01) return null;
 
@@ -721,7 +744,7 @@ function JupiterMoonMesh({ moon, jupiter }: { moon: MoonData; jupiter: PlanetDat
     const moonRadius = 0.05 * moon.radiusScale;
 
     return (
-        <group position={pos}>
+        <group position={pos} onClick={handleClick}>
             <mesh>
                 <sphereGeometry args={[moonRadius, 32, 32]} />
                 <meshBasicMaterial color={moon.color} />
@@ -743,6 +766,36 @@ export default function Planets() {
     // timeMinute solo cambia 1x/min — evita recalcular VSOP87 cada segundo
     const time = useAppStore(state => state.timeMinute);
     const observer = useAppStore(state => state.observer);
+    const solarSystemBodies = useCatalog(state => state.solarSystemBodies);
+    const setSelectedObject = useAppStore(state => state.setSelectedObject);
+    const markAsVisited = useAppStore(state => state.markAsVisited);
+
+    // Mismo helper que usa el listado de la Guía — mantiene mag/desc/simbolo
+    // consistentes sea cual sea el camino de selección (lista o clic directo).
+    const selectByName = useCallback((name: string) => {
+        const target = buildSolarSystemTarget(name, time, observer.lat, observer.lon, solarSystemBodies);
+        if (!target) return;
+        setSelectedObject(target);
+        markAsVisited(target.name);
+    }, [time, observer, solarSystemBodies, setSelectedObject, markAsVisited]);
+
+    // Las lunas galileanas no tienen entrada propia en SOLAR_SYSTEM_EPHEMERIS
+    // (son satelites de Jupiter, no cuerpos con efemerides propias en ese mapa):
+    // se construye un objeto Planet ad-hoc reutilizando la posicion de Jupiter
+    // (la separacion angular real es de segundos de arco, despreciable aqui).
+    const selectJupiterMoon = useCallback((moon: MoonData, jupiter: PlanetData) => {
+        setSelectedObject({
+            name: moon.name,
+            ra: jupiter.ra,
+            dec: jupiter.dec,
+            mag: 5.5,
+            desc: `Luna galileana de Júpiter, descubierta por Galileo en 1610.`,
+            color: moon.color,
+            symbol: '☾',
+            kind: 'planet',
+        });
+        markAsVisited(moon.name);
+    }, [setSelectedObject, markAsVisited]);
 
     const data = useMemo(() => {
         const bs = new Astronomy.Observer(observer.lat, observer.lon, 0);
@@ -833,18 +886,18 @@ export default function Planets() {
 
     return (
         <group>
-            <SunMesh pos={data.sunPos} />
+            <SunMesh pos={data.sunPos} onSelect={() => selectByName('Sol')} />
             {data.planets.map(p => (
-                <PlanetMesh key={p.name} planet={p} dayDimming={data.dayDimming} />
+                <PlanetMesh key={p.name} planet={p} dayDimming={data.dayDimming} onSelect={() => selectByName(p.name)} />
             ))}
             {data.moon && (
-                <MoonMesh planet={data.moon.planet} phase={data.moon.phase} dayDimming={data.dayDimming} />
+                <MoonMesh planet={data.moon.planet} phase={data.moon.phase} dayDimming={data.dayDimming} onSelect={() => selectByName('Luna')} />
             )}
             {data.jMoons.length > 0 && (() => {
                 const jupiter = data.planets.find(p => p.name === "Júpiter");
                 if (!jupiter) return null;
                 return data.jMoons.map(m => (
-                    <JupiterMoonMesh key={m.id} moon={m} jupiter={jupiter} />
+                    <JupiterMoonMesh key={m.id} moon={m} jupiter={jupiter} onSelect={() => selectJupiterMoon(m, jupiter)} />
                 ));
             })()}
         </group>
