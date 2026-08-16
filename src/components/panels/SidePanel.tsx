@@ -124,45 +124,85 @@ function PanelContent({
             {/* Scrollable content */}
             <div className="flex-1 overflow-y-auto custom-scrollbar">
                 <div className="p-5">
-                    {/* Selector de Modo de Vista */}
-                    <div className="mb-6 bg-white/5 p-1 rounded-xl flex gap-1 border border-white/10">
-                        <button
-                            onClick={() => useAppStore.getState().setViewMode('vault')}
-                            className={cn(
-                                "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-bold tracking-widest transition-all cursor-pointer",
-                                viewMode === 'vault' ? "bg-white/10 text-white shadow-lg" : "text-white/30 hover:text-white/50"
-                            )}
-                        >
-                            <Layers className="w-3.5 h-3.5" />
-                            BÓVEDA
-                        </button>
-                        <button
-                            onClick={() => useAppStore.getState().setViewMode('camera')}
-                            className={cn(
-                                "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-[10px] font-bold tracking-widest transition-all cursor-pointer",
-                                viewMode === 'camera' ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "text-white/30 hover:text-white/50"
-                            )}
-                        >
-                            <Camera className="w-3.5 h-3.5" />
-                            CÁMARA
-                        </button>
-                    </div>
-
                     {activeTab === 'challenge' && <ChallengeTab />}
                     {activeTab === 'info' && <ObjectInfoTab onGoToGuide={() => setActiveTab('guide')} />}
                     {activeTab === 'guide' && <GuideTab />}
                 </div>
 
-                {/* Accordions */}
-                <div className="border-t border-white/10 divide-y divide-white/10">
-                    <AccordionSection title="Capas del Cielo" icon={<Settings2 className="w-4 h-4" />} isOpen={layersOpen} onToggle={() => setLayersOpen(!layersOpen)}>
-                        <div className="grid grid-cols-2 gap-2">
-                            {layerToggles.map(({ key, label, icon: Icon, active }) => (
-                                <button key={key} onClick={() => toggleSetting(key)} className={cn('flex flex-col items-center gap-1.5 py-2.5 rounded-lg text-[9px] font-bold tracking-wider transition-all border outline-none cursor-pointer', active ? 'text-blue-400 border-blue-500/30 bg-blue-500/10' : 'text-white/30 border-white/10 hover:text-white/50 hover:border-white/20')}>
-                                    <Icon className="w-4 h-4" />
-                                    {label}
-                                </button>
-                            ))}
+                {/* Accordions sin líneas duras (premium look) */}
+                <div className="border-t border-white/10 pt-2 flex flex-col gap-1 px-2 pb-4">
+                    <AccordionSection title="Control Center (Capas)" icon={<Settings2 className="w-4 h-4" />} isOpen={layersOpen} onToggle={() => setLayersOpen(!layersOpen)}>
+                        <div className="flex flex-col gap-3">
+                            {/* Bloque 1: Modo Observación */}
+                            <div className="grid grid-cols-2 gap-2">
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => toggleSetting('nightMode')}
+                                    className={cn(
+                                        'flex flex-col items-center justify-center p-3 rounded-xl border transition-colors',
+                                        nightMode ? 'bg-red-950/40 border-red-500/50 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.2)]' : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-white/70'
+                                    )}
+                                >
+                                    <Moon className="w-5 h-5 mb-1" />
+                                    <span className="text-[9px] font-bold tracking-widest uppercase">Nocturno</span>
+                                </motion.button>
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => toggleSetting('followTarget')}
+                                    className={cn(
+                                        'flex flex-col items-center justify-center p-3 rounded-xl border transition-colors',
+                                        followTarget ? 'bg-blue-500/20 border-blue-400/50 text-blue-300 shadow-[0_0_15px_rgba(59,130,246,0.2)]' : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-white/70'
+                                    )}
+                                >
+                                    <Crosshair className="w-5 h-5 mb-1" />
+                                    <span className="text-[9px] font-bold tracking-widest uppercase">Seguir</span>
+                                </motion.button>
+                            </div>
+
+                            {/* Bloque 2: Entorno Celeste */}
+                            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-2 grid grid-cols-4 gap-1">
+                                {[
+                                    { key: 'showGrid', label: 'GRID', icon: Grid3X3, active: showGrid },
+                                    { key: 'showEcliptic', label: 'ECLÍPT.', icon: Layers, active: showEcliptic },
+                                    { key: 'showConstellations', label: 'CONST.', icon: Layers, active: showConstellations },
+                                    { key: 'showMilkyWay', label: 'VÍA L.', icon: Sparkles, active: showMilkyWay }
+                                ].map(({ key, label, icon: Icon, active }) => (
+                                    <button
+                                        key={key}
+                                        onClick={() => toggleSetting(key as any)}
+                                        className={cn(
+                                            'flex flex-col items-center justify-center p-2 rounded-lg transition-all',
+                                            active ? 'bg-white/10 text-white shadow-inner' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
+                                        )}
+                                    >
+                                        <Icon className="w-3.5 h-3.5 mb-1 opacity-80" />
+                                        <span className="text-[8px] font-bold tracking-wider">{label}</span>
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Bloque 3: Objetos Extra */}
+                            <div className="grid grid-cols-3 gap-2">
+                                {[
+                                    { key: 'showSatellites', label: 'SATÉLITES', icon: Satellite, active: showSatellites },
+                                    { key: 'showStarlink', label: 'STARLINK', icon: Globe, active: showStarlink },
+                                    { key: 'telescopeMode', label: 'TELESCOPIO', icon: Camera, active: telescopeMode }
+                                ].map(({ key, label, icon: Icon, active }) => (
+                                    <button
+                                        key={key}
+                                        onClick={() => toggleSetting(key as any)}
+                                        className={cn(
+                                            'flex flex-col items-center justify-center py-2.5 rounded-lg border transition-all',
+                                            active ? 'bg-cyan-900/30 border-cyan-500/40 text-cyan-300' : 'bg-white/5 border-transparent text-white/30 hover:bg-white/10 hover:text-white/60'
+                                        )}
+                                    >
+                                        <Icon className="w-4 h-4 mb-1" />
+                                        <span className="text-[8px] font-bold tracking-wider">{label}</span>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </AccordionSection>
 

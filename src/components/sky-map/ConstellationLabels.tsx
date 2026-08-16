@@ -248,8 +248,8 @@ export default function ConstellationLabels() {
                                 )}
                                 style={{
                                     textShadow: nightMode 
-                                        ? '0 0 6px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,0.8)' 
-                                        : '0 0 6px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,0.8)',
+                                        ? '0 0 8px rgba(0,0,0,1), 0 0 4px rgba(0,0,0,0.9)' 
+                                        : '0 0 12px rgba(0,0,0,1), 0 0 5px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,1)',
                                     transform: name === 'Perseus' ? 'translateY(60px)' : (name === 'Orion' ? 'translateY(80px)' : 'none')
                                 }}
                             >

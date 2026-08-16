@@ -198,7 +198,7 @@ export default function Constellations() {
 
                 const opacity = isFocused
                     ? THREE.MathUtils.clamp(1.0 * overallPresence * pulse * dayOpacityBoost, 0, 1)
-                    : THREE.MathUtils.clamp(0.35 * overallPresence * nonFocusedVisibility * dayOpacityBoost, 0, 0.72);
+                    : THREE.MathUtils.clamp(0.12 * overallPresence * nonFocusedVisibility * dayOpacityBoost, 0, 0.35);
 
                 const lineWidth = isFocused 
                     ? 1.8 * pulse * dayLineBoost

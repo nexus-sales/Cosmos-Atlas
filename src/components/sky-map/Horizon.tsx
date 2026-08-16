@@ -124,9 +124,6 @@ export default function Horizon() {
 
     return (
         <group>
-            {/* ── Resplandor crepuscular direccional ─── */}
-            <SunriseGlow />
-
             {/* ── Suelo Profundo ─── */}
             <mesh
                 position={[0, -0.05, 0]}

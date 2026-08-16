@@ -74,8 +74,10 @@ const SKY_FRAGMENT_SHADER = `
         finalColor += pollutionColor * pollutionT * (horizonGlow * 0.18 + skyFloor * 0.7) * (1.0 - dayFactor * 0.65);
         finalColor += sunsetColor;
 
-        // Transición suave en el horizonte: fade-out en lugar de corte duro
-        float horizonFade = smoothstep(-0.10, 0.04, zenithAngle);
+        // Transición hiper-suave en el horizonte (Simulación Rayleigh real)
+        // Para evitar el "corte de cuchillo" con el suelo negro, la opacidad
+        // debe caer a casi 0 justo en la línea del horizonte (y=0).
+        float horizonFade = smoothstep(-0.02, 0.25, zenithAngle);
         float alpha = clamp(uSuppression * horizonFade, 0.0, 1.0);
 
         // Tonemapping suave
