@@ -201,8 +201,8 @@ export default function Constellations() {
                     : THREE.MathUtils.clamp(0.12 * overallPresence * nonFocusedVisibility * dayOpacityBoost, 0, 0.35);
 
                 const lineWidth = isFocused 
-                    ? 1.8 * pulse * dayLineBoost
-                    : 0.9 * dayLineBoost;
+                    ? 1.0 * pulse * dayLineBoost
+                    : 0.5 * dayLineBoost;
 
                 if (opacity < 0.01) return null;
 
@@ -239,7 +239,7 @@ export default function Constellations() {
                                 key={`day-glow-${i}`}
                                 points={points}
                                 color={color}
-                                lineWidth={lineWidth * 3.2}
+                                lineWidth={lineWidth * 2.0}
                                 transparent
                                 opacity={isFocused ? dayGlowOpacity * 1.4 : dayGlowOpacity}
                                 depthTest={false}
@@ -252,7 +252,7 @@ export default function Constellations() {
                                 <Line
                                     points={points}
                                     color={color}
-                                    lineWidth={lineWidth * 4}
+                                    lineWidth={lineWidth * 2.5}
                                     transparent
                                     opacity={0.1 * overallPresence}
                                     depthTest={false}
@@ -261,7 +261,7 @@ export default function Constellations() {
                                 <Line
                                     points={points}
                                     color={color}
-                                    lineWidth={lineWidth * 2.5}
+                                    lineWidth={lineWidth * 1.6}
                                     transparent
                                     opacity={0.2 * overallPresence}
                                     depthTest={false}
@@ -300,7 +300,7 @@ export default function Constellations() {
                                     />
                                 </bufferGeometry>
                                 <pointsMaterial
-                                    size={isFocused ? 1.5 * pulse : 0.6}
+                                    size={isFocused ? 1.0 * pulse : 0.4}
                                     color={color}
                                     transparent
                                     opacity={isFocused ? Math.min(1, opacity * 1.5) : opacity * 0.7}
