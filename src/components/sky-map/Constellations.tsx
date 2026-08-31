@@ -5,12 +5,16 @@ import * as THREE from 'three';
 import { Line } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { CONSTELLATIONS } from '@/data/constellations';
+import { getConstellationDisplayName } from '@/data/constellationNames';
 import { useCatalog } from '@/stores/useCatalogStore';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { useAppStore } from '@/stores/useAppStore';
 import * as Astronomy from 'astronomy-engine';
+import type { ThreeEvent } from '@react-three/fiber';
+import type { Star } from '@/types/celestial';
 
 type Point3 = [number, number, number];
+type ConstellationNode = { star: Star; position: Point3 };
 
 function lerpPoint(a: Point3, b: Point3, t: number): Point3 {
     return [
@@ -34,8 +38,12 @@ export default function Constellations() {
     const camFov = useAppStore((state) => state.camFov);
     const focusedConstellation = useAppStore((state) => state.focusedConstellation);
     const selectedObject = useAppStore((state) => state.selectedObject);
+    const setSelectedObject = useAppStore((state) => state.setSelectedObject);
+    const setTargetedObject = useAppStore((state) => state.setTargetedObject);
+    const setFocusedConstellation = useAppStore((state) => state.setFocusedConstellation);
     const stars = useCatalog(s => s.stars);
     const RADIUS = 92;
+    const tapRef = useRef<{ constellation: string; index: number; x: number; y: number; t: number } | null>(null);
     const [drawT, setDrawT] = useState(1);
     const [dayVisibility, setDayVisibility] = useState(0);
     const rafRef = useRef<number | null>(null);
@@ -48,7 +56,7 @@ export default function Constellations() {
 
         return Object.entries(CONSTELLATIONS).map(([name, constLines]) => {
             const pointsList: Point3[][] = [];
-            const uniquePointsMap = new Map<string, Point3>();
+            const uniquePointsMap = new Map<string, ConstellationNode>();
 
             constLines.forEach(([startName, endName]) => {
                 const startStar = starMap.get(startName);
@@ -59,19 +67,19 @@ export default function Constellations() {
                 const p2 = equatorialTo3D(endStar.ra, endStar.dec, RADIUS);
                 
                 pointsList.push([p1, p2]);
-                uniquePointsMap.set(startName, p1);
-                uniquePointsMap.set(endName, p2);
+                uniquePointsMap.set(startName, { star: startStar, position: p1 });
+                uniquePointsMap.set(endName, { star: endStar, position: p2 });
             });
             
             const nodes = Array.from(uniquePointsMap.values());
             const nodesPositions = new Float32Array(nodes.length * 3);
-            nodes.forEach((p, i) => {
-                nodesPositions[i * 3] = p[0];
-                nodesPositions[i * 3 + 1] = p[1];
-                nodesPositions[i * 3 + 2] = p[2];
+            nodes.forEach((node, i) => {
+                nodesPositions[i * 3] = node.position[0];
+                nodesPositions[i * 3 + 1] = node.position[1];
+                nodesPositions[i * 3 + 2] = node.position[2];
             });
 
-            return { name, pointsList, nodesPositions };
+            return { name, pointsList, nodes, nodesPositions };
         });
     }, [stars]);
 
@@ -187,9 +195,34 @@ export default function Constellations() {
     const dayLineBoost = THREE.MathUtils.lerp(1.0, 1.65, dayVisibility);
     const dayGlowOpacity = 0.16 * dayVisibility * overallPresence;
 
+    const selectConstellationNode = (constellation: string, node: ConstellationNode) => {
+        const displayName = getConstellationDisplayName(constellation);
+        const isGuidePoint = /-St\d+$/i.test(node.star.name);
+
+        if (isGuidePoint) {
+            const constellationTarget = {
+                name: constellation,
+                ra: node.star.ra,
+                dec: node.star.dec,
+                mag: node.star.mag,
+                desc: `Constelacion de ${displayName}. Toca sus estrellas principales para descubrir nombres, brillo y posicion; estos puntos-guia te ayudan a seguir la figura completa en la boveda.`,
+                color: '#8b5cf6',
+                symbol: '\u2736',
+                kind: 'planet' as const,
+            };
+            setFocusedConstellation(constellation);
+            setSelectedObject(constellationTarget);
+            setTargetedObject(constellationTarget);
+            return;
+        }
+
+        setFocusedConstellation(node.star.constellation || constellation);
+        setTargetedObject(node.star);
+    };
+
     return (
         <group renderOrder={3}>
-            {constellationsData.map(({ name, pointsList, nodesPositions }) => {
+            {constellationsData.map(({ name, pointsList, nodes, nodesPositions }) => {
                 const isFocused = name === focusedConstellation || selectedObject?.name === name;
 
                 const color = nightMode
@@ -289,7 +322,41 @@ export default function Constellations() {
 
                         {/* High-Tech Nodes at star vertices */}
                         {nodesPositions.length > 0 && opacity > 0.05 && (
-                            <points>
+                            <points
+                                onPointerDown={(e: ThreeEvent<PointerEvent>) => {
+                                    e.stopPropagation();
+                                    if (e.index === undefined || e.index >= nodes.length) return;
+                                    tapRef.current = {
+                                        constellation: name,
+                                        index: e.index,
+                                        x: e.nativeEvent.clientX,
+                                        y: e.nativeEvent.clientY,
+                                        t: performance.now(),
+                                    };
+                                }}
+                                onPointerMove={(e: ThreeEvent<PointerEvent>) => {
+                                    if (!tapRef.current) return;
+                                    const dx = e.nativeEvent.clientX - tapRef.current.x;
+                                    const dy = e.nativeEvent.clientY - tapRef.current.y;
+                                    if (Math.hypot(dx, dy) > 16) tapRef.current = null;
+                                }}
+                                onPointerUp={(e: ThreeEvent<PointerEvent>) => {
+                                    e.stopPropagation();
+                                    const tap = tapRef.current;
+                                    tapRef.current = null;
+                                    if (!tap || tap.constellation !== name) return;
+                                    const dx = e.nativeEvent.clientX - tap.x;
+                                    const dy = e.nativeEvent.clientY - tap.y;
+                                    const quickTap = performance.now() - tap.t < 550;
+                                    const sameNode = e.index === undefined || e.index === tap.index;
+                                    if (!quickTap || !sameNode || Math.hypot(dx, dy) > 16) return;
+                                    const node = nodes[tap.index];
+                                    if (node) selectConstellationNode(name, node);
+                                }}
+                                onPointerOut={() => {
+                                    tapRef.current = null;
+                                }}
+                            >
                                 <bufferGeometry>
                                     <bufferAttribute
                                         attach="attributes-position"
@@ -300,10 +367,10 @@ export default function Constellations() {
                                     />
                                 </bufferGeometry>
                                 <pointsMaterial
-                                    size={isFocused ? 1.0 * pulse : 0.4}
+                                    size={isFocused ? 1.25 * pulse : 0.7}
                                     color={color}
                                     transparent
-                                    opacity={isFocused ? Math.min(1, opacity * 1.5) : opacity * 0.7}
+                                    opacity={isFocused ? Math.min(1, opacity * 1.5) : Math.min(0.6, opacity * 1.25)}
                                     depthTest={false}
                                     depthWrite={false}
                                     sizeAttenuation={true}
