@@ -152,7 +152,7 @@ export default function Stars() {
     const bortleScale = useAppStore(s => s.settings.bortleScale);
     const nightMode   = useAppStore(s => s.settings.nightMode);
     const camFov      = useAppStore(s => s.camFov);
-    const setSelectedObject = useAppStore(s => s.setSelectedObject);
+    const setTargetedObject = useAppStore(s => s.setTargetedObject);
     const { raycaster } = useThree();
 
     const limitingMag = 5.5 - (bortleScale - 1) * 0.45;
@@ -249,7 +249,7 @@ export default function Stars() {
     const handleClick = (e: ThreeEvent<MouseEvent>) => {
         e.stopPropagation();
         if (e.index === undefined || e.index >= visibleStars.length) return;
-        setSelectedObject(visibleStars[e.index]);
+        setTargetedObject(visibleStars[e.index]);
     };
 
     const tooltipColor = nightMode

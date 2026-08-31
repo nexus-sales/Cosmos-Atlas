@@ -298,7 +298,7 @@ function PanelContent({
 // ── Bottom Sheet (mobile) ─────────────────────────────────────────────────────
 // Altura via CSS dvh — se adapta a rotación y colapso de barra de dirección
 // sin necesitar JS ni listeners de resize.
-const SHEET_HEIGHT_CSS = '82svh';
+const SHEET_HEIGHT_CSS = '56svh';
 // Valor numérico usado sólo para la motion value inicial y los dragConstraints.
 // Se sobreescribe con CSS — no importa si no refleja el tamaño exacto.
 const SHEET_HEIGHT_PX = 700;

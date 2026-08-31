@@ -27,6 +27,7 @@ export default function ViewModeWidget() {
 
     const viewMode = useAppStore((s) => s.viewMode);
     const setViewMode = useAppStore((s) => s.setViewMode);
+    const sidebarOpen = useAppStore((s) => s.sidebarOpen);
     const followOrientation = useAppStore((s) => s.followOrientation);
     const setFollowOrientation = useAppStore((s) => s.setFollowOrientation);
     const addArHealthSample = useAppStore((s) => s.addArHealthSample);
@@ -175,6 +176,7 @@ export default function ViewModeWidget() {
                 }}
                 className={cn(
                     'fixed bottom-20 right-4 z-[80] flex items-center gap-2 px-3 py-2 rounded-full border glass-blur-heavy shadow-xl transition-all active:scale-95 pointer-events-auto md:bottom-6 md:right-6',
+                    sidebarOpen && 'hidden md:flex',
                     viewMode === 'camera'
                         ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300'
                         : 'bg-blue-600/20 border-blue-500/40 text-blue-300'
@@ -193,7 +195,10 @@ export default function ViewModeWidget() {
 
     // ── Panel expandido ────────────────────────────────────────────────────────
     return (
-        <div className="fixed bottom-28 right-4 z-[80] flex flex-col items-end gap-3 pointer-events-none md:bottom-6 md:right-6">
+        <div className={cn(
+            'fixed bottom-28 right-4 z-[80] flex flex-col items-end gap-3 pointer-events-none md:bottom-6 md:right-6',
+            sidebarOpen && 'hidden md:flex'
+        )}>
             <div className="flex bg-black/60 glass-blur-heavy border border-white/10 rounded-full p-1.5 shadow-2xl pointer-events-auto">
                 <button
                     onClick={handleActivateVaultMode}

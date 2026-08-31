@@ -185,7 +185,7 @@ interface DSOData extends DSO {
 
 function DSOItem({ dso }: { dso: DSOData }) {
     const [hovered, setHovered] = useState(false);
-    const setSelectedObject = useAppStore((state) => state.setSelectedObject);
+    const setTargetedObject = useAppStore((state) => state.setTargetedObject);
     const markAsVisited = useAppStore((state) => state.markAsVisited);
     const nightMode = useAppStore((state) => state.settings.nightMode);
     const bortleScale = useAppStore((state) => state.settings.bortleScale);
@@ -211,7 +211,7 @@ function DSOItem({ dso }: { dso: DSOData }) {
             <mesh
                 onClick={(e) => { 
                     e.stopPropagation(); 
-                    setSelectedObject(dso); 
+                    setTargetedObject(dso); 
                     markAsVisited(dso.id);
                 }}
                 onPointerOver={() => { setHovered(true); document.body.style.cursor = 'pointer'; }}

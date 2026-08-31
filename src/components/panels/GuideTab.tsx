@@ -418,7 +418,7 @@ export default function GuideTab() {
             </div>
 
             {visibleSections.length > 0 && (
-                <div className="atlas-card rounded-xl p-2.5 space-y-2">
+                <div className="atlas-card hidden rounded-xl p-2.5 space-y-2 md:block">
                     <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0">
                             <p className="text-[9px] font-bold uppercase tracking-[0.24em] text-white/35">Acceso rápido</p>

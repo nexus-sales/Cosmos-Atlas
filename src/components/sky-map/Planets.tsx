@@ -767,7 +767,7 @@ export default function Planets() {
     const time = useAppStore(state => state.timeMinute);
     const observer = useAppStore(state => state.observer);
     const solarSystemBodies = useCatalog(state => state.solarSystemBodies);
-    const setSelectedObject = useAppStore(state => state.setSelectedObject);
+    const setTargetedObject = useAppStore(state => state.setTargetedObject);
     const markAsVisited = useAppStore(state => state.markAsVisited);
 
     // Mismo helper que usa el listado de la Guía — mantiene mag/desc/simbolo
@@ -775,16 +775,16 @@ export default function Planets() {
     const selectByName = useCallback((name: string) => {
         const target = buildSolarSystemTarget(name, time, observer.lat, observer.lon, solarSystemBodies);
         if (!target) return;
-        setSelectedObject(target);
+        setTargetedObject(target);
         markAsVisited(target.name);
-    }, [time, observer, solarSystemBodies, setSelectedObject, markAsVisited]);
+    }, [time, observer, solarSystemBodies, setTargetedObject, markAsVisited]);
 
     // Las lunas galileanas no tienen entrada propia en SOLAR_SYSTEM_EPHEMERIS
     // (son satelites de Jupiter, no cuerpos con efemerides propias en ese mapa):
     // se construye un objeto Planet ad-hoc reutilizando la posicion de Jupiter
     // (la separacion angular real es de segundos de arco, despreciable aqui).
     const selectJupiterMoon = useCallback((moon: MoonData, jupiter: PlanetData) => {
-        setSelectedObject({
+        setTargetedObject({
             name: moon.name,
             ra: jupiter.ra,
             dec: jupiter.dec,
@@ -795,7 +795,7 @@ export default function Planets() {
             kind: 'planet',
         });
         markAsVisited(moon.name);
-    }, [setSelectedObject, markAsVisited]);
+    }, [setTargetedObject, markAsVisited]);
 
     const data = useMemo(() => {
         const bs = new Astronomy.Observer(observer.lat, observer.lon, 0);

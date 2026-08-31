@@ -105,7 +105,7 @@ export default function CameraNavigator({
             } else if (isPlanet || isDSO) {
                 targetFov.current = 22;
             } else {
-                targetFov.current = 60;
+                targetFov.current = 36;
             }
 
             // Nuevo objetivo -> el zoom manual del vuelo anterior ya no aplica,

@@ -122,13 +122,13 @@ function CometTail({ comet, position }: { comet: { color: string; tailLength: nu
         <group position={position}>
             {/* Núcleo del cometa */}
             <mesh>
-                <sphereGeometry args={[0.15, 16, 16]} />
+                <sphereGeometry args={[0.22, 16, 16]} />
                 <meshBasicMaterial color="#ffffff" />
             </mesh>
             
             {/* Coma (atmósfera del cometa) */}
             <mesh>
-                <sphereGeometry args={[0.4, 16, 16]} />
+                <sphereGeometry args={[0.58, 16, 16]} />
                 <meshBasicMaterial color={comet.color} transparent opacity={0.3} />
             </mesh>
 
@@ -208,7 +208,7 @@ function CometItem({ comet }: { comet: CometData }) {
                 onPointerOver={() => { setHovered(true); document.body.style.cursor = 'pointer'; }}
                 onPointerOut={() => { setHovered(false); document.body.style.cursor = 'default'; }}
             >
-                <sphereGeometry args={[1.5, 8, 8]} />
+                <sphereGeometry args={[2.0, 8, 8]} />
                 <meshBasicMaterial transparent opacity={0} depthWrite={false} />
             </mesh>
 

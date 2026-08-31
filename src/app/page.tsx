@@ -12,6 +12,7 @@ import ViewModeWidget from '@/components/panels/ViewModeWidget';
 import SnapshotButton from '@/components/panels/SnapshotButton';
 import DiagnosticsOverlay from '@/components/panels/DiagnosticsOverlay';
 import SystemAlerts from '@/components/panels/SystemAlerts';
+import MobileObjectSheet from '@/components/panels/MobileObjectSheet';
 import Onboarding from '@/components/Onboarding';
 import { useAppStore } from '@/stores/useAppStore';
 import { useGeolocation } from '@/hooks/useGeolocation';
@@ -35,6 +36,9 @@ function detectQualityTier(): 'high' | 'medium' | 'low' {
  */
 function MobileToolbar() {
   const [open, setOpen] = useState(false);
+  const sidebarOpen = useAppStore((state) => state.sidebarOpen);
+
+  if (sidebarOpen) return null;
 
   const takeSnapshot = () => {
     const canvas = document.querySelector('canvas');
@@ -169,6 +173,7 @@ export default function Home() {
 
       {/* Mobile-only tools tray (time travel + snapshot) */}
       <MobileToolbar />
+      <MobileObjectSheet />
 
       <AIAstronoma />
       <Onboarding />

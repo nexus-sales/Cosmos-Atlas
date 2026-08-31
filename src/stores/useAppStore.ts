@@ -256,7 +256,7 @@ export const useAppStore = create<AppState>()(
                 set((state) => ({
                     settings: { ...state.settings, ...params },
                 })),
-            sidebarOpen: true,
+            sidebarOpen: false,
             setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
             foundChallenges: [],
             addFoundChallenge: (name) =>

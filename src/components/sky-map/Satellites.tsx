@@ -232,8 +232,8 @@ export default function Satellites() {
                     records.push({
                         name: lines[i].trim(),
                         satrec: satellite.twoline2satrec(lines[i + 1], lines[i + 2]),
-                        color: '#335577', // Color apagado para no invadir el cielo estrellado
-                        size: 8, // Tamaño reducido
+                        color: '#4ade80',
+                        size: 12,
                         kind: 'starlink' as const
                     });
                 }
