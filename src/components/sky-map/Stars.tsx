@@ -150,6 +150,7 @@ function DynamicStarLabels({
 
 export default function Stars() {
     const pointsRef = useRef<THREE.Points>(null);
+    const tapRef = useRef<{ index: number; x: number; y: number; t: number } | null>(null);
     const bortleScale = useAppStore(s => s.settings.bortleScale);
     const nightMode   = useAppStore(s => s.settings.nightMode);
     const camFov      = useAppStore(s => s.camFov);
@@ -235,6 +236,11 @@ export default function Stars() {
     // ── Handlers de interacción directa sobre la nube de puntos ─────────────
     const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
         e.stopPropagation();
+        if (tapRef.current) {
+            const dx = e.nativeEvent.clientX - tapRef.current.x;
+            const dy = e.nativeEvent.clientY - tapRef.current.y;
+            if (Math.hypot(dx, dy) > 14) tapRef.current = null;
+        }
         if (e.index === undefined || e.index >= visibleStars.length) return;
         const star = visibleStars[e.index];
         const pos  = starPositions[e.index];
@@ -243,14 +249,46 @@ export default function Stars() {
     };
 
     const handlePointerOut = () => {
+        tapRef.current = null;
         setHovered(null);
         document.body.style.cursor = 'default';
+    };
+
+    const selectStar = (index: number) => {
+        if (index < 0 || index >= visibleStars.length) return;
+        setTargetedObject(visibleStars[index]);
+    };
+
+    const handlePointerDown = (e: ThreeEvent<PointerEvent>) => {
+        e.stopPropagation();
+        if (e.index === undefined || e.index >= visibleStars.length) return;
+        tapRef.current = {
+            index: e.index,
+            x: e.nativeEvent.clientX,
+            y: e.nativeEvent.clientY,
+            t: performance.now(),
+        };
+    };
+
+    const handlePointerUp = (e: ThreeEvent<PointerEvent>) => {
+        e.stopPropagation();
+        const tap = tapRef.current;
+        tapRef.current = null;
+        if (!tap) return;
+
+        const dx = e.nativeEvent.clientX - tap.x;
+        const dy = e.nativeEvent.clientY - tap.y;
+        const sameStar = e.index === undefined || e.index === tap.index;
+        const quickTap = performance.now() - tap.t < 550;
+        if (sameStar && quickTap && Math.hypot(dx, dy) <= 14) {
+            selectStar(tap.index);
+        }
     };
 
     const handleClick = (e: ThreeEvent<MouseEvent>) => {
         e.stopPropagation();
         if (e.index === undefined || e.index >= visibleStars.length) return;
-        setTargetedObject(visibleStars[e.index]);
+        selectStar(e.index);
     };
 
     const tooltipColor = nightMode
@@ -264,7 +302,9 @@ export default function Stars() {
                 geometry={geometry}
                 material={material}
                 renderOrder={1}
+                onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
                 onPointerOut={handlePointerOut}
                 onClick={handleClick}
             />
