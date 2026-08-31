@@ -4,18 +4,23 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BookOpen, ChevronDown, ChevronUp, Heart, Navigation, X } from 'lucide-react';
 import { useAppStore } from '@/stores/useAppStore';
+import { useCatalog } from '@/stores/useCatalogStore';
 import { useCelestialVisibility } from '@/hooks/useCelestialVisibility';
 import { getConstellationDisplayName } from '@/data/constellationNames';
+import { getSolarSystemBodyByName } from '@/data/solarSystemCatalog';
 import { cn } from '@/lib/utils';
 import type { DSO, Planet, Star } from '@/types/celestial';
 
 type CelestialObject = Star | DSO | Planet;
+type DetailItem = { label: string; value: string };
+type StoryItem = { title: string; text: string };
 
 function objectId(obj: CelestialObject) {
     return 'id' in obj ? obj.id : obj.name;
 }
 
 function objectKindLabel(obj: CelestialObject) {
+    if (isConstellationTarget(obj)) return 'Mapa de la boveda';
     if ('constellation' in obj) return getConstellationDisplayName(obj.constellation);
     if ('type' in obj) {
         if (obj.type === 'galaxy') return 'Galaxia';
@@ -26,9 +31,169 @@ function objectKindLabel(obj: CelestialObject) {
 }
 
 function objectTypeLabel(obj: CelestialObject) {
+    if (isConstellationTarget(obj)) return 'Constelacion';
     if ('constellation' in obj) return 'Estrella';
     if ('type' in obj) return obj.type === 'galaxy' ? 'Galaxia' : obj.type === 'nebula' ? 'Nebulosa' : 'Cumulo';
     return obj.name === 'Luna' ? 'Luna' : 'Planeta';
+}
+
+function isConstellationTarget(obj: CelestialObject) {
+    return 'kind' in obj && obj.kind === 'planet' && obj.symbol === '\u2736';
+}
+
+function formatNumber(value: number, digits = 1) {
+    return new Intl.NumberFormat('es-ES', {
+        maximumFractionDigits: digits,
+    }).format(value);
+}
+
+function formatDistanceAu(au?: number) {
+    if (!au || au <= 0) return undefined;
+    if (au < 0.01) return `${formatNumber(au * 149_597_870, 0)} km`;
+    return `${formatNumber(au, 2)} ua`;
+}
+
+function formatOrbitalPeriod(days?: number) {
+    if (!days) return undefined;
+    if (days >= 365) return `${formatNumber(days / 365.25, 1)} anos`;
+    return `${formatNumber(days, 0)} dias`;
+}
+
+function extractLightYears(desc?: string) {
+    if (!desc) return undefined;
+    const match = desc.match(/(\d+(?:[.,]\d+)?)\s*(?:al\.?|anos luz|a(?:ñ|n)os luz)/i);
+    if (!match) return undefined;
+    return `${match[1].replace('.', ',')} anos luz`;
+}
+
+function magnitudeMeaning(mag?: number) {
+    if (mag === undefined || Number.isNaN(mag)) return 'Sin dato fiable';
+    if (mag <= 0) return 'Brillo excepcional';
+    if (mag <= 2) return 'Muy brillante';
+    if (mag <= 5.8) return 'Visible a simple vista';
+    if (mag <= 9) return 'Mejor con prismaticos';
+    return 'Necesita telescopio';
+}
+
+function altitudeMeaning(alt: number) {
+    if (alt >= 45) return 'Muy bien colocado';
+    if (alt >= 20) return 'Observable con comodidad';
+    if (alt > 0) return 'Bajo: busca horizonte limpio';
+    return 'Bajo el horizonte';
+}
+
+function directionLabel(az: number) {
+    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
+    return directions[Math.round((((az % 360) + 360) % 360) / 45) % directions.length];
+}
+
+function starColorMeaning(color: string) {
+    const value = color.toLowerCase();
+    if (value.includes('ff66') || value.includes('9966') || value.includes('aa55')) return 'Tono calido: estrella fria o evolucionada';
+    if (value.includes('cc88') || value.includes('f0cc') || value.includes('f4e8')) return 'Tono dorado: temperatura intermedia';
+    if (value.includes('90') || value.includes('b0') || value.includes('c8')) return 'Tono blanco-azul: estrella caliente';
+    return 'El color aparente da pistas de temperatura';
+}
+
+function dsoTypeMeaning(obj: DSO) {
+    if (obj.type === 'galaxy') return 'Isla de estrellas fuera de la Via Lactea';
+    if (obj.type === 'nebula') return 'Nube de gas y polvo iluminada o activa';
+    return 'Familia de estrellas nacidas o agrupadas juntas';
+}
+
+function buildDetails(
+    selected: CelestialObject,
+    coords: ReturnType<typeof useCelestialVisibility>,
+    solarSystemInfo?: ReturnType<typeof getSolarSystemBodyByName>
+) {
+    const details: DetailItem[] = [
+        { label: 'Magnitud', value: selected.mag?.toFixed(2) ?? '?' },
+        { label: 'Brillo', value: magnitudeMeaning(selected.mag) },
+        { label: 'AR/Dec', value: `${(selected.ra / 15).toFixed(2)}h ${selected.dec >= 0 ? '+' : ''}${selected.dec.toFixed(1)} deg` },
+        { label: 'Ac/Alt', value: `${directionLabel(coords.az)} ${coords.az.toFixed(0)} deg / ${coords.alt >= 0 ? '+' : ''}${coords.alt.toFixed(0)} deg` },
+        { label: 'Ahora', value: altitudeMeaning(coords.alt) },
+    ];
+
+    if ('constellation' in selected) {
+        const distance = extractLightYears(selected.desc);
+        details.splice(1, 0, { label: 'Constelacion', value: getConstellationDisplayName(selected.constellation) });
+        if (distance) details.splice(2, 0, { label: 'Distancia', value: distance });
+        details.push({ label: 'Color', value: starColorMeaning(selected.color) });
+        return details;
+    }
+
+    if ('type' in selected) {
+        if (selected.sizeArcmin) details.splice(1, 0, { label: 'Tamano aparente', value: `${formatNumber(selected.sizeArcmin, 0)}'` });
+        details.splice(1, 0, { label: 'Naturaleza', value: dsoTypeMeaning(selected) });
+        return details;
+    }
+
+    if (isConstellationTarget(selected)) {
+        const count = selected.desc.match(/(\d+)\s+estrellas/i)?.[1];
+        details.splice(1, 0, { label: 'Tipo', value: 'Region del cielo' });
+        if (count) details.splice(2, 0, { label: 'Catalogo', value: `${count} estrellas enlazadas` });
+        return details;
+    }
+
+    const distance = formatDistanceAu(selected.dist);
+    if (solarSystemInfo?.planetType) details.splice(1, 0, { label: 'Tipo', value: solarSystemInfo.planetType });
+    if (distance) details.splice(2, 0, { label: 'Distancia', value: distance });
+    if (solarSystemInfo?.moonsCount !== undefined) details.push({ label: 'Lunas', value: String(solarSystemInfo.moonsCount) });
+    if (solarSystemInfo?.hasRings !== undefined) details.push({ label: 'Anillos', value: solarSystemInfo.hasRings ? 'Si' : 'No' });
+    if (solarSystemInfo?.orbitalPeriodDays) details.push({ label: 'Orbita', value: formatOrbitalPeriod(solarSystemInfo.orbitalPeriodDays) ?? '' });
+    return details.filter((item) => item.value);
+}
+
+function buildStories(
+    selected: CelestialObject,
+    solarSystemInfo?: ReturnType<typeof getSolarSystemBodyByName>
+) {
+    if ('constellation' in selected) {
+        return [
+            { title: 'Por que importa', text: selected.desc },
+            { title: 'Como mirarla', text: 'Usala como ancla visual: primero localiza la estrella brillante y luego sigue las lineas de su constelacion para orientarte en la boveda.' },
+        ];
+    }
+
+    if ('type' in selected) {
+        return [
+            { title: 'Naturaleza', text: selected.desc },
+            { title: 'Como observarlo', text: selected.mag <= 6 ? 'Con cielo oscuro puede insinuarse a simple vista; con prismaticos gana contraste.' : 'Conviene cielo oscuro, vision lateral y paciencia: estos objetos aparecen mejor cuando no los miras de frente.' },
+        ];
+    }
+
+    if (isConstellationTarget(selected)) {
+        return [
+            { title: 'Mapa celeste', text: selected.desc },
+            { title: 'Para enamorar al publico', text: 'Una constelacion no es un objeto unico: es una forma humana de convertir puntos lejanos en una ruta reconocible por el cielo.' },
+        ];
+    }
+
+    return [
+        { title: 'Contexto', text: solarSystemInfo?.longDesc || selected.desc },
+        ...(solarSystemInfo?.observationTips ? [{ title: 'Observacion', text: solarSystemInfo.observationTips }] : []),
+        ...(solarSystemInfo?.funFact ? [{ title: 'Dato memorable', text: solarSystemInfo.funFact }] : []),
+    ];
+}
+
+function InfoRow({ item }: { item: DetailItem }) {
+    return (
+        <div className="flex items-start justify-between gap-4 border-b border-white/[0.06] py-2.5 last:border-0">
+            <span className="text-[11px] font-medium text-white/38">{item.label}</span>
+            <span className="max-w-[62%] text-right text-[12px] font-bold leading-snug text-white/88">{item.value}</span>
+        </div>
+    );
+}
+
+function StoryBlock({ item, accent }: { item: StoryItem; accent: string }) {
+    return (
+        <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] p-3.5">
+            <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: `${accent}ee` }}>
+                {item.title}
+            </div>
+            <p className="text-[13px] leading-relaxed text-white/68">{item.text}</p>
+        </div>
+    );
 }
 
 export default function MobileObjectSheet() {
@@ -41,6 +206,7 @@ export default function MobileObjectSheet() {
     const favorites = useAppStore((state) => state.favorites);
     const toggleFavorite = useAppStore((state) => state.toggleFavorite);
     const sidebarOpen = useAppStore((state) => state.sidebarOpen);
+    const solarSystemBodies = useCatalog((state) => state.solarSystemBodies);
     const coords = useCelestialVisibility(selected?.ra ?? 0, selected?.dec ?? 0);
 
     if (!selected || sidebarOpen) return null;
@@ -51,6 +217,11 @@ export default function MobileObjectSheet() {
     const accent = selected.color || '#60a5fa';
     const visible = coords.alt > 0;
     const isStar = 'constellation' in selected;
+    const solarSystemInfo = !isStar && !('type' in selected) && !isConstellationTarget(selected)
+        ? getSolarSystemBodyByName(selected.name, solarSystemBodies)
+        : undefined;
+    const detailItems = buildDetails(selected, coords, solarSystemInfo);
+    const storyItems = buildStories(selected, solarSystemInfo);
 
     const close = () => {
         setExpanded(false);
@@ -203,20 +374,15 @@ export default function MobileObjectSheet() {
                                 className="max-h-[50svh] overflow-y-auto custom-scrollbar"
                             >
                                 <div className="mt-4 border-t border-white/10 pt-4">
-                                    <div className="grid grid-cols-2 gap-x-5 gap-y-2 font-mono text-[13px]">
-                                        <span className="text-white/35">Magnitud</span>
-                                        <span className="text-right font-bold text-white">{selected.mag?.toFixed(2) ?? '?'}</span>
-                                        <span className="text-white/35">AR/Dec</span>
-                                        <span className="text-right font-bold text-white">{(selected.ra / 15).toFixed(2)}h {selected.dec >= 0 ? '+' : ''}{selected.dec.toFixed(1)} deg</span>
-                                        <span className="text-white/35">Ac/Alt</span>
-                                        <span className="text-right font-bold text-white">{coords.az.toFixed(1)} deg {coords.alt >= 0 ? '+' : ''}{coords.alt.toFixed(1)} deg</span>
+                                    <div className="rounded-xl border border-white/[0.07] bg-black/15 px-3">
+                                        {detailItems.map((item) => <InfoRow key={item.label} item={item} />)}
                                     </div>
 
-                                    <p className="mt-4 text-[14px] leading-relaxed text-white/70">
-                                        <span className="font-bold" style={{ color: accent }}>{selected.name}</span>
-                                        {' '}
-                                        {selected.desc}
-                                    </p>
+                                    <div className="mt-3 space-y-2.5">
+                                        {storyItems.map((item) => (
+                                            <StoryBlock key={item.title} item={item} accent={accent} />
+                                        ))}
+                                    </div>
 
                                 </div>
                             </motion.div>
