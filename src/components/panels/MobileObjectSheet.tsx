@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BookOpen, ChevronDown, ChevronUp, Heart, Navigation, X, Zap } from 'lucide-react';
+import { BookOpen, ChevronDown, ChevronUp, Heart, Navigation, X } from 'lucide-react';
 import { useAppStore } from '@/stores/useAppStore';
 import { useCelestialVisibility } from '@/hooks/useCelestialVisibility';
 import { getConstellationDisplayName } from '@/data/constellationNames';
@@ -50,6 +50,7 @@ export default function MobileObjectSheet() {
     const isTargeted = targetedObject?.name === selected.name;
     const accent = selected.color || '#60a5fa';
     const visible = coords.alt > 0;
+    const isStar = 'constellation' in selected;
 
     const close = () => {
         setExpanded(false);
@@ -64,15 +65,45 @@ export default function MobileObjectSheet() {
 
     return (
         <AnimatePresence>
-            <motion.section
-                key={selected.name}
-                initial={{ y: 220, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 220, opacity: 0 }}
-                transition={{ type: 'spring', stiffness: 360, damping: 34 }}
-                className="md:hidden fixed inset-x-0 bottom-0 z-[75] pointer-events-auto rounded-t-[1.35rem] border-t border-white/10 bg-[#111820]/95 shadow-[0_-24px_70px_rgba(0,0,0,0.55)] glass-blur-heavy"
-                style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-            >
+            <>
+                {isStar && (
+                    <motion.div
+                        key={`${selected.name}-beacon`}
+                        initial={{ opacity: 0, scale: 0.7 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.7 }}
+                        className="fixed left-1/2 z-[74] md:hidden pointer-events-none"
+                        style={{
+                            bottom: expanded ? 'min(58svh, 560px)' : '258px',
+                            transform: 'translateX(-50%)',
+                        }}
+                    >
+                        <div className="relative flex h-16 w-16 items-center justify-center">
+                            <div
+                                className="absolute h-16 w-16 rounded-full opacity-40 blur-xl"
+                                style={{ backgroundColor: accent }}
+                            />
+                            <div
+                                className="absolute h-8 w-8 rounded-full border"
+                                style={{ borderColor: `${accent}cc`, boxShadow: `0 0 22px ${accent}` }}
+                            />
+                            <div
+                                className="h-2.5 w-2.5 rounded-full bg-white"
+                                style={{ boxShadow: `0 0 12px #fff, 0 0 28px ${accent}` }}
+                            />
+                        </div>
+                    </motion.div>
+                )}
+
+                <motion.section
+                    key={selected.name}
+                    initial={{ y: 220, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: 220, opacity: 0 }}
+                    transition={{ type: 'spring', stiffness: 360, damping: 34 }}
+                    className="md:hidden fixed inset-x-0 bottom-0 z-[75] pointer-events-auto rounded-t-[1.35rem] border-t border-white/10 bg-[#111820]/95 shadow-[0_-24px_70px_rgba(0,0,0,0.55)] glass-blur-heavy"
+                    style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+                >
                 <button
                     type="button"
                     onClick={() => setExpanded((value) => !value)}
@@ -169,7 +200,7 @@ export default function MobileObjectSheet() {
                                 initial={{ height: 0, opacity: 0 }}
                                 animate={{ height: 'auto', opacity: 1 }}
                                 exit={{ height: 0, opacity: 0 }}
-                                className="overflow-hidden"
+                                className="max-h-[50svh] overflow-y-auto custom-scrollbar"
                             >
                                 <div className="mt-4 border-t border-white/10 pt-4">
                                     <div className="grid grid-cols-2 gap-x-5 gap-y-2 font-mono text-[13px]">
@@ -187,16 +218,13 @@ export default function MobileObjectSheet() {
                                         {selected.desc}
                                     </p>
 
-                                    <div className="mt-4 flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] text-white/50">
-                                        <Zap className="h-3.5 w-3.5 text-cyan-300" />
-                                        Toca el libro para abrir la ficha completa sin perder el objeto seleccionado.
-                                    </div>
                                 </div>
                             </motion.div>
                         )}
                     </AnimatePresence>
                 </div>
-            </motion.section>
+                </motion.section>
+            </>
         </AnimatePresence>
     );
 }

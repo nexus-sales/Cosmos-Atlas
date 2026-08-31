@@ -37,8 +37,9 @@ function detectQualityTier(): 'high' | 'medium' | 'low' {
 function MobileToolbar() {
   const [open, setOpen] = useState(false);
   const sidebarOpen = useAppStore((state) => state.sidebarOpen);
+  const selectedObject = useAppStore((state) => state.selectedObject);
 
-  if (sidebarOpen) return null;
+  if (sidebarOpen || selectedObject) return null;
 
   const takeSnapshot = () => {
     const canvas = document.querySelector('canvas');
