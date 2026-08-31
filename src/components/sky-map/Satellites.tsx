@@ -91,9 +91,9 @@ function saveTLECache(key: string, text: string): void {
     } catch { /* quota exceeded — no pasa nada */ }
 }
 const STARLINK_CAP_BY_QUALITY = {
-    high: 2000,
-    medium: 900,
-    low: 350,
+    high: 1200,
+    medium: 500,
+    low: 180,
 } as const;
 const UPDATE_SKIP_BY_QUALITY = {
     high: 0,
@@ -233,7 +233,7 @@ export default function Satellites() {
                         name: lines[i].trim(),
                         satrec: satellite.twoline2satrec(lines[i + 1], lines[i + 2]),
                         color: '#4ade80',
-                        size: 12,
+                        size: 18,
                         kind: 'starlink' as const
                     });
                 }

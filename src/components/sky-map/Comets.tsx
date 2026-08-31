@@ -142,6 +142,8 @@ interface CometData {
     id: string;
     name: string;
     designation: string;
+    ra: number;
+    dec: number;
     pos: [number, number, number];
     sunPos: [number, number, number];
     magnitude: number;
@@ -165,7 +167,7 @@ function CometItem({ comet }: { comet: CometData }) {
     const ionTailRef = useRef<THREE.Group>(null);
     const dustTailRef = useRef<THREE.Group>(null);
 
-    const displayColor = nightMode ? '#ff4444' : comet.color;
+    const displayColor = nightMode ? '#ff4444' : '#4ade80';
 
     // Orient tails using the real Sun position computed in the parent useMemo
     useEffect(() => {
@@ -196,11 +198,11 @@ function CometItem({ comet }: { comet: CometData }) {
                     e.stopPropagation();
                     setSelectedObject({
                         name: comet.name,
-                        ra: 0,
-                        dec: 0,
+                        ra: comet.ra,
+                        dec: comet.dec,
                         mag: comet.magnitude,
                         desc: comet.description,
-                        color: comet.color,
+                        color: displayColor,
                         kind: 'planet' as const,
                         symbol: '☄️'
                     });
@@ -212,14 +214,14 @@ function CometItem({ comet }: { comet: CometData }) {
                 <meshBasicMaterial transparent opacity={0} depthWrite={false} />
             </mesh>
 
-            {/* Cola iónica: azul-blanca, recta, anti-solar exacta */}
+            {/* Cola ionica: verde suave, recta y anti-solar */}
             <group ref={ionTailRef}>
-                <CometTail comet={{ color: '#aad4ff', tailLength: comet.tailAngle * 1.2 }} position={[0, 0, 0]} />
+                <CometTail comet={{ color: displayColor, tailLength: comet.tailAngle * 1.2 }} position={[0, 0, 0]} />
             </group>
 
-            {/* Cola de polvo: amarillenta, ~18° desviada, más corta */}
+            {/* Cola de polvo: palida y mas corta */}
             <group ref={dustTailRef}>
-                <CometTail comet={{ color: '#ffe8aa', tailLength: comet.tailAngle * 0.7 }} position={[0, 0, 0]} />
+                <CometTail comet={{ color: '#d8ffe8', tailLength: comet.tailAngle * 0.7 }} position={[0, 0, 0]} />
             </group>
 
             {/* Label en hover */}
@@ -325,6 +327,8 @@ export default function Comets() {
 
                 return {
                     ...comet,
+                    ra: pos.ra,
+                    dec: pos.dec,
                     pos: spherePos,
                     sunPos,
                     magnitude: info.magnitude,
@@ -332,7 +336,10 @@ export default function Comets() {
                     tailAngle: info.tailAngle,
                     description: info.description
                 };
-            });
+            })
+            .filter((comet) => comet.visible && comet.magnitude <= 10)
+            .sort((a, b) => a.magnitude - b.magnitude)
+            .slice(0, 4);
     }, [liveComets, time, observer]);
 
     return (

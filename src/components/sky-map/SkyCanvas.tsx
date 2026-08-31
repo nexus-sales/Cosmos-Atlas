@@ -413,6 +413,7 @@ export default function SkyCanvas() {
     const showGrid = useAppStore((state) => state.settings.showGrid);
     const showMilkyWay = useAppStore((state) => state.settings.showMilkyWay);
     const showEcliptic = useAppStore((state) => state.settings.showEcliptic);
+    const showComets = useAppStore((state) => state.settings.showComets ?? true);
     const followOrientation = useAppStore((state) => state.followOrientation);
     const setTargetedObject = useAppStore((state) => state.setTargetedObject);
     const deviceQuality = useAppStore((state) => state.deviceQuality);
@@ -497,7 +498,7 @@ export default function SkyCanvas() {
                         {showEcliptic && <ErrorBoundary label="Ecliptic"><Ecliptic /></ErrorBoundary>}
                         <ErrorBoundary label="TargetPointer"><TargetPointer /></ErrorBoundary>
                         {/* Cometas con colas dinámicas (usan coordenadas ecuatoriales) */}
-                        <ErrorBoundary label="Comets"><Comets /></ErrorBoundary>
+                        {showComets && <ErrorBoundary label="Comets"><Comets /></ErrorBoundary>}
                         <ErrorBoundary label="SimbadOverlay"><SimbadOverlay /></ErrorBoundary>
                     </CelestialGroup>
 

@@ -46,6 +46,7 @@ function PanelContent({
     const showEcliptic = useAppStore((state) => state.settings.showEcliptic);
     const showSatellites = useAppStore((state) => state.settings.showSatellites);
     const showStarlink = useAppStore((state) => state.settings.showStarlink);
+    const showComets = useAppStore((state) => state.settings.showComets ?? true);
     const nightMode = useAppStore((state) => state.settings.nightMode);
     const followTarget = useAppStore((state) => state.settings.followTarget);
     const bortleScale = useAppStore((state) => state.settings.bortleScale);
@@ -72,6 +73,7 @@ function PanelContent({
         { key: 'showEcliptic' as const, label: 'ECLÍPT.', icon: Layers, active: showEcliptic },
         { key: 'nightMode' as const, label: 'NOCTURNO', icon: Moon, active: nightMode },
         { key: 'showFOV' as const, label: 'SIM. FOV', icon: Camera, active: showFOV },
+        { key: 'showComets' as const, label: 'COMETAS', icon: CloudRain, active: showComets },
         { key: 'showSatellites' as const, label: 'SATÉLITES', icon: Satellite, active: showSatellites },
         { key: 'showStarlink' as const, label: 'STARLINK', icon: Globe, active: showStarlink },
         { key: 'telescopeMode' as const, label: 'TELESCOPIO', icon: Camera, active: telescopeMode },
@@ -184,8 +186,9 @@ function PanelContent({
                             </div>
 
                             {/* Bloque 3: Objetos Extra */}
-                            <div className="grid grid-cols-3 gap-2">
+                            <div className="grid grid-cols-4 gap-2">
                                 {[
+                                    { key: 'showComets', label: 'COMETAS', icon: CloudRain, active: showComets },
                                     { key: 'showSatellites', label: 'SATÉLITES', icon: Satellite, active: showSatellites },
                                     { key: 'showStarlink', label: 'STARLINK', icon: Globe, active: showStarlink },
                                     { key: 'telescopeMode', label: 'TELESCOPIO', icon: Camera, active: telescopeMode }
@@ -231,7 +234,7 @@ function PanelContent({
                             </div>
                             <div className="atlas-card rounded-lg p-2">
                                 <div className="flex items-center gap-2 text-[10px] font-bold text-white/70 mb-1">
-                                    <div className="w-2 h-2 rounded-full bg-[#88aaff] shadow-[0_0_6px_#88aaff]" /> STARLINK
+                                    <div className="w-2 h-2 rounded-full bg-[#4ade80] shadow-[0_0_6px_#4ade80]" /> STARLINK
                                 </div>
                                 <div className="text-[11px] text-blue-300 font-mono">{satelliteInfo.visibleStarlink} visibles</div>
                             </div>
