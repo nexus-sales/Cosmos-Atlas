@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 export type OrientationPermission = 'idle' | 'granted' | 'denied' | 'unavailable';
 
@@ -41,6 +41,13 @@ type CompassCapableEvent = DeviceOrientationEvent & {
     webkitCompassAccuracy?: number;
 };
 
+let sharedListener: ((e: DeviceOrientationEvent) => void) | null = null;
+let sharedAbsoluteAvailable = false;
+let sharedFilterInitialized = false;
+let sharedPrevHeading: number | null = null;
+let sharedJitterEma = 0;
+let sharedUnstableCounter = 0;
+
 function applyComplementaryFilter(prev: number, raw: number, alpha: number): number {
     // Manejo del wraparound en alpha (0–360 → problema al cruzar 0/360)
     return alpha * prev + (1 - alpha) * raw;
@@ -53,6 +60,17 @@ function applyAlphaFilter(prev: number, raw: number, alpha: number): number {
     if (diff < -180) diff += 360;
     const filtered = prev + diff * (1 - alpha);
     return ((filtered % 360) + 360) % 360;
+}
+
+function resetOrientationFilter() {
+    sharedAbsoluteAvailable = false;
+    sharedFilterInitialized = false;
+    sharedPrevHeading = null;
+    sharedJitterEma = 0;
+    sharedUnstableCounter = 0;
+    deviceOrientationRef.headingJitter = 0;
+    deviceOrientationRef.magneticQuality = 'unknown';
+    deviceOrientationRef.needsCalibration = false;
 }
 
 export function computeRearCameraHeading(alpha: number, beta: number, gamma: number): number {
@@ -143,34 +161,24 @@ function detectGyroscopeSupport(): boolean {
 export function useDeviceOrientation() {
     const [isSupported] = useState<boolean>(() => detectGyroscopeSupport());
     const [permission, setPermission] = useState<OrientationPermission>('idle');
-    const listenerRef = useRef<((e: DeviceOrientationEvent) => void) | null>(null);
     // Estado interno del filtro — se inicializa en el primer evento
-    const filterInitialized = useRef(false);
-    const prevHeadingRef = useRef<number | null>(null);
-    const jitterEmaRef = useRef(0);
-    const unstableCounterRef = useRef(0);
 
     const startListening = useCallback(() => {
-        if (listenerRef.current) return; // already listening
+        if (sharedListener) {
+            deviceOrientationRef.active = true;
+            return;
+        }
 
-        filterInitialized.current = false;
-        prevHeadingRef.current = null;
-        jitterEmaRef.current = 0;
-        unstableCounterRef.current = 0;
-        deviceOrientationRef.headingJitter = 0;
-        deviceOrientationRef.magneticQuality = 'unknown';
-        deviceOrientationRef.needsCalibration = false;
+        resetOrientationFilter();
 
         // Track whether absolute events are available (Chrome Android 66+).
         // Absolute events have e.absolute=true and give North-relative alpha.
         // If both event types fire, we ignore the non-absolute ones to avoid
         // processing the same physical motion twice with different reliability.
-        let absoluteAvailable = false;
-
         const handler = (e: DeviceOrientationEvent) => {
-            if (e.absolute) absoluteAvailable = true;
+            if (e.absolute) sharedAbsoluteAvailable = true;
             // Skip non-absolute events once absolute ones are flowing
-            if (absoluteAvailable && !e.absolute) return;
+            if (sharedAbsoluteAvailable && !e.absolute) return;
             const rawAlpha = e.alpha ?? 0;
             const rawBeta = e.beta ?? 0;
             const rawGamma = e.gamma ?? 0;
@@ -197,11 +205,11 @@ export function useDeviceOrientation() {
             // Inclinación real del eje -Z del dispositivo sobre el horizonte.
             const rawElevation = computeRearCameraElevation(rawBeta, rawGamma);
 
-            if (!filterInitialized.current) {
+            if (!sharedFilterInitialized) {
                 deviceOrientationRef.heading = correctedHeading;
                 deviceOrientationRef.elevation = rawElevation;
-                filterInitialized.current = true;
-                prevHeadingRef.current = correctedHeading;
+                sharedFilterInitialized = true;
+                sharedPrevHeading = correctedHeading;
                 return;
             }
 
@@ -212,32 +220,32 @@ export function useDeviceOrientation() {
             // Diagnóstico de estabilidad magnética:
             // si hay saltos grandes de heading sin movimiento relevante del teléfono,
             // consideramos señal inestable y sugerimos recalibración.
-            const prevHeading = prevHeadingRef.current;
+            const prevHeading = sharedPrevHeading;
             if (prevHeading != null) {
                 let dHeading = correctedHeading - prevHeading;
                 if (dHeading > 180) dHeading -= 360;
                 if (dHeading < -180) dHeading += 360;
                 const absHeadingJump = Math.abs(dHeading);
 
-                jitterEmaRef.current = jitterEmaRef.current * 0.88 + absHeadingJump * 0.12;
-                deviceOrientationRef.headingJitter = jitterEmaRef.current;
+                sharedJitterEma = sharedJitterEma * 0.88 + absHeadingJump * 0.12;
+                deviceOrientationRef.headingJitter = sharedJitterEma;
 
                 const motionAmount = Math.abs(rawBeta) + Math.abs(rawGamma);
                 const suspiciousJump = motionAmount < 18 && absHeadingJump > 9;
 
                 if (suspiciousJump) {
-                    unstableCounterRef.current = Math.min(24, unstableCounterRef.current + 1);
+                    sharedUnstableCounter = Math.min(24, sharedUnstableCounter + 1);
                 } else {
-                    unstableCounterRef.current = Math.max(0, unstableCounterRef.current - 1);
+                    sharedUnstableCounter = Math.max(0, sharedUnstableCounter - 1);
                 }
 
-                deviceOrientationRef.needsCalibration = unstableCounterRef.current >= 7;
+                deviceOrientationRef.needsCalibration = sharedUnstableCounter >= 7;
                 deviceOrientationRef.magneticQuality =
-                    unstableCounterRef.current >= 4 ? 'unstable' : 'good';
+                    sharedUnstableCounter >= 4 ? 'unstable' : 'good';
             }
-            prevHeadingRef.current = correctedHeading;
+            sharedPrevHeading = correctedHeading;
         };
-        listenerRef.current = handler;
+        sharedListener = handler;
         // Chrome Android 66+: absolute events give North-relative heading
         window.addEventListener('deviceorientationabsolute', handler, true);
         // iOS (webkitCompassHeading) and fallback for other browsers
@@ -246,12 +254,13 @@ export function useDeviceOrientation() {
     }, []);
 
     const stop = useCallback(() => {
-        if (listenerRef.current) {
-            window.removeEventListener('deviceorientationabsolute', listenerRef.current, true);
-            window.removeEventListener('deviceorientation', listenerRef.current, true);
-            listenerRef.current = null;
+        if (sharedListener) {
+            window.removeEventListener('deviceorientationabsolute', sharedListener, true);
+            window.removeEventListener('deviceorientation', sharedListener, true);
+            sharedListener = null;
         }
         deviceOrientationRef.active = false;
+        resetOrientationFilter();
         setPermission('idle');
     }, []);
 
@@ -290,15 +299,10 @@ export function useDeviceOrientation() {
         }
     }, [isSupported, startListening]);
 
-    // Cleanup on unmount
+    // Shared listener: do not stop it from an arbitrary UI unmount. AR buttons
+    // call stop() explicitly when the user disables orientation.
     useEffect(() => {
-        return () => {
-            if (listenerRef.current) {
-                window.removeEventListener('deviceorientationabsolute', listenerRef.current, true);
-                window.removeEventListener('deviceorientation', listenerRef.current, true);
-                listenerRef.current = null;
-            }
-        };
+        return undefined;
     }, []);
 
     return { isSupported, permission, requestAndStart, stop };

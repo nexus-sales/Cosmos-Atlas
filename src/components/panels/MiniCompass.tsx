@@ -29,21 +29,50 @@ export default function MiniCompass() {
     const followOrientationRef = useRef(followOrientation);
     const sensorActiveRef = useRef(false);
     const dotRef = useRef<HTMLSpanElement>(null);
+    const compassCalibrationOffsetRef = useRef(compassCalibrationOffset);
+    const declinationRef = useRef(0);
+    const lastObsRef = useRef({ lat: NaN, lon: NaN, year: NaN });
+    const visualHeadingRef = useRef(0);
 
     useEffect(() => {
         followOrientationRef.current = followOrientation;
     }, [followOrientation]);
 
     useEffect(() => {
+        compassCalibrationOffsetRef.current = compassCalibrationOffset;
+    }, [compassCalibrationOffset]);
+
+    useEffect(() => {
         let rafId: number;
 
         const tick = () => {
             const usingGyro = followOrientationRef.current && deviceOrientationRef.active;
-            const az = usingGyro
-                ? ((deviceOrientationRef.heading % 360) + 360) % 360
-                : cameraHeadingRef.value;
+            let az: number;
 
-            roseRef.current?.style.setProperty('--heading', `${-az}deg`);
+            if (usingGyro) {
+                const { observer, time } = useAppStore.getState();
+                const year = time.getFullYear() + time.getMonth() / 12;
+                const last = lastObsRef.current;
+
+                if (
+                    Math.abs(observer.lat - last.lat) > 0.5 ||
+                    Math.abs(observer.lon - last.lon) > 0.5 ||
+                    Math.abs(year - last.year) > 0.5
+                ) {
+                    declinationRef.current = computeMagneticDeclination(observer.lat, observer.lon, time);
+                    lastObsRef.current = { lat: observer.lat, lon: observer.lon, year };
+                }
+
+                az = ((deviceOrientationRef.heading + declinationRef.current + compassCalibrationOffsetRef.current) % 360 + 360) % 360;
+            } else {
+                az = cameraHeadingRef.value;
+            }
+
+            const currentWrapped = ((visualHeadingRef.current % 360) + 360) % 360;
+            const delta = ((az - currentWrapped) % 360 + 540) % 360 - 180;
+            visualHeadingRef.current += delta;
+
+            roseRef.current?.style.setProperty('--heading', `${-visualHeadingRef.current}deg`);
 
             const card = cardinalFromAz(az);
             if (degLabelRef.current) {
