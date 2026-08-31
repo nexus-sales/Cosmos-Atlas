@@ -238,7 +238,7 @@ export default function ISSPassPredictor() {
 
     const accent = nightMode ? '#ff4444' : '#00eeff';
 
-    if (!nextPass || !showSatellites) return null;
+    if (!nextPass || !showSatellites || !showArc) return null;
 
     return (
         <>

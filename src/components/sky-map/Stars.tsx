@@ -94,11 +94,12 @@ const RADIUS = 98;
 // A FOV ancho (cielo completo) usamos un umbral grande para facilitar el click.
 // A FOV estrecho (zoom) lo reducimos para evitar seleccionar la estrella equivocada.
 function getRaycastThreshold(fov: number): number {
+    const touchBoost = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0 ? 1.35 : 1;
     // mapLinear: FOV 80° → threshold 4.0 | FOV 10° → threshold 0.8
     return THREE.MathUtils.clamp(
         THREE.MathUtils.mapLinear(fov, 80, 10, 4.0, 0.8),
         0.8, 4.0
-    );
+    ) * touchBoost;
 }
 
 function DynamicStarLabels({
