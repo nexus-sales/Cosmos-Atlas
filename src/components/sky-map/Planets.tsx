@@ -12,7 +12,17 @@ import { useCatalog } from '@/stores/useCatalogStore';
 import { sunHorRef } from '@/lib/skyRefs';
 import { buildSolarSystemTarget } from '@/lib/solarSystem';
 import * as Astronomy from 'astronomy-engine';
+import { planetBasis, type PlanetBasis } from '@/lib/astronomy/planetOrientation';
+import { useRealPlanetTexture, useEnteredView } from './planetTextures';
 
+function basisQuaternion(b: PlanetBasis): THREE.Quaternion {
+    const m = new THREE.Matrix4().makeBasis(
+        new THREE.Vector3(...b.prime),
+        new THREE.Vector3(...b.north),
+        new THREE.Vector3(...b.side),
+    );
+    return new THREE.Quaternion().setFromRotationMatrix(m);
+}
 
 // ── Texturas procedurales — sin dependencias externas ────────────────────────
 function lcg(seed: number) {
@@ -522,12 +532,16 @@ function SunMesh({ pos, onSelect }: { pos: [number, number, number]; onSelect: (
     );
 }
 
-function MoonMesh({ planet, phase, dayDimming, onSelect }: { planet: { pos: [number, number, number] }, phase: number, dayDimming: number, onSelect: () => void }) {
+function MoonMesh({ planet, phase, dayDimming, onSelect }: { planet: { pos: [number, number, number]; basis: PlanetBasis }, phase: number, dayDimming: number, onSelect: () => void }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const camFov = useAppStore(state => state.camFov);
-    const texture = usePlanetTexture('moon');
+    const proceduralTexture = usePlanetTexture('moon');
     const glowTexture = useGlowTexture();
     const sphereOpacity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 55, 35, 0, 1), 0, 1) * dayDimming;
+    const groupRef = useRef<THREE.Group>(null);
+    const inView = useEnteredView(groupRef, sphereOpacity > 0.01);
+    const texture = useRealPlanetTexture('moon', inView, proceduralTexture);
+    const orientation = useMemo(() => basisQuaternion(planet.basis), [planet.basis]);
     const glowOpacity   = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 35, 55, 0, 1), 0, 1) * dayDimming;
     // Iluminación lunar: 0-1 según fase (0°=Luna Nueva, 180°=Luna Llena)
     const moonBrightness = 0.3 + 0.7 * Math.abs(Math.sin(THREE.MathUtils.degToRad(phase / 2)));
@@ -558,7 +572,7 @@ function MoonMesh({ planet, phase, dayDimming, onSelect }: { planet: { pos: [num
     }, [onSelect]);
 
     return (
-        <group position={planet.pos} onClick={handleClick}>
+        <group ref={groupRef} position={planet.pos} onClick={handleClick}>
             {/* Sprite de glow — siempre visible a FOV amplio */}
             {glowOpacity > 0.01 && (
                 <sprite scale={[2.5, 2.5, 1]}>
@@ -575,7 +589,7 @@ function MoonMesh({ planet, phase, dayDimming, onSelect }: { planet: { pos: [num
             )}
             {/* Esfera 3D al hacer zoom */}
             {sphereOpacity > 0.01 && (
-                <mesh ref={meshRef}>
+                <mesh ref={meshRef} quaternion={orientation}>
                     <sphereGeometry args={[0.4, 64, 64]} />
                     <shaderMaterial
                         vertexShader={PLANET_VERTEX_SHADER}
@@ -603,12 +617,13 @@ interface PlanetData {
     ra: number;
     dec: number;
     distAU: number;
+    basis: PlanetBasis;
 }
 
 function PlanetMesh({ planet, dayDimming, onSelect }: { planet: PlanetData, dayDimming: number, onSelect: () => void }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const camFov = useAppStore(state => state.camFov);
-    const texture = usePlanetTexture(planet.textureKey);
+    const proceduralTexture = usePlanetTexture(planet.textureKey);
     const glowTexture = useGlowTexture();
     const ringTexture = useSaturnRingTexture();
 
@@ -616,6 +631,11 @@ function PlanetMesh({ planet, dayDimming, onSelect }: { planet: PlanetData, dayD
 
     // Esfera 3D aparece al hacer zoom (FOV < 55); sprite de glow siempre visible
     const sphereOpacity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 55, 35, 0, 1), 0, 1) * dayDimming;
+    // Mapa real solo cuando la esfera es visible; hasta que cargue (o si falla) se usa el procedural.
+    const groupRef = useRef<THREE.Group>(null);
+    const inView = useEnteredView(groupRef, sphereOpacity > 0.01);
+    const texture = useRealPlanetTexture(planet.textureKey, inView, proceduralTexture);
+    const orientation = useMemo(() => basisQuaternion(planet.basis), [planet.basis]);
     const glowOpacity   = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 35, 55, 0, 1), 0, 1) * dayDimming;
     // Sprite: mínimo 1.2 unidades de radio visual, proporcional al tamaño angular
     const glowScale = THREE.MathUtils.clamp(computePlanetBaseScale(planet.distAU, planet.textureKey) * 2.8, 1.2, 2.8);
@@ -647,7 +667,7 @@ function PlanetMesh({ planet, dayDimming, onSelect }: { planet: PlanetData, dayD
     }, [onSelect]);
 
     return (
-        <group position={planet.pos} onClick={handleClick}>
+        <group ref={groupRef} position={planet.pos} onClick={handleClick}>
             {/* Punto de luz — siempre visible como una estrella de color */}
             {glowOpacity > 0.01 && (
                 <sprite scale={[glowScale, glowScale, 1]}>
@@ -664,9 +684,9 @@ function PlanetMesh({ planet, dayDimming, onSelect }: { planet: PlanetData, dayD
             )}
             {/* Disco 3D — aparece al hacer zoom */}
             {sphereOpacity > 0.01 && (
-                <>
+                <group quaternion={orientation}>
                     <mesh ref={meshRef}>
-                        <sphereGeometry args={[scale, 32, 32]} />
+                        <sphereGeometry args={[scale, 64, 64]} />
                         <shaderMaterial
                             vertexShader={PLANET_VERTEX_SHADER}
                             fragmentShader={PLANET_FRAGMENT_SHADER}
@@ -676,8 +696,9 @@ function PlanetMesh({ planet, dayDimming, onSelect }: { planet: PlanetData, dayD
                             depthWrite={true}
                         />
                     </mesh>
+                    {/* Anillos en el plano ecuatorial real de Saturno (perpendicular al polo, eje Y local) */}
                     {planet.name === "Saturno" && (
-                        <mesh rotation={[Math.PI / 2.5, 0, 0]}>
+                        <mesh rotation={[-Math.PI / 2, 0, 0]}>
                             <ringGeometry args={[scale * 1.4, scale * 2.4, 128]} />
                             <meshBasicMaterial
                                 map={ringTexture}
@@ -689,7 +710,7 @@ function PlanetMesh({ planet, dayDimming, onSelect }: { planet: PlanetData, dayD
                             />
                         </mesh>
                     )}
-                </>
+                </group>
             )}
             <Html distanceFactor={150}>
                 {sphereOpacity > 0.15
@@ -810,6 +831,7 @@ export default function Planets() {
                     color: cfg.color,
                     symbol: cfg.symbol,
                     pos: equatorialTo3D(eq.ra * 15, eq.dec, PLANET_RADIUS) as [number, number, number],
+                    basis: planetBasis(cfg.body, time),
                 } as PlanetData;
             } catch { return null; }
         }).filter((p): p is PlanetData => p !== null);
@@ -819,7 +841,11 @@ export default function Planets() {
             const eq = Astronomy.Equator(Astronomy.Body.Moon, time, bs, true, true);
             const phase = Astronomy.MoonPhase(time);
             moon = {
-                planet: { name: 'Luna', pos: equatorialTo3D(eq.ra * 15, eq.dec, PLANET_RADIUS) as [number, number, number] },
+                planet: {
+                    name: 'Luna',
+                    pos: equatorialTo3D(eq.ra * 15, eq.dec, PLANET_RADIUS) as [number, number, number],
+                    basis: planetBasis(Astronomy.Body.Moon, time),
+                },
                 phase
             };
         } catch (err) {
