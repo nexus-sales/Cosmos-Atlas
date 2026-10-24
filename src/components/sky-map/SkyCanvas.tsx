@@ -42,6 +42,7 @@ import { cn } from '@/lib/utils';
 import { Minus, Plus, RotateCcw } from 'lucide-react';
 import { cameraHeadingRef, cameraRef, moonHorRef, sunHorRef } from '@/lib/skyRefs';
 import { ocularExposureTarget } from '@/lib/astronomy/skyBrightness';
+import { computeMagneticDeclination } from '@/lib/astronomy/magneticDeclination';
 import * as Astronomy from 'astronomy-engine';
 
 // Observador reutilizable — evita allocations en useFrame
@@ -332,17 +333,34 @@ function OrientationDriver() {
 
     const azRef = useRef(0);
     const elRef = useRef(0);
+    const declinationRef = useRef(0);
+    const lastObserverRef = useRef({ lat: Number.NaN, lon: Number.NaN, year: Number.NaN });
 
     useFrame(() => {
         if (!followOrientation) return;
 
         // Usar heading y elevation ya corregidos y suavizados del sensor
         const { heading, elevation } = deviceOrientationRef;
+        const { observer, time, compassCalibrationOffset } = useAppStore.getState();
+        const year = time.getFullYear() + time.getMonth() / 12;
+        const lastObserver = lastObserverRef.current;
+        if (
+            !Number.isFinite(lastObserver.lat)
+            || Math.abs(observer.lat - lastObserver.lat) > 0.5
+            || Math.abs(observer.lon - lastObserver.lon) > 0.5
+            || Math.abs(year - lastObserver.year) > 0.5
+        ) {
+            declinationRef.current = computeMagneticDeclination(observer.lat, observer.lon, time);
+            lastObserverRef.current = { lat: observer.lat, lon: observer.lon, year };
+        }
+        const trueHeading = heading
+            + declinationRef.current
+            + compassCalibrationOffset;
 
         const targetEl = THREE.MathUtils.clamp(elevation, 0, 90);
 
         // Azimut wrap-around seguro
-        const dAz = ((heading - azRef.current) % 360 + 540) % 360 - 180;
+        const dAz = ((trueHeading - azRef.current) % 360 + 540) % 360 - 180;
         azRef.current = (azRef.current + dAz * 0.12 + 360) % 360;
         elRef.current += (targetEl - elRef.current) * 0.12;
 
@@ -426,6 +444,7 @@ export default function SkyCanvas() {
     const deviceQuality = useAppStore((state) => state.deviceQuality);
     const camFov = useAppStore((state) => state.camFov);
     const setCamFov = useAppStore((state) => state.setCamFov);
+    const arOverlayReady = viewMode !== 'camera' || followOrientation;
 
     // Cap DPR by quality tier to avoid rendering at 3× on flagship Android phones
     const maxDpr = deviceQuality === 'low' ? 1.0 : deviceQuality === 'medium' ? 1.5 : 2.0;
@@ -495,7 +514,7 @@ export default function SkyCanvas() {
                     <AtmosphericSky />
 
                     {/* Grupo rotado al sistema horizontal del observador */}
-                    <CelestialGroup>
+                    {arOverlayReady && <CelestialGroup>
                         <ErrorBoundary label="BackgroundStars"><BackgroundStars /></ErrorBoundary>
                         {showMilkyWay && <ErrorBoundary label="MilkyWay"><MilkyWaySkyDome /></ErrorBoundary>}
                         {/* Catálogo Hipparcos — 14.984 estrellas hasta mag 7, carga asíncrona */}
@@ -519,12 +538,12 @@ export default function SkyCanvas() {
                         {/* Cometas con colas dinámicas (usan coordenadas ecuatoriales) */}
                         {showComets && <ErrorBoundary label="Comets"><Comets /></ErrorBoundary>}
                         <ErrorBoundary label="SimbadOverlay"><SimbadOverlay /></ErrorBoundary>
-                    </CelestialGroup>
+                    </CelestialGroup>}
 
                     {/* Satélites en espacio mundo horizontal (Alt/Az), NO dentro del CelestialGroup */}
-                    <ErrorBoundary label="Satellites"><Satellites /></ErrorBoundary>
+                    {arOverlayReady && <ErrorBoundary label="Satellites"><Satellites /></ErrorBoundary>}
                     {/* ISS: predicción de paso + arco de trayectoria */}
-                    <ErrorBoundary label="ISSPassPredictor"><ISSPassPredictor /></ErrorBoundary>
+                    {arOverlayReady && <ErrorBoundary label="ISSPassPredictor"><ISSPassPredictor /></ErrorBoundary>}
 
                     <CameraNavigator
                         controlsRef={controlsRef}
@@ -536,7 +555,7 @@ export default function SkyCanvas() {
                     <ErrorBoundary label="Horizon"><Horizon /></ErrorBoundary>
 
                     {/* Lluvia de meteoros real: solo con radiante real activo y cielo oscuro, sin simulacion */}
-                    <ErrorBoundary label="Meteors"><Meteors /></ErrorBoundary>
+                    {arOverlayReady && <ErrorBoundary label="Meteors"><Meteors /></ErrorBoundary>}
 
                     <CinematicTour />
                     <OcularAdaptation />
@@ -547,6 +566,17 @@ export default function SkyCanvas() {
                     <CameraSync />
                 </Suspense>
             </Canvas>
+
+            {viewMode === 'camera' && !followOrientation && (
+                <div className="pointer-events-none absolute inset-0 z-[45] flex items-center justify-center">
+                    <div className="flex flex-col items-center gap-3 rounded-2xl border border-cyan-300/25 bg-[#050b16]/82 px-5 py-4 text-center shadow-2xl backdrop-blur-md">
+                        <div className="h-12 w-12 rounded-full border border-cyan-300/55 before:absolute" aria-hidden="true" />
+                        <p className="max-w-[250px] text-[11px] font-semibold leading-relaxed tracking-wide text-cyan-50/90">
+                            Activa y calibra el seguimiento AR para alinear Luna, planetas y estrellas con la cámara.
+                        </p>
+                    </div>
+                </div>
+            )}
 
             <div
                 className="absolute right-3 top-1/2 z-[70] flex -translate-y-1/2 flex-col items-center overflow-hidden rounded-xl border border-white/10 bg-[#050a16]/90 text-white/70 shadow-lg backdrop-blur-md md:right-4"

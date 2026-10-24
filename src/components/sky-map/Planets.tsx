@@ -535,6 +535,7 @@ function SunMesh({ pos, onSelect }: { pos: [number, number, number]; onSelect: (
 function MoonMesh({ planet, phase, dayDimming, onSelect }: { planet: { pos: [number, number, number]; basis: PlanetBasis }, phase: number, dayDimming: number, onSelect: () => void }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const camFov = useAppStore(state => state.camFov);
+    const cameraMode = useAppStore(state => state.viewMode === 'camera');
     const proceduralTexture = usePlanetTexture('moon');
     const glowTexture = useGlowTexture();
     const sphereOpacity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 55, 35, 0, 1), 0, 1) * dayDimming;
@@ -575,7 +576,7 @@ function MoonMesh({ planet, phase, dayDimming, onSelect }: { planet: { pos: [num
         <group ref={groupRef} position={planet.pos} onClick={handleClick}>
             {/* Sprite de glow — siempre visible a FOV amplio */}
             {glowOpacity > 0.01 && (
-                <sprite scale={[2.5, 2.5, 1]}>
+                <sprite scale={cameraMode ? [4, 4, 1] : [2.5, 2.5, 1]}>
                     <spriteMaterial
                         map={glowTexture}
                         color="#e8e8d8"
@@ -586,6 +587,12 @@ function MoonMesh({ planet, phase, dayDimming, onSelect }: { planet: { pos: [num
                         toneMapped={false}
                     />
                 </sprite>
+            )}
+            {cameraMode && (
+                <mesh>
+                    <ringGeometry args={[0.72, 0.84, 48]} />
+                    <meshBasicMaterial color="#fff3b0" transparent opacity={0.95} side={THREE.DoubleSide} depthTest={false} />
+                </mesh>
             )}
             {/* Esfera 3D al hacer zoom */}
             {sphereOpacity > 0.01 && (
@@ -600,7 +607,7 @@ function MoonMesh({ planet, phase, dayDimming, onSelect }: { planet: { pos: [num
                 </mesh>
             )}
             <Html distanceFactor={120} zIndexRange={[90, 0]}>
-                <div className="pointer-events-none whitespace-nowrap rounded border border-yellow-200/20 bg-black/80 px-2 py-1 text-[10px] font-bold font-mono text-yellow-100/80 -translate-x-1/2 -translate-y-8">
+                <div className={`pointer-events-none whitespace-nowrap rounded bg-black/85 font-bold font-mono -translate-x-1/2 ${cameraMode ? 'border border-yellow-200/70 px-3 py-1.5 text-[13px] text-yellow-50 -translate-y-12' : 'border border-yellow-200/20 px-2 py-1 text-[10px] text-yellow-100/80 -translate-y-8'}`}>
                     LUNA ({phase.toFixed(0)}°)
                 </div>
             </Html>
@@ -623,6 +630,7 @@ interface PlanetData {
 function PlanetMesh({ planet, dayDimming, onSelect }: { planet: PlanetData, dayDimming: number, onSelect: () => void }) {
     const meshRef = useRef<THREE.Mesh>(null);
     const camFov = useAppStore(state => state.camFov);
+    const cameraMode = useAppStore(state => state.viewMode === 'camera');
     const proceduralTexture = usePlanetTexture(planet.textureKey);
     const glowTexture = useGlowTexture();
     const ringTexture = useSaturnRingTexture();
@@ -682,6 +690,12 @@ function PlanetMesh({ planet, dayDimming, onSelect }: { planet: PlanetData, dayD
                     />
                 </sprite>
             )}
+            {cameraMode && (
+                <mesh>
+                    <ringGeometry args={[0.52, 0.64, 40]} />
+                    <meshBasicMaterial color={planet.color} transparent opacity={0.95} side={THREE.DoubleSide} depthTest={false} />
+                </mesh>
+            )}
             {/* Disco 3D — aparece al hacer zoom */}
             {sphereOpacity > 0.01 && (
                 <group quaternion={orientation}>
@@ -713,9 +727,9 @@ function PlanetMesh({ planet, dayDimming, onSelect }: { planet: PlanetData, dayD
                 </group>
             )}
             <Html distanceFactor={150}>
-                {sphereOpacity > 0.15
+                {cameraMode || sphereOpacity > 0.15
                     ? (
-                        <div className="pointer-events-none whitespace-nowrap rounded border border-white/20 bg-black/80 px-2 py-1 text-[10px] font-bold font-mono text-white -translate-x-1/2 -translate-y-12">
+                        <div className={`pointer-events-none whitespace-nowrap rounded bg-black/85 font-bold font-mono text-white -translate-x-1/2 ${cameraMode ? 'border border-white/50 px-3 py-1.5 text-[12px] -translate-y-10' : 'border border-white/20 px-2 py-1 text-[10px] -translate-y-12'}`}>
                             {planet.symbol} {planet.name.toUpperCase()}
                         </div>
                     ) : (

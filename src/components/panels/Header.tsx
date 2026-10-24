@@ -96,7 +96,7 @@ export default function Header({ onRequestLocation }: HeaderProps) {
         ? `±${Math.round(geolocation.accuracyM)}m`
         : 'GPS';
 
-    const arActive = followOrientation || viewMode === 'camera';
+    const arActive = followOrientation;
 
     return (
         <>

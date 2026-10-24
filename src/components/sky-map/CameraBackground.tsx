@@ -3,6 +3,35 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
 import { cn } from '@/lib/utils';
+import * as THREE from 'three';
+
+export function estimateCoveredVerticalFov(
+    videoWidth: number,
+    videoHeight: number,
+    viewportWidth: number,
+    viewportHeight: number,
+    longAxisFovDeg = 70,
+) {
+    if (videoWidth <= 0 || videoHeight <= 0 || viewportWidth <= 0 || viewportHeight <= 0) return 60;
+
+    const videoAspect = videoWidth / videoHeight;
+    const viewportAspect = viewportWidth / viewportHeight;
+    const longAxisFov = THREE.MathUtils.degToRad(longAxisFovDeg);
+    const nativeVerticalFov = videoWidth >= videoHeight
+        ? 2 * Math.atan(Math.tan(longAxisFov / 2) / videoAspect)
+        : longAxisFov;
+    const nativeHorizontalFov = videoWidth >= videoHeight
+        ? longAxisFov
+        : 2 * Math.atan(Math.tan(longAxisFov / 2) * videoAspect);
+
+    // object-cover recorta el eje que sobra. El FOV del overlay debe representar
+    // exactamente la parte del vídeo que permanece visible en pantalla.
+    const visibleVerticalFov = viewportAspect > videoAspect
+        ? 2 * Math.atan(Math.tan(nativeHorizontalFov / 2) / viewportAspect)
+        : nativeVerticalFov;
+
+    return THREE.MathUtils.clamp(THREE.MathUtils.radToDeg(visibleVerticalFov), 25, 90);
+}
 
 export default function CameraBackground() {
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -63,15 +92,12 @@ export default function CameraBackground() {
                     
                     video.onloadedmetadata = () => {
                         setStreamActive(true);
-                        const track = stream.getVideoTracks()[0];
-                        const settings = track.getSettings();
-                        if (settings.aspectRatio) {
-                            const defaultHorizontalFov = 70; 
-                            const verticalFov = defaultHorizontalFov / (settings.aspectRatio || 1.77);
-                            setCamFov(verticalFov);
-                        } else {
-                            setCamFov(45);
-                        }
+                        setCamFov(estimateCoveredVerticalFov(
+                            video.videoWidth,
+                            video.videoHeight,
+                            video.clientWidth || window.innerWidth,
+                            video.clientHeight || window.innerHeight,
+                        ));
                     };
                 }
             } catch (err: unknown) {

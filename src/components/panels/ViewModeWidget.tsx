@@ -70,8 +70,6 @@ export default function ViewModeWidget() {
             return;
         }
 
-        setFollowOrientation(true);
-
         const durationMs = 3000;
         const stepMs = 100;
         const totalSteps = Math.ceil(durationMs / stepMs);
@@ -93,6 +91,7 @@ export default function ViewModeWidget() {
             clearCalibrationTimers();
             const stableRatio = samples > 0 ? stableSamples / samples : 0;
             const success = deviceOrientationRef.active && !deviceOrientationRef.needsCalibration && stableRatio >= 0.55;
+            setFollowOrientation(success);
             addArHealthSample({
                 timestamp: Date.now(),
                 success,
@@ -110,8 +109,13 @@ export default function ViewModeWidget() {
 
     const handleActivateCameraMode = useCallback(() => {
         setViewMode('camera');
+        if (isSupported && !followOrientation) {
+            if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
+            void calibrateAR();
+            return;
+        }
         scheduleCollapse();
-    }, [setViewMode, scheduleCollapse]);
+    }, [calibrateAR, followOrientation, isSupported, scheduleCollapse, setViewMode]);
 
     const handleActivateVaultMode = useCallback(() => {
         setViewMode('vault');

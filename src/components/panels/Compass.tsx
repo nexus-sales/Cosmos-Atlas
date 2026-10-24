@@ -55,6 +55,7 @@ export default function Compass() {
                 const last = lastObsRef.current;
 
                 if (
+                    !Number.isFinite(last.lat) ||
                     Math.abs(observer.lat - last.lat) > 0.5 ||
                     Math.abs(observer.lon - last.lon) > 0.5 ||
                     Math.abs(year - last.year) > 0.5
