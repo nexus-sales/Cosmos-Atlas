@@ -110,7 +110,9 @@ for (const line of dataLines) {
     );
     if (duplicatesNamedStar) { skippedNamed++; continue; }
 
-    stars.push([raDeg, decDeg, vmag, bvSafe]);
+    const hip = parseInt(parts[0], 10);
+    if (!Number.isFinite(hip)) { skipped++; continue; }
+    stars.push([hip, raDeg, decDeg, vmag, bvSafe]);
 }
 
 console.log(`Estrellas válidas: ${stars.length}  |  Omitidas: ${skipped}`);
@@ -124,18 +126,19 @@ if (stars.length === 0) {
 
 // ── Formato binario ─────────────────────────────────────────────────────────
 // Header  : 4 bytes — uint32LE: número de estrellas
-// Por star: 16 bytes — 4× float32LE: [ra, dec, mag, bv]
-// Total   : 4 + N*16 bytes
+// Por star: 20 bytes — uint32 HIP + 4× float32LE: [ra, dec, mag, bv]
+// Total   : 4 + N*20 bytes
 
-const buf = Buffer.alloc(4 + stars.length * 16);
+const buf = Buffer.alloc(4 + stars.length * 20);
 buf.writeUInt32LE(stars.length, 0);
 
 for (let i = 0; i < stars.length; i++) {
-    const off = 4 + i * 16;
-    buf.writeFloatLE(stars[i][0], off);      // ra  (deg)
-    buf.writeFloatLE(stars[i][1], off + 4);  // dec (deg)
-    buf.writeFloatLE(stars[i][2], off + 8);  // mag
-    buf.writeFloatLE(stars[i][3], off + 12); // bv
+    const off = 4 + i * 20;
+    buf.writeUInt32LE(stars[i][0], off);       // HIP
+    buf.writeFloatLE(stars[i][1], off + 4);    // ra  (deg)
+    buf.writeFloatLE(stars[i][2], off + 8);    // dec (deg)
+    buf.writeFloatLE(stars[i][3], off + 12);   // mag
+    buf.writeFloatLE(stars[i][4], off + 16);   // bv
 }
 
 mkdirSync(dirname(OUT_PATH), { recursive: true });
@@ -145,5 +148,5 @@ const kb = (buf.length / 1024).toFixed(1);
 console.log(`\n✓ Generado: ${OUT_PATH}`);
 console.log(`  Estrellas: ${stars.length.toLocaleString()}`);
 console.log(`  Tamaño   : ${kb} KB`);
-console.log(`  Rango mag: ${stars[0][2].toFixed(2)} → ${stars[stars.length-1][2].toFixed(2)}`);
+console.log(`  Rango mag: ${stars[0][3].toFixed(2)} → ${stars[stars.length-1][3].toFixed(2)}`);
 console.log('\nListo. Reinicia el servidor de desarrollo.');

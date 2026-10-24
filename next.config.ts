@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
     async headers() {
         return [
             {
-                source: "/(hipparcos|ngc)\\.bin",
+                source: "/(hipparcos|ngc|iau-boundaries)\\.bin",
                 headers: [
                     {
                         key: "Cache-Control",

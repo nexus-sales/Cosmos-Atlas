@@ -44,31 +44,9 @@ export async function resolveObjectName(query: string): Promise<SesameResolution
             return null;
         }
 
-        const text = await response.text();
-        if (text.startsWith('#') || !text.trim().startsWith('{')) {
-            _sesameCache.set(key, null);
-            return null;
-        }
-
-        const data = JSON.parse(text);
-
-        const target = data.Target;
-        if (!target || !target.Resolver) {
-            _sesameCache.set(key, null);
-            return null;
-        }
-
-        type Resolver = { jpos?: string; jradeg: string; jdedeg: string; oname?: string; otype?: string; vmag?: string; _name?: string; };
-        const resolvers: Resolver[] = Array.isArray(target.Resolver) ? target.Resolver : [target.Resolver];
-        const bestResolver = resolvers.find((r) => r.jpos) || resolvers[0];
-
-        if (!bestResolver || !bestResolver.jpos) {
-            _sesameCache.set(key, null);
-            return null;
-        }
-
-        const ra = parseFloat(bestResolver.jradeg);
-        const dec = parseFloat(bestResolver.jdedeg);
+        const data = await response.json() as Partial<SesameResolution>;
+        const ra = Number(data.ra);
+        const dec = Number(data.dec);
 
         if (isNaN(ra) || isNaN(dec)) {
             _sesameCache.set(key, null);
@@ -76,12 +54,12 @@ export async function resolveObjectName(query: string): Promise<SesameResolution
         }
 
         const result: SesameResolution = {
-            name: bestResolver.oname || query,
+            name: data.name || query,
             ra,
             dec,
-            type: bestResolver.otype,
-            mag: parseFloat(bestResolver.vmag ?? '0'),
-            source: (bestResolver._name ?? 'SIMBAD') as SesameResolution['source'],
+            type: data.type,
+            mag: data.mag,
+            source: data.source ?? 'SIMBAD',
         };
 
         _sesameCache.set(key, result);

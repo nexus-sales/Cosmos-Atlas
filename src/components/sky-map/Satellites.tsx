@@ -7,6 +7,8 @@ import { Html } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as satellite from 'satellite.js';
 import { useAppStore } from '@/stores/useAppStore';
+import { terrainHorizonRef } from '@/lib/skyRefs';
+import { horizonAltitudeAtAzimuth } from '@/lib/astronomy/horizonProfile';
 
 interface SatelliteData {
     name: string;
@@ -402,7 +404,13 @@ export default function Satellites() {
             const look = satellite.ecfToLookAngles(observerGd, posEcf);
 
             // Solo si está por encima del horizonte
-            if (look.elevation > THREE.MathUtils.degToRad(-5)) {
+            const elevationDeg = THREE.MathUtils.radToDeg(look.elevation);
+            const azimuthDeg = (THREE.MathUtils.radToDeg(look.azimuth) + 360) % 360;
+            const terrainAltitude = horizonAltitudeAtAzimuth(terrainHorizonRef.current, azimuthDeg);
+
+            // El icono usa depthTest=false; el relieve se aplica aquí de forma
+            // explícita para que ningún satélite atraviese una montaña.
+            if (elevationDeg > terrainAltitude + 0.15) {
                 // Convertir Alt/Az a coordenadas 3D en el espacio horizontal local.
                 // Sistema de la escena (sin CelestialGroup):
                 //   +Y = cénit, +X = Este, -Z = Norte (frente del observador)

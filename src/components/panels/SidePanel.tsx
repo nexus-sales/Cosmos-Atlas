@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useSyncExternalStore } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { useAppStore } from '@/stores/useAppStore';
-import { Target, Info, BookOpen, Layers, Grid3X3, ChevronRight, ChevronLeft, ChevronDown, X, Moon, Mountain, Camera, Satellite, Globe, CloudRain, Settings2, Crosshair, Sparkles } from 'lucide-react';
+import { Target, Info, BookOpen, Layers, Grid3X3, ChevronRight, ChevronLeft, ChevronDown, X, Moon, Mountain, Camera, Satellite, Globe, CloudRain, Settings2, Crosshair, Sparkles, CalendarClock, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ChallengeTab from '@/components/panels/ChallengeTab';
 import ObjectInfoTab from '@/components/panels/ObjectInfoTab';
@@ -12,6 +12,8 @@ import MeteorShowerInfo from '@/components/panels/MeteorShowerInfo';
 import DailyEventsPanel from '@/components/panels/DailyEventsPanel';
 import UpcomingConjunctions from '@/components/panels/UpcomingConjunctions';
 import ObservationJournal from '@/components/panels/ObservationJournal';
+import { getSkyCulture, SKY_CULTURES, type SkyCultureId } from '@/data/skyCultures';
+import TonightPlanner from '@/components/panels/TonightPlanner';
 
 type TabType = 'challenge' | 'info' | 'guide';
 
@@ -42,6 +44,8 @@ function PanelContent({
     const showGrid = useAppStore((state) => state.settings.showGrid);
     const showConstellations = useAppStore((state) => state.settings.showConstellations);
     const showConstellationArt = useAppStore((state) => state.settings.showConstellationArt);
+    const showConstellationBoundaries = useAppStore((state) => state.settings.showConstellationBoundaries);
+    const showAsterisms = useAppStore((state) => state.settings.showAsterisms);
     const showMilkyWay = useAppStore((state) => state.settings.showMilkyWay);
     const showEcliptic = useAppStore((state) => state.settings.showEcliptic);
     const showSatellites = useAppStore((state) => state.settings.showSatellites);
@@ -57,28 +61,15 @@ function PanelContent({
     const setFOVParams = useAppStore((state) => state.setFOVParams);
     const toggleSetting = useAppStore((state) => state.toggleSetting);
     const satelliteInfo = useAppStore((state) => state.satelliteInfo);
-    const viewMode = useAppStore((state) => state.viewMode);
+    const skyCultureId = useAppStore((state) => state.skyCultureId);
+    const setSkyCultureId = useAppStore((state) => state.setSkyCultureId);
+    const skyCulture = getSkyCulture(skyCultureId);
 
     const tabs = [
         { id: 'challenge', label: 'RETO', icon: Target },
         { id: 'info', label: 'OBJETO', icon: Info },
         { id: 'guide', label: 'GUÍA', icon: BookOpen },
     ] as const;
-
-    const layerToggles = [
-        { key: 'showGrid' as const, label: 'GRID', icon: Grid3X3, active: showGrid },
-        { key: 'showConstellations' as const, label: 'CONSTEL.', icon: Layers, active: showConstellations },
-        { key: 'showConstellationArt' as const, label: 'MITOLOGÍA', icon: Sparkles, active: showConstellationArt },
-        { key: 'showMilkyWay' as const, label: 'VÍA LÁCTEA', icon: Layers, active: showMilkyWay },
-        { key: 'showEcliptic' as const, label: 'ECLÍPT.', icon: Layers, active: showEcliptic },
-        { key: 'nightMode' as const, label: 'NOCTURNO', icon: Moon, active: nightMode },
-        { key: 'showFOV' as const, label: 'SIM. FOV', icon: Camera, active: showFOV },
-        { key: 'showComets' as const, label: 'COMETAS', icon: CloudRain, active: showComets },
-        { key: 'showSatellites' as const, label: 'SATÉLITES', icon: Satellite, active: showSatellites },
-        { key: 'showStarlink' as const, label: 'STARLINK', icon: Globe, active: showStarlink },
-        { key: 'telescopeMode' as const, label: 'TELESCOPIO', icon: Camera, active: telescopeMode },
-        { key: 'followTarget' as const, label: 'SEGUIR', icon: Crosshair, active: followTarget },
-    ];
 
     const [layersOpen, setLayersOpen] = useState(false);
     const [bortleOpen, setBortleOpen] = useState(false);
@@ -88,6 +79,8 @@ function PanelContent({
     const [meteorsOpen, setMeteorsOpen] = useState(false);
     const [conjOpen, setConjOpen] = useState(false);
     const [journalOpen, setJournalOpen] = useState(false);
+    const [plannerOpen, setPlannerOpen] = useState(false);
+    const [privacyOpen, setPrivacyOpen] = useState(false);
 
     return (
         <>
@@ -164,16 +157,19 @@ function PanelContent({
                             </div>
 
                             {/* Bloque 2: Entorno Celeste */}
-                            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-2 grid grid-cols-4 gap-1">
-                                {[
+                            <div className="bg-white/[0.02] border border-white/5 rounded-xl p-2 grid grid-cols-3 gap-1">
+                                {([
                                     { key: 'showGrid', label: 'GRID', icon: Grid3X3, active: showGrid },
                                     { key: 'showEcliptic', label: 'ECLÍPT.', icon: Layers, active: showEcliptic },
                                     { key: 'showConstellations', label: 'CONST.', icon: Layers, active: showConstellations },
+                                    { key: 'showConstellationArt', label: 'FIGURAS', icon: Sparkles, active: showConstellationArt },
+                                    { key: 'showConstellationBoundaries', label: 'LÍMITES', icon: Grid3X3, active: showConstellationBoundaries },
+                                    { key: 'showAsterisms', label: 'ASTER.', icon: Sparkles, active: showAsterisms },
                                     { key: 'showMilkyWay', label: 'VÍA L.', icon: Sparkles, active: showMilkyWay }
-                                ].map(({ key, label, icon: Icon, active }) => (
+                                ] as const).map(({ key, label, icon: Icon, active }) => (
                                     <button
                                         key={key}
-                                        onClick={() => toggleSetting(key as any)}
+                                        onClick={() => toggleSetting(key)}
                                         className={cn(
                                             'flex flex-col items-center justify-center p-2 rounded-lg transition-all',
                                             active ? 'bg-white/10 text-white shadow-inner' : 'text-white/30 hover:text-white/60 hover:bg-white/5'
@@ -185,17 +181,38 @@ function PanelContent({
                                 ))}
                             </div>
 
+                            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                                <label htmlFor="sky-culture" className="mb-2 block text-[9px] font-bold uppercase tracking-[0.18em] text-white/45">
+                                    Lectura del cielo
+                                </label>
+                                <select
+                                    id="sky-culture"
+                                    value={skyCultureId}
+                                    onChange={(event) => setSkyCultureId(event.target.value as SkyCultureId)}
+                                    className="w-full rounded-lg border border-white/10 bg-[#101827] px-3 py-2 text-xs text-white outline-none focus:border-blue-400/60"
+                                >
+                                    {SKY_CULTURES.map((culture) => <option key={culture.id} value={culture.id}>{culture.name}</option>)}
+                                </select>
+                                <p className="mt-2 text-[9px] leading-relaxed text-white/40">{skyCulture.tradition}</p>
+                                <p className="mt-1 text-[8px] uppercase tracking-wider text-blue-300/55">
+                                    {skyCulture.asterisms.length} asterismos · {skyCulture.region}
+                                </p>
+                                <p className="mt-1 truncate text-[8px] text-white/25" title={skyCulture.sources.join(' · ')}>
+                                    Fuente: {skyCulture.sources[0]}
+                                </p>
+                            </div>
+
                             {/* Bloque 3: Objetos Extra */}
                             <div className="grid grid-cols-4 gap-2">
-                                {[
+                                {([
                                     { key: 'showComets', label: 'COMETAS', icon: CloudRain, active: showComets },
                                     { key: 'showSatellites', label: 'SATÉLITES', icon: Satellite, active: showSatellites },
                                     { key: 'showStarlink', label: 'STARLINK', icon: Globe, active: showStarlink },
                                     { key: 'telescopeMode', label: 'TELESCOPIO', icon: Camera, active: telescopeMode }
-                                ].map(({ key, label, icon: Icon, active }) => (
+                                ] as const).map(({ key, label, icon: Icon, active }) => (
                                     <button
                                         key={key}
-                                        onClick={() => toggleSetting(key as any)}
+                                        onClick={() => toggleSetting(key)}
                                         className={cn(
                                             'flex flex-col items-center justify-center py-2.5 rounded-lg border transition-all',
                                             active ? 'bg-cyan-900/30 border-cyan-500/40 text-cyan-300' : 'bg-white/5 border-transparent text-white/30 hover:bg-white/10 hover:text-white/60'
@@ -269,6 +286,10 @@ function PanelContent({
                         </AccordionSection>
                     )}
 
+                    <AccordionSection title="Esta noche" icon={<CalendarClock className="w-4 h-4" />} isOpen={plannerOpen} onToggle={() => setPlannerOpen(!plannerOpen)}>
+                        <TonightPlanner />
+                    </AccordionSection>
+
                     <AccordionSection title="Eventos del Día" icon={<Globe className="w-4 h-4" />} isOpen={eventsOpen} onToggle={() => setEventsOpen(!eventsOpen)}>
                         <DailyEventsPanel />
                     </AccordionSection>
@@ -281,6 +302,9 @@ function PanelContent({
                     </AccordionSection>
                     <AccordionSection title="Meteoros" icon={<CloudRain className="w-4 h-4" />} isOpen={meteorsOpen} onToggle={() => setMeteorsOpen(!meteorsOpen)}>
                         <MeteorShowerInfo />
+                    </AccordionSection>
+                    <AccordionSection title="Privacidad y datos" icon={<ShieldCheck className="w-4 h-4" />} isOpen={privacyOpen} onToggle={() => setPrivacyOpen(!privacyOpen)}>
+                        <PrivacyControls />
                     </AccordionSection>
                 </div>
             </div>
@@ -488,6 +512,31 @@ export default function SidePanel() {
                 </div>
             )}
         </motion.aside>
+    );
+}
+
+const LOCAL_DATA_KEYS = [
+    'cosmos-atlas-storage', 'cosmos-atlas-journal-v1', 'cosmos-search-history',
+    'cosmos-atlas-guide-pinned-sections', 'cosmos_catalog_v2',
+    'cosmos-atlas-tle-iss', 'cosmos-atlas-tle-hubble', 'cosmos-atlas-tle-tiangong',
+    'cosmos-atlas-tle-noaa18', 'cosmos-atlas-tle-starlink',
+];
+
+function PrivacyControls() {
+    const clearLocalData = () => {
+        if (!window.confirm('¿Borrar ajustes, historial, cachés y diario guardados en este navegador? Esta acción no se puede deshacer.')) return;
+        LOCAL_DATA_KEYS.forEach((key) => window.localStorage.removeItem(key));
+        window.sessionStorage.removeItem('cosmos_booted');
+        window.location.reload();
+    };
+    return (
+        <div className="space-y-3 text-[9px] leading-relaxed text-white/45">
+            <p>El diario, los ajustes y el historial se guardan solo en este navegador. La ubicación aproximada se usa para calcular el cielo y el relieve; las consultas de nombres, catálogos y terreno pasan por el servidor hacia sus proveedores.</p>
+            <p>Solo se envía una pregunta a OpenAI cuando utilizas expresamente el Astrónomo IA. No se envía el diario.</p>
+            <button onClick={clearLocalData} className="w-full rounded-lg border border-red-400/25 bg-red-500/10 px-3 py-2 font-bold uppercase tracking-wider text-red-300 hover:bg-red-500/20">
+                Borrar mis datos locales
+            </button>
+        </div>
     );
 }
 

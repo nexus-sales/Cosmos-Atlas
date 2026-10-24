@@ -15,6 +15,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { checkRateLimit, isAllowedOrigin, rateLimitResponse } from '@/lib/server/rateLimit';
 
 export interface CometLiveData {
     pdes: string;        // Primary designation, e.g. "12P"
@@ -94,7 +95,8 @@ function mapName(pdes: string, fullName: string): string {
     return fullName.split('(')[0].trim() || pdes;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+    if (!isAllowedOrigin(request)) return NextResponse.json({ error: 'origin not allowed' }, { status: 403 });
     // Serve from cache if fresh
     if (_cache && Date.now() - _cache.ts < CACHE_TTL) {
         return NextResponse.json({ ok: true, comets: _cache.data }, { headers: CACHE_HEADERS });
@@ -103,6 +105,9 @@ export async function GET() {
     // JPL can occasionally be slow or unavailable. Avoid making every client
     // wait for the same timeout while the local static catalog remains usable.
     if (Date.now() < _retryAfter) return degradedResponse();
+
+    const limit = await checkRateLimit(request, { namespace: 'comets', max: 12, windowMs: 10 * 60 * 1000 });
+    if (!limit.ok) return rateLimitResponse(limit);
 
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {

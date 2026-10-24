@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState, useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
-import { Bot, BookOpen, Compass as CompassIcon, LocateFixed, MapPin, Play, Search, Shield, Square } from 'lucide-react';
+import { Bot, BookOpen, Compass as CompassIcon, LocateFixed, MapPin, Play, Search, Shield, Square, Telescope } from 'lucide-react';
 import { useAppStore } from '@/stores/useAppStore';
 import { useDeviceOrientation, deviceOrientationRef } from '@/hooks/useDeviceOrientation';
 import CelestialSearch from './CelestialSearch';
@@ -10,6 +11,7 @@ import MiniCompass from './MiniCompass';
 import { cn } from '@/lib/utils';
 
 const SolarSystemMap = dynamic(() => import('@/components/sky-map/SolarSystemMap'), { ssr: false });
+const ScientificSkyView = dynamic(() => import('@/components/sky-map/ScientificSkyView'), { ssr: false });
 
 interface HeaderProps {
     onRequestLocation?: () => void;
@@ -31,14 +33,18 @@ export default function Header({ onRequestLocation }: HeaderProps) {
     const setIsLive = useAppStore((state) => state.setIsLive);
     const aiAstronomer = useAppStore((state) => state.settings.aiAstronomer ?? true);
     const toggleSetting = useAppStore((state) => state.toggleSetting);
-    const [mounted, setMounted] = useState(false);
+    const setSelectedObject = useAppStore((state) => state.setSelectedObject);
+    const setTargetedObject = useAppStore((state) => state.setTargetedObject);
+    const setFocusedConstellation = useAppStore((state) => state.setFocusedConstellation);
+    const mounted = useSyncExternalStore(
+        () => () => undefined,
+        () => true,
+        () => false,
+    );
     const [showSolar, setShowSolar] = useState(false);
+    const [showScientificSky, setShowScientificSky] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
     const { isSupported, requestAndStart, stop } = useDeviceOrientation();
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
 
     const formatTime = (date: Date) => {
         return date.toLocaleTimeString('es-ES', {
@@ -77,6 +83,14 @@ export default function Header({ onRequestLocation }: HeaderProps) {
         if (nextEnabled) window.dispatchEvent(new CustomEvent('cosmos:open-ai-astronomer'));
         else window.dispatchEvent(new CustomEvent('cosmos:close-ai-astronomer'));
     }, [aiAstronomer, toggleSetting]);
+
+    const openSolarSystem = useCallback(() => {
+        setTargetedObject(null);
+        setSelectedObject(null);
+        setFocusedConstellation(null);
+        window.dispatchEvent(new CustomEvent('cosmos:close-ai-astronomer'));
+        setShowSolar(true);
+    }, [setFocusedConstellation, setSelectedObject, setTargetedObject]);
 
     const gpsLabel = geolocation.source === 'gps' && geolocation.accuracyM != null
         ? `±${Math.round(geolocation.accuracyM)}m`
@@ -134,12 +148,21 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                         </button>
 
                         <button
-                            onClick={() => setShowSolar(true)}
+                            onClick={openSolarSystem}
                             title="Sistema Solar"
                             className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all text-white/60 hover:bg-white/[0.06] hover:text-white"
                         >
                             <CompassIcon className="w-3.5 h-3.5" />
                             <span className="hidden lg:inline">Sistema</span>
+                        </button>
+
+                        <button
+                            onClick={() => setShowScientificSky(true)}
+                            title="Vía Láctea científica HiPS"
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all text-white/60 hover:bg-white/[0.06] hover:text-cyan-100"
+                        >
+                            <Telescope className="w-3.5 h-3.5" />
+                            <span className="hidden xl:inline">HiPS</span>
                         </button>
                     </div>
 
@@ -232,7 +255,14 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                 </div>
             )}
 
-            {showSolar && <SolarSystemMap onClose={() => setShowSolar(false)} />}
+            {mounted && showSolar && createPortal(
+                <SolarSystemMap onClose={() => setShowSolar(false)} />,
+                document.body,
+            )}
+            {mounted && showScientificSky && createPortal(
+                <ScientificSkyView onClose={() => setShowScientificSky(false)} />,
+                document.body,
+            )}
         </>
     );
 }

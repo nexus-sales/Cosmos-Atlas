@@ -1,12 +1,116 @@
 'use client';
 
-import { useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo, useState } from 'react';
 import * as THREE from 'three';
 import { Html } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/stores/useAppStore';
-import { sunHorRef } from '@/lib/skyRefs';
+import { sunHorRef, terrainHorizonRef } from '@/lib/skyRefs';
+import type { HorizonBand, HorizonPoint } from '@/lib/astronomy/horizonProfile';
+
+function terrainGeometry(profile: HorizonPoint[], radius: number) {
+    const result = new THREE.BufferGeometry();
+    if (profile.length < 3) return result;
+    const positions: number[] = [];
+    const indices: number[] = [];
+    const closed = [...profile, { ...profile[0], azimuth: 360 }];
+    closed.forEach((point) => {
+        const az = THREE.MathUtils.degToRad(point.azimuth);
+        const topAlt = THREE.MathUtils.degToRad(point.altitude);
+        for (const altitude of [-89 * Math.PI / 180, topAlt]) {
+            positions.push(
+                radius * Math.cos(altitude) * Math.sin(az),
+                radius * Math.sin(altitude),
+                -radius * Math.cos(altitude) * Math.cos(az),
+            );
+        }
+    });
+    for (let index = 0; index < closed.length - 1; index++) {
+        const base = index * 2;
+        indices.push(base, base + 2, base + 1, base + 1, base + 2, base + 3);
+    }
+    result.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    result.setIndex(indices);
+    result.computeVertexNormals();
+    return result;
+}
+
+function TerrainBandMesh({ band, index, nightMode }: { band: HorizonBand; index: number; nightMode: boolean }) {
+    const radius = 93.5 + index * 0.7;
+    const geometry = useMemo(() => terrainGeometry(band.profile, radius), [band.profile, radius]);
+    useEffect(() => () => geometry.dispose(), [geometry]);
+    const dayColors = ['#071019', '#0a1620', '#10202a', '#172b35'];
+    const nightColors = ['#050000', '#080101', '#0c0202', '#120303'];
+    return (
+        <mesh geometry={geometry} renderOrder={6 + index}>
+            <meshBasicMaterial
+                color={(nightMode ? nightColors : dayColors)[index] ?? '#08111a'}
+                side={THREE.DoubleSide}
+                depthWrite
+                depthTest
+            />
+        </mesh>
+    );
+}
+
+function TerrainHorizon() {
+    const observer = useAppStore((state) => state.observer);
+    const nightMode = useAppStore((state) => state.settings.nightMode);
+    const [profile, setProfile] = useState<HorizonPoint[]>([]);
+    const [bands, setBands] = useState<HorizonBand[]>([]);
+    const [loaded, setLoaded] = useState(false);
+
+    useEffect(() => {
+        const controller = new AbortController();
+        const timer = setTimeout(async () => {
+            try {
+                // GLO-90 no aporta precision util por debajo de ~90 m.
+                const query = new URLSearchParams({ lat: observer.lat.toFixed(3), lon: observer.lon.toFixed(3) });
+                const response = await fetch(`/api/horizon-profile?${query}`, { signal: controller.signal });
+                const payload = await response.json() as { profile?: HorizonPoint[]; bands?: HorizonBand[] };
+                if (!response.ok || !payload.profile) throw new Error('Relieve no disponible');
+                setProfile(payload.profile);
+                setBands(payload.bands ?? []);
+                terrainHorizonRef.current = payload.profile;
+                setLoaded(true);
+            } catch (error) {
+                if ((error as Error).name !== 'AbortError') {
+                    setProfile([]);
+                    setBands([]);
+                    terrainHorizonRef.current = [];
+                    setLoaded(false);
+                }
+            }
+        }, 700);
+        return () => { clearTimeout(timer); controller.abort(); };
+    }, [observer.lat, observer.lon]);
+
+    const geometry = useMemo(() => terrainGeometry(profile, 92.5), [profile]);
+
+    useEffect(() => () => geometry.dispose(), [geometry]);
+
+    return (
+        <>
+            {profile.length >= 3 && (
+                bands.length > 0
+                    ? bands.map((band, index) => (
+                        <TerrainBandMesh key={band.maxDistanceKm} band={band} index={index} nightMode={nightMode} />
+                    ))
+                    : <mesh geometry={geometry} renderOrder={6}>
+                        <meshBasicMaterial color={nightMode ? '#070000' : '#07101a'} side={THREE.DoubleSide} depthWrite depthTest />
+                    </mesh>
+            )}
+            {loaded && (
+                <Html fullscreen zIndexRange={[6, 0]}>
+                    <div className="pointer-events-none absolute left-3 top-3 rounded border border-white/10 bg-black/45 px-2 py-1 font-mono text-[8px] uppercase tracking-wider text-white/35 backdrop-blur-sm">
+                        Relieve real · Copernicus DEM 90 m
+                    </div>
+                </Html>
+            )}
+        </>
+    );
+}
 
 /**
  * Resplandor direccional en el horizonte durante el crepúsculo.
@@ -57,7 +161,9 @@ function SunriseGlow() {
 
     useFrame(() => {
         const { alt, az } = sunHorRef;
-        const visible = alt > -18 && alt < 12;
+        // Este abanico aditivo producía grandes triángulos naranjas. El
+        // crepúsculo continuo se calcula ahora dentro de AtmosphericSky.
+        const visible = false;
 
         [meshRef.current, mesh2Ref.current].forEach(m => {
             if (m) m.visible = visible;
@@ -124,6 +230,8 @@ export default function Horizon() {
 
     return (
         <group>
+            <SunriseGlow />
+            <TerrainHorizon />
             {/* ── Suelo Profundo ─── */}
             <mesh
                 position={[0, -0.05, 0]}

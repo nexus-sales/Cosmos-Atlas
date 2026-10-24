@@ -7,17 +7,18 @@
  * Arquitectura:
  * - Carga /hipparcos.bin de forma asíncrona al montar el componente
  * - Usa el mismo shader que Stars.tsx (twinkle, airmass, color espectral)
- * - SIN hitboxes ni labels: son estrellas de fondo, no interactivas
- * - El catálogo de 355 estrellas nombradas (Stars.tsx) sigue siendo el
- *   sistema de interacción. Este componente añade la densidad visual correcta.
+ * - Cada fuente conserva su identificador HIP y es seleccionable.
+ * - Las estrellas con nombre propio siguen en Stars.tsx y no se duplican aquí.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { loadHipparcos, bvToHex, type HipStar } from '@/lib/astronomy/hipparcos';
 import { useAppStore } from '@/stores/useAppStore';
+import { useCatalog } from '@/stores/useCatalogStore';
+import { findNamedStarNear } from '@/lib/astronomy/starIdentification';
 
 const RADIUS = 98; // igual que Stars.tsx
 
@@ -134,6 +135,10 @@ export default function HipparcosStars() {
     const bortleScale     = useAppStore(s => s.settings.bortleScale);
     const nightMode       = useAppStore(s => s.settings.nightMode);
     const deviceQuality   = useAppStore(s => s.deviceQuality);
+    const camFov          = useAppStore(s => s.camFov);
+    const setSelectedObject = useAppStore(s => s.setSelectedObject);
+    const catalogStars = useCatalog(s => s.stars);
+    const { raycaster } = useThree();
 
     const [allStars, setAllStars] = useState<HipStar[]>([]);
     const pointsRef = useRef<THREE.Points>(null);
@@ -148,10 +153,11 @@ export default function HipparcosStars() {
     const limitingMag = 5.5 - (bortleScale - 1) * 0.45 + qualityOffset;
 
     // Filtrar por limitingMag y reconstruir geometría
-    const [geometry, material] = useMemo(() => {
-        if (allStars.length === 0) return [null, null];
+    const [geometry, material, visibleStars] = useMemo(() => {
+        if (allStars.length === 0) return [null, null, [] as HipStar[]];
         const filtered = allStars.filter(s => s.mag <= limitingMag);
-        return buildGeometry(filtered);
+        const [nextGeometry, nextMaterial] = buildGeometry(filtered);
+        return [nextGeometry, nextMaterial, filtered] as const;
     }, [allStars, limitingMag]);
 
     useFrame((state) => {
@@ -160,7 +166,34 @@ export default function HipparcosStars() {
         // eslint-disable-next-line react-hooks/immutability
         mat.uniforms.uTime.value      = state.clock.elapsedTime;
         mat.uniforms.uNightMode.value = nightMode;
+        // eslint-disable-next-line react-hooks/immutability -- R3F expone este parámetro mutable para configurar el raycast de Points.
+        raycaster.params.Points = {
+            threshold: THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 80, 10, 3.2, 0.55), 0.55, 3.2),
+        };
     });
+
+    const selectHipStar = (event: ThreeEvent<MouseEvent>) => {
+        event.stopPropagation();
+        if (event.index === undefined) return;
+        const star = visibleStars[event.index];
+        if (!star) return;
+        const namedStar = findNamedStarNear(star, catalogStars);
+        if (namedStar) {
+            setSelectedObject(namedStar);
+            return;
+        }
+        setSelectedObject({
+            name: `HIP ${star.hip}`,
+            ra: star.ra,
+            dec: star.dec,
+            mag: star.mag,
+            constellation: 'Catálogo Hipparcos',
+            desc: `Estrella del catálogo Hipparcos. Índice de color B−V ${star.bv.toFixed(2)}.`,
+            color: bvToHex(star.bv),
+            baseSize: 1,
+            kind: 'star',
+        });
+    };
 
     if (!geometry || !material) return null;
 
@@ -170,6 +203,7 @@ export default function HipparcosStars() {
             geometry={geometry}
             material={material}
             renderOrder={0}  // renderizar antes que las estrellas nombradas (renderOrder=1)
+            onClick={selectHipStar}
         />
     );
 }

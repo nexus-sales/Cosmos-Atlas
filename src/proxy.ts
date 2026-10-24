@@ -7,15 +7,16 @@ export function proxy(request: NextRequest) {
   // CSP Base - Move here from next.config.ts
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://va.vercel-scripts.com ${process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : ""};
+    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://va.vercel-scripts.com https://aladin.cds.unistra.fr ${process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : ""};
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    img-src 'self' blob: data: https://*.supabase.co https://*.tile.openstreetmap.org https://celestrak.org;
+    img-src 'self' blob: data: https://*.supabase.co https://*.tile.openstreetmap.org https://celestrak.org https://aladin.cds.unistra.fr https://alasky.cds.unistra.fr https://alaskybis.cds.unistra.fr https://irsa.ipac.caltech.edu;
     font-src 'self' https://fonts.gstatic.com;
     object-src 'none';
     base-uri 'self';
     form-action 'self';
     frame-ancestors 'none';
-    connect-src 'self' https://*.supabase.co https://celestrak.org https://cdsweb.u-strasbg.fr wss://*.supabase.co;
+    connect-src 'self' https://*.supabase.co https://celestrak.org https://cdsweb.u-strasbg.fr https://aladin.cds.unistra.fr https://alasky.cds.unistra.fr https://alaskybis.cds.unistra.fr https://irsa.ipac.caltech.edu wss://*.supabase.co;
+    worker-src 'self' blob:;
     upgrade-insecure-requests;
   `.replace(/\s{2,}/g, ' ').trim();
 

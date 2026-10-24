@@ -98,7 +98,7 @@ export default function Onboarding() {
                     <button
                         onClick={finish}
                         aria-label="Saltar introducción"
-                        className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-white/30 hover:text-white/70 hover:bg-white/5 transition-colors z-10 cursor-pointer"
+                        className="absolute top-4 right-4 z-20 w-8 h-8 flex items-center justify-center rounded-full text-white/30 hover:text-white/70 hover:bg-white/5 transition-colors cursor-pointer"
                     >
                         <X className="w-4 h-4" />
                     </button>

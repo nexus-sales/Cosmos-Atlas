@@ -19,7 +19,8 @@ describe('GET /api/comets', () => {
         vi.stubGlobal('fetch', fetchMock);
 
         const { GET } = await import('./route');
-        const responsePromise = GET();
+        const request = new Request('http://localhost/api/comets');
+        const responsePromise = GET(request);
         await vi.advanceTimersByTimeAsync(5_000);
 
         const response = await responsePromise;
@@ -32,7 +33,7 @@ describe('GET /api/comets', () => {
         });
 
         // The short failure backoff prevents every request from waiting again.
-        const retryResponse = await GET();
+        const retryResponse = await GET(request);
         expect(retryResponse.status).toBe(200);
         expect(fetchMock).toHaveBeenCalledTimes(1);
     });

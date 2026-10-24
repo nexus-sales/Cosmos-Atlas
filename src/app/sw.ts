@@ -12,6 +12,7 @@ declare const self: ServiceWorkerGlobalScope;
 
 const serwist = new Serwist({
     precacheEntries: self.__SW_MANIFEST,
+    precacheOptions: { cleanupOutdatedCaches: true },
     skipWaiting: true,
     clientsClaim: true,
     navigationPreload: true,
@@ -19,9 +20,9 @@ const serwist = new Serwist({
         // ── Catálogos binarios astronómicos ─────────────────────────────────
         // hipparcos.bin (234KB) y ngc.bin (200KB): raramente cambian, siempre en caché
         {
-            matcher: /\/(hipparcos|ngc)\.bin$/,
+            matcher: /\/(hipparcos|ngc|iau-boundaries)\.bin$/,
             handler: new CacheFirst({
-                cacheName: "cosmos-catalogs-v1",
+                cacheName: "cosmos-catalogs-v2",
                 plugins: [
                     new ExpirationPlugin({
                         maxEntries: 10,
@@ -34,9 +35,9 @@ const serwist = new Serwist({
         // ── TLEs de satélites (Celestrak) ────────────────────────────────────
         // NetworkFirst: intenta red, usa caché si offline. TLEs son válidos ~48h.
         {
-            matcher: /celestrak\.org/,
+            matcher: /\/api\/tle\//,
             handler: new NetworkFirst({
-                cacheName: "cosmos-tles-v1",
+                cacheName: "cosmos-tles-v2",
                 networkTimeoutSeconds: 6,
                 plugins: [
                     new ExpirationPlugin({

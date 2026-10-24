@@ -25,9 +25,12 @@ import TelescopeEffect from '@/components/sky-map/TelescopeEffect';
 import CameraNavigator from '@/components/sky-map/CameraNavigator';
 import CameraBackground from '@/components/sky-map/CameraBackground';
 import HipparcosStars from '@/components/sky-map/HipparcosStars';
+import GaiaStars from '@/components/sky-map/GaiaStars';
 import NGCObjects from '@/components/sky-map/NGCObjects';
 import CinematicTour from '@/components/sky-map/CinematicTour';
 import ConstellationArt from '@/components/sky-map/ConstellationArt';
+import ConstellationBoundaries from '@/components/sky-map/ConstellationBoundaries';
+import Asterisms from '@/components/sky-map/Asterisms';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { useAppStore } from '@/stores/useAppStore';
 import * as THREE from 'three';
@@ -36,7 +39,9 @@ import { getLST } from '@/lib/astronomy/time';
 import { deviceOrientationRef } from '@/hooks/useDeviceOrientation';
 import ISSPassPredictor from '@/components/sky-map/ISSPassPredictor';
 import { cn } from '@/lib/utils';
-import { cameraHeadingRef, cameraRef, sunHorRef } from '@/lib/skyRefs';
+import { Minus, Plus, RotateCcw } from 'lucide-react';
+import { cameraHeadingRef, cameraRef, moonHorRef, sunHorRef } from '@/lib/skyRefs';
+import { ocularExposureTarget } from '@/lib/astronomy/skyBrightness';
 import * as Astronomy from 'astronomy-engine';
 
 // Observador reutilizable — evita allocations en useFrame
@@ -225,14 +230,16 @@ function FovZoom({
             }
         };
 
-        canvas.addEventListener('wheel', onWheel, { passive: false });
+        // Captura antes que OrbitControls: aunque su zoom esté desactivado,
+        // algunos navegadores entregan primero allí la rueda y el gesto parece muerto.
+        canvas.addEventListener('wheel', onWheel, { passive: false, capture: true });
         canvas.addEventListener('pointerdown', onPointerDown);
         canvas.addEventListener('pointermove', onPointerMove);
         canvas.addEventListener('pointerup', onPointerUp);
         canvas.addEventListener('pointercancel', onPointerUp);
 
         return () => {
-            canvas.removeEventListener('wheel', onWheel);
+            canvas.removeEventListener('wheel', onWheel, { capture: true });
             canvas.removeEventListener('pointerdown', onPointerDown);
             canvas.removeEventListener('pointermove', onPointerMove);
             canvas.removeEventListener('pointerup', onPointerUp);
@@ -406,6 +413,33 @@ function SeeingJitter() {
     return null;
 }
 
+function OcularAdaptation() {
+    const { gl } = useThree();
+    const exposureRef = useRef(1);
+
+    useFrame((_, delta) => {
+        const { settings, viewMode } = useAppStore.getState();
+        const target = viewMode === 'camera'
+            ? 1
+            : ocularExposureTarget(
+                sunHorRef.alt,
+                moonHorRef.alt,
+                moonHorRef.illuminatedFraction,
+                settings.bortleScale,
+            );
+        // El ojo se contrae rápido ante luz y se adapta más despacio a oscuridad.
+        const responseSeconds = target < exposureRef.current ? 1.8 : 11;
+        exposureRef.current = THREE.MathUtils.damp(exposureRef.current, target, 1 / responseSeconds, delta);
+        // eslint-disable-next-line react-hooks/immutability -- Three renderer exposure is an imperative frame property.
+        gl.toneMappingExposure = exposureRef.current;
+    });
+
+    useEffect(() => () => {
+        gl.toneMappingExposure = 1;
+    }, [gl]);
+    return null;
+}
+
 
 
 export default function SkyCanvas() {
@@ -417,6 +451,8 @@ export default function SkyCanvas() {
     const followOrientation = useAppStore((state) => state.followOrientation);
     const setTargetedObject = useAppStore((state) => state.setTargetedObject);
     const deviceQuality = useAppStore((state) => state.deviceQuality);
+    const camFov = useAppStore((state) => state.camFov);
+    const setCamFov = useAppStore((state) => state.setCamFov);
 
     // Cap DPR by quality tier to avoid rendering at 3× on flagship Android phones
     const maxDpr = deviceQuality === 'low' ? 1.0 : deviceQuality === 'medium' ? 1.5 : 2.0;
@@ -425,6 +461,12 @@ export default function SkyCanvas() {
     const controlsRef = useRef<OrbitControlsImpl | null>(null);
     const trackingRef = useRef(false);
     const manualFovRef = useRef<number | null>(null);
+
+    const changeZoom = (delta: number) => {
+        const next = THREE.MathUtils.clamp(camFov + delta, 10, 90);
+        manualFovRef.current = next;
+        setCamFov(next);
+    };
 
     return (
         <div className={cn(
@@ -485,12 +527,16 @@ export default function SkyCanvas() {
                         {showMilkyWay && <ErrorBoundary label="MilkyWay"><MilkyWaySkyDome /></ErrorBoundary>}
                         {/* Catálogo Hipparcos — 14.984 estrellas hasta mag 7, carga asíncrona */}
                         <ErrorBoundary label="HipparcosStars"><HipparcosStars /></ErrorBoundary>
+                        {/* Gaia DR3 real, bajo demanda y solo al ampliar el campo. */}
+                        <ErrorBoundary label="GaiaStars"><GaiaStars /></ErrorBoundary>
                         {/* Estrellas nombradas (355) con hitboxes e interacción — encima del catálogo */}
                         <ErrorBoundary label="Stars"><Stars /></ErrorBoundary>
                         {/* Catálogo NGC/IC — 10.000 objetos, puntos difusos, renderOrder=0 (debajo de DSOs nombrados) */}
                         <ErrorBoundary label="NGCObjects"><NGCObjects /></ErrorBoundary>
                         <ErrorBoundary label="DeepSkyObjects"><DeepSkyObjects /></ErrorBoundary>
                         <ErrorBoundary label="Constellations"><Constellations /></ErrorBoundary>
+                        <ErrorBoundary label="ConstellationBoundaries"><ConstellationBoundaries /></ErrorBoundary>
+                        <ErrorBoundary label="Asterisms"><Asterisms /></ErrorBoundary>
                         <ErrorBoundary label="ConstellationArt"><ConstellationArt /></ErrorBoundary>
                         <ErrorBoundary label="ConstellationLabels"><ConstellationLabels /></ErrorBoundary>
                         <ErrorBoundary label="Planets"><Planets /></ErrorBoundary>
@@ -521,6 +567,7 @@ export default function SkyCanvas() {
 
                     <CinematicTour />
                     <SeeingJitter />
+                    <OcularAdaptation />
                     <TelescopeEffect />
 
                     {/* FOVOverlay maneja su propio Html wrapper internamente */}
@@ -528,6 +575,12 @@ export default function SkyCanvas() {
                     <CameraSync />
                 </Suspense>
             </Canvas>
+
+            <div className="absolute right-3 top-1/2 z-[70] flex -translate-y-1/2 flex-col items-center overflow-hidden rounded-xl border border-white/10 bg-[#050a16]/90 text-white/70 shadow-lg backdrop-blur-md md:right-4" aria-label="Controles de zoom">
+                <button type="button" onClick={() => changeZoom(5)} title="Alejar" aria-label="Alejar" className="flex h-9 w-9 items-center justify-center hover:bg-white/10 hover:text-white"><Minus className="h-4 w-4" /></button>
+                <button type="button" onClick={() => { manualFovRef.current = 60; setCamFov(60); }} title="Restablecer zoom" aria-label="Restablecer zoom" className="flex h-9 w-9 items-center justify-center border-y border-white/10 hover:bg-white/10 hover:text-white"><RotateCcw className="h-3.5 w-3.5" /></button>
+                <button type="button" onClick={() => changeZoom(-5)} title="Acercar" aria-label="Acercar" className="flex h-9 w-9 items-center justify-center hover:bg-white/10 hover:text-white"><Plus className="h-4 w-4" /></button>
+            </div>
 
             {/* Brújula y botón AR — fuera del Canvas para evitar transforms de drei/Html */}
             <Compass />

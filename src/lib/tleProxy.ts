@@ -7,6 +7,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { checkRateLimit, isAllowedOrigin, rateLimitResponse } from '@/lib/server/rateLimit';
 
 const TLE_HEADERS = {
     'Content-Type': 'text/plain; charset=utf-8',
@@ -14,7 +15,7 @@ const TLE_HEADERS = {
 };
 
 /** Descarga TLE en formato texto plano desde celestrak */
-async function fetchTlePlain(url: string, timeoutMs = 8000): Promise<string> {
+async function fetchTlePlain(url: string, timeoutMs = 5000): Promise<string> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
@@ -42,7 +43,7 @@ async function fetchTlePlain(url: string, timeoutMs = 8000): Promise<string> {
  * Descarga TLE desde tle.ivanstanojevic.me (API JSON → convierte a formato TLE de texto).
  * Formato JSON: { name, line1, line2 }
  */
-async function fetchTleIvanstanojevic(catnr: string, timeoutMs = 8000): Promise<string> {
+async function fetchTleIvanstanojevic(catnr: string, timeoutMs = 5000): Promise<string> {
     const url = `https://tle.ivanstanojevic.me/api/tle/${catnr}`;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -72,9 +73,27 @@ async function fetchTleIvanstanojevic(catnr: string, timeoutMs = 8000): Promise<
 export function createTleRouteHandler(catnr: string, label: string, cacheTtlMs = 2 * 3600 * 1000) {
     let cache: { ts: number; data: string } | null = null;
 
-    return async function GET() {
+    const response = (data: string, source: string) => new NextResponse(data, {
+        headers: { ...TLE_HEADERS, 'X-Astronomy-Source': source },
+    });
+
+    return async function GET(request: Request) {
+        if (!isAllowedOrigin(request)) {
+            return NextResponse.json({ error: 'forbidden origin' }, { status: 403 });
+        }
         if (cache && Date.now() - cache.ts < cacheTtlMs) {
-            return new NextResponse(cache.data, { headers: TLE_HEADERS });
+            return response(cache.data, 'server cache');
+        }
+
+        const limit = await checkRateLimit(request, { namespace: `tle-${label}`, max: 30, windowMs: 10 * 60_000 });
+        if (!limit.ok) return rateLimitResponse(limit);
+
+        try {
+            const text = await fetchTleIvanstanojevic(catnr);
+            cache = { ts: Date.now(), data: text };
+            return response(text, 'tle.ivanstanojevic.me');
+        } catch (err) {
+            console.warn(`[/api/tle/${label}] ivanstanojevic failed:`, (err as Error).message);
         }
 
         // ── Fuentes plain-text (celestrak) ────────────────────────────────────
@@ -87,19 +106,10 @@ export function createTleRouteHandler(catnr: string, label: string, cacheTtlMs =
             try {
                 const text = await fetchTlePlain(url);
                 cache = { ts: Date.now(), data: text };
-                return new NextResponse(text, { headers: TLE_HEADERS });
+                return response(text, new URL(url).host);
             } catch (err) {
                 console.warn(`[/api/tle/${label}] failed ${url}:`, (err as Error).message);
             }
-        }
-
-        // ── Fallback: tle.ivanstanojevic.me (JSON API) ───────────────────────
-        try {
-            const text = await fetchTleIvanstanojevic(catnr);
-            cache = { ts: Date.now(), data: text };
-            return new NextResponse(text, { headers: TLE_HEADERS });
-        } catch (err) {
-            console.warn(`[/api/tle/${label}] ivanstanojevic fallback failed:`, (err as Error).message);
         }
 
         console.error(`[/api/tle/${label}] all sources failed`);

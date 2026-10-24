@@ -4,6 +4,7 @@ import { Star, DSO, Observer, Planet } from '../types/celestial';
 import type { Challenge } from '../types/celestial';
 import { useCatalog } from './useCatalogStore';
 import { PLANET_LIST } from '../lib/constants/planets';
+import { DEFAULT_SKY_CULTURE_ID, type SkyCultureId } from '@/data/skyCultures';
 
 type CelestialObject = Star | DSO | Planet;
 
@@ -28,6 +29,8 @@ function foundChallengesForObject(obj: CelestialObject | null, current: string[]
 }
 
 interface AppState {
+    skyCultureId: SkyCultureId;
+    setSkyCultureId: (id: SkyCultureId) => void;
     observer: Observer;
     setObserver: (observer: Observer) => void;
     geolocation: {
@@ -60,6 +63,8 @@ interface AppState {
     settings: {
         showConstellations: boolean;
         showConstellationArt: boolean;
+        showConstellationBoundaries: boolean;
+        showAsterisms: boolean;
         showGrid: boolean;
         showMilkyWay: boolean;
         showEcliptic: boolean;
@@ -150,6 +155,18 @@ interface AppState {
 export const useAppStore = create<AppState>()(
     persist(
         (set) => ({
+            skyCultureId: DEFAULT_SKY_CULTURE_ID,
+            setSkyCultureId: (skyCultureId) => set((state) => ({
+                skyCultureId,
+                settings: {
+                    ...state.settings,
+                    showAsterisms: skyCultureId !== 'scientific-iau',
+                    showConstellationArt: skyCultureId === 'western-iau',
+                    showConstellationBoundaries: skyCultureId === 'scientific-iau'
+                        ? true
+                        : state.settings.showConstellationBoundaries,
+                },
+            })),
             observer: { lat: 28.3, lon: -16.3 },
             setObserver: (observer) => set({ observer }),
             geolocation: {
@@ -223,7 +240,9 @@ export const useAppStore = create<AppState>()(
             setAiMessage: (aiMessage) => set({ aiMessage }),
             settings: {
                 showConstellations: true,
-                showConstellationArt: false,
+                showConstellationArt: true,
+                showConstellationBoundaries: false,
+                showAsterisms: false,
                 showGrid: false,
                 showMilkyWay: true,
                 showEcliptic: false,
@@ -365,10 +384,11 @@ export const useAppStore = create<AppState>()(
         }),
         {
             name: 'cosmos-atlas-storage',
-            version: 2,
+            version: 4,
             storage: createJSONStorage(() => localStorage),
             partialize: (state) => ({
                 settings: state.settings,
+                skyCultureId: state.skyCultureId,
                 observer: state.observer,
                 arHealthHistory: state.arHealthHistory,
                 compassCalibrationOffset: state.compassCalibrationOffset,
@@ -379,7 +399,7 @@ export const useAppStore = create<AppState>()(
                 achievements: state.achievements,
                 // deviceQuality excluido — se detecta en cada sesión
             }),
-            migrate: (persisted) => {
+            migrate: (persisted, previousVersion) => {
                 if (!persisted || typeof persisted !== 'object') return persisted;
                 const safeState = { ...(persisted as Record<string, unknown>) };
                 delete safeState.geolocation;
@@ -387,7 +407,13 @@ export const useAppStore = create<AppState>()(
                     safeState.settings = {
                         ...(safeState.settings as Record<string, unknown>),
                         aiAstronomer: (safeState.settings as Record<string, unknown>).aiAstronomer ?? true,
+                        showConstellationArt: previousVersion < 3
+                            ? true
+                            : (safeState.settings as Record<string, unknown>).showConstellationArt ?? true,
                     };
+                }
+                if (previousVersion < 4 || typeof safeState.skyCultureId !== 'string') {
+                    safeState.skyCultureId = DEFAULT_SKY_CULTURE_ID;
                 }
                 return safeState;
             },

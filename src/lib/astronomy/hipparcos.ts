@@ -4,7 +4,7 @@
  *
  * Formato binario (generado por scripts/generate-hipparcos.mjs):
  *   Bytes 0-3   : uint32LE — número de estrellas N
- *   Bytes 4...  : N × 16 bytes — 4× float32LE por estrella:
+ *   Bytes 4...  : N × 20 bytes — uint32 HIP + 4× float32LE por estrella.
  *                   [0] ra  (grados J2000)
  *                   [1] dec (grados J2000)
  *                   [2] Vmag
@@ -12,6 +12,7 @@
  */
 
 export interface HipStar {
+    hip: number;  // identificador Hipparcos
     ra: number;   // grados J2000
     dec: number;  // grados J2000
     mag: number;  // magnitud visual
@@ -98,14 +99,18 @@ export async function loadHipparcos(): Promise<HipStar[]> {
             const view = new DataView(buf);
             const count = view.getUint32(0, true); // little-endian
 
+            const stride = (buf.byteLength - 4) / count;
+            if (stride !== 16 && stride !== 20) throw new Error(`Formato Hipparcos desconocido: ${stride} bytes/estrella`);
             const stars: HipStar[] = new Array(count);
             for (let i = 0; i < count; i++) {
-                const off = 4 + i * 16;
+                const off = 4 + i * stride;
+                const modern = stride === 20;
                 stars[i] = {
-                    ra:  view.getFloat32(off,      true),
-                    dec: view.getFloat32(off + 4,  true),
-                    mag: view.getFloat32(off + 8,  true),
-                    bv:  view.getFloat32(off + 12, true),
+                    hip: modern ? view.getUint32(off, true) : i + 1,
+                    ra:  view.getFloat32(off + (modern ? 4 : 0), true),
+                    dec: view.getFloat32(off + (modern ? 8 : 4), true),
+                    mag: view.getFloat32(off + (modern ? 12 : 8), true),
+                    bv:  view.getFloat32(off + (modern ? 16 : 12), true),
                 };
             }
 

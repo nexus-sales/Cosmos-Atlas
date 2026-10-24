@@ -11,6 +11,8 @@ import { useAppStore } from '@/stores/useAppStore';
 import { useFrame } from '@react-three/fiber';
 import { cn } from '@/lib/utils';
 import type { Planet } from '@/types/celestial';
+import { terrainHorizonRef } from '@/lib/skyRefs';
+import { horizonAltitudeAtAzimuth } from '@/lib/astronomy/horizonProfile';
 
 type ConstellationTarget = Planet & {
     angularSize: number;
@@ -102,7 +104,7 @@ export default function ConstellationLabels() {
         // This is critical because the group rotates with the sky!
         const groupQuat = groupRef.current ? groupRef.current.getWorldQuaternion(new THREE.Quaternion()) : new THREE.Quaternion();
         const localLookDir = camWorldDir.clone()
-            .applyQuaternion(groupQuat.invert())
+            .applyQuaternion(groupQuat.clone().invert())
             .normalize();
 
         let bestName: string | null = null;
@@ -141,6 +143,15 @@ export default function ConstellationLabels() {
         if (selectedObject && CONSTELLATIONS[selectedObject.name]) {
             nextVisible.add(selectedObject.name);
         }
+
+        // Los elementos Html no participan en el depth buffer de Three.js.
+        // Se ocultan si su centro queda detrás del perfil DEM.
+        labels.forEach(({ name, vector }) => {
+            const worldDirection = vector.clone().applyQuaternion(groupQuat).normalize();
+            const altitude = THREE.MathUtils.radToDeg(Math.asin(THREE.MathUtils.clamp(worldDirection.y, -1, 1)));
+            const azimuth = (THREE.MathUtils.radToDeg(Math.atan2(worldDirection.x, -worldDirection.z)) + 360) % 360;
+            if (altitude <= horizonAltitudeAtAzimuth(terrainHorizonRef.current, azimuth)) nextVisible.delete(name);
+        });
 
         const nowMs = Date.now();
         if (visibleRef.current.size === 0 || nowMs - lastVisibilityUpdateRef.current >= VISIBILITY_THROTTLE_MS) {

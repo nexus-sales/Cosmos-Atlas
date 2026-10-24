@@ -1,127 +1,74 @@
-/**
- * API Route: GET /api/tle/starlink
- *
- * Proxy server-side para TLEs de Starlink con cadena de fallback.
- * Cadena de fuentes:
- *   1. celestrak.org GP API (puede dar 403 desde servidores)
- *   2. celestrak.com (mirror)
- *   3. celestrak.org supplemental (datos más recientes de operadores)
- *   4. tle.ivanstanojevic.me colección (JSON paginado → convierte a TLE texto)
- * Cache en proceso de 4 horas.
- */
-
+/** Starlink TLE proxy with real, independently hosted fallbacks. */
 import { NextResponse } from 'next/server';
+import { checkRateLimit, isAllowedOrigin, rateLimitResponse } from '@/lib/server/rateLimit';
+import { limitTleCatalog } from '@/lib/astronomy/starlinkTle';
 
-// Cache en proceso: TTL 4 horas
-let _cache: { ts: number; data: string } | null = null;
+let cache: { ts: number; data: string } | null = null;
 const CACHE_TTL = 4 * 3600 * 1000;
-const TLE_HEADERS = {
+const MAX_SATELLITES = 1200;
+const HEADERS = {
     'Content-Type': 'text/plain; charset=utf-8',
-    'Cache-Control': 'public, s-maxage=14400, stale-while-revalidate=7200',
+    'Cache-Control': 'public, s-maxage=14400, stale-while-revalidate=86400',
 };
 
-const PLAIN_SOURCES = [
-    // CelesTrak GP API (primaria)
-    'https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle',
-    // CelesTrak dominio alternativo
-    'https://celestrak.com/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle',
-    // CelesTrak supplemental (datos más recientes de operadores)
-    'https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE=starlink&FORMAT=tle',
+const HF_DAILY_TLE = 'https://huggingface.co/datasets/juliensimon/starlink-tle-latest/resolve/main/data/starlink.tle';
+const CELESTRAK_SOURCES = [
+    'https://celestrak.org/NORAD/elements/gp.php?GROUP=STARLINK&FORMAT=TLE',
+    'https://celestrak.com/NORAD/elements/gp.php?GROUP=STARLINK&FORMAT=TLE',
+    'https://celestrak.org/NORAD/elements/supplemental/sup-gp.php?FILE=starlink&FORMAT=TLE',
 ];
 
-async function fetchTlePlain(url: string, timeoutMs = 12_000): Promise<string> {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-        const res = await fetch(url, {
-            signal: controller.signal,
-            headers: {
-                'User-Agent': 'CosmosAtlas/1.0 (educational planetarium; contact admin@nexus-sales.eu)',
-                'Accept': 'text/plain,*/*',
-            },
-        });
-        clearTimeout(timer);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const text = await res.text();
-        // Validate: a Starlink TLE file should have many lines (100+ satellites)
-        if (text.split('\n').filter(l => l.trim()).length < 6) {
-            throw new Error('Response too short to be valid TLE data');
-        }
-        return text;
-    } catch (err) {
-        clearTimeout(timer);
-        throw err;
-    }
+async function fetchPlain(url: string, timeoutMs: number) {
+    const response = await fetch(url, {
+        signal: AbortSignal.timeout(timeoutMs),
+        headers: {
+            Accept: 'text/plain,*/*',
+            'User-Agent': 'CosmosAtlas/3.6 (educational planetarium; admin@nexus-sales.eu)',
+        },
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return limitTleCatalog(await response.text(), MAX_SATELLITES);
 }
 
-/**
- * Fallback: tle.ivanstanojevic.me colección Starlink (JSON paginado).
- * Descarga hasta 3 páginas de 100 satélites y reconstruye el formato TLE texto.
- */
-async function fetchStarlinkIvanstanojevic(timeoutMs = 15_000): Promise<string> {
-    const lines: string[] = [];
-    const maxPages = 3;
-
-    for (let page = 1; page <= maxPages; page++) {
-        const url = `https://tle.ivanstanojevic.me/api/tle/collection/starlink?page=${page}&page-size=100`;
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), timeoutMs);
-        try {
-            const res = await fetch(url, {
-                signal: controller.signal,
-                headers: { 'User-Agent': 'CosmosAtlas/1.0 (educational planetarium)' },
-            });
-            clearTimeout(timer);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const json = await res.json() as {
-                member?: Array<{ name?: string; line1?: string; line2?: string }>;
-            };
-            const members = json.member ?? [];
-            if (members.length === 0) break;
-            for (const sat of members) {
-                if (sat.line1 && sat.line2) {
-                    const name = (sat.name ?? 'STARLINK').padEnd(24).slice(0, 24).trimEnd();
-                    lines.push(name, sat.line1, sat.line2);
-                }
-            }
-            if (members.length < 100) break; // última página
-        } catch (err) {
-            clearTimeout(timer);
-            // Si la primera página falla, relanzar; si no, usar lo que tenemos
-            if (page === 1) throw err;
-            break;
-        }
-    }
-
-    if (lines.length < 6) throw new Error('ivanstanojevic returned too few Starlink satellites');
-    return lines.join('\n') + '\n';
+async function fetchIvan(timeoutMs = 5_000) {
+    const response = await fetch('https://tle.ivanstanojevic.me/api/tle?search=starlink&page=1&page-size=50', {
+        signal: AbortSignal.timeout(timeoutMs),
+        headers: { 'User-Agent': 'CosmosAtlas/3.6 (educational planetarium)' },
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const json = await response.json() as { member?: Array<{ name?: string; line1?: string; line2?: string }> };
+    const text = (json.member ?? [])
+        .filter((sat) => sat.line1 && sat.line2)
+        .flatMap((sat) => [(sat.name ?? 'STARLINK').slice(0, 24), sat.line1!, sat.line2!])
+        .join('\n');
+    return limitTleCatalog(text, 50);
 }
 
-export async function GET() {
-    if (_cache && Date.now() - _cache.ts < CACHE_TTL) {
-        return new NextResponse(_cache.data, { headers: TLE_HEADERS });
-    }
+function tleResponse(data: string, source: string) {
+    return new NextResponse(data, { headers: { ...HEADERS, 'X-Astronomy-Source': source } });
+}
 
-    // ── 1–3: Fuentes plain-text CelesTrak ────────────────────────────────────
-    for (const url of PLAIN_SOURCES) {
+export async function GET(request: Request) {
+    if (!isAllowedOrigin(request)) return NextResponse.json({ error: 'origin not allowed' }, { status: 403 });
+    if (cache && Date.now() - cache.ts < CACHE_TTL) return tleResponse(cache.data, 'server cache');
+
+    const limit = await checkRateLimit(request, { namespace: 'tle-starlink', max: 12, windowMs: 10 * 60 * 1000 });
+    if (!limit.ok) return rateLimitResponse(limit);
+
+    const sources: Array<{ name: string; load: () => Promise<string> }> = [
+        { name: 'Hugging Face daily CelesTrak mirror', load: () => fetchPlain(HF_DAILY_TLE, 8_000) },
+        { name: 'NASA TLE API', load: () => fetchIvan() },
+        ...CELESTRAK_SOURCES.map((url) => ({ name: new URL(url).hostname, load: () => fetchPlain(url, 5_000) })),
+    ];
+
+    for (const source of sources) {
         try {
-            const text = await fetchTlePlain(url);
-            _cache = { ts: Date.now(), data: text };
-            return new NextResponse(text, { headers: TLE_HEADERS });
-        } catch (err) {
-            console.warn(`[/api/tle/starlink] failed ${url}:`, (err as Error).message);
+            const data = await source.load();
+            cache = { ts: Date.now(), data };
+            return tleResponse(data, source.name);
+        } catch (error) {
+            console.warn(`[/api/tle/starlink] ${source.name} failed:`, (error as Error).message);
         }
     }
-
-    // ── 4: Fallback tle.ivanstanojevic.me (JSON paginado) ───────────────────
-    try {
-        const text = await fetchStarlinkIvanstanojevic();
-        _cache = { ts: Date.now(), data: text };
-        return new NextResponse(text, { headers: TLE_HEADERS });
-    } catch (err) {
-        console.warn('[/api/tle/starlink] ivanstanojevic fallback failed:', (err as Error).message);
-    }
-
-    console.error('[/api/tle/starlink] all sources failed');
-    return NextResponse.json({ error: 'TLE fetch failed — all sources unavailable' }, { status: 502 });
+    return NextResponse.json({ error: 'TLE fetch failed — all real sources unavailable' }, { status: 502 });
 }

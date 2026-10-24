@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
+import "@fontsource-variable/space-grotesk";
 import "./globals.css";
 import ThreeClockPatch from "@/components/ThreeClockPatch";
 import CatalogLoader from "@/components/CatalogLoader";
@@ -13,24 +15,6 @@ import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 // request. Sin coste real aqui: toda la app es 'use client', no hay contenido
 // server-side que perder al dejar de ser estatica.
 export const dynamic = 'force-dynamic';
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-// Fuente display para titulares/nombre de la app/titulos de seccion --
-// no para cuerpo de texto (ese sigue siendo Geist Sans).
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
-  subsets: ["latin"],
-  weight: ["500", "700"],
-});
 
 export const viewport: Viewport = {
   themeColor: "#02050a",
@@ -69,7 +53,7 @@ export default function RootLayout({
       </head>
       <body
         suppressHydrationWarning
-        className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} antialiased`}
+        className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}
       >
         <ServiceWorkerRegistration />
         <ThreeClockPatch />

@@ -13,6 +13,7 @@ import SnapshotButton from '@/components/panels/SnapshotButton';
 import DiagnosticsOverlay from '@/components/panels/DiagnosticsOverlay';
 import SystemAlerts from '@/components/panels/SystemAlerts';
 import MobileObjectSheet from '@/components/panels/MobileObjectSheet';
+import DesktopObjectPeek from '@/components/panels/DesktopObjectPeek';
 import Onboarding from '@/components/Onboarding';
 import { useAppStore } from '@/stores/useAppStore';
 import { useGeolocation } from '@/hooks/useGeolocation';
@@ -175,6 +176,7 @@ export default function Home() {
       {/* Mobile-only tools tray (time travel + snapshot) */}
       <MobileToolbar />
       <MobileObjectSheet />
+      <DesktopObjectPeek />
 
       <AIAstronoma />
       <Onboarding />

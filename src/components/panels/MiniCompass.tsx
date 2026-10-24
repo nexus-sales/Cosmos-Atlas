@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useAppStore } from '@/stores/useAppStore';
-import { useDeviceOrientation, deviceOrientationRef } from '@/hooks/useDeviceOrientation';
+import { deviceOrientationRef } from '@/hooks/useDeviceOrientation';
 import { computeMagneticDeclination } from '@/lib/astronomy/magneticDeclination';
 import { cameraHeadingRef, cameraRef } from '@/lib/skyRefs';
 import { cn } from '@/lib/utils';

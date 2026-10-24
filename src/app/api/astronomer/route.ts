@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { checkRateLimit, isAllowedOrigin, rateLimitResponse } from '@/lib/server/rateLimit';
 
 // --- Zod Schemas -------------------------------------------------------------
 
@@ -44,9 +45,7 @@ type AstronomerContext = z.infer<typeof astronomerContextSchema>;
 // --- Constants & Config ------------------------------------------------------
 
 const MAX_REQUEST_BYTES = 12_000;
-const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
-const RATE_LIMIT_MAX = 40;
-const FALLBACK_MODELS = ['gpt-4o-mini', 'gpt-4.1-mini'];
+const FALLBACK_MODELS = ['gpt-6-luna', 'gpt-4.1-mini'];
 const JSON_HEADERS = { 'Cache-Control': 'no-store' };
 
 const DETAIL_FIELD_ALLOWLIST = new Set([
@@ -57,95 +56,6 @@ const DETAIL_FIELD_ALLOWLIST = new Set([
   'semi_major_axis_au', 'orbital_period_days', 'rotation_period_h', 'axial_tilt_deg',
   'mag_visual', 'size_arcmin_major', 'zhr_max', 'speed_kms',
 ]);
-
-// --- Rate Limiting -----------------------------------------------------------
-
-const rateLimit = new Map<string, { count: number; resetAt: number }>();
-
-function getClientKey(req: Request) {
-  const forwarded = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
-  const realIp = req.headers.get('x-real-ip')?.trim();
-  return forwarded || realIp || 'local';
-}
-
-// Rechaza solo cuando el navegador SI envia un Origin y no coincide con el
-// origin real de la request. Sin header Origin (llamadas server-to-server,
-// curl) se deja pasar - hoy no hay ninguna, pero no lo forzamos.
-function isAllowedOrigin(req: Request): boolean {
-  const origin = req.headers.get('origin');
-  if (!origin) return true;
-  try {
-    return new URL(origin).origin === new URL(req.url).origin;
-  } catch {
-    return false;
-  }
-}
-
-function checkMemoryRateLimit(key: string) {
-  const now = Date.now();
-  for (const [entryKey, entry] of rateLimit) {
-    if (entry.resetAt <= now) rateLimit.delete(entryKey);
-  }
-
-  const current = rateLimit.get(key);
-  if (!current || current.resetAt <= now) {
-    rateLimit.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return { ok: true as const, remaining: RATE_LIMIT_MAX - 1, resetAt: now + RATE_LIMIT_WINDOW_MS };
-  }
-
-  if (current.count >= RATE_LIMIT_MAX) {
-    return { ok: false as const, remaining: 0, resetAt: current.resetAt };
-  }
-
-  current.count += 1;
-  return { ok: true as const, remaining: RATE_LIMIT_MAX - current.count, resetAt: current.resetAt };
-}
-
-async function checkUpstashRateLimit(key: string) {
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!url || !token) return null;
-
-  const bucket = Math.floor(Date.now() / RATE_LIMIT_WINDOW_MS);
-  const redisKey = `cosmos:astronomer:rl:${bucket}:${key}`;
-  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
-
-  try {
-    const incr = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(['INCR', redisKey]),
-      cache: 'no-store',
-    });
-    if (!incr.ok) return null;
-
-    const payload = await incr.json() as { result?: number };
-    const count = Number(payload.result ?? 0);
-
-    if (count === 1) {
-      await fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(['PEXPIRE', redisKey, RATE_LIMIT_WINDOW_MS]),
-        cache: 'no-store',
-      }).catch(() => undefined);
-    }
-
-    return {
-      ok: count <= RATE_LIMIT_MAX,
-      remaining: Math.max(0, RATE_LIMIT_MAX - count),
-      resetAt: (bucket + 1) * RATE_LIMIT_WINDOW_MS,
-    } as const;
-  } catch {
-    return null;
-  }
-}
-
-async function checkRateLimit(key: string) {
-  const distributed = await checkUpstashRateLimit(key);
-  if (distributed) return distributed;
-  return checkMemoryRateLimit(key);
-}
 
 // --- Data Fetching & Enrichment ----------------------------------------------
 
@@ -259,7 +169,9 @@ async function createOpenAIResponse({
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
       model,
-      instructions: `Eres el Asistente de IA de Cosmos Atlas, un astrónomo experto con acceso a telemetría en tiempo real. 
+      max_output_tokens: 450,
+      ...(model.startsWith('gpt-6') ? { reasoning: { effort: 'none' } } : {}),
+      instructions: `Eres el Asistente de IA de Cosmos Atlas. Respondes solo con los datos astronómicos y cálculos incluidos en el contexto de esta petición.
       ${kidsMode 
         ? 'MODO NIÑOS ACTIVO: Usa analogías espaciales divertidas, evita tecnicismos áridos, sé inspirador y anima a la exploración.' 
         : 'MODO ESTÁNDAR: Sé profesional, preciso y apasionado. Usa datos de magnitud, visibilidad (Alt/Az) y escala de Bortle si están disponibles.'}
@@ -286,11 +198,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'forbidden origin' }, { status: 403, headers: JSON_HEADERS });
   }
 
-  const limit = await checkRateLimit(getClientKey(req));
-  if (!limit.ok) {
-    const retryAfter = Math.max(1, Math.ceil((limit.resetAt - Date.now()) / 1000));
-    return NextResponse.json({ error: 'rate limit exceeded', retryAfter }, { status: 429, headers: { ...JSON_HEADERS, 'Retry-After': String(retryAfter) } });
-  }
+  const limit = await checkRateLimit(req, { namespace: 'astronomer', max: 40, windowMs: 10 * 60_000 });
+  if (!limit.ok) return rateLimitResponse(limit);
 
   try {
     // Medimos el tamano real del texto en vez de confiar en el header
@@ -318,23 +227,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ answer: localAstronomerAnswer(question, enrichedContext), source: 'local' }, { headers: JSON_HEADERS });
     }
 
-    const configuredModel = process.env.OPENAI_MODEL || 'gpt-4.1-mini';
+    const configuredModel = process.env.OPENAI_MODEL || 'gpt-6-luna';
     const models = [configuredModel, ...FALLBACK_MODELS].filter((m, i, a) => m && a.indexOf(m) === i);
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 20_000);
-
-    try {
-      for (const model of models) {
-        const result = await createOpenAIResponse({ apiKey, model, question, context: enrichedContext, supabaseDetails, signal: controller.signal });
+    for (const model of models) {
+      try {
+        const result = await createOpenAIResponse({
+          apiKey,
+          model,
+          question,
+          context: enrichedContext,
+          supabaseDetails,
+          signal: AbortSignal.timeout(12_000),
+        });
         if (result.ok && result.answer) {
-          clearTimeout(timer);
           return NextResponse.json({ answer: result.answer, source: 'openai', model: result.model }, { headers: JSON_HEADERS });
         }
+      } catch {
+        // Timeout o error de red: el siguiente modelo recibe un Signal nuevo.
       }
-      return NextResponse.json({ answer: localAstronomerAnswer(question, enrichedContext), source: 'local', warning: 'AI fallback' }, { headers: JSON_HEADERS });
-    } finally {
-      clearTimeout(timer);
     }
+    return NextResponse.json({ answer: localAstronomerAnswer(question, enrichedContext), source: 'local', warning: 'AI fallback' }, { headers: JSON_HEADERS });
   } catch {
     return NextResponse.json({ error: 'internal server error' }, { status: 500, headers: JSON_HEADERS });
   }

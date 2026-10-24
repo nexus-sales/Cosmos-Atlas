@@ -45,14 +45,15 @@ export default function ObjectInfoTab({ onGoToGuide }: { onGoToGuide?: () => voi
 
     const isTargeted = targetedObject?.name === selected?.name;
     const isStar = selected ? 'constellation' in selected : false;
-    const isPlanet = selected ? 'kind' in selected && (selected as Planet).kind === 'planet' : false;
+    const isConstellation = selected ? 'symbol' in selected && selected.symbol === '✦' : false;
+    const isPlanet = selected ? !isConstellation && 'kind' in selected && (selected as Planet).kind === 'planet' : false;
     const isMoon = selected?.name === 'Luna';
     const solarSystemInfo = selected && (isPlanet || isMoon)
         ? getSolarSystemBodyByName(selected.name, solarSystemBodies)
         : undefined;
 
-    const typeLabel = isStar ? 'ESTRELLA' : isMoon ? 'SATÉLITE' : isPlanet ? 'PLANETA' : ((selected as DSO)?.type?.toUpperCase?.() ?? 'OBJETO');
-    const accentColor = isStar ? '#60a5fa' : (isPlanet || isMoon) ? '#00f2ff' : '#a78bfa';
+    const typeLabel = isConstellation ? 'CONSTELACIÓN' : isStar ? 'ESTRELLA' : isMoon ? 'SATÉLITE' : isPlanet ? 'PLANETA' : ((selected as DSO)?.type?.toUpperCase?.() ?? 'OBJETO');
+    const accentColor = isConstellation ? '#a78bfa' : isStar ? '#60a5fa' : (isPlanet || isMoon) ? '#00f2ff' : '#a78bfa';
     const isVisible = coords.alt > 0;
     const solarSystemDate = time.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' });
     const primaryDescription = solarSystemInfo?.shortDesc || selected?.desc || '';

@@ -323,6 +323,11 @@ export default function Constellations() {
                         {/* High-Tech Nodes at star vertices */}
                         {nodesPositions.length > 0 && opacity > 0.05 && (
                             <points
+                                onClick={(e: ThreeEvent<MouseEvent>) => {
+                                    // Evita que el click posterior al pointerup atraviese el nodo
+                                    // y Gaia/Hipparcos reemplacen la selección de la constelación.
+                                    e.stopPropagation();
+                                }}
                                 onPointerDown={(e: ThreeEvent<PointerEvent>) => {
                                     e.stopPropagation();
                                     if (e.index === undefined || e.index >= nodes.length) return;

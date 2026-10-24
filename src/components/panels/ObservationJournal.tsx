@@ -34,10 +34,13 @@ function loadEntries(): ObsEntry[] {
     } catch { return []; }
 }
 
-function saveEntries(entries: ObsEntry[]) {
+function saveEntries(entries: ObsEntry[]): boolean {
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-    } catch {}
+        return true;
+    } catch {
+        return false;
+    }
 }
 
 function newId(): string {
@@ -78,6 +81,7 @@ export default function ObservationJournal() {
     const [entries, setEntries] = useState<ObsEntry[]>(() => loadEntries());
     const [view, setView]       = useState<'list' | 'add'>('list');
     const [expanded, setExpanded] = useState<string | null>(null);
+    const [storageError, setStorageError] = useState(false);
 
     // Formulario de nueva entrada
     const [form, setForm] = useState<Omit<ObsEntry, 'id'>>({
@@ -114,16 +118,24 @@ export default function ObservationJournal() {
     const handleAdd = useCallback(() => {
         const entry: ObsEntry = { ...form, id: newId() };
         const updated = [entry, ...entries];
+        if (!saveEntries(updated)) {
+            setStorageError(true);
+            return;
+        }
         setEntries(updated);
-        saveEntries(updated);
+        setStorageError(false);
         setView('list');
         setForm(f => ({ ...f, notes: '', date: new Date().toISOString().slice(0,16) }));
     }, [form, entries]);
 
     const handleDelete = useCallback((id: string) => {
         const updated = entries.filter(e => e.id !== id);
+        if (!saveEntries(updated)) {
+            setStorageError(true);
+            return;
+        }
         setEntries(updated);
-        saveEntries(updated);
+        setStorageError(false);
     }, [entries]);
 
     const accent = nightMode ? '#ff4444' : '#60a5fa';
@@ -244,6 +256,11 @@ export default function ObservationJournal() {
                 >
                     Guardar observación
                 </button>
+                {storageError && (
+                    <p role="alert" className="rounded border border-red-400/30 bg-red-500/10 px-2 py-1.5 text-[9px] text-red-300">
+                        No se pudo guardar en este navegador. Libera espacio o permite el almacenamiento local y vuelve a intentarlo.
+                    </p>
+                )}
             </div>
         );
     }
@@ -251,6 +268,11 @@ export default function ObservationJournal() {
     // ── Lista de observaciones ─────────────────────────────────────────────────
     return (
         <div className="flex flex-col gap-2">
+            {storageError && (
+                <p role="alert" className="rounded border border-red-400/30 bg-red-500/10 px-2 py-1.5 text-[9px] text-red-300">
+                    No se pudo actualizar el diario. Los datos anteriores siguen intactos.
+                </p>
+            )}
             {/* Cabecera con botones */}
             <div className="flex items-center gap-2">
                 <button

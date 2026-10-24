@@ -5,6 +5,8 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useAppStore } from '@/stores/useAppStore';
 import * as Astronomy from 'astronomy-engine';
+import { lunarSkyGlow } from '@/lib/astronomy/skyBrightness';
+import { moonHorRef } from '@/lib/skyRefs';
 
 const SKY_VERTEX_SHADER = `
     varying vec3 vWorldPosition;
@@ -16,6 +18,8 @@ const SKY_VERTEX_SHADER = `
 
 const SKY_FRAGMENT_SHADER = `
     uniform vec3 uSunPos;
+    uniform vec3 uMoonPos;
+    uniform float uMoonGlow;
     uniform float uTime;
     uniform float uBortle;
     uniform float uSuppression;
@@ -27,12 +31,13 @@ const SKY_FRAGMENT_SHADER = `
     // Colores de contaminación lumínica reales:
     // Bortle 5-6: ámbar suave (alumbrado sodio)
     // Bortle 8-9: naranja-blanco intenso (LED moderno + sodio)
-    const vec3 LightPollutionLow  = vec3(0.08, 0.04, 0.01);  // ámbar muy tenue
-    const vec3 LightPollutionHigh = vec3(0.55, 0.30, 0.10);  // ámbar-naranja intenso
+    const vec3 LightPollutionLow  = vec3(0.018, 0.014, 0.010);
+    const vec3 LightPollutionHigh = vec3(0.14, 0.09, 0.045);
 
     void main() {
         vec3 viewDir = normalize(vWorldPosition);
         vec3 sunDir  = normalize(uSunPos);
+        vec3 moonDir = normalize(uMoonPos);
 
         float cosTheta    = dot(viewDir, sunDir);
         float zenithAngle = viewDir.y;
@@ -57,10 +62,10 @@ const SKY_FRAGMENT_SHADER = `
         float horizonGlow   = exp(-max(0.0, zenithAngle) * horizonSpread);
 
         // Brillo base del cielo: en Bortle 8-9, incluso el cénit está iluminado
-        float skyFloor    = pollutionT * pollutionT * 0.12; // cuadrático: muy lento hasta Bortle 6+
+        float skyFloor    = pollutionT * pollutionT * 0.035;
 
         vec3 nightSky = SpaceBlack
-                      + pollutionColor * (horizonGlow * pollutionT + skyFloor);
+                      + pollutionColor * (horizonGlow * pollutionT * 0.34 + skyFloor);
 
         // Puesta de sol
         vec3 sunsetColor = vec3(1.0, 0.35, 0.12)
@@ -71,8 +76,15 @@ const SKY_FRAGMENT_SHADER = `
         // Mezcla día/noche
         vec3 dayColor   = mix(nightSky, rayleighColor + mieColor, dayFactor);
         vec3 finalColor = mix(nightSky, dayColor, dayFactor);
-        finalColor += pollutionColor * pollutionT * (horizonGlow * 0.18 + skyFloor * 0.7) * (1.0 - dayFactor * 0.65);
+        finalColor += pollutionColor * pollutionT * (horizonGlow * 0.05 + skyFloor * 0.35) * (1.0 - dayFactor * 0.65);
         finalColor += sunsetColor;
+
+        // Resplandor lunar atmosférico: depende de fase, altura real y
+        // separación angular respecto a la Luna. No dibuja una Luna falsa.
+        float moonSeparation = max(0.0, dot(viewDir, moonDir));
+        float moonAureole = pow(moonSeparation, 42.0) * 0.12
+                         + pow(moonSeparation, 260.0) * 0.22;
+        finalColor += vec3(0.62, 0.72, 0.92) * moonAureole * uMoonGlow * (1.0 - dayFactor);
 
         // Transición hiper-suave en el horizonte (Simulación Rayleigh real)
         // Para evitar el "corte de cuchillo" con el suelo negro, la opacidad
@@ -100,14 +112,17 @@ export default function AtmosphericSky() {
     const setSelectedObject = useAppStore((s) => s.setSelectedObject);
     const setTargetedObject = useAppStore((s) => s.setTargetedObject);
     const sunPos = useMemo(() => new THREE.Vector3(100, 0, 0), []);
+    const moonPos = useMemo(() => new THREE.Vector3(0, -1, 0), []);
 
     // Stable uniforms object — mutate values in useFrame, never recreate
     const uniforms = useMemo(() => ({
         uSunPos: { value: sunPos },
+        uMoonPos: { value: moonPos },
+        uMoonGlow: { value: 0 },
         uTime: { value: 0 },
         uBortle: { value: 4 },
         uSuppression: { value: 1.0 }
-    }), [sunPos]);
+    }), [moonPos, sunPos]);
 
     useFrame((state) => {
         if (!meshRef.current) return;
@@ -133,6 +148,13 @@ export default function AtmosphericSky() {
                 const hor = Astronomy.Horizon(time, _atmoObserver, eq.ra, eq.dec, 'normal');
                 _lastSunAltAz.alt = hor.altitude;
                 _lastSunAltAz.az  = hor.azimuth;
+
+                const moonEq = Astronomy.Equator(Astronomy.Body.Moon, time, _atmoObserver, true, true);
+                const moonHor = Astronomy.Horizon(time, _atmoObserver, moonEq.ra, moonEq.dec, 'normal');
+                const moonIllumination = Astronomy.Illumination(Astronomy.Body.Moon, time).phase_fraction;
+                moonHorRef.alt = moonHor.altitude;
+                moonHorRef.az = moonHor.azimuth;
+                moonHorRef.illuminatedFraction = moonIllumination;
                 _lastAtmoMs = now;
             } catch { /* keep previous position on error */ }
         }
@@ -144,6 +166,15 @@ export default function AtmosphericSky() {
             Math.sin(el),
             -Math.cos(el) * Math.cos(az)
         );
+
+        const moonEl = THREE.MathUtils.degToRad(moonHorRef.alt);
+        const moonAz = THREE.MathUtils.degToRad(moonHorRef.az);
+        uniforms.uMoonPos.value.set(
+            Math.cos(moonEl) * Math.sin(moonAz),
+            Math.sin(moonEl),
+            -Math.cos(moonEl) * Math.cos(moonAz),
+        );
+        uniforms.uMoonGlow.value = lunarSkyGlow(moonHorRef.alt, moonHorRef.illuminatedFraction);
 
         // These must stay every frame — uTime drives shader animation,
         // position.copy keeps the sky dome centered on the camera.

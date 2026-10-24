@@ -2,6 +2,9 @@
   "name": "cosmos-atlas",
   "version": "3.6.0",
   "private": true,
+  "engines": {
+    "node": ">=20.9.0 <25"
+  },
   "author": {
     "name": "Salvador Muñoz Portillo",
     "email": "salvador.munoz@masvoip.com"
@@ -13,15 +16,18 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "eval:astronomer": "node scripts/evaluate-astronomer.mjs",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@emnapi/core": "^1.10.0",
     "@emnapi/runtime": "^1.10.0",
+    "@fontsource-variable/space-grotesk": "^5.3.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
     "@react-three/postprocessing": "^3.0.4",
-    "@serwist/next": "^9.5.11",
+    "@serwist/next": "^9.5.13",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.104.1",
     "@tsparticles/slim": "^3.9.1",
@@ -29,20 +35,22 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.34.3",
+    "geist": "^1.8.2",
     "lucide-react": "^0.575.0",
-    "next": "^16.2.10",
+    "next": "^16.4.2",
     "postprocessing": "^6.38.3",
     "radix-ui": "^1.4.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "satellite.js": "^6.0.2",
-    "serwist": "^9.5.11",
+    "serwist": "^9.5.13",
     "tailwind-merge": "^3.5.0",
     "three": "^0.183.1",
-    "zod": "^4.4.3",
+    "zod": "^4.6.6",
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -50,7 +58,7 @@
     "@types/three": "^0.183.1",
     "@vitest/coverage-v8": "^4.1.4",
     "eslint": "^9",
-    "eslint-config-next": "^16.2.4",
+    "eslint-config-next": "^16.4.2",
     "shadcn": "^3.8.5",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
@@ -58,5 +66,16 @@
     "typescript": "^5",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.4"
+  },
+  "overrides": {
+    "@serwist/build": {
+      "zod": "4.6.6"
+    },
+    "@serwist/next": {
+      "zod": "4.6.6"
+    },
+    "@serwist/webpack-plugin": {
+      "zod": "4.6.6"
+    }
   }
 }

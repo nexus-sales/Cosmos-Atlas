@@ -5,6 +5,8 @@ import * as THREE from 'three';
 import { useAppStore } from '@/stores/useAppStore';
 import { CONSTELLATION_ART, type ConstellationFigure, type ArtPath } from '@/data/constellationArt';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
+import ConstellationSigils from '@/components/sky-map/ConstellationSigils';
+import { getSkyCulture } from '@/data/skyCultures';
 
 const RADIUS = 93; // ligeramente dentro de las estrellas para no taparlas
 
@@ -132,20 +134,21 @@ function FigureMesh({ figure, opacity, highlighted }: {
 
 export default function ConstellationArt() {
     const showConstellationArt = useAppStore(s => s.settings.showConstellationArt);
+    const skyCultureId = useAppStore(s => s.skyCultureId);
     const focusedConstellation = useAppStore(s => s.focusedConstellation);
     const camFov = useAppStore(s => s.camFov);
 
-    if (!showConstellationArt) return null;
+    if (!showConstellationArt || getSkyCulture(skyCultureId).artMode === 'none') return null;
 
     // Las figuras son visibles a partir de FOV < 65°, plena visibilidad a < 45°
     const opacity = THREE.MathUtils.clamp(
-        THREE.MathUtils.mapLinear(camFov, 65, 45, 0, 1),
-        0, 1
+        THREE.MathUtils.mapLinear(camFov, 95, 45, 0.16, 1),
+        0.16, 1
     );
-    if (opacity < 0.01) return null;
 
     return (
         <group>
+            <ConstellationSigils opacity={opacity} />
             {CONSTELLATION_ART.map(figure => (
                 <FigureMesh
                     key={figure.name}
