@@ -33,32 +33,35 @@ jobs:
   dependencias-node:
     name: Dependencias (npm audit)
     runs-on: ubuntu-latest
-    if: hashFiles('package.json') != ''
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-      - run: npm audit --audit-level=high
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm audit --omit=dev --audit-level=high
 
   dependencias-python:
     name: Dependencias (pip-audit)
     runs-on: ubuntu-latest
-    if: hashFiles('requirements.txt', 'pyproject.toml') != ''
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
+        if: hashFiles('requirements.txt', 'pyproject.toml') != ''
         with:
           python-version: '3.12'
-      - run: pip install pip-audit --break-system-packages || pip install pip-audit
-      - run: pip-audit -r requirements.txt || pip-audit
+      - if: hashFiles('requirements.txt', 'pyproject.toml') != ''
+        run: pip install pip-audit --break-system-packages || pip install pip-audit
+      - if: hashFiles('requirements.txt', 'pyproject.toml') != ''
+        run: pip-audit -r requirements.txt || pip-audit
 
   dependencias-otros-stacks:
     name: Recordatorio — otros stacks
     runs-on: ubuntu-latest
-    if: hashFiles('composer.json', 'Gemfile', 'go.mod', 'Cargo.toml') != ''
     steps:
+      - uses: actions/checkout@v4
       - run: |
           echo "Detectado un stack (PHP/Ruby/Go/Rust) sin job dedicado en este workflow."
           echo "Añade el paso correspondiente: composer audit / bundle audit / govulncheck / cargo audit."
           echo "Ver references/herramientas-por-stack.md del skill Auditor para el comando exacto."
+        if: hashFiles('composer.json', 'Gemfile', 'go.mod', 'Cargo.toml') != ''
