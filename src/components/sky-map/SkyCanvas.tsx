@@ -105,12 +105,9 @@ function SubHorizonAlert() {
 /**
  * Zoom por FOV — rueda de ratón + pinch táctil.
  *
- * Para el pinch se usan pointer events (no touch events) porque R3F establece
- * `touch-action: none` en el canvas y OrbitControls también usa pointer events,
- * lo que hace que los touchmove sean poco fiables. Al usar pointerdown/
- * pointermove en el mismo canvas los dos handlers conviven sin conflicto:
- * OrbitControls ignora el gesto de 2 dedos cuando enableZoom+enablePan=false
- * y nuestro handler calcula el delta de distancia entre ambos punteros.
+ * El pinch se escucha en toda la superficie visual, no solo en el canvas.
+ * Así no se pierde un dedo cuando comienza sobre una etiqueta HTML de drei.
+ * TouchEvents conserva el conjunto de dedos durante todo el gesto en móvil.
  */
 function FovZoom({
     trackingRef,
@@ -124,10 +121,6 @@ function FovZoom({
     const camFov = useAppStore((state) => state.camFov);
     const setCamFov = useAppStore((state) => state.setCamFov);
 
-    // Inercia del pinch: velocidad acumulada que se decae con fricción
-    const pinchVelocityRef = useRef(0);
-    const pinchActiveRef   = useRef(false);
-
     useEffect(() => {
         const cam = camera as THREE.PerspectiveCamera;
         fovRef.current = camFov;
@@ -135,27 +128,9 @@ function FovZoom({
         cam.updateProjectionMatrix();
     }, [camera, camFov]);
 
-    // Aplica la inercia del pinch en cada frame tras levantar los dedos.
-    useFrame(() => {
-        const vel = pinchVelocityRef.current;
-        if (pinchActiveRef.current || Math.abs(vel) < 0.02) {
-            pinchVelocityRef.current = 0;
-            return;
-        }
-        const cam = camera as THREE.PerspectiveCamera;
-        const next = THREE.MathUtils.clamp(fovRef.current + vel, 10, 90);
-        if (next !== fovRef.current) {
-            fovRef.current = next;
-            cam.fov = next;
-            cam.updateProjectionMatrix();
-            setCamFov(next);
-        }
-        // Fricción: decae ~60% en ~10 frames (≈0.17 s a 60 fps)
-        pinchVelocityRef.current *= 0.88;
-    });
-
     useEffect(() => {
         const canvas = gl.domElement;
+        const viewport = canvas.closest<HTMLElement>('[data-sky-viewport]') ?? canvas;
         const cam = camera as THREE.PerspectiveCamera;
 
         // ── Rueda de ratón ──────────────────────────────────────────────────
@@ -177,43 +152,16 @@ function FovZoom({
             setCamFov(fovRef.current);
         };
 
-        // ── Pinch táctil con pointer events ────────────────────────────────
-        const ptrs = new Map<number, { x: number; y: number }>();
+        // ── Pinch táctil nativo en toda la bóveda ─────────────────────────
         let lastDist = 0;
 
-        const onPointerDown = (e: PointerEvent) => {
-            if (e.pointerType !== 'touch') return;
-            e.preventDefault();
-            canvas.setPointerCapture(e.pointerId);
-            ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
-            if (ptrs.size === 2) {
-                const [a, b] = [...ptrs.values()];
-                lastDist = Math.hypot(a.x - b.x, a.y - b.y);
-                pinchVelocityRef.current = 0; // reiniciar inercia al iniciar nuevo pinch
-                pinchActiveRef.current = true;
-            }
+        const touchDistance = (touches: TouchList) => {
+            const a = touches.item(0);
+            const b = touches.item(1);
+            return a && b ? Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY) : 0;
         };
 
-        const onPointerMove = (e: PointerEvent) => {
-            if (!ptrs.has(e.pointerId)) return;
-            e.preventDefault();
-            ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
-            if (ptrs.size !== 2) return;
-
-            const [a, b] = [...ptrs.values()];
-            const dx = a.x - b.x;
-            const dy = a.y - b.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-
-            if (lastDist === 0) { lastDist = dist; return; }
-
-            // Separar dedos (dist crece) → zoom in (FOV baja)
-            const delta = (lastDist - dist) * 0.15;
-            lastDist = dist;
-
-            // Acumular velocidad (promedio suavizado con el delta actual)
-            pinchVelocityRef.current = pinchVelocityRef.current * 0.6 + delta * 0.4;
-
+        const applyPinchDelta = (delta: number) => {
             if (trackingRef.current) {
                 const current = manualFovRef.current ?? cam.fov;
                 const next = THREE.MathUtils.clamp(current + delta, 10, 90);
@@ -229,30 +177,43 @@ function FovZoom({
             setCamFov(fovRef.current);
         };
 
-        const onPointerUp = (e: PointerEvent) => {
-            ptrs.delete(e.pointerId);
-            if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
-            if (ptrs.size < 2) {
-                lastDist = 0;
-                pinchActiveRef.current = false;
-                // La velocidad acumulada seguirá aplicándose en useFrame (inercia)
+        const onTouchStart = (e: TouchEvent) => {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                lastDist = touchDistance(e.touches);
             }
         };
 
-        // Captura antes que OrbitControls: aunque su zoom esté desactivado,
-        // algunos navegadores entregan primero allí la rueda y el gesto parece muerto.
+        const onTouchMove = (e: TouchEvent) => {
+            if (e.touches.length !== 2) return;
+            e.preventDefault();
+            const dist = touchDistance(e.touches);
+            if (lastDist <= 0 || dist <= 0) {
+                lastDist = dist;
+                return;
+            }
+            // Escala logarítmica: sensibilidad consistente en cualquier pantalla.
+            const delta = -Math.log(dist / lastDist) * 55;
+            lastDist = dist;
+            applyPinchDelta(delta);
+        };
+
+        const onTouchEnd = (e: TouchEvent) => {
+            if (e.touches.length < 2) lastDist = 0;
+        };
+
         canvas.addEventListener('wheel', onWheel, { passive: false, capture: true });
-        canvas.addEventListener('pointerdown', onPointerDown, { passive: false, capture: true });
-        canvas.addEventListener('pointermove', onPointerMove, { passive: false, capture: true });
-        canvas.addEventListener('pointerup', onPointerUp, { capture: true });
-        canvas.addEventListener('pointercancel', onPointerUp, { capture: true });
+        viewport.addEventListener('touchstart', onTouchStart, { passive: false, capture: true });
+        viewport.addEventListener('touchmove', onTouchMove, { passive: false, capture: true });
+        viewport.addEventListener('touchend', onTouchEnd, { capture: true });
+        viewport.addEventListener('touchcancel', onTouchEnd, { capture: true });
 
         return () => {
             canvas.removeEventListener('wheel', onWheel, { capture: true });
-            canvas.removeEventListener('pointerdown', onPointerDown, { capture: true });
-            canvas.removeEventListener('pointermove', onPointerMove, { capture: true });
-            canvas.removeEventListener('pointerup', onPointerUp, { capture: true });
-            canvas.removeEventListener('pointercancel', onPointerUp, { capture: true });
+            viewport.removeEventListener('touchstart', onTouchStart, { capture: true });
+            viewport.removeEventListener('touchmove', onTouchMove, { capture: true });
+            viewport.removeEventListener('touchend', onTouchEnd, { capture: true });
+            viewport.removeEventListener('touchcancel', onTouchEnd, { capture: true });
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [camera, gl, setCamFov]); // trackingRef/manualFovRef son refs — estables por diseño
@@ -508,8 +469,8 @@ export default function SkyCanvas() {
     ]);
 
     return (
-        <div className={cn(
-            "w-full h-full relative overflow-hidden transition-colors duration-1000",
+        <div data-sky-viewport className={cn(
+            "w-full h-full relative overflow-hidden touch-none overscroll-none transition-colors duration-1000",
             viewMode === 'camera' ? "bg-transparent" : "bg-black"
         )}>
             {/* Fondo de Cámara para AR */}

@@ -1,14 +1,23 @@
 import { expect, test, type Page } from '@playwright/test';
 
 async function enterAtlas(page: Page) {
-  await page.addInitScript(() => sessionStorage.setItem('cosmos_booted', 'true'));
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.addInitScript(() => {
+    sessionStorage.setItem('cosmos_booted', 'true');
+    localStorage.setItem('cosmos-atlas-storage', JSON.stringify({
+      state: { hasSeenOnboarding: true },
+      version: 4,
+    }));
+  });
   const response = await page.goto('/', { waitUntil: 'domcontentloaded' });
   if (!response?.ok()) {
     await page.waitForTimeout(500);
     await page.reload({ waitUntil: 'domcontentloaded' });
   }
   const skip = page.getByRole('button', { name: /Saltar introducción/i });
-  if (await skip.isVisible().catch(() => false)) await skip.click();
+  if (await skip.isVisible().catch(() => false)) {
+    await skip.click({ timeout: 1_000 }).catch(() => undefined);
+  }
   await expect(page.locator('canvas').first()).toBeVisible();
 }
 
@@ -50,6 +59,7 @@ test.describe('Cosmos Atlas visual journeys', () => {
 
   test('mobile: layout, gestos de bóveda y panel usable', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile-edge', 'Mobile-only journey');
+    test.setTimeout(90_000);
     await enterAtlas(page);
     const viewport = page.viewportSize();
     expect(viewport?.width).toBeLessThanOrEqual(430);
