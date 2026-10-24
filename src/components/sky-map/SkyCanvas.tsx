@@ -2,7 +2,7 @@
 
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import { Suspense, useEffect, useRef } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import AtmosphericSky from '@/components/sky-map/AtmosphericSky';
 import Stars from '@/components/sky-map/Stars';
 import DeepSkyObjects from '@/components/sky-map/DeepSkyObjects';
@@ -39,10 +39,11 @@ import { getLST } from '@/lib/astronomy/time';
 import { deviceOrientationRef } from '@/hooks/useDeviceOrientation';
 import ISSPassPredictor from '@/components/sky-map/ISSPassPredictor';
 import { cn } from '@/lib/utils';
-import { Minus, Plus, RotateCcw } from 'lucide-react';
+import { Crosshair, Minus, Plus, RotateCcw } from 'lucide-react';
 import { cameraHeadingRef, cameraRef, moonHorRef, sunHorRef } from '@/lib/skyRefs';
 import { ocularExposureTarget } from '@/lib/astronomy/skyBrightness';
 import { computeMagneticDeclination } from '@/lib/astronomy/magneticDeclination';
+import { calibrateArToTarget } from '@/lib/astronomy/arCalibration';
 import * as Astronomy from 'astronomy-engine';
 
 // Observador reutilizable — evita allocations en useFrame
@@ -341,7 +342,7 @@ function OrientationDriver() {
 
         // Usar heading y elevation ya corregidos y suavizados del sensor
         const { heading, elevation } = deviceOrientationRef;
-        const { observer, time, compassCalibrationOffset } = useAppStore.getState();
+        const { observer, time, compassCalibrationOffset, arElevationCalibrationOffset } = useAppStore.getState();
         const year = time.getFullYear() + time.getMonth() / 12;
         const lastObserver = lastObserverRef.current;
         if (
@@ -357,7 +358,7 @@ function OrientationDriver() {
             + declinationRef.current
             + compassCalibrationOffset;
 
-        const targetEl = THREE.MathUtils.clamp(elevation, 0, 90);
+        const targetEl = THREE.MathUtils.clamp(elevation + arElevationCalibrationOffset, -20, 90);
 
         // Azimut wrap-around seguro
         const dAz = ((trueHeading - azRef.current) % 360 + 540) % 360 - 180;
@@ -444,7 +445,16 @@ export default function SkyCanvas() {
     const deviceQuality = useAppStore((state) => state.deviceQuality);
     const camFov = useAppStore((state) => state.camFov);
     const setCamFov = useAppStore((state) => state.setCamFov);
-    const arOverlayReady = viewMode !== 'camera' || followOrientation;
+    const compassCalibrationOffset = useAppStore((state) => state.compassCalibrationOffset);
+    const arElevationCalibrationOffset = useAppStore((state) => state.arElevationCalibrationOffset);
+    const setCompassCalibrationOffset = useAppStore((state) => state.setCompassCalibrationOffset);
+    const setArElevationCalibrationOffset = useAppStore((state) => state.setArElevationCalibrationOffset);
+    const setArCalibrationUpdatedAt = useAppStore((state) => state.setArCalibrationUpdatedAt);
+    const observer = useAppStore((state) => state.observer);
+    const time = useAppStore((state) => state.time);
+    const [isArAligning, setIsArAligning] = useState(false);
+    const [arAlignmentMessage, setArAlignmentMessage] = useState<string | null>(null);
+    const arOverlayReady = (viewMode !== 'camera' || followOrientation) && !isArAligning;
 
     // Cap DPR by quality tier to avoid rendering at 3× on flagship Android phones
     const maxDpr = deviceQuality === 'low' ? 1.0 : deviceQuality === 'medium' ? 1.5 : 2.0;
@@ -459,6 +469,43 @@ export default function SkyCanvas() {
         manualFovRef.current = next;
         setCamFov(next);
     };
+
+    const alignCameraToMoon = useCallback(() => {
+        if (!deviceOrientationRef.active) {
+            setArAlignmentMessage('El sensor de orientación no está activo.');
+            return;
+        }
+        if (moonHorRef.alt <= 0) {
+            setArAlignmentMessage('La Luna está bajo el horizonte y no puede usarse para alinear.');
+            return;
+        }
+
+        const result = calibrateArToTarget({
+            sensorHeading: deviceOrientationRef.heading,
+            sensorElevation: deviceOrientationRef.elevation,
+            magneticDeclination: computeMagneticDeclination(observer.lat, observer.lon, time),
+            currentHeadingOffset: compassCalibrationOffset,
+            currentElevationOffset: arElevationCalibrationOffset,
+            targetAzimuth: moonHorRef.az,
+            targetAltitude: moonHorRef.alt,
+        });
+
+        setCompassCalibrationOffset(result.headingOffset);
+        setArElevationCalibrationOffset(result.elevationOffset);
+        setArCalibrationUpdatedAt(Date.now());
+        setIsArAligning(false);
+        setArAlignmentMessage('Alineación con la Luna aplicada.');
+        window.setTimeout(() => setArAlignmentMessage(null), 3500);
+    }, [
+        arElevationCalibrationOffset,
+        compassCalibrationOffset,
+        observer.lat,
+        observer.lon,
+        setArCalibrationUpdatedAt,
+        setArElevationCalibrationOffset,
+        setCompassCalibrationOffset,
+        time,
+    ]);
 
     return (
         <div className={cn(
@@ -566,6 +613,43 @@ export default function SkyCanvas() {
                     <CameraSync />
                 </Suspense>
             </Canvas>
+
+            {viewMode === 'camera' && followOrientation && !isArAligning && (
+                <button
+                    type="button"
+                    onClick={() => {
+                        setArAlignmentMessage(null);
+                        setIsArAligning(true);
+                    }}
+                    className="absolute left-1/2 top-4 z-[75] flex -translate-x-1/2 items-center gap-2 rounded-full border border-cyan-300/45 bg-[#06101d]/90 px-4 py-2 text-[11px] font-bold tracking-[0.12em] text-cyan-100 shadow-xl backdrop-blur-md"
+                >
+                    <Crosshair className="h-4 w-4" />
+                    ALINEAR LUNA
+                </button>
+            )}
+
+            {viewMode === 'camera' && followOrientation && isArAligning && (
+                <div className="absolute inset-0 z-[80]">
+                    <div className="pointer-events-none absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-cyan-200 shadow-[0_0_24px_rgba(103,232,249,0.65)]">
+                        <span className="absolute left-1/2 top-1/2 h-px w-28 -translate-x-1/2 bg-cyan-100/80" />
+                        <span className="absolute left-1/2 top-1/2 h-28 w-px -translate-y-1/2 bg-cyan-100/80" />
+                    </div>
+                    <div className="absolute bottom-28 left-1/2 flex w-[min(92vw,360px)] -translate-x-1/2 flex-col gap-3 rounded-2xl border border-cyan-300/35 bg-[#050b16]/94 p-4 text-center shadow-2xl backdrop-blur-md">
+                        <p className="text-sm font-bold text-white">Centra la Luna real en la retícula</p>
+                        <p className="text-[11px] leading-relaxed text-white/65">No centres el marcador del mapa. Apunta la cámara directamente a la Luna que ves en el cielo.</p>
+                        <div className="grid grid-cols-2 gap-2">
+                            <button type="button" onClick={() => setIsArAligning(false)} className="rounded-lg border border-white/15 px-3 py-2 text-[11px] font-semibold text-white/70">CANCELAR</button>
+                            <button type="button" onClick={alignCameraToMoon} className="rounded-lg border border-cyan-300/45 bg-cyan-400/20 px-3 py-2 text-[11px] font-bold text-cyan-50">LUNA CENTRADA</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {viewMode === 'camera' && arAlignmentMessage && (
+                <div className="pointer-events-none absolute left-1/2 top-16 z-[85] -translate-x-1/2 rounded-xl border border-cyan-300/35 bg-[#050b16]/92 px-4 py-2 text-center text-[11px] font-semibold text-cyan-50 shadow-xl backdrop-blur-md">
+                    {arAlignmentMessage}
+                </div>
+            )}
 
             {viewMode === 'camera' && !followOrientation && (
                 <div className="pointer-events-none absolute inset-0 z-[45] flex items-center justify-center">

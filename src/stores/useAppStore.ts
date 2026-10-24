@@ -107,6 +107,10 @@ interface AppState {
     setFollowOrientation: (v: boolean) => void;
     compassCalibrationOffset: number;
     setCompassCalibrationOffset: (v: number) => void;
+    arElevationCalibrationOffset: number;
+    setArElevationCalibrationOffset: (v: number) => void;
+    arCalibrationUpdatedAt: number | null;
+    setArCalibrationUpdatedAt: (v: number | null) => void;
     zeroCompassCalibrationOffset: () => void;
     focusedConstellation: string | null;
     setFocusedConstellation: (name: string | null) => void;
@@ -305,7 +309,17 @@ export const useAppStore = create<AppState>()(
             setCompassCalibrationOffset: (compassCalibrationOffset) => set({
                 compassCalibrationOffset: ((compassCalibrationOffset % 360) + 360) % 360,
             }),
-            zeroCompassCalibrationOffset: () => set({ compassCalibrationOffset: 0 }),
+            arElevationCalibrationOffset: 0,
+            setArElevationCalibrationOffset: (arElevationCalibrationOffset) => set({
+                arElevationCalibrationOffset: Math.max(-90, Math.min(90, arElevationCalibrationOffset)),
+            }),
+            arCalibrationUpdatedAt: null,
+            setArCalibrationUpdatedAt: (arCalibrationUpdatedAt) => set({ arCalibrationUpdatedAt }),
+            zeroCompassCalibrationOffset: () => set({
+                compassCalibrationOffset: 0,
+                arElevationCalibrationOffset: 0,
+                arCalibrationUpdatedAt: null,
+            }),
             focusedConstellation: null,
             setFocusedConstellation: (focusedConstellation) => set({ focusedConstellation }),
             simbadObjects: [],
@@ -392,6 +406,8 @@ export const useAppStore = create<AppState>()(
                 observer: state.observer,
                 arHealthHistory: state.arHealthHistory,
                 compassCalibrationOffset: state.compassCalibrationOffset,
+                arElevationCalibrationOffset: state.arElevationCalibrationOffset,
+                arCalibrationUpdatedAt: state.arCalibrationUpdatedAt,
                 foundChallenges: state.foundChallenges,
                 hasSeenOnboarding: state.hasSeenOnboarding,
                 favorites: state.favorites,
