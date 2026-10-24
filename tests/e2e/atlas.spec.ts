@@ -59,6 +59,29 @@ test.describe('Cosmos Atlas visual journeys', () => {
     const canvas = page.locator('canvas').first();
     const box = await canvas.boundingBox();
     if (!box) throw new Error('Sky canvas has no bounds');
+
+    const zoomControls = page.getByLabel('Controles de zoom');
+    const initialFov = Number(await zoomControls.getAttribute('data-fov'));
+    const cdp = await page.context().newCDPSession(page);
+    const centerX = box.x + box.width * 0.5;
+    const centerY = box.y + box.height * 0.45;
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [
+        { x: centerX - 25, y: centerY, id: 1 },
+        { x: centerX + 25, y: centerY, id: 2 },
+      ],
+    });
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [
+        { x: centerX - 90, y: centerY, id: 1 },
+        { x: centerX + 90, y: centerY, id: 2 },
+      ],
+    });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await expect.poll(async () => Number(await zoomControls.getAttribute('data-fov'))).toBeLessThan(initialFov - 5);
+
     await page.touchscreen.tap(box.x + box.width * 0.55, box.y + box.height * 0.45);
     await page.getByTitle('Abrir panel').click();
     await expect(page.getByText('GUÍA', { exact: true })).toBeVisible();

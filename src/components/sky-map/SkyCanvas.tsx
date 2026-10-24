@@ -133,7 +133,7 @@ function FovZoom({
         cam.updateProjectionMatrix();
     }, [camera, camFov]);
 
-    // Aplica la inercia del pinch en cada frame tras levantar los dedos
+    // Aplica la inercia del pinch en cada frame tras levantar los dedos.
     useFrame(() => {
         const vel = pinchVelocityRef.current;
         if (pinchActiveRef.current || Math.abs(vel) < 0.02) {
@@ -180,8 +180,13 @@ function FovZoom({
         let lastDist = 0;
 
         const onPointerDown = (e: PointerEvent) => {
+            if (e.pointerType !== 'touch') return;
+            e.preventDefault();
+            canvas.setPointerCapture(e.pointerId);
             ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
-            if (ptrs.size >= 2) {
+            if (ptrs.size === 2) {
+                const [a, b] = [...ptrs.values()];
+                lastDist = Math.hypot(a.x - b.x, a.y - b.y);
                 pinchVelocityRef.current = 0; // reiniciar inercia al iniciar nuevo pinch
                 pinchActiveRef.current = true;
             }
@@ -189,6 +194,7 @@ function FovZoom({
 
         const onPointerMove = (e: PointerEvent) => {
             if (!ptrs.has(e.pointerId)) return;
+            e.preventDefault();
             ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
             if (ptrs.size !== 2) return;
 
@@ -223,6 +229,7 @@ function FovZoom({
 
         const onPointerUp = (e: PointerEvent) => {
             ptrs.delete(e.pointerId);
+            if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
             if (ptrs.size < 2) {
                 lastDist = 0;
                 pinchActiveRef.current = false;
@@ -233,17 +240,17 @@ function FovZoom({
         // Captura antes que OrbitControls: aunque su zoom esté desactivado,
         // algunos navegadores entregan primero allí la rueda y el gesto parece muerto.
         canvas.addEventListener('wheel', onWheel, { passive: false, capture: true });
-        canvas.addEventListener('pointerdown', onPointerDown);
-        canvas.addEventListener('pointermove', onPointerMove);
-        canvas.addEventListener('pointerup', onPointerUp);
-        canvas.addEventListener('pointercancel', onPointerUp);
+        canvas.addEventListener('pointerdown', onPointerDown, { passive: false, capture: true });
+        canvas.addEventListener('pointermove', onPointerMove, { passive: false, capture: true });
+        canvas.addEventListener('pointerup', onPointerUp, { capture: true });
+        canvas.addEventListener('pointercancel', onPointerUp, { capture: true });
 
         return () => {
             canvas.removeEventListener('wheel', onWheel, { capture: true });
-            canvas.removeEventListener('pointerdown', onPointerDown);
-            canvas.removeEventListener('pointermove', onPointerMove);
-            canvas.removeEventListener('pointerup', onPointerUp);
-            canvas.removeEventListener('pointercancel', onPointerUp);
+            canvas.removeEventListener('pointerdown', onPointerDown, { capture: true });
+            canvas.removeEventListener('pointermove', onPointerMove, { capture: true });
+            canvas.removeEventListener('pointerup', onPointerUp, { capture: true });
+            canvas.removeEventListener('pointercancel', onPointerUp, { capture: true });
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [camera, gl, setCamFov]); // trackingRef/manualFovRef son refs — estables por diseño
@@ -375,40 +382,6 @@ function CameraSync() {
     useFrame(() => {
         const lookDir = camera.position.clone().negate().normalize();
         cameraHeadingRef.value = (Math.atan2(lookDir.x, -lookDir.z) * (180 / Math.PI) + 360) % 360;
-    });
-    return null;
-}
-
-function SeeingJitter() {
-    const { camera } = useThree();
-    const camFov = useAppStore((s) => s.camFov);
-    const telescopeMode = useAppStore((s) => s.settings.telescopeMode);
-    // Track last applied jitter to compute delta each frame (avoids cumulative drift)
-    const lastJitter = useRef({ x: 0, y: 0 });
-
-    useFrame((state) => {
-        const active = telescopeMode && camFov <= 25;
-
-        if (!active) {
-            // Undo any residual jitter on deactivation so camera returns to clean position
-            if (lastJitter.current.x !== 0 || lastJitter.current.y !== 0) {
-                camera.translateX(-lastJitter.current.x);
-                camera.translateY(-lastJitter.current.y);
-                lastJitter.current = { x: 0, y: 0 };
-            }
-            return;
-        }
-
-        const time = state.clock.getElapsedTime();
-        const zoomFactor = 1.0 - (camFov / 25.0);
-        const intensity = 0.00004 * (1.0 + zoomFactor * 3.0);
-        const jx = Math.sin(time * 15.0) * intensity;
-        const jy = Math.cos(time * 18.0) * intensity;
-
-        // Apply only the delta from last frame: net offset = jx, jy (no accumulation)
-        camera.translateX(jx - lastJitter.current.x);
-        camera.translateY(jy - lastJitter.current.y);
-        lastJitter.current = { x: jx, y: jy };
     });
     return null;
 }
@@ -566,7 +539,6 @@ export default function SkyCanvas() {
                     <ErrorBoundary label="Meteors"><Meteors /></ErrorBoundary>
 
                     <CinematicTour />
-                    <SeeingJitter />
                     <OcularAdaptation />
                     <TelescopeEffect />
 
@@ -576,7 +548,11 @@ export default function SkyCanvas() {
                 </Suspense>
             </Canvas>
 
-            <div className="absolute right-3 top-1/2 z-[70] flex -translate-y-1/2 flex-col items-center overflow-hidden rounded-xl border border-white/10 bg-[#050a16]/90 text-white/70 shadow-lg backdrop-blur-md md:right-4" aria-label="Controles de zoom">
+            <div
+                className="absolute right-3 top-1/2 z-[70] flex -translate-y-1/2 flex-col items-center overflow-hidden rounded-xl border border-white/10 bg-[#050a16]/90 text-white/70 shadow-lg backdrop-blur-md md:right-4"
+                aria-label="Controles de zoom"
+                data-fov={camFov.toFixed(2)}
+            >
                 <button type="button" onClick={() => changeZoom(5)} title="Alejar" aria-label="Alejar" className="flex h-9 w-9 items-center justify-center hover:bg-white/10 hover:text-white"><Minus className="h-4 w-4" /></button>
                 <button type="button" onClick={() => { manualFovRef.current = 60; setCamFov(60); }} title="Restablecer zoom" aria-label="Restablecer zoom" className="flex h-9 w-9 items-center justify-center border-y border-white/10 hover:bg-white/10 hover:text-white"><RotateCcw className="h-3.5 w-3.5" /></button>
                 <button type="button" onClick={() => changeZoom(-5)} title="Acercar" aria-label="Acercar" className="flex h-9 w-9 items-center justify-center hover:bg-white/10 hover:text-white"><Plus className="h-4 w-4" /></button>
