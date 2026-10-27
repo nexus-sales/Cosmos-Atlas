@@ -9,12 +9,17 @@ import { useAppStore } from '@/stores/useAppStore';
 import { sunHorRef, terrainHorizonRef } from '@/lib/skyRefs';
 import type { HorizonBand, HorizonPoint } from '@/lib/astronomy/horizonProfile';
 
+const DEFAULT_FLAT_PROFILE: HorizonPoint[] = Array.from({ length: 72 }, (_, index) => ({
+    azimuth: index * 5,
+    altitude: 0,
+}));
+
 function terrainGeometry(profile: HorizonPoint[], radius: number) {
     const result = new THREE.BufferGeometry();
-    if (profile.length < 3) return result;
+    const effectiveProfile = profile.length >= 3 ? profile : DEFAULT_FLAT_PROFILE;
     const positions: number[] = [];
     const indices: number[] = [];
-    const closed = [...profile, { ...profile[0], azimuth: 360 }];
+    const closed = [...effectiveProfile, { ...effectiveProfile[0], azimuth: 360 }];
     closed.forEach((point) => {
         const az = THREE.MathUtils.degToRad(point.azimuth);
         const topAlt = THREE.MathUtils.degToRad(point.altitude);
@@ -30,6 +35,14 @@ function terrainGeometry(profile: HorizonPoint[], radius: number) {
         const base = index * 2;
         indices.push(base, base + 2, base + 1, base + 1, base + 2, base + 3);
     }
+    // Cierre inferior en el nadir (altitud -90°)
+    const nadirIndex = positions.length / 3;
+    positions.push(0, -radius, 0);
+    for (let index = 0; index < closed.length - 1; index++) {
+        const base = index * 2;
+        indices.push(nadirIndex, base, base + 2);
+    }
+
     result.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     result.setIndex(indices);
     result.computeVertexNormals();
@@ -37,13 +50,14 @@ function terrainGeometry(profile: HorizonPoint[], radius: number) {
 }
 
 function TerrainBandMesh({ band, index, nightMode }: { band: HorizonBand; index: number; nightMode: boolean }) {
-    const radius = 93.5 + index * 0.7;
+    // Radio menor que la bóveda celeste (91-99) para que el relieve ocluya físicamente objetos
+    const radius = 78.0 + index * 0.6;
     const geometry = useMemo(() => terrainGeometry(band.profile, radius), [band.profile, radius]);
     useEffect(() => () => geometry.dispose(), [geometry]);
     const dayColors = ['#071019', '#0a1620', '#10202a', '#172b35'];
     const nightColors = ['#050000', '#080101', '#0c0202', '#120303'];
     return (
-        <mesh geometry={geometry} renderOrder={6 + index}>
+        <mesh geometry={geometry} renderOrder={200 + index}>
             <meshBasicMaterial
                 color={(nightMode ? nightColors : dayColors)[index] ?? '#08111a'}
                 side={THREE.DoubleSide}
@@ -86,21 +100,28 @@ function TerrainHorizon() {
         return () => { clearTimeout(timer); controller.abort(); };
     }, [observer.lat, observer.lon]);
 
-    const geometry = useMemo(() => terrainGeometry(profile, 92.5), [profile]);
+    const activeProfile = profile.length >= 3 ? profile : DEFAULT_FLAT_PROFILE;
+    const fallbackGeometry = useMemo(() => terrainGeometry(activeProfile, 78.0), [activeProfile]);
 
-    useEffect(() => () => geometry.dispose(), [geometry]);
+    useEffect(() => () => fallbackGeometry.dispose(), [fallbackGeometry]);
 
     return (
         <>
-            {profile.length >= 3 && (
-                bands.length > 0
-                    ? bands.map((band, index) => (
-                        <TerrainBandMesh key={band.maxDistanceKm} band={band} index={index} nightMode={nightMode} />
-                    ))
-                    : <mesh geometry={geometry} renderOrder={6}>
-                        <meshBasicMaterial color={nightMode ? '#070000' : '#07101a'} side={THREE.DoubleSide} depthWrite depthTest />
+            {bands.length > 0 && profile.length >= 3
+                ? bands.map((band, index) => (
+                    <TerrainBandMesh key={band.maxDistanceKm} band={band} index={index} nightMode={nightMode} />
+                ))
+                : (
+                    <mesh geometry={fallbackGeometry} renderOrder={200}>
+                        <meshBasicMaterial
+                            color={nightMode ? '#070000' : '#07101a'}
+                            side={THREE.DoubleSide}
+                            depthWrite
+                            depthTest
+                        />
                     </mesh>
-            )}
+                )
+            }
             {loaded && (
                 <Html fullscreen zIndexRange={[6, 0]}>
                     <div className="pointer-events-none absolute left-3 top-3 rounded border border-white/10 bg-black/45 px-2 py-1 font-mono text-[8px] uppercase tracking-wider text-white/35 backdrop-blur-sm">
@@ -236,15 +257,14 @@ export default function Horizon() {
             <mesh
                 position={[0, -0.05, 0]}
                 rotation={[-Math.PI / 2, 0, 0]}
-                renderOrder={2}
+                renderOrder={199}
             >
-                <circleGeometry args={[120, 64]} />
+                <circleGeometry args={[77, 64]} />
                 <meshBasicMaterial
                     color="#010205"
                     side={THREE.FrontSide}
                     depthWrite={true}
-                    transparent
-                    opacity={0.98}
+                    depthTest={true}
                 />
             </mesh>
 
@@ -309,13 +329,13 @@ export default function Horizon() {
 
 function CardinalPoint({ label, az, color, isNorth }: { label: string; az: number; color: string; isNorth?: boolean }) {
     const rad = THREE.MathUtils.degToRad(az);
-    const r = 92;
+    const r = 77;
     const x = r * Math.sin(rad);
     const z = -r * Math.cos(rad);
     const isMain = label.length === 1;
     
     return (
-        <Html position={[x, isMain ? 1.8 : 0.8, z]} center zIndexRange={[10, 0]}>
+        <Html position={[x, isMain ? 1.5 : 0.6, z]} center zIndexRange={[10, 0]}>
             <div 
                 className={cn(
                     "flex flex-col items-center pointer-events-none select-none transition-all duration-500",
