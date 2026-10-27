@@ -50,13 +50,13 @@ export default function Ecliptic() {
             {/* Línea exterior más brillante */}
             <line>
                 <primitive object={lineGeom} attach="geometry" />
-                <lineBasicMaterial color="#f59e0b" transparent opacity={0.45} />
+                <lineBasicMaterial color="#f59e0b" transparent opacity={0.45} depthWrite={false} depthTest={true} />
             </line>
 
             {/* Línea interior tenue para efecto de grosor */}
             <line>
                 <primitive object={innerGeom} attach="geometry" />
-                <lineBasicMaterial color="#fbbf24" transparent opacity={0.12} />
+                <lineBasicMaterial color="#fbbf24" transparent opacity={0.12} depthWrite={false} depthTest={true} />
             </line>
         </group>
     );

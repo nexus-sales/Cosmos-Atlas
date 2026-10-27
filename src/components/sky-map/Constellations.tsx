@@ -275,7 +275,7 @@ export default function Constellations() {
                                 lineWidth={lineWidth * 2.0}
                                 transparent
                                 opacity={isFocused ? dayGlowOpacity * 1.4 : dayGlowOpacity}
-                                depthTest={false}
+                                depthTest={true}
                                 depthWrite={false}
                             />
                         ))}
@@ -288,7 +288,7 @@ export default function Constellations() {
                                     lineWidth={lineWidth * 2.5}
                                     transparent
                                     opacity={0.1 * overallPresence}
-                                    depthTest={false}
+                                    depthTest={true}
                                     depthWrite={false}
                                 />
                                 <Line
@@ -297,7 +297,7 @@ export default function Constellations() {
                                     lineWidth={lineWidth * 1.6}
                                     transparent
                                     opacity={0.2 * overallPresence}
-                                    depthTest={false}
+                                    depthTest={true}
                                     depthWrite={false}
                                 />
                             </group>
@@ -311,7 +311,7 @@ export default function Constellations() {
                                 lineWidth={lineWidth}
                                 transparent
                                 opacity={opacity}
-                                depthTest={false}
+                                depthTest={true}
                                 depthWrite={false}
                                 dashed={isFocused}
                                 dashScale={50}
@@ -376,7 +376,7 @@ export default function Constellations() {
                                     color={color}
                                     transparent
                                     opacity={isFocused ? Math.min(1, opacity * 1.5) : Math.min(0.6, opacity * 1.25)}
-                                    depthTest={false}
+                                    depthTest={true}
                                     depthWrite={false}
                                     sizeAttenuation={true}
                                     blending={THREE.AdditiveBlending}

@@ -8,6 +8,9 @@ import { STARS } from '@/data/stars';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { useAppStore } from '@/stores/useAppStore';
 import type { ThreeEvent } from '@react-three/fiber';
+import { terrainHorizonRef } from '@/lib/skyRefs';
+import { horizonAltitudeAtAzimuth } from '@/lib/astronomy/horizonProfile';
+import { getLST } from '@/lib/astronomy/time';
 
 const starVertexShader = `
   attribute float size;
@@ -90,6 +93,13 @@ const starFragmentShader = `
 
 const RADIUS = 98;
 
+function isStarAboveTerrain(pos: [number, number, number], euler: THREE.Euler): boolean {
+    const v = new THREE.Vector3(...pos).applyEuler(euler);
+    const alt = THREE.MathUtils.radToDeg(Math.asin(THREE.MathUtils.clamp(v.y / RADIUS, -1, 1)));
+    const az = (THREE.MathUtils.radToDeg(Math.atan2(v.x, -v.z)) + 360) % 360;
+    return alt > horizonAltitudeAtAzimuth(terrainHorizonRef.current, az);
+}
+
 // ── Umbral de raycasting adaptativo al FOV ───────────────────────────────────
 // A FOV ancho (cielo completo) usamos un umbral grande para facilitar el click.
 // A FOV estrecho (zoom) lo reducimos para evitar seleccionar la estrella equivocada.
@@ -105,9 +115,11 @@ function getRaycastThreshold(fov: number): number {
 function DynamicStarLabels({
     visibleStars,
     starPositions,
+    euler,
 }: {
     visibleStars: typeof STARS;
     starPositions: [number, number, number][];
+    euler: THREE.Euler;
 }) {
     const camFov   = useAppStore(s => s.camFov);
     const nightMode = useAppStore(s => s.settings.nightMode);
@@ -122,7 +134,9 @@ function DynamicStarLabels({
                 const magThreshold = THREE.MathUtils.mapLinear(camFov, 75, 20, 1.2, 5.0);
                 if (star.mag > magThreshold) return null;
 
-                const pos     = starPositions[i];
+                const pos = starPositions[i];
+                if (!isStarAboveTerrain(pos, euler)) return null;
+
                 const color   = nightMode ? '#ff4444' : '#e0e8ff';
                 const opacity = THREE.MathUtils.clamp(
                     THREE.MathUtils.mapLinear(magThreshold - star.mag, 0, 1.0, 0, 1), 0, 1
@@ -154,8 +168,20 @@ export default function Stars() {
     const bortleScale = useAppStore(s => s.settings.bortleScale);
     const nightMode   = useAppStore(s => s.settings.nightMode);
     const camFov      = useAppStore(s => s.camFov);
+    const observer    = useAppStore(s => s.observer);
+    const timeMinute  = useAppStore(s => s.timeMinute);
     const setTargetedObject = useAppStore(s => s.setTargetedObject);
     const { raycaster } = useThree();
+
+    const euler = useMemo(() => {
+        const lst = getLST(timeMinute, observer.lon);
+        return new THREE.Euler(
+            THREE.MathUtils.degToRad(observer.lat - 90),
+            THREE.MathUtils.degToRad(-lst),
+            0,
+            'XYZ'
+        );
+    }, [observer.lat, observer.lon, timeMinute]);
 
     const limitingMag = 5.5 - (bortleScale - 1) * 0.45;
 
@@ -242,8 +268,13 @@ export default function Stars() {
             if (Math.hypot(dx, dy) > 14) tapRef.current = null;
         }
         if (e.index === undefined || e.index >= visibleStars.length) return;
-        const star = visibleStars[e.index];
         const pos  = starPositions[e.index];
+        if (!isStarAboveTerrain(pos, euler)) {
+            setHovered(null);
+            document.body.style.cursor = 'default';
+            return;
+        }
+        const star = visibleStars[e.index];
         setHovered({ star, pos });
         document.body.style.cursor = 'pointer';
     };
@@ -256,6 +287,7 @@ export default function Stars() {
 
     const selectStar = (index: number) => {
         if (index < 0 || index >= visibleStars.length) return;
+        if (!isStarAboveTerrain(starPositions[index], euler)) return;
         setTargetedObject(visibleStars[index]);
     };
 
@@ -330,7 +362,7 @@ export default function Stars() {
                 </Html>
             )}
 
-            <DynamicStarLabels visibleStars={visibleStars} starPositions={starPositions} />
+            <DynamicStarLabels visibleStars={visibleStars} starPositions={starPositions} euler={euler} />
         </group>
     );
 }

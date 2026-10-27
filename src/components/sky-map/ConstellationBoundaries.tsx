@@ -57,7 +57,7 @@ export default function ConstellationBoundaries() {
                 color={nightMode ? '#7f1d1d' : '#7899c5'}
                 transparent
                 opacity={zoomOpacity}
-                depthTest={false}
+                depthTest={true}
                 depthWrite={false}
                 blending={THREE.AdditiveBlending}
                 toneMapped={false}

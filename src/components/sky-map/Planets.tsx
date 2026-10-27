@@ -9,7 +9,8 @@ import { useFrame } from '@react-three/fiber';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { useAppStore } from '@/stores/useAppStore';
 import { useCatalog } from '@/stores/useCatalogStore';
-import { sunHorRef } from '@/lib/skyRefs';
+import { moonHorRef, sunHorRef, terrainHorizonRef } from '@/lib/skyRefs';
+import { horizonAltitudeAtAzimuth } from '@/lib/astronomy/horizonProfile';
 import { buildSolarSystemTarget } from '@/lib/solarSystem';
 import * as Astronomy from 'astronomy-engine';
 import { planetBasis, type PlanetBasis } from '@/lib/astronomy/planetOrientation';
@@ -606,11 +607,13 @@ function MoonMesh({ planet, phase, dayDimming, onSelect }: { planet: { pos: [num
                     />
                 </mesh>
             )}
-            <Html distanceFactor={120} zIndexRange={[90, 0]}>
-                <div className={`pointer-events-none whitespace-nowrap rounded bg-black/85 font-bold font-mono -translate-x-1/2 ${cameraMode ? 'border border-yellow-200/70 px-3 py-1.5 text-[13px] text-yellow-50 -translate-y-12' : 'border border-yellow-200/20 px-2 py-1 text-[10px] text-yellow-100/80 -translate-y-8'}`}>
-                    LUNA ({phase.toFixed(0)}°)
-                </div>
-            </Html>
+            {moonHorRef.alt > horizonAltitudeAtAzimuth(terrainHorizonRef.current, moonHorRef.az) && (
+                <Html distanceFactor={120} zIndexRange={[90, 0]}>
+                    <div className={`pointer-events-none whitespace-nowrap rounded bg-black/85 font-bold font-mono -translate-x-1/2 ${cameraMode ? 'border border-yellow-200/70 px-3 py-1.5 text-[13px] text-yellow-50 -translate-y-12' : 'border border-yellow-200/20 px-2 py-1 text-[10px] text-yellow-100/80 -translate-y-8'}`}>
+                        LUNA ({phase.toFixed(0)}°)
+                    </div>
+                </Html>
+            )}
         </group>
     );
 }
@@ -625,6 +628,7 @@ interface PlanetData {
     dec: number;
     distAU: number;
     basis: PlanetBasis;
+    isAboveHorizon?: boolean;
 }
 
 function PlanetMesh({ planet, dayDimming, onSelect }: { planet: PlanetData, dayDimming: number, onSelect: () => void }) {
@@ -726,22 +730,24 @@ function PlanetMesh({ planet, dayDimming, onSelect }: { planet: PlanetData, dayD
                     )}
                 </group>
             )}
-            <Html distanceFactor={150}>
-                {cameraMode || sphereOpacity > 0.15
-                    ? (
-                        <div className={`pointer-events-none whitespace-nowrap rounded bg-black/85 font-bold font-mono text-white -translate-x-1/2 ${cameraMode ? 'border border-white/50 px-3 py-1.5 text-[12px] -translate-y-10' : 'border border-white/20 px-2 py-1 text-[10px] -translate-y-12'}`}>
-                            {planet.symbol} {planet.name.toUpperCase()}
-                        </div>
-                    ) : (
-                        <div
-                            className="pointer-events-none -translate-x-1/2 -translate-y-5 text-[11px] font-bold font-mono select-none"
-                            style={{ color: planet.color, textShadow: `0 0 6px ${planet.color}` }}
-                        >
-                            {planet.symbol}
-                        </div>
-                    )
-                }
-            </Html>
+            {planet.isAboveHorizon !== false && (
+                <Html distanceFactor={150}>
+                    {cameraMode || sphereOpacity > 0.15
+                        ? (
+                            <div className={`pointer-events-none whitespace-nowrap rounded bg-black/85 font-bold font-mono text-white -translate-x-1/2 ${cameraMode ? 'border border-white/50 px-3 py-1.5 text-[12px] -translate-y-10' : 'border border-white/20 px-2 py-1 text-[10px] -translate-y-12'}`}>
+                                {planet.symbol} {planet.name.toUpperCase()}
+                            </div>
+                        ) : (
+                            <div
+                                className="pointer-events-none -translate-x-1/2 -translate-y-5 text-[11px] font-bold font-mono select-none"
+                                style={{ color: planet.color, textShadow: `0 0 6px ${planet.color}` }}
+                            >
+                                {planet.symbol}
+                            </div>
+                        )
+                    }
+                </Html>
+            )}
         </group>
     );
 }
@@ -837,6 +843,8 @@ export default function Planets() {
         const planets = PLANET_CONFIGS.map(cfg => {
             try {
                 const eq = Astronomy.Equator(cfg.body, time, bs, true, true);
+                const hor = Astronomy.Horizon(time, bs, eq.ra, eq.dec, 'normal');
+                const isAboveHorizon = hor.altitude > horizonAltitudeAtAzimuth(terrainHorizonRef.current, hor.azimuth);
                 return {
                     ...cfg,
                     ra: eq.ra * 15,
@@ -846,6 +854,7 @@ export default function Planets() {
                     symbol: cfg.symbol,
                     pos: equatorialTo3D(eq.ra * 15, eq.dec, PLANET_RADIUS) as [number, number, number],
                     basis: planetBasis(cfg.body, time),
+                    isAboveHorizon,
                 } as PlanetData;
             } catch { return null; }
         }).filter((p): p is PlanetData => p !== null);

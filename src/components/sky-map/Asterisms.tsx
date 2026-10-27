@@ -42,7 +42,7 @@ export default function Asterisms() {
                     dashScale={32}
                     dashSize={1.1}
                     gapSize={0.8}
-                    depthTest={false}
+                    depthTest={true}
                     depthWrite={false}
                 />
             ))}
