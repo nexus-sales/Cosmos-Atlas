@@ -3,6 +3,8 @@
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
+import { starDayDimming } from '@/lib/astronomy/skyBrightness';
+import { sunHorRef } from '@/lib/skyRefs';
 import { StarOctree } from '@/lib/astronomy/Octree';
 import { useAppStore } from '@/stores/useAppStore';
 
@@ -22,6 +24,7 @@ const vertexShader = `
 const fragmentShader = `
   varying vec3 vColor;
   uniform bool uNightMode;
+  uniform float uDayDim;
 
   void main() {
     vec2 uv = gl_PointCoord - 0.5;
@@ -35,7 +38,7 @@ const fragmentShader = `
     }
 
     float core = exp(-r * 5.0);
-    float alpha = clamp(core, 0.0, 0.8);
+    float alpha = clamp(core, 0.0, 0.8) * uDayDim;
     gl_FragColor = vec4(outColor, alpha);
   }
 `;
@@ -132,7 +135,7 @@ export default function BackgroundStars() {
         const mat = new THREE.ShaderMaterial({
             vertexShader,
             fragmentShader,
-            uniforms: { uNightMode: { value: nightMode } },
+            uniforms: { uNightMode: { value: nightMode }, uDayDim: { value: 1 } },
             transparent: true,
             depthWrite: false,
             blending: THREE.AdditiveBlending
@@ -147,6 +150,8 @@ export default function BackgroundStars() {
         if (!pointsRef.current) return;
 
         material.uniforms.uNightMode.value = nightMode;
+        // El fondo de estrellas débiles desaparece del todo con el Sol alto.
+        material.uniforms.uDayDim.value = starDayDimming(sunHorRef.alt, 0);
 
         const now = state.clock.getElapsedTime();
         const cameraMoved =

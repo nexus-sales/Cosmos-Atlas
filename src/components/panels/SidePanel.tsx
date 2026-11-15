@@ -99,7 +99,7 @@ function PanelContent({
                             )}
                         >
                             <Icon className="w-4 h-4" />
-                            <span className="text-[10px] font-bold tracking-[0.2em]">{tab.label}</span>
+                            <span className="text-[11px] font-bold tracking-[0.2em]">{tab.label}</span>
                             {isActive && <div className="absolute bottom-0 left-[20%] right-[20%] h-[3px] bg-blue-500 rounded-t-full shadow-[0_0_12px_rgba(59,130,246,0.8)]" />}
                         </button>
                     );
@@ -140,7 +140,7 @@ function PanelContent({
                                     )}
                                 >
                                     <Moon className="w-5 h-5 mb-1" />
-                                    <span className="text-[9px] font-bold tracking-widest uppercase">Nocturno</span>
+                                    <span className="text-[11px] font-bold tracking-widest uppercase">Nocturno</span>
                                 </motion.button>
                                 <motion.button
                                     whileHover={{ scale: 1.02 }}
@@ -152,7 +152,7 @@ function PanelContent({
                                     )}
                                 >
                                     <Crosshair className="w-5 h-5 mb-1" />
-                                    <span className="text-[9px] font-bold tracking-widest uppercase">Seguir</span>
+                                    <span className="text-[11px] font-bold tracking-widest uppercase">Seguir</span>
                                 </motion.button>
                             </div>
 
@@ -176,13 +176,13 @@ function PanelContent({
                                         )}
                                     >
                                         <Icon className="w-3.5 h-3.5 mb-1 opacity-80" />
-                                        <span className="text-[8px] font-bold tracking-wider">{label}</span>
+                                        <span className="text-[11px] font-bold tracking-wider">{label}</span>
                                     </button>
                                 ))}
                             </div>
 
                             <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                                <label htmlFor="sky-culture" className="mb-2 block text-[9px] font-bold uppercase tracking-[0.18em] text-white/45">
+                                <label htmlFor="sky-culture" className="mb-2 block text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">
                                     Lectura del cielo
                                 </label>
                                 <select
@@ -193,11 +193,11 @@ function PanelContent({
                                 >
                                     {SKY_CULTURES.map((culture) => <option key={culture.id} value={culture.id}>{culture.name}</option>)}
                                 </select>
-                                <p className="mt-2 text-[9px] leading-relaxed text-white/40">{skyCulture.tradition}</p>
-                                <p className="mt-1 text-[8px] uppercase tracking-wider text-blue-300/55">
+                                <p className="mt-2 text-[11px] leading-relaxed text-white/40">{skyCulture.tradition}</p>
+                                <p className="mt-1 text-[11px] uppercase tracking-wider text-blue-300/55">
                                     {skyCulture.asterisms.length} asterismos · {skyCulture.region}
                                 </p>
-                                <p className="mt-1 truncate text-[8px] text-white/25" title={skyCulture.sources.join(' · ')}>
+                                <p className="mt-1 truncate text-[11px] text-white/25" title={skyCulture.sources.join(' · ')}>
                                     Fuente: {skyCulture.sources[0]}
                                 </p>
                             </div>
@@ -219,7 +219,7 @@ function PanelContent({
                                         )}
                                     >
                                         <Icon className="w-4 h-4 mb-1" />
-                                        <span className="text-[8px] font-bold tracking-wider">{label}</span>
+                                        <span className="text-[11px] font-bold tracking-wider">{label}</span>
                                     </button>
                                 ))}
                             </div>
@@ -235,7 +235,7 @@ function PanelContent({
                                     </button>
                                 ))}
                             </div>
-                            <div className="text-[10px] text-blue-400/60 font-medium uppercase tracking-[0.1em] text-center bg-blue-500/5 py-1 rounded">
+                            <div className="text-[11px] text-blue-400/60 font-medium uppercase tracking-[0.1em] text-center bg-blue-500/5 py-1 rounded">
                                 {bortleScale <= 2 ? "Cielo Primigenio" : bortleScale <= 4 ? "Rural" : bortleScale <= 6 ? "Suburbano" : "Ciudad Muy Brillante"}
                             </div>
                         </div>
@@ -244,13 +244,13 @@ function PanelContent({
                     <AccordionSection title="Satélites" icon={<Satellite className="w-4 h-4" />} isOpen={satellitesOpen} onToggle={() => setSatellitesOpen(!satellitesOpen)}>
                         <div className="grid grid-cols-2 gap-2">
                             <div className="atlas-card rounded-lg p-2">
-                                <div className="flex items-center gap-2 text-[10px] font-bold text-white/70 mb-1">
+                                <div className="flex items-center gap-2 text-[11px] font-bold text-white/70 mb-1">
                                     <div className="w-2 h-2 rounded-full bg-white shadow-[0_0_6px_white]" /> ISS/HUBBLE
                                 </div>
                                 <div className="text-[11px] text-blue-300 font-mono">{satelliteInfo.visibleSpecial} visibles</div>
                             </div>
                             <div className="atlas-card rounded-lg p-2">
-                                <div className="flex items-center gap-2 text-[10px] font-bold text-white/70 mb-1">
+                                <div className="flex items-center gap-2 text-[11px] font-bold text-white/70 mb-1">
                                     <div className="w-2 h-2 rounded-full bg-[#4ade80] shadow-[0_0_6px_#4ade80]" /> STARLINK
                                 </div>
                                 <div className="text-[11px] text-blue-300 font-mono">{satelliteInfo.visibleStarlink} visibles</div>
@@ -262,7 +262,7 @@ function PanelContent({
                         <AccordionSection title="Ajustes de Captura" icon={<Camera className="w-4 h-4" />} isOpen={fovOpen} onToggle={() => setFovOpen(!fovOpen)}>
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <div className="flex justify-between text-[10px] font-mono text-white/60">
+                                    <div className="flex justify-between text-[11px] font-mono text-white/60">
                                         <span>Distancia Focal</span>
                                         <span className="text-blue-400 font-bold">{focalLength}mm</span>
                                     </div>
@@ -279,8 +279,8 @@ function PanelContent({
                                     />
                                 </div>
                                 <div className="flex gap-2">
-                                    <button onClick={() => setFOVParams({ sensorWidth: 36, sensorHeight: 24 })} className="flex-1 py-1.5 rounded-lg text-[9px] font-bold bg-white/5 border border-white/10 text-white/40 hover:text-white shadow-sm transition-all cursor-pointer">Full Frame</button>
-                                    <button onClick={() => setFOVParams({ sensorWidth: 23.6, sensorHeight: 15.6 })} className="flex-1 py-1.5 rounded-lg text-[9px] font-bold bg-white/5 border border-white/10 text-white/40 hover:text-white shadow-sm transition-all cursor-pointer">APS-C</button>
+                                    <button onClick={() => setFOVParams({ sensorWidth: 36, sensorHeight: 24 })} className="flex-1 py-1.5 rounded-lg text-[11px] font-bold bg-white/5 border border-white/10 text-white/40 hover:text-white shadow-sm transition-all cursor-pointer">Full Frame</button>
+                                    <button onClick={() => setFOVParams({ sensorWidth: 23.6, sensorHeight: 15.6 })} className="flex-1 py-1.5 rounded-lg text-[11px] font-bold bg-white/5 border border-white/10 text-white/40 hover:text-white shadow-sm transition-all cursor-pointer">APS-C</button>
                                 </div>
                             </div>
                         </AccordionSection>
@@ -311,7 +311,7 @@ function PanelContent({
 
             {/* Footer */}
             <div className="mt-auto border-t border-white/10 p-4 shrink-0 bg-black/40">
-                <div className="flex items-center justify-between text-[10px] font-bold tracking-[0.2em] uppercase">
+                <div className="flex items-center justify-between text-[11px] font-bold tracking-[0.2em] uppercase">
                     <span className="text-white/20">SISTEMA ATLAS</span>
                     <span className="flex items-center gap-1.5 text-emerald-500">
                         <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" /> ONLINE
@@ -530,7 +530,7 @@ function PrivacyControls() {
         window.location.reload();
     };
     return (
-        <div className="space-y-3 text-[9px] leading-relaxed text-white/45">
+        <div className="space-y-3 text-[11px] leading-relaxed text-white/45">
             <p>El diario, los ajustes y el historial se guardan solo en este navegador. La ubicación aproximada se usa para calcular el cielo y el relieve; las consultas de nombres, catálogos y terreno pasan por el servidor hacia sus proveedores.</p>
             <p>Solo se envía una pregunta a OpenAI cuando utilizas expresamente el Astrónomo IA. No se envía el diario.</p>
             <button onClick={clearLocalData} className="w-full rounded-lg border border-red-400/25 bg-red-500/10 px-3 py-2 font-bold uppercase tracking-wider text-red-300 hover:bg-red-500/20">
@@ -554,7 +554,7 @@ function AccordionSection({ title, icon, isOpen, onToggle, children }: { title: 
             >
                 <div className="flex items-center gap-3">
                     <span className={cn("transition-colors", isOpen ? "text-blue-400" : "text-white/30")}>{icon}</span>
-                    <span className={cn("text-[10px] font-bold tracking-widest uppercase transition-colors", isOpen ? "text-white" : "text-white/40")}>{title}</span>
+                    <span className={cn("text-[11px] font-bold tracking-widest uppercase transition-colors", isOpen ? "text-white" : "text-white/40")}>{title}</span>
                 </div>
                 <ChevronDown className={cn("w-4 h-4 text-white/20 transition-transform duration-300", isOpen ? "rotate-180 text-blue-400/50" : "")} />
             </button>

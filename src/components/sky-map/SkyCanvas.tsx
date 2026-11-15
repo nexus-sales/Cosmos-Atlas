@@ -44,6 +44,7 @@ import { cameraHeadingRef, cameraRef, moonHorRef, sunHorRef } from '@/lib/skyRef
 import { ocularExposureTarget } from '@/lib/astronomy/skyBrightness';
 import { computeMagneticDeclination } from '@/lib/astronomy/magneticDeclination';
 import { calibrateArToTarget } from '@/lib/astronomy/arCalibration';
+import { useBootStore } from '@/stores/useBootStore';
 import { describeTargetDirection, isPlausibleElevationCorrection, listArAlignmentTargets, type ArAlignmentTarget } from '@/lib/astronomy/arAlignmentTargets';
 import * as Astronomy from 'astronomy-engine';
 
@@ -357,6 +358,19 @@ function OrientationDriver() {
  * Actualiza cameraRef y cameraHeadingRef en cada frame para que
  * componentes fuera del Canvas (Compass) puedan acceder a la cámara.
  */
+// Va el último dentro del <Suspense>: solo se monta cuando las texturas y el
+// resto de la escena han resuelto. Tras dos frames pintados avisa a la portada.
+function SceneReady() {
+    const markDone = useBootStore((state) => state.markDone);
+    const framesRef = useRef(0);
+    useFrame(() => {
+        if (framesRef.current > 2) return;
+        framesRef.current += 1;
+        if (framesRef.current === 2) markDone('scene');
+    });
+    return null;
+}
+
 function CameraSync() {
     const { camera } = useThree();
     useEffect(() => { cameraRef.current = camera; }, [camera]);
@@ -598,6 +612,7 @@ export default function SkyCanvas() {
                     {/* FOVOverlay maneja su propio Html wrapper internamente */}
                     <FOVOverlay />
                     <CameraSync />
+                    <SceneReady />
                 </Suspense>
             </Canvas>
 

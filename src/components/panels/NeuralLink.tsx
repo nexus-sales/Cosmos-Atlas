@@ -33,11 +33,11 @@ export default function NeuralLink() {
                         <div className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
                             <Cpu className="w-4 h-4 text-blue-400" />
                         </div>
-                        <span className="text-[9px] font-bold tracking-widest text-white/50 uppercase">Datos Locales</span>
+                        <span className="text-[11px] font-bold tracking-widest text-white/50 uppercase">Datos Locales</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        <span className="font-mono text-[8px] tracking-widest text-white/50 uppercase">
+                        <span className="font-mono text-[11px] tracking-widest text-white/50 uppercase">
                             Guardado local
                         </span>
                     </div>
@@ -47,27 +47,27 @@ export default function NeuralLink() {
                     <div className="atlas-card p-2 rounded-lg">
                         <div className="flex items-center gap-1.5 mb-1">
                             <HardDrive className="w-3 h-3 text-emerald-400" />
-                            <span className="text-[8px] text-white/40 font-bold uppercase tracking-tighter">Storage</span>
+                            <span className="text-[11px] text-white/40 font-bold uppercase tracking-tighter">Storage</span>
                         </div>
-                        <div className="font-mono text-[10px] text-white/80 font-bold">
+                        <div className="font-mono text-[11px] text-white/80 font-bold">
                             ON DEVICE
                         </div>
                     </div>
                     <div className="atlas-card p-2 rounded-lg">
                         <div className="flex items-center gap-1.5 mb-1">
                             <Zap className="w-3 h-3 text-blue-400" />
-                            <span className="text-[8px] text-white/40 font-bold uppercase tracking-tighter">Rank</span>
+                            <span className="text-[11px] text-white/40 font-bold uppercase tracking-tighter">Rank</span>
                         </div>
-                        <div className={`font-mono text-[10px] font-black ${rankColor}`}>
+                        <div className={`font-mono text-[11px] font-black ${rankColor}`}>
                             {rank}
                         </div>
                     </div>
                 </div>
 
-                <div className="atlas-card p-3 rounded-lg font-mono text-[9px] min-h-[60px] flex flex-col gap-1">
+                <div className="atlas-card p-3 rounded-lg font-mono text-[11px] min-h-[60px] flex flex-col gap-1">
                     <div className="flex items-center gap-2 text-white/20">
                         <TerminalIcon className="w-3 h-3" />
-                        <span className="text-[7px]">STORAGE_LOG</span>
+                        <span className="text-[11px]">STORAGE_LOG</span>
                     </div>
                     <div className="text-blue-400/60">
                         {`> STORAGE: [LOCAL_ONLY]`}
@@ -85,7 +85,7 @@ export default function NeuralLink() {
                             className="bg-purple-500/10 border border-purple-500/20 p-2 rounded-lg flex items-center justify-center gap-2"
                         >
                             <Zap className="w-3 h-3 text-purple-400 animate-pulse" />
-                            <span className="text-[9px] font-black text-purple-300 tracking-[2px] uppercase">
+                            <span className="text-[11px] font-black text-purple-300 tracking-[2px] uppercase">
                                 Warp Drive Engaged
                             </span>
                         </motion.div>

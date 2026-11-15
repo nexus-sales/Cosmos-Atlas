@@ -152,8 +152,8 @@ export default function SolarSystemMap({ onClose }: { onClose: () => void }) {
                 if (index === 0) ctx.moveTo(screen.x, screen.y); else ctx.lineTo(screen.x, screen.y);
             });
             ctx.closePath();
-            ctx.strokeStyle = `${planet.color}35`;
-            ctx.lineWidth = 0.8;
+            ctx.strokeStyle = `${planet.color}66`;
+            ctx.lineWidth = 1;
             ctx.stroke();
         });
 
@@ -272,11 +272,20 @@ export default function SolarSystemMap({ onClose }: { onClose: () => void }) {
                 ctx.stroke();
             }
 
-            // Nombre en desktop (sin símbolo para no aglomerar)
-            ctx.fillStyle = `${cfg.color}cc`;
-            ctx.font = '9px monospace';
+            // Nombre legible en vez del símbolo astronómico. Se alterna arriba y
+            // abajo para que los planetas interiores, muy juntos, no se pisen.
+            const labelBelow = PLANETS.indexOf(cfg) % 2 === 1;
+            ctx.fillStyle = `${cfg.color}ee`;
+            ctx.font = '600 12px system-ui, sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText(cfg.symbol, sx, sy - displaySize - 3);
+            ctx.textBaseline = labelBelow ? 'top' : 'alphabetic';
+            // Pegados al Sol los nombres se amontonan: ahí solo se rotula el
+            // planeta seleccionado (el resto se identifica con el hover).
+            const crowded = Math.hypot(sx - projectedSun.x, sy - projectedSun.y) < 48;
+            if (!crowded || cfg.name === selectedPlanet?.name) {
+                ctx.fillText(cfg.name, sx, labelBelow ? sy + displaySize + 5 : sy - displaySize - 5);
+            }
+            ctx.textBaseline = 'alphabetic';
 
             if (cfg.name === 'Júpiter' && selectedPlanet?.name === 'Júpiter' && focusDetailMode === 'moons' && cameraEase > 0.85) {
                 const jupiterRadiusPx = displaySize / 2;
@@ -554,7 +563,7 @@ export default function SolarSystemMap({ onClose }: { onClose: () => void }) {
                                 key={mode}
                                 onClick={() => setScaleMode(mode)}
                                 className={cn(
-                                    'rounded px-2 py-1 text-[8px] font-bold uppercase tracking-wider',
+                                    'rounded px-2 py-1 text-[11px] font-bold uppercase tracking-wider',
                                     scaleMode === mode ? 'bg-blue-500/20 text-blue-200' : 'text-white/35'
                                 )}
                             >
@@ -564,7 +573,7 @@ export default function SolarSystemMap({ onClose }: { onClose: () => void }) {
                     </div>
                     <button
                         onClick={() => setDisplayTime(new Date(displayTime.getTime() - timeStepMs))}
-                        className="px-2.5 py-1 rounded text-[10px] font-mono border"
+                        className="px-2.5 py-1 rounded text-[11px] font-mono border"
                         style={{ borderColor: `${fg}44`, color: `${fg}99` }}
                         aria-label={moonSystemActive ? 'Retroceder 6 horas' : 'Retroceder 30 días'}
                     >
@@ -572,7 +581,7 @@ export default function SolarSystemMap({ onClose }: { onClose: () => void }) {
                     </button>
                     <button
                         onClick={() => setPlaying(p => !p)}
-                        className="px-3 py-1 rounded text-[10px] font-mono font-bold border"
+                        className="px-3 py-1 rounded text-[11px] font-mono font-bold border"
                         style={{ borderColor: fg, color: fg }}
                         aria-pressed={playing}
                     >
@@ -582,13 +591,13 @@ export default function SolarSystemMap({ onClose }: { onClose: () => void }) {
                         value={simulationRateIndex}
                         onChange={(event) => setSimulationRateIndex(Number(event.target.value))}
                         aria-label="Velocidad de simulación"
-                        className="rounded border border-white/10 bg-[#07101d] px-2 py-1 text-[9px] font-mono text-white/55 outline-none"
+                        className="rounded border border-white/10 bg-[#07101d] px-2 py-1 text-[11px] font-mono text-white/55 outline-none"
                     >
                         {SIMULATION_RATES.map((rate, index) => <option key={rate.label} value={index}>{rate.label}</option>)}
                     </select>
                     <button
                         onClick={() => setDisplayTime(new Date(displayTime.getTime() + timeStepMs))}
-                        className="px-2.5 py-1 rounded text-[10px] font-mono border"
+                        className="px-2.5 py-1 rounded text-[11px] font-mono border"
                         style={{ borderColor: `${fg}44`, color: `${fg}99` }}
                         aria-label={moonSystemActive ? 'Avanzar 6 horas' : 'Avanzar 30 días'}
                     >
@@ -596,14 +605,14 @@ export default function SolarSystemMap({ onClose }: { onClose: () => void }) {
                     </button>
                     <button
                         onClick={() => { setPlaying(false); setDisplayTime(storeTime); }}
-                        className="px-2.5 py-1 rounded text-[10px] font-mono border"
+                        className="px-2.5 py-1 rounded text-[11px] font-mono border"
                         style={{ borderColor: `${fg}44`, color: `${fg}99` }}
                     >
                         HOY
                     </button>
                     <button
                         onClick={onClose}
-                        className="ml-2 px-3 py-1 rounded text-[10px] font-mono font-bold border border-white/20 text-white/50"
+                        className="ml-2 px-3 py-1 rounded text-[11px] font-mono font-bold border border-white/20 text-white/50"
                     >
                         ✕ CERRAR
                     </button>
@@ -633,10 +642,10 @@ export default function SolarSystemMap({ onClose }: { onClose: () => void }) {
 
                 {journeyProgress > 0.02 && (
                     <div className="absolute left-1/2 top-4 z-20 flex -translate-x-1/2 items-center gap-3 rounded-full border border-blue-400/20 bg-[#07101d]/90 px-4 py-2 font-mono shadow-xl backdrop-blur-xl">
-                        <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-blue-200">
+                        <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-blue-200">
                             {journeyProgress < 1 ? 'Transición de cámara' : `Vista enfocada · ${selectedPlanet?.name ?? ''}`}
                         </span>
-                        <button onClick={returnToSystem} className="rounded border border-white/15 px-2 py-1 text-[8px] font-bold uppercase tracking-wider text-white/60 hover:text-white">
+                        <button onClick={returnToSystem} className="rounded border border-white/15 px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-white/60 hover:text-white">
                             Volver al sistema
                         </button>
                     </div>
@@ -647,9 +656,9 @@ export default function SolarSystemMap({ onClose }: { onClose: () => void }) {
                         <div className="flex items-start gap-3">
                             <div className="text-2xl" style={{ color: selectedPlanet.color }}>{selectedPlanet.symbol}</div>
                             <div className="min-w-0 flex-1">
-                                <div className="text-[9px] uppercase tracking-widest text-white/35">Destino seleccionado</div>
+                                <div className="text-[11px] uppercase tracking-widest text-white/35">Destino seleccionado</div>
                                 <div className="text-sm font-bold" style={{ color: selectedPlanet.color }}>{selectedPlanet.name}</div>
-                                <div className="mt-1 grid grid-cols-2 gap-2 text-[9px] text-white/55">
+                                <div className="mt-1 grid grid-cols-2 gap-2 text-[11px] text-white/55">
                                     <span>Tierra: {selectedDistance.toFixed(3)} UA</span>
                                     <span>Luz: {lightTimeMinutes(selectedDistance).toFixed(1)} min</span>
                                 </div>
@@ -657,7 +666,7 @@ export default function SolarSystemMap({ onClose }: { onClose: () => void }) {
                             <button onClick={() => { setSelectedPlanet(null); setJourneyProgress(0); }} className="text-white/35 hover:text-white" aria-label="Cerrar destino">✕</button>
                         </div>
                         {selectedInfo && (
-                            <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 border-t border-white/8 pt-3 text-[9px] sm:grid-cols-3">
+                            <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 border-t border-white/8 pt-3 text-[11px] sm:grid-cols-3">
                                 <span className="text-white/35">Diámetro <strong className="block text-white/70">{selectedInfo.radiusKm ? `${(selectedInfo.radiusKm * 2).toLocaleString('es-ES')} km` : 'Sin dato'}</strong></span>
                                 <span className="text-white/35">Gravedad <strong className="block text-white/70">{selectedInfo.gravityMs2 !== undefined ? `${selectedInfo.gravityMs2} m/s²` : 'Sin dato'}</strong></span>
                                 <span className="text-white/35">Rotación <strong className="block text-white/70">{selectedInfo.rotationPeriodHours !== undefined ? `${Math.abs(selectedInfo.rotationPeriodHours).toLocaleString('es-ES')} h${selectedInfo.rotationPeriodHours < 0 ? ' retrógrada' : ''}` : 'Sin dato'}</strong></span>
@@ -671,11 +680,11 @@ export default function SolarSystemMap({ onClose }: { onClose: () => void }) {
                         {(selectedPlanet.name === 'Júpiter' || selectedPlanet.name === 'Tierra') && journeyProgress >= 0.98 && (
                             <>
                                 <div className="mt-3 flex rounded-lg border border-white/10 p-0.5">
-                                    <button onClick={() => setFocusDetailMode('planet')} className={cn('flex-1 rounded py-1.5 text-[8px] font-bold uppercase tracking-wider', focusDetailMode === 'planet' ? 'bg-blue-500/20 text-blue-200' : 'text-white/35')}>Planeta</button>
-                                    <button onClick={() => setFocusDetailMode('moons')} className={cn('flex-1 rounded py-1.5 text-[8px] font-bold uppercase tracking-wider', focusDetailMode === 'moons' ? 'bg-blue-500/20 text-blue-200' : 'text-white/35')}>Sistema de lunas</button>
+                                    <button onClick={() => setFocusDetailMode('planet')} className={cn('flex-1 rounded py-1.5 text-[11px] font-bold uppercase tracking-wider', focusDetailMode === 'planet' ? 'bg-blue-500/20 text-blue-200' : 'text-white/35')}>Planeta</button>
+                                    <button onClick={() => setFocusDetailMode('moons')} className={cn('flex-1 rounded py-1.5 text-[11px] font-bold uppercase tracking-wider', focusDetailMode === 'moons' ? 'bg-blue-500/20 text-blue-200' : 'text-white/35')}>Sistema de lunas</button>
                                 </div>
                                 {focusDetailMode === 'moons' && (
-                                    <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[8px] text-white/45">
+                                    <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[11px] text-white/45">
                                         {selectedPlanet.name === 'Júpiter' && galileanMoons.map((moon) => (
                                             <span key={moon.id} className={cn(moon.phenomenon === 'transit' && 'text-blue-300', moon.phenomenon === 'occulted' && 'text-amber-300/70')}>
                                                 {moon.name}: {moon.phenomenon === 'transit' ? 'en tránsito' : moon.phenomenon === 'occulted' ? 'oculta' : `${Math.abs(moon.xJupiterRadii).toFixed(1)} Rj`}
@@ -696,15 +705,15 @@ export default function SolarSystemMap({ onClose }: { onClose: () => void }) {
                             </>
                         )}
                         {journeyProgress < 0.98 ? (
-                            <button onClick={startVisualJourney} className="mt-3 w-full rounded-lg border border-blue-400/25 bg-blue-500/10 py-2 text-[9px] font-bold uppercase tracking-[0.16em] text-blue-300 hover:bg-blue-500/20">
+                            <button onClick={startVisualJourney} className="mt-3 w-full rounded-lg border border-blue-400/25 bg-blue-500/10 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-blue-300 hover:bg-blue-500/20">
                                 Abrir vista enfocada
                             </button>
                         ) : (
-                            <button onClick={returnToSystem} className="mt-3 w-full rounded-lg border border-white/15 bg-white/5 py-2 text-[9px] font-bold uppercase tracking-[0.16em] text-white/60 hover:bg-white/10">
+                            <button onClick={returnToSystem} className="mt-3 w-full rounded-lg border border-white/15 bg-white/5 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-white/60 hover:bg-white/10">
                                 Volver al sistema completo
                             </button>
                         )}
-                        <p className="mt-1.5 text-center text-[8px] text-white/30">Movimiento de cámara sobre el mapa 2D. {focusDetailMode === 'moons' ? (selectedPlanet.name === 'Tierra' ? 'Posición y separación calculadas; discos ampliados para ser visibles.' : 'Posiciones y separaciones calculadas; discos ampliados. Sombra geométrica sin penumbra.') : `Disco ampliado; ${selectedPlanet.name === 'Tierra' ? 'representación procedural' : 'textura visual'} no orientada. Polo y W calculados con elementos IAU 2015.`}</p>
+                        <p className="mt-1.5 text-center text-[11px] text-white/30">Movimiento de cámara sobre el mapa 2D. {focusDetailMode === 'moons' ? (selectedPlanet.name === 'Tierra' ? 'Posición y separación calculadas; discos ampliados para ser visibles.' : 'Posiciones y separaciones calculadas; discos ampliados. Sombra geométrica sin penumbra.') : `Disco ampliado; ${selectedPlanet.name === 'Tierra' ? 'representación procedural' : 'textura visual'} no orientada. Polo y W calculados con elementos IAU 2015.`}</p>
                     </div>
                 )}
 
@@ -721,7 +730,7 @@ export default function SolarSystemMap({ onClose }: { onClose: () => void }) {
                         }}
                     >
                         <div className="font-bold">{hoveredPlanet.symbol} {hoveredPlanet.name}</div>
-                        <div className="text-[9px] opacity-60 mt-0.5">
+                        <div className="text-[11px] opacity-60 mt-0.5">
                             {hoveredPlanet.au.toFixed(3)} UA del Sol
                         </div>
                     </div>
@@ -729,7 +738,7 @@ export default function SolarSystemMap({ onClose }: { onClose: () => void }) {
 
                 {/* Leyenda escala */}
                 <div
-                    className="absolute bottom-4 right-4 text-[9px] font-mono opacity-30"
+                    className="absolute bottom-4 right-4 text-[11px] font-mono opacity-30"
                     style={{ color: fg }}
                 >
                     Escala {scaleMode === 'physical' ? 'física lineal' : 'educativa logarítmica'} · Plano eclíptico · Órbitas reales

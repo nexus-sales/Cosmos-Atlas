@@ -109,7 +109,7 @@ export default function PassportTab() {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-[12px] font-bold text-white/80">{obj.name}</p>
-                                    <p className="text-[10px] text-white/30 truncate">{'constellation' in obj ? obj.constellation : obj.type}</p>
+                                    <p className="text-[11px] text-white/30 truncate">{'constellation' in obj ? obj.constellation : obj.type}</p>
                                 </div>
                             </button>
                         ))}
@@ -128,7 +128,7 @@ export default function PassportTab() {
                         <button 
                             key={obj.name}
                             onClick={() => setTargetedObject(obj)}
-                            className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] text-white/60 hover:text-white hover:border-white/30 transition-all"
+                            className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[11px] text-white/60 hover:text-white hover:border-white/30 transition-all"
                         >
                             {obj.name}
                         </button>
@@ -165,7 +165,7 @@ function AchievementCard({ title, desc, progress, icon, completed, stat }: {
                 <div className="flex-1 space-y-1">
                     <div className="flex justify-between items-start">
                         <h4 className={cn("text-[13px] font-bold", completed ? "text-yellow-400" : "text-white/80")}>{title}</h4>
-                        {stat && <span className="text-[10px] font-mono text-white/30">{stat}</span>}
+                        {stat && <span className="text-[11px] font-mono text-white/30">{stat}</span>}
                     </div>
                     <p className="text-[11px] text-white/40 leading-snug">{desc}</p>
                     
@@ -181,7 +181,7 @@ function AchievementCard({ title, desc, progress, icon, completed, stat }: {
             </div>
             {completed && (
                 <div className="absolute top-0 right-0 p-1">
-                    <div className="animate-pulse bg-yellow-500/20 rounded-bl-lg px-2 py-0.5 text-[8px] font-black text-yellow-500 uppercase tracking-tighter">
+                    <div className="animate-pulse bg-yellow-500/20 rounded-bl-lg px-2 py-0.5 text-[11px] font-black text-yellow-500 uppercase tracking-tighter">
                         Desbloqueado
                     </div>
                 </div>

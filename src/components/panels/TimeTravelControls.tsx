@@ -177,7 +177,7 @@ export default function TimeTravelControls({ embedded = false }: { embedded?: bo
                             title="Línea de tiempo"
                             className="w-full cursor-pointer accent-blue-500"
                         />
-                        <div className="flex justify-between text-[8px] text-white/20 font-mono mt-0.5">
+                        <div className="flex justify-between text-[11px] text-white/20 font-mono mt-0.5">
                             <span>−10 años</span>
                             <span>HOY</span>
                             <span>+10 años</span>
@@ -190,7 +190,7 @@ export default function TimeTravelControls({ embedded = false }: { embedded?: bo
                                     key={p.label}
                                     onClick={() => handlePreset(p.days)}
                                     aria-label={`Retroceder ${p.label.slice(1)}`}
-                                    className="text-[9px] font-mono text-white/35 hover:text-blue-400 transition-all px-2 py-1 rounded-lg border border-white/10 hover:border-blue-500/40 hover:bg-blue-500/5"
+                                    className="text-[11px] font-mono text-white/35 hover:text-blue-400 transition-all px-2 py-1 rounded-lg border border-white/10 hover:border-blue-500/40 hover:bg-blue-500/5"
                                 >
                                     {p.label}
                                 </button>
@@ -217,7 +217,7 @@ export default function TimeTravelControls({ embedded = false }: { embedded?: bo
                                     key={`fwd-${p.label}`}
                                     onClick={() => handlePreset(-p.days)}
                                     aria-label={`Avanzar ${p.label.slice(1)}`}
-                                    className="text-[9px] font-mono text-white/35 hover:text-blue-400 transition-all px-2 py-1 rounded-lg border border-white/10 hover:border-blue-500/40 hover:bg-blue-500/5"
+                                    className="text-[11px] font-mono text-white/35 hover:text-blue-400 transition-all px-2 py-1 rounded-lg border border-white/10 hover:border-blue-500/40 hover:bg-blue-500/5"
                                 >
                                     +{p.label.slice(1)}
                                 </button>
@@ -227,7 +227,7 @@ export default function TimeTravelControls({ embedded = false }: { embedded?: bo
                         {/* Selector de velocidad + botón de tiempo real */}
                         <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-white/10">
                             <div className="flex items-center gap-1" role="group" aria-label="Velocidad de reproducción">
-                                <span className="text-[8px] text-white/20 font-mono tracking-widest uppercase mr-1.5" aria-hidden="true">
+                                <span className="text-[11px] text-white/20 font-mono tracking-widest uppercase mr-1.5" aria-hidden="true">
                                     VEL:
                                 </span>
                                 {SPEEDS.map((s, i) => {
@@ -239,7 +239,7 @@ export default function TimeTravelControls({ embedded = false }: { embedded?: bo
                                             aria-label={`Velocidad ${s.label}`}
                                             {...(speedIdx === i ? { 'aria-pressed': true } : { 'aria-pressed': false })}
                                             className={cn(
-                                                'text-[8px] font-mono px-1.5 py-0.5 rounded border transition-all',
+                                                'text-[11px] font-mono px-1.5 py-0.5 rounded border transition-all',
                                                 isPressed
                                                     ? 'text-blue-400 border-blue-500/50 bg-blue-500/10'
                                                     : 'text-white/25 border-white/10 hover:text-white/50 hover:border-white/20'
@@ -252,7 +252,7 @@ export default function TimeTravelControls({ embedded = false }: { embedded?: bo
                             </div>
                             <button
                                 onClick={goLive}
-                                className="flex items-center gap-1.5 text-[9px] font-mono font-bold text-emerald-400 hover:text-emerald-300 px-2.5 py-1.5 rounded-lg border border-emerald-500/30 hover:border-emerald-400/50 hover:bg-emerald-500/5 transition-all"
+                                className="flex items-center gap-1.5 text-[11px] font-mono font-bold text-emerald-400 hover:text-emerald-300 px-2.5 py-1.5 rounded-lg border border-emerald-500/30 hover:border-emerald-400/50 hover:bg-emerald-500/5 transition-all"
                             >
                                 <RotateCcw className="w-2.5 h-2.5" />
                                 AHORA
@@ -277,7 +277,7 @@ export default function TimeTravelControls({ embedded = false }: { embedded?: bo
                 )}
             >
                 <Clock className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-mono font-bold tracking-widest uppercase">
+                <span className="text-[11px] font-mono font-bold tracking-widest uppercase">
                     {isLive ? 'Tiempo Real' : `Viaje Temporal  ${formatOffset()}`}
                 </span>
                 {isLive && (

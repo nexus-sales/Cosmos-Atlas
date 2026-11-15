@@ -57,9 +57,9 @@ export default function Header({ onRequestLocation }: HeaderProps) {
 
     const formatDate = (date: Date) => {
         return date.toLocaleDateString('es-ES', {
-            weekday: 'long',
+            weekday: 'short',
             day: 'numeric',
-            month: 'long',
+            month: 'short',
         });
     };
 
@@ -120,7 +120,7 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                     </button>
                     
                     <div className="hidden lg:flex flex-col ml-2 text-left">
-                        <div className="flex items-center gap-2 text-[10px] text-white/60 tracking-[0.2em] uppercase mb-0.5 font-semibold">
+                        <div className="flex items-center gap-2 text-[11px] text-white/60 tracking-[0.2em] uppercase mb-0.5 font-semibold">
                             <MapPin className="w-3 h-3" />
                             Ubicación
                         </div>
@@ -137,7 +137,7 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                             onClick={() => setIsTourActive(!isTourActive)}
                             title={isTourActive ? 'Detener tour' : 'Tour del cielo'}
                             className={cn(
-                                'flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all',
+                                'flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-bold tracking-widest uppercase transition-all',
                                 isTourActive
                                     ? 'bg-blue-500/20 text-blue-300'
                                     : 'text-white/60 hover:bg-white/[0.06] hover:text-white'
@@ -150,7 +150,7 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                         <button
                             onClick={openSolarSystem}
                             title="Sistema Solar"
-                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all text-white/60 hover:bg-white/[0.06] hover:text-white"
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-bold tracking-widest uppercase transition-all text-white/60 hover:bg-white/[0.06] hover:text-white"
                         >
                             <CompassIcon className="w-3.5 h-3.5" />
                             <span className="hidden lg:inline">Sistema</span>
@@ -159,7 +159,7 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                         <button
                             onClick={() => setShowScientificSky(true)}
                             title="Vía Láctea científica HiPS"
-                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all text-white/60 hover:bg-white/[0.06] hover:text-cyan-100"
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-bold tracking-widest uppercase transition-all text-white/60 hover:bg-white/[0.06] hover:text-cyan-100"
                         >
                             <Telescope className="w-3.5 h-3.5" />
                             <span className="hidden xl:inline">HiPS</span>
@@ -179,10 +179,10 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                         <div className="text-[17px] md:text-[18px] tabular-nums leading-none font-bold glow-text">
                             {mounted ? formatTime(time) : '--:--:--'}
                         </div>
-                        <div className="hidden md:block text-[10px] text-white/50 uppercase mt-1 tracking-wider font-semibold">
+                        <div className="hidden md:block whitespace-nowrap text-[11px] text-white/50 uppercase mt-1 tracking-wider font-semibold">
                             {isLive ? (mounted ? formatDate(time) : '...') : 'Tiempo real'}
                         </div>
-                        {!isLive && <span className="mt-0.5 text-[8px] font-bold uppercase tracking-widest text-amber-200 md:hidden">Real</span>}
+                        {!isLive && <span className="mt-0.5 text-[11px] font-bold uppercase tracking-widest text-amber-200 md:hidden">Real</span>}
                     </button>
 
                     <div className="flex items-center bg-white/[0.02] border border-white/[0.06] rounded-xl p-1 gap-1">
@@ -190,7 +190,7 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                             onClick={handleARToggle}
                             title={arActive ? 'Desactivar AR' : 'Activar AR'}
                             className={cn(
-                                'flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg text-[9px] font-bold leading-none transition-colors md:h-11 md:w-11',
+                                'flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg text-[11px] font-bold leading-none transition-colors md:h-11 md:w-11',
                                 arActive
                                     ? 'bg-cyan-500/20 text-cyan-200 shadow-[0_0_18px_rgba(34,211,238,0.16)]'
                                     : 'text-white/60 hover:bg-white/[0.08] hover:text-cyan-100'
@@ -204,7 +204,7 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                             onClick={onRequestLocation}
                             title="Activar GPS"
                             className={cn(
-                                'hidden h-10 min-w-10 shrink-0 items-center justify-center gap-1 rounded-lg px-2 text-[9px] font-bold uppercase leading-none transition-colors min-[380px]:flex md:h-11',
+                                'hidden h-10 min-w-10 shrink-0 items-center justify-center gap-1 rounded-lg px-2 text-[11px] font-bold uppercase leading-none transition-colors min-[380px]:flex md:h-11',
                                 geolocation.source === 'gps'
                                     ? 'bg-emerald-500/20 text-emerald-200'
                                     : 'text-white/60 hover:bg-white/[0.08] hover:text-emerald-100'
@@ -248,7 +248,7 @@ export default function Header({ onRequestLocation }: HeaderProps) {
                     <CelestialSearch />
                     <button
                         onClick={() => setSearchOpen(false)}
-                        className="mt-2 w-full rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] py-2 text-[10px] font-bold uppercase tracking-widest text-white/80 transition-colors"
+                        className="mt-2 w-full rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] py-2 text-[11px] font-bold uppercase tracking-widest text-white/80 transition-colors"
                     >
                         Cerrar
                     </button>

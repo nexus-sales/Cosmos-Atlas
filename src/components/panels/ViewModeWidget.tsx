@@ -153,11 +153,11 @@ export default function ViewModeWidget() {
 
     const arStatusText =
         calibrationPhase === 'running'
-            ? `Calibrando... ${calibrationProgress}%`
+            ? `Comprobando sensores… ${calibrationProgress}%`
             : calibrationPhase === 'done'
-                ? 'Calibración completada'
+                ? 'Sensores estables'
                 : calibrationPhase === 'failed'
-                    ? 'Calibración incompleta'
+                    ? 'Sensores inestables'
                     : !isSupported
                         ? 'Este dispositivo no soporta giroscopio.'
                         : needsCalibration
@@ -179,8 +179,9 @@ export default function ViewModeWidget() {
                     scheduleCollapse(8000); // Si no hacen nada en 8s, se oculta de nuevo
                 }}
                 className={cn(
-                    'fixed bottom-20 right-4 z-[80] flex items-center gap-2 px-3 py-2 rounded-full border glass-blur-heavy shadow-xl transition-all active:scale-95 pointer-events-auto md:bottom-6 md:right-6',
-                    sidebarOpen && 'hidden md:flex',
+                    'fixed bottom-20 right-4 z-[80] flex items-center gap-2 px-3 py-2 rounded-full border glass-blur-heavy shadow-xl transition-all active:scale-95 pointer-events-auto md:bottom-6',
+                    // En escritorio el panel lateral mide 52 px plegado y 340 px abierto: no taparlo.
+                    sidebarOpen ? 'hidden md:flex md:right-[356px]' : 'md:right-[68px]',
                     viewMode === 'camera'
                         ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300'
                         : 'bg-blue-600/20 border-blue-500/40 text-blue-300'
@@ -189,7 +190,7 @@ export default function ViewModeWidget() {
                 aria-label="Cambiar modo de vista"
             >
                 {viewMode === 'camera' ? <Camera className="w-3.5 h-3.5" /> : <MapIcon className="w-3.5 h-3.5" />}
-                <span className="text-[10px] font-bold tracking-widest uppercase">
+                <span className="text-[11px] font-bold tracking-widest uppercase">
                     {viewMode === 'camera' ? 'CÁMARA' : 'BÓVEDA'}
                 </span>
                 <ChevronUp className="w-3 h-3 opacity-50" />
@@ -200,14 +201,14 @@ export default function ViewModeWidget() {
     // ── Panel expandido ────────────────────────────────────────────────────────
     return (
         <div className={cn(
-            'fixed bottom-28 right-4 z-[80] flex flex-col items-end gap-3 pointer-events-none md:bottom-6 md:right-6',
-            sidebarOpen && 'hidden md:flex'
+            'fixed bottom-28 right-4 z-[80] flex flex-col items-end gap-3 pointer-events-none transition-[right] md:bottom-6',
+            sidebarOpen ? 'hidden md:flex md:right-[356px]' : 'md:right-[68px]'
         )}>
             <div className="flex bg-black/60 glass-blur-heavy border border-white/10 rounded-full p-1.5 shadow-2xl pointer-events-auto">
                 <button
                     onClick={handleActivateVaultMode}
                     className={cn(
-                        'flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-bold tracking-widest transition-all',
+                        'flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-bold tracking-widest transition-all',
                         viewMode === 'vault'
                             ? 'bg-blue-600/80 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]'
                             : 'text-white/40 hover:text-white/70'
@@ -219,7 +220,7 @@ export default function ViewModeWidget() {
                 <button
                     onClick={handleActivateCameraMode}
                     className={cn(
-                        'flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-bold tracking-widest transition-all',
+                        'flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-bold tracking-widest transition-all',
                         viewMode === 'camera'
                             ? 'bg-cyan-500/80 text-white shadow-[0_0_15px_rgba(34,211,238,0.35)]'
                             : 'text-white/40 hover:text-white/70'
@@ -247,20 +248,20 @@ export default function ViewModeWidget() {
                     </div>
                     <div className="flex flex-col">
                         <span className={cn(
-                            'text-[10px] font-bold tracking-[0.2em] uppercase leading-none mb-1',
+                            'text-[11px] font-bold tracking-[0.2em] uppercase leading-none mb-1',
                             followOrientation ? 'text-cyan-100' : 'text-white/40'
                         )}>
                             {followOrientation ? 'Giroscopio Activo' : 'Giroscopio Apagado'}
                         </span>
-                        <span className="text-[10px] text-white/50 font-mono">{arStatusText}</span>
-                        <span className="text-[10px] text-white/35 font-mono mt-1">{methodText}</span>
+                        <span className="text-[11px] text-white/50 font-mono">{arStatusText}</span>
+                        <span className="text-[11px] text-white/35 font-mono mt-1">{methodText}</span>
                     </div>
                 </div>
             )}
 
             {showCalibrationCard && (
                 <div className="atlas-panel pointer-events-auto max-w-[290px] rounded-2xl px-3.5 py-3">
-                    <p className="text-[10px] text-white/78 uppercase tracking-[0.18em] font-semibold mb-1.5">Calibración Sensores</p>
+                    <p className="text-[11px] text-white/78 uppercase tracking-[0.18em] font-semibold mb-1.5">Comprobación de sensores</p>
                     <p className="text-[11px] text-white/55 leading-relaxed mb-2.5">
                         {calibrationPhase === 'running'
                             ? 'Mueve el movil en forma de 8 durante 3 segundos.'
@@ -284,7 +285,7 @@ export default function ViewModeWidget() {
                             </div>
                             <p
                                 className={cn(
-                                    'text-[10px] mb-2.5 font-mono',
+                                    'text-[11px] mb-2.5 font-mono',
                                     stabilityHint === 'good' ? 'text-emerald-300/80' : 'text-amber-300/80'
                                 )}
                             >
@@ -294,21 +295,21 @@ export default function ViewModeWidget() {
                     )}
 
                     {calibrationPhase === 'done' && (
-                        <p className="text-[10px] mb-2.5 font-mono text-emerald-300/80">Calibración correcta</p>
+                        <p className="text-[11px] mb-2.5 font-mono text-emerald-300/80">Sensores estables. Para afinar la puntería usa «Alinear con un astro».</p>
                     )}
                     {calibrationPhase === 'failed' && (
-                        <p className="text-[10px] mb-2.5 font-mono text-red-300/80">No se pudo estabilizar. Repite calibración.</p>
+                        <p className="text-[11px] mb-2.5 font-mono text-red-300/80">No se pudo estabilizar. Aléjate de metal y repite la comprobación.</p>
                     )}
 
                     <button
                         onClick={calibrateAR}
                         disabled={calibrationPhase === 'running'}
-                        className="w-full rounded-xl border border-cyan-400/35 bg-cyan-500/18 text-cyan-100 text-[10px] font-bold tracking-[0.16em] py-2 hover:bg-cyan-500/26 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="w-full rounded-xl border border-cyan-400/35 bg-cyan-500/18 text-cyan-100 text-[11px] font-bold tracking-[0.16em] py-2 hover:bg-cyan-500/26 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                         {calibrationPhase === 'running'
-                            ? 'Calibrando...'
+                            ? 'Comprobando…'
                             : needsCalibration || calibrationPhase === 'failed'
-                                ? 'Recalibrar Giroscopio'
+                                ? 'Repetir comprobación'
                                 : 'Activar Giroscopio'}
                     </button>
                 </div>

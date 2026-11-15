@@ -14,6 +14,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
+import { starDayDimming } from '@/lib/astronomy/skyBrightness';
+import { sunHorRef } from '@/lib/skyRefs';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { loadHipparcos, bvToHex, type HipStar } from '@/lib/astronomy/hipparcos';
 import { useAppStore } from '@/stores/useAppStore';
@@ -62,6 +64,7 @@ const fragmentShader = `
   varying float vOpacity;
   varying float vSize;
   uniform bool uNightMode;
+  uniform float uDayDim;
 
   void main() {
     float r = distance(gl_PointCoord, vec2(0.5));
@@ -75,7 +78,7 @@ const fragmentShader = `
 
     float core = exp(-r * 9.0) * 1.8;
     float halo = exp(-r * 18.0) * 0.3;
-    float finalAlpha = (core + halo) * vOpacity;
+    float finalAlpha = (core + halo) * vOpacity * uDayDim;
     vec3 finalColor = mix(baseColor, vec3(1.0), core * 0.4);
 
     gl_FragColor = vec4(finalColor, clamp(finalAlpha, 0.0, 1.0));
@@ -123,6 +126,7 @@ function buildGeometry(stars: HipStar[]): [THREE.BufferGeometry, THREE.ShaderMat
         uniforms: {
             uTime:      { value: 0 },
             uNightMode: { value: false },
+            uDayDim:    { value: 1 },
         },
         transparent: true,
         depthWrite:  false,
@@ -166,6 +170,7 @@ export default function HipparcosStars() {
         // eslint-disable-next-line react-hooks/immutability
         mat.uniforms.uTime.value      = state.clock.elapsedTime;
         mat.uniforms.uNightMode.value = nightMode;
+        mat.uniforms.uDayDim.value    = starDayDimming(sunHorRef.alt, 0.15);
         // eslint-disable-next-line react-hooks/immutability -- R3F expone este parámetro mutable para configurar el raycast de Points.
         raycaster.params.Points = {
             threshold: THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 80, 10, 3.2, 0.55), 0.55, 3.2),

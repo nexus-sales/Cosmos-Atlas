@@ -187,7 +187,7 @@ export default function MiniCompass() {
             <span
                 ref={degLabelRef}
                 className="pointer-events-none absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap select-none
-                           text-[8px] font-mono font-bold tabular-nums text-white/55"
+                           text-[11px] font-mono font-bold tabular-nums text-white/55"
                 aria-live="off"
             >
                 N 0°
@@ -216,7 +216,7 @@ export default function MiniCompass() {
                                 zeroCompassCalibrationOffset();
                                 setOpen(false);
                             }}
-                            className="w-full rounded-xl px-3 py-2 text-left text-[10px] font-mono text-white/60 hover:bg-white/10 hover:text-white"
+                            className="w-full rounded-xl px-3 py-2 text-left text-[11px] font-mono text-white/60 hover:bg-white/10 hover:text-white"
                         >
                             Borrar calibracion {Math.round(compassCalibrationOffset)}°
                         </button>

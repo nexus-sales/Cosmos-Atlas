@@ -174,7 +174,7 @@ export default function Compass() {
 
                 <div
                     ref={labelRef}
-                    className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] font-mono text-white/60 tracking-wider whitespace-nowrap"
+                    className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[11px] font-mono text-white/60 tracking-wider whitespace-nowrap"
                 >
                     N 0°
                 </div>
@@ -185,7 +185,7 @@ export default function Compass() {
                     <button
                         onClick={handleARToggle}
                         title={followOrientation ? 'Desactivar orientacion' : 'Activar orientacion del dispositivo'}
-                        className={`mt-1 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-bold tracking-wider
+                        className={`mt-1 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-bold tracking-wider
                                     border glass-blur shadow-lg transition-all duration-200
                                     ${followOrientation
                                 ? 'bg-blue-500/30 border-blue-400/60 text-blue-300'
@@ -206,18 +206,18 @@ export default function Compass() {
                             <button
                                 onClick={handleCalibrateNorth}
                                 title="Apunta a Polaris y pulsa para alinear el norte real"
-                                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-bold tracking-wider border border-amber-400/45 bg-amber-500/20 text-amber-100 glass-blur shadow-lg transition-all duration-200 hover:bg-amber-500/30"
+                                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-bold tracking-wider border border-amber-400/45 bg-amber-500/20 text-amber-100 glass-blur shadow-lg transition-all duration-200 hover:bg-amber-500/30"
                             >
                                 Polaris
                             </button>
-                            <div className="max-w-[120px] text-center text-[9px] leading-tight text-white/55">
+                            <div className="max-w-[120px] text-center text-[11px] leading-tight text-white/55">
                                 Apunta a Polaris y pulsa para fijar el norte real.
                             </div>
                             {Math.abs(compassCalibrationOffset) > 0.1 && (
                                 <button
                                     onClick={zeroCompassCalibrationOffset}
                                     title="Borrar calibracion manual de brujula"
-                                    className="text-[9px] font-mono text-white/55 hover:text-white/80 transition-colors"
+                                    className="text-[11px] font-mono text-white/55 hover:text-white/80 transition-colors"
                                 >
                                     Borrar calibracion {Math.round(compassCalibrationOffset)}°
                                 </button>
@@ -228,7 +228,7 @@ export default function Compass() {
             )}
 
             {permission === 'denied' && (
-                <div className="text-[9px] text-red-400/70 text-center max-w-[70px] leading-tight">
+                <div className="text-[11px] text-red-400/70 text-center max-w-[70px] leading-tight">
                     Permiso denegado
                 </div>
             )}

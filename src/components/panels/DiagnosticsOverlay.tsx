@@ -76,8 +76,8 @@ export default function DiagnosticsOverlay() {
 
     return (
         <div className="fixed top-20 left-3 md:left-6 z-[75] pointer-events-none">
-            <div className="atlas-panel min-w-[230px] max-w-[290px] rounded-xl !border-cyan-400/30 px-3 py-2.5 text-[10px] font-mono leading-relaxed shadow-[0_0_30px_rgba(34,211,238,0.12)]">
-                <div className="mb-2 text-[9px] uppercase tracking-widest text-cyan-300">
+            <div className="atlas-panel min-w-[230px] max-w-[290px] rounded-xl !border-cyan-400/30 px-3 py-2.5 text-[11px] font-mono leading-relaxed shadow-[0_0_30px_rgba(34,211,238,0.12)]">
+                <div className="mb-2 text-[11px] uppercase tracking-widest text-cyan-300">
                     Diagnóstico Astronómico
                 </div>
 

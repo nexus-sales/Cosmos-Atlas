@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
     MAX_WIDE_FIELD_LABELS,
+    MIN_LABEL_SEPARATION_DEG,
     dsoSpriteVisibility,
     dsoVisualSize,
     selectWideFieldLabelIds,
@@ -79,9 +80,34 @@ describe('selectWideFieldLabelIds', () => {
         expect(ids.size).toBeLessThanOrEqual(MAX_WIDE_FIELD_LABELS);
         expect(ids.has('M45')).toBe(true);
 
-        const faintestLabelled = Math.max(...DSOS.filter((dso) => ids.has(dso.id)).map((dso) => dso.mag));
-        const brightestSkipped = Math.min(...DSOS.filter((dso) => !ids.has(dso.id)).map((dso) => dso.mag));
-        expect(faintestLabelled).toBeLessThanOrEqual(brightestSkipped);
+        // Un objeto más brillante que el más débil etiquetado solo se queda sin
+        // nombre si tiene pegada otra etiqueta (regla de separación mínima).
+        const labelled = DSOS.filter((dso) => ids.has(dso.id));
+        const faintestLabelled = Math.max(...labelled.map((dso) => dso.mag));
+        const separation = (a: { ra: number; dec: number }, b: { ra: number; dec: number }) => {
+            const rad = Math.PI / 180;
+            const cos = Math.sin(a.dec * rad) * Math.sin(b.dec * rad)
+                + Math.cos(a.dec * rad) * Math.cos(b.dec * rad) * Math.cos((a.ra - b.ra) * rad);
+            return Math.acos(Math.min(1, Math.max(-1, cos))) / rad;
+        };
+        for (const skipped of DSOS.filter((dso) => !ids.has(dso.id) && dso.mag < faintestLabelled)) {
+            expect(labelled.some((other) => separation(skipped, other) < MIN_LABEL_SEPARATION_DEG)).toBe(true);
+        }
+    });
+});
+
+describe('etiquetas pegadas y bajo el horizonte', () => {
+    it('solo etiqueta uno de los dos cúmulos del Cúmulo Doble de Perseo', () => {
+        const pair = DSOS.filter((dso) => dso.id === 'NGC869' || dso.id === 'NGC884');
+        expect(pair).toHaveLength(2);
+        const ids = selectWideFieldLabelIds(DSOS);
+        expect(pair.filter((dso) => ids.has(dso.id))).toHaveLength(1);
+    });
+
+    it('no nombra un objeto bajo el horizonte salvo con hover', () => {
+        expect(shouldShowDsoLabel(M45, 4, DEFAULT_FOV, false, true, false)).toBe(false);
+        expect(shouldShowDsoLabel({ mag: 8 }, 4, 25, false, true, false)).toBe(false);
+        expect(shouldShowDsoLabel(M45, 4, DEFAULT_FOV, true, true, false)).toBe(true);
     });
 });
 

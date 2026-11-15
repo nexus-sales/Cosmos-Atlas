@@ -295,7 +295,7 @@ export default function ISSPassPredictor() {
                             <span className="text-[15px]">🛰️</span>
                             <span className="text-[11px] font-bold tracking-widest text-white/80">ISS</span>
                             {ongoing && (
-                                <span className="ml-auto flex items-center gap-1 text-[9px] font-bold" style={{ color: ongoing ? accent : undefined }}>
+                                <span className="ml-auto flex items-center gap-1 text-[11px] font-bold" style={{ color: ongoing ? accent : undefined }}>
                                     <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
                                     EN VIVO
                                 </span>
@@ -303,7 +303,7 @@ export default function ISSPassPredictor() {
                         </div>
 
                         {/* Cuenta atrás */}
-                        <div className="text-[9px] text-white/30 tracking-widest uppercase mb-0.5" role="timer" aria-live="polite">
+                        <div className="text-[11px] text-white/30 tracking-widest uppercase mb-0.5" role="timer" aria-live="polite">
                             {ongoing ? 'termina en' : 'próximo paso'}
                         </div>
                         <div className="text-[20px] font-bold leading-none mb-2" style={{ color: accent }}>
@@ -313,7 +313,7 @@ export default function ISSPassPredictor() {
                         </div>
 
                         {/* Métricas */}
-                        <div className="flex gap-3 text-[9px]">
+                        <div className="flex gap-3 text-[11px]">
                             <div>
                                 <div className="text-white/25 uppercase tracking-wider">Máx</div>
                                 <div className="text-white/75 font-bold">{nextPass.maxEl.toFixed(0)}°</div>
@@ -335,7 +335,7 @@ export default function ISSPassPredictor() {
                         </div>
 
                         {/* Hora */}
-                        <div className="mt-1.5 text-[9px] text-white/25">
+                        <div className="mt-1.5 text-[11px] text-white/25">
                             {nextPass.riseTime.toLocaleTimeString('es-ES',{ hour:'2-digit', minute:'2-digit' })}
                             {' — '}
                             {nextPass.setTime.toLocaleTimeString('es-ES',{ hour:'2-digit', minute:'2-digit' })}
@@ -345,7 +345,7 @@ export default function ISSPassPredictor() {
                         {passes.length > 1 && (
                             <div className="mt-2 pt-1.5 border-t border-white/5 flex flex-col gap-0.5">
                                 {passes.slice(1, 3).map((p, i) => (
-                                    <div key={i} className="flex justify-between text-[8px] text-white/25">
+                                    <div key={i} className="flex justify-between text-[11px] text-white/25">
                                         <span>{p.riseTime.toLocaleTimeString('es-ES',{ hour:'2-digit', minute:'2-digit' })}</span>
                                         <span>{p.maxEl.toFixed(0)}° máx · {cardinal(p.riseAz)}→{cardinal(p.setAz)}</span>
                                     </div>

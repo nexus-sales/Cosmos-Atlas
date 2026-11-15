@@ -8,7 +8,8 @@ import { STARS } from '@/data/stars';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { useAppStore } from '@/stores/useAppStore';
 import type { ThreeEvent } from '@react-three/fiber';
-import { terrainHorizonRef } from '@/lib/skyRefs';
+import { sunHorRef, terrainHorizonRef } from '@/lib/skyRefs';
+import { starDayDimming } from '@/lib/astronomy/skyBrightness';
 import { horizonAltitudeAtAzimuth } from '@/lib/astronomy/horizonProfile';
 import { getLST } from '@/lib/astronomy/time';
 
@@ -64,6 +65,7 @@ const starFragmentShader = `
   varying float vSize;
   varying float vAirmass;
   uniform bool uNightMode;
+  uniform float uDayDim;
 
   void main() {
     float r = distance(gl_PointCoord, vec2(0.5));
@@ -84,7 +86,7 @@ const starFragmentShader = `
     float brightFactor = smoothstep(4.0, 9.0, vSize);
     float spikes = (spikeX + spikeY) * 0.15 * brightFactor;
 
-    float finalAlpha = (core + halo + spikes) * vOpacity;
+    float finalAlpha = (core + halo + spikes) * vOpacity * uDayDim;
     vec3 finalColor = mix(baseColor, vec3(1.0), core * 0.5);
 
     gl_FragColor = vec4(finalColor, clamp(finalAlpha, 0.0, 1.0));
@@ -238,6 +240,7 @@ export default function Stars() {
                 uTime:      { value: 0 },
                 uTimeSec:   { value: 0 },
                 uNightMode: { value: false },
+                uDayDim:    { value: 1 },
             },
             transparent: true,
             depthWrite:  false,
@@ -253,6 +256,8 @@ export default function Stars() {
         mat.uniforms.uTime.value      = elapsed;
         mat.uniforms.uTimeSec.value   = elapsed;
         mat.uniforms.uNightMode.value = nightMode;
+        // Las estrellas con nombre son las más brillantes: conservan más presencia de día.
+        mat.uniforms.uDayDim.value    = starDayDimming(sunHorRef.alt, 0.45);
 
         // Actualizar umbral de raycasting según FOV actual
         // eslint-disable-next-line react-hooks/immutability

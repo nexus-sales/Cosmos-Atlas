@@ -137,7 +137,7 @@ export default function Onboarding() {
 
                         {/* Hint */}
                         <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] mb-8">
-                            <span className="text-[10px] font-bold tracking-widest uppercase text-white/25">Tip</span>
+                            <span className="text-[11px] font-bold tracking-widest uppercase text-white/25">Tip</span>
                             <span className="text-[11px] text-white/50 font-mono">{current.hint}</span>
                         </div>
 

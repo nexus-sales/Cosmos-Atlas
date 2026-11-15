@@ -148,10 +148,10 @@ export default function ObservationJournal() {
         return (
             <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-bold tracking-wider uppercase" style={{ color: accent }}>
+                    <span className="text-[11px] font-bold tracking-wider uppercase" style={{ color: accent }}>
                         Nueva observación
                     </span>
-                    <button onClick={() => setView('list')} className="text-[9px]" style={{ color: dim }}>
+                    <button onClick={() => setView('list')} className="text-[11px]" style={{ color: dim }}>
                         ← Volver
                     </button>
                 </div>
@@ -162,13 +162,13 @@ export default function ObservationJournal() {
                         value={form.objectName}
                         onChange={e => setForm(f => ({ ...f, objectName: e.target.value }))}
                         placeholder="Nombre del objeto"
-                        className="flex-1 bg-white/5 border border-white/10 rounded px-2 py-1 text-[10px] text-white/80 font-mono outline-none focus:border-blue-400/40"
+                        className="flex-1 bg-white/5 border border-white/10 rounded px-2 py-1 text-[11px] text-white/80 font-mono outline-none focus:border-blue-400/40"
                         style={{ borderColor: cardBorder }}
                     />
                     <select
                         value={form.objectType}
                         onChange={e => setForm(f => ({ ...f, objectType: e.target.value as ObsEntry['objectType'] }))}
-                        className="bg-white/5 border rounded px-1.5 py-1 text-[10px] text-white/60 font-mono outline-none"
+                        className="bg-white/5 border rounded px-1.5 py-1 text-[11px] text-white/60 font-mono outline-none"
                         style={{ borderColor: cardBorder }}
                     >
                         <option value="star">⭐ Estrella</option>
@@ -183,18 +183,18 @@ export default function ObservationJournal() {
                     type="datetime-local"
                     value={form.date}
                     onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
-                    className="bg-white/5 border rounded px-2 py-1 text-[10px] text-white/60 font-mono outline-none"
+                    className="bg-white/5 border rounded px-2 py-1 text-[11px] text-white/60 font-mono outline-none"
                     style={{ borderColor: cardBorder }}
                 />
 
                 {/* Seeing / Oscuridad */}
                 <div className="flex gap-3">
                     <div className="flex-1">
-                        <div className="text-[9px] mb-1" style={{ color: dim }}>Seeing {seeing_icon(form.seeing)}</div>
+                        <div className="text-[11px] mb-1" style={{ color: dim }}>Seeing {seeing_icon(form.seeing)}</div>
                         <div className="flex gap-1">
                             {[1,2,3,4,5].map(v => (
                                 <button key={v} onClick={() => setForm(f => ({ ...f, seeing: v }))}
-                                    className="flex-1 h-5 rounded text-[8px] font-mono transition-colors"
+                                    className="flex-1 h-5 rounded text-[11px] font-mono transition-colors"
                                     style={{
                                         background: form.seeing >= v ? accent : cardBg,
                                         color: form.seeing >= v ? '#000' : dim,
@@ -204,16 +204,16 @@ export default function ObservationJournal() {
                                 </button>
                             ))}
                         </div>
-                        <div className="text-[8px] mt-0.5 text-center" style={{ color: dim }}>
+                        <div className="text-[11px] mt-0.5 text-center" style={{ color: dim }}>
                             {SEEING_LABELS[form.seeing]}
                         </div>
                     </div>
                     <div className="flex-1">
-                        <div className="text-[9px] mb-1" style={{ color: dim }}>Oscuridad {dark_icon(form.darkness)}</div>
+                        <div className="text-[11px] mb-1" style={{ color: dim }}>Oscuridad {dark_icon(form.darkness)}</div>
                         <div className="flex gap-1">
                             {[1,2,3,4,5].map(v => (
                                 <button key={v} onClick={() => setForm(f => ({ ...f, darkness: v }))}
-                                    className="flex-1 h-5 rounded text-[8px] font-mono transition-colors"
+                                    className="flex-1 h-5 rounded text-[11px] font-mono transition-colors"
                                     style={{
                                         background: form.darkness >= v ? '#8855ff' : cardBg,
                                         color: form.darkness >= v ? '#fff' : dim,
@@ -223,7 +223,7 @@ export default function ObservationJournal() {
                                 </button>
                             ))}
                         </div>
-                        <div className="text-[8px] mt-0.5 text-center" style={{ color: dim }}>
+                        <div className="text-[11px] mt-0.5 text-center" style={{ color: dim }}>
                             {DARK_LABELS[form.darkness]}
                         </div>
                     </div>
@@ -234,7 +234,7 @@ export default function ObservationJournal() {
                     value={form.equipment}
                     onChange={e => setForm(f => ({ ...f, equipment: e.target.value }))}
                     placeholder="Equipo (ej: 10x50 binoculares)"
-                    className="bg-white/5 border rounded px-2 py-1 text-[10px] text-white/60 font-mono outline-none"
+                    className="bg-white/5 border rounded px-2 py-1 text-[11px] text-white/60 font-mono outline-none"
                     style={{ borderColor: cardBorder }}
                 />
 
@@ -244,20 +244,20 @@ export default function ObservationJournal() {
                     onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                     placeholder="Notas de la observación…"
                     rows={3}
-                    className="bg-white/5 border rounded px-2 py-1 text-[10px] text-white/70 font-mono outline-none resize-none"
+                    className="bg-white/5 border rounded px-2 py-1 text-[11px] text-white/70 font-mono outline-none resize-none"
                     style={{ borderColor: cardBorder }}
                 />
 
                 <button
                     onClick={handleAdd}
                     disabled={!form.objectName.trim()}
-                    className="w-full py-2 rounded font-mono font-bold text-[10px] tracking-widest uppercase transition-all disabled:opacity-30"
+                    className="w-full py-2 rounded font-mono font-bold text-[11px] tracking-widest uppercase transition-all disabled:opacity-30"
                     style={{ background: accent, color: '#000' }}
                 >
                     Guardar observación
                 </button>
                 {storageError && (
-                    <p role="alert" className="rounded border border-red-400/30 bg-red-500/10 px-2 py-1.5 text-[9px] text-red-300">
+                    <p role="alert" className="rounded border border-red-400/30 bg-red-500/10 px-2 py-1.5 text-[11px] text-red-300">
                         No se pudo guardar en este navegador. Libera espacio o permite el almacenamiento local y vuelve a intentarlo.
                     </p>
                 )}
@@ -269,7 +269,7 @@ export default function ObservationJournal() {
     return (
         <div className="flex flex-col gap-2">
             {storageError && (
-                <p role="alert" className="rounded border border-red-400/30 bg-red-500/10 px-2 py-1.5 text-[9px] text-red-300">
+                <p role="alert" className="rounded border border-red-400/30 bg-red-500/10 px-2 py-1.5 text-[11px] text-red-300">
                     No se pudo actualizar el diario. Los datos anteriores siguen intactos.
                 </p>
             )}
@@ -277,7 +277,7 @@ export default function ObservationJournal() {
             <div className="flex items-center gap-2">
                 <button
                     onClick={() => setView('add')}
-                    className="flex-1 py-1.5 rounded font-mono font-bold text-[9px] tracking-widest uppercase border transition-all"
+                    className="flex-1 py-1.5 rounded font-mono font-bold text-[11px] tracking-widest uppercase border transition-all"
                     style={{ borderColor: accent, color: accent }}
                 >
                     + Nueva observación
@@ -285,7 +285,7 @@ export default function ObservationJournal() {
                 {entries.length > 0 && (
                     <button
                         onClick={() => exportCSV(entries)}
-                        className="px-2.5 py-1.5 rounded font-mono text-[9px] border transition-all"
+                        className="px-2.5 py-1.5 rounded font-mono text-[11px] border transition-all"
                         style={{ borderColor: cardBorder, color: dim }}
                         title="Exportar como CSV"
                     >
@@ -296,7 +296,7 @@ export default function ObservationJournal() {
 
             {/* Entradas */}
             {entries.length === 0 ? (
-                <div className="text-center py-4 text-[10px]" style={{ color: dim }}>
+                <div className="text-center py-4 text-[11px]" style={{ color: dim }}>
                     Sin observaciones aún.<br />
                     <span className="opacity-60">{'Selecciona un objeto y pulsa "+ Nueva observación"'}</span>
                 </div>
@@ -313,21 +313,21 @@ export default function ObservationJournal() {
                         >
                             <span className="text-[14px] leading-none shrink-0">{TYPE_ICONS[e.objectType]}</span>
                             <div className="flex-1 min-w-0">
-                                <div className="text-[10px] font-bold font-mono truncate" style={{ color: accent }}>
+                                <div className="text-[11px] font-bold font-mono truncate" style={{ color: accent }}>
                                     {e.objectName}
                                 </div>
-                                <div className="text-[8px] font-mono" style={{ color: dim }}>
+                                <div className="text-[11px] font-mono" style={{ color: dim }}>
                                     {formatDate(e.date)}
                                 </div>
                             </div>
-                            <div className="flex gap-1 shrink-0 text-[8px]" style={{ color: dim }}>
+                            <div className="flex gap-1 shrink-0 text-[11px]" style={{ color: dim }}>
                                 <span title="Seeing">👁{e.seeing}</span>
                                 <span title="Oscuridad">🌑{e.darkness}</span>
                             </div>
                         </button>
 
                         {expanded === e.id && (
-                            <div className="px-2.5 pb-2.5 pt-0 border-t text-[9px] font-mono" style={{ borderColor: cardBorder }}>
+                            <div className="px-2.5 pb-2.5 pt-0 border-t text-[11px] font-mono" style={{ borderColor: cardBorder }}>
                                 {e.equipment && (
                                     <div className="mt-1.5" style={{ color: dim }}>
                                         🔭 {e.equipment}
@@ -342,7 +342,7 @@ export default function ObservationJournal() {
                                     <span style={{ color: dim }}>{e.lat.toFixed(2)}°, {e.lon.toFixed(2)}°</span>
                                     <button
                                         onClick={() => handleDelete(e.id)}
-                                        className="text-red-400/50 hover:text-red-400/80 transition-colors text-[8px]"
+                                        className="text-red-400/50 hover:text-red-400/80 transition-colors text-[11px]"
                                     >
                                         🗑 borrar
                                     </button>

@@ -17,7 +17,7 @@ import DesktopObjectPeek from '@/components/panels/DesktopObjectPeek';
 import Onboarding from '@/components/Onboarding';
 import { useAppStore } from '@/stores/useAppStore';
 import { useGeolocation } from '@/hooks/useGeolocation';
-import BootSequence from '@/components/ui/BootSequence';
+import BootScreen from '@/components/ui/BootScreen';
 import { cn } from '@/lib/utils';
 
 function detectQualityTier(): 'high' | 'medium' | 'low' {
@@ -71,7 +71,7 @@ function MobileToolbar() {
         )}
       >
         <Clock className="w-3.5 h-3.5" />
-        <span className="text-[10px] font-bold tracking-widest uppercase">Tiempo</span>
+        <span className="text-[11px] font-bold tracking-widest uppercase">Tiempo</span>
       </button>
 
       {/* Slide-up tray */}
@@ -186,7 +186,7 @@ export default function Home() {
         <div className="absolute -top-[10%] -right-[5%] w-[50%] h-[50%] bg-purple-900/10 blur-[120px] rounded-full" />
       </div>
 
-      <BootSequence />
+      <BootScreen />
     </main>
   );
 }

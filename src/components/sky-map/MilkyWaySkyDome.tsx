@@ -111,7 +111,10 @@ export default function MilkyWaySkyDome() {
             const obs = new Astronomy.Observer(observer.lat, observer.lon, 0);
             const eq  = Astronomy.Equator(Astronomy.Body.Sun, time, obs, true, true);
             const hor = Astronomy.Horizon(time, obs, eq.ra, eq.dec, 'normal');
-            uniforms.uNightFactor.value = 1.0 - THREE.MathUtils.smoothstep(-15, -5, hor.altitude);
+            // MathUtils.smoothstep es (x, min, max): con los argumentos en el orden de
+            // GLSL el factor valía siempre 1 y la Vía Láctea no se apagaba de día.
+            // Queda un suelo mínimo para poder explorar a cualquier hora.
+            uniforms.uNightFactor.value = Math.max(0.05, 1.0 - THREE.MathUtils.smoothstep(hor.altitude, -15, -5));
         } catch {
             uniforms.uNightFactor.value = 1.0;
         }

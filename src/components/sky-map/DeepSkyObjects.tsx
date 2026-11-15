@@ -3,8 +3,10 @@
 import { useMemo, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { useCatalog } from '@/stores/useCatalogStore';
-import { equatorialTo3D } from '@/lib/astronomy/transforms';
+import { equatorialTo3D, equToHor } from '@/lib/astronomy/transforms';
 import { useAppStore } from '@/stores/useAppStore';
+import { horizonAltitudeAtAzimuth } from '@/lib/astronomy/horizonProfile';
+import { terrainHorizonRef } from '@/lib/skyRefs';
 import { Html } from '@react-three/drei';
 import { DSOType, DSO } from '@/types/celestial';
 import { getDSOImage, preloadDSOImage } from '@/data/dsoImages';
@@ -184,7 +186,7 @@ interface DSOData extends DSO {
     visualSize: number;
 }
 
-function DSOItem({ dso, wideFieldLabel }: { dso: DSOData; wideFieldLabel: boolean }) {
+function DSOItem({ dso, wideFieldLabel, aboveHorizon }: { dso: DSOData; wideFieldLabel: boolean; aboveHorizon: boolean }) {
     const [hovered, setHovered] = useState(false);
     const setTargetedObject = useAppStore((state) => state.setTargetedObject);
     const markAsVisited = useAppStore((state) => state.markAsVisited);
@@ -241,7 +243,7 @@ function DSOItem({ dso, wideFieldLabel }: { dso: DSOData; wideFieldLabel: boolea
             </mesh>
 
             {/* Label progresivo: hover, detalle (FOV < 35) o DSO de simple vista a campo amplio */}
-            {shouldShowDsoLabel(dso, bortleScale, camFov, hovered, wideFieldLabel) && (
+            {shouldShowDsoLabel(dso, bortleScale, camFov, hovered, wideFieldLabel, aboveHorizon) && (
                 <Html zIndexRange={[100, 0]}>
                     <div 
                         className="pointer-events-none whitespace-nowrap flex flex-col items-center -translate-y-6 transition-opacity duration-300"
@@ -278,12 +280,33 @@ export default function DeepSkyObjects() {
             return { ...dso, pos, visualSize: dsoVisualSize(dso.sizeArcmin, dso.type) };
         });
     }, [dsos]);
-    const wideFieldLabelIds = useMemo(() => selectWideFieldLabelIds(dsos), [dsos]);
+    // timeMinute solo cambia 1x/min: basta para saber qué hay sobre el horizonte.
+    const time = useAppStore((state) => state.timeMinute);
+    const observer = useAppStore((state) => state.observer);
+    const aboveHorizonIds = useMemo(() => new Set(
+        dsos
+            .filter((dso) => {
+                // Cuenta el relieve real: un objeto tras la montaña tampoco se nombra.
+                const { alt, az } = equToHor(dso.ra, dso.dec, observer.lat, observer.lon, time);
+                return alt > Math.max(0, horizonAltitudeAtAzimuth(terrainHorizonRef.current, az));
+            })
+            .map((dso) => dso.id),
+    ), [dsos, observer.lat, observer.lon, time]);
+    // El tope de etiquetas se reparte solo entre lo que está sobre el horizonte.
+    const wideFieldLabelIds = useMemo(
+        () => selectWideFieldLabelIds(dsos.filter((dso) => aboveHorizonIds.has(dso.id))),
+        [dsos, aboveHorizonIds],
+    );
 
     return (
         <group>
             {dsoData.map((dso) => (
-                <DSOItem key={dso.id} dso={dso} wideFieldLabel={wideFieldLabelIds.has(dso.id)} />
+                <DSOItem
+                    key={dso.id}
+                    dso={dso}
+                    wideFieldLabel={wideFieldLabelIds.has(dso.id)}
+                    aboveHorizon={aboveHorizonIds.has(dso.id)}
+                />
             ))}
         </group>
     );

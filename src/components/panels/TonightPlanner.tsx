@@ -77,14 +77,14 @@ export default function TonightPlanner() {
         <div className="space-y-3">
             <div className="rounded-xl border border-blue-400/15 bg-blue-500/[0.06] p-3">
                 <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-blue-300">Noche astronómica</span>
-                    <span className="text-[10px] font-mono text-white/60">{formatTime(plan.astronomicalStart)}–{formatTime(plan.astronomicalEnd)}</span>
+                    <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-blue-300">Noche astronómica</span>
+                    <span className="text-[11px] font-mono text-white/60">{formatTime(plan.astronomicalStart)}–{formatTime(plan.astronomicalEnd)}</span>
                 </div>
-                <p className="mt-1 text-[9px] leading-relaxed text-white/40">Ranking geométrico para la fecha, ubicación y Bortle actuales. Meteorología aún no incluida.</p>
+                <p className="mt-1 text-[11px] leading-relaxed text-white/40">Ranking geométrico para la fecha, ubicación y Bortle actuales. Meteorología aún no incluida.</p>
             </div>
 
             {recommended.length === 0 ? (
-                <div className="rounded-lg border border-white/10 p-4 text-center text-[10px] text-white/40">No hay objetivos del catálogo sobre 25° durante la oscuridad astronómica.</div>
+                <div className="rounded-lg border border-white/10 p-4 text-center text-[11px] text-white/40">No hay objetivos del catálogo sobre 25° durante la oscuridad astronómica.</div>
             ) : recommended.map((target) => (
                 <article key={target.id} className="rounded-xl border border-white/8 bg-white/[0.025] p-3">
                     <div className="flex items-start gap-2">
@@ -92,13 +92,13 @@ export default function TonightPlanner() {
                         <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2">
                                 <h4 className="truncate text-xs font-semibold text-white/85">{target.name}</h4>
-                                <span className={cn('rounded border px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-wider', ratingTone[target.rating])}>{target.rating}</span>
+                                <span className={cn('rounded border px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wider', ratingTone[target.rating])}>{target.rating}</span>
                             </div>
-                            <p className="mt-1 text-[9px] leading-relaxed text-white/45">{target.reason}</p>
+                            <p className="mt-1 text-[11px] leading-relaxed text-white/45">{target.reason}</p>
                         </div>
                     </div>
                     <VisibilityCurve target={target} />
-                    <div className="grid grid-cols-3 gap-1 text-center font-mono text-[8px] text-white/45">
+                    <div className="grid grid-cols-3 gap-1 text-center font-mono text-[11px] text-white/45">
                         <span><Clock3 className="mr-1 inline h-3 w-3" />{formatTime(target.windowStart)}–{formatTime(target.windowEnd)}</span>
                         <span><Telescope className="mr-1 inline h-3 w-3" />{Math.round(target.maxAltitude)}° máx.</span>
                         <span><Moon className="mr-1 inline h-3 w-3" />{Math.round(target.moonSeparation)}°</span>
@@ -108,7 +108,7 @@ export default function TonightPlanner() {
                             <div key={key} className="h-1 overflow-hidden rounded-full bg-white/5"><div className="h-full bg-blue-400/65" style={{ width: `${Math.min(100, value / ({ duration: 35, altitude: 25, moon: 20, darkness: 10, target: 10 }[key as keyof typeof target.breakdown]) * 100)}%` }} /></div>
                         ))}
                     </div>
-                    <button onClick={() => jumpTo(target)} className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-blue-400/20 bg-blue-500/10 py-2 text-[9px] font-bold uppercase tracking-wider text-blue-300 hover:bg-blue-500/20">
+                    <button onClick={() => jumpTo(target)} className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg border border-blue-400/20 bg-blue-500/10 py-2 text-[11px] font-bold uppercase tracking-wider text-blue-300 hover:bg-blue-500/20">
                         <Play className="h-3 w-3" /> Ver a la mejor hora
                     </button>
                 </article>

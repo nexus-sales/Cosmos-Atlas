@@ -82,7 +82,7 @@ export default function ObjectInfoTab({ onGoToGuide }: { onGoToGuide?: () => voi
                 </div>
                 <div className="space-y-1">
                     <div className="text-[11px] font-mono uppercase tracking-[0.25em] text-white/40">Sin selección</div>
-                    <div className="text-[10px] font-mono text-white/25 leading-relaxed">
+                    <div className="text-[11px] font-mono text-white/25 leading-relaxed">
                         Haz clic en cualquier estrella, planeta<br />u objeto en el mapa del cielo
                     </div>
                 </div>
@@ -138,12 +138,12 @@ export default function ObjectInfoTab({ onGoToGuide }: { onGoToGuide?: () => voi
                 <div className="object-orb absolute right-0 top-0 h-32 w-32 translate-x-8 -translate-y-8 rounded-full blur-3xl" />
 
                 <div className="mb-3 flex items-start justify-between">
-                    <span className="object-chip rounded-sm px-2 py-1 text-[8px] font-bold tracking-[0.25em]">
+                    <span className="object-chip rounded-sm px-2 py-1 text-[11px] font-bold tracking-[0.25em]">
                         {typeLabel}
                         {isPlanet ? ` ${(selected as Planet).symbol}` : ''}
                     </span>
                     <div className="flex items-center gap-2">
-                        <span className={`text-[9px] font-mono ${isVisible ? 'text-green-400' : 'text-red-400'}`}>
+                        <span className={`text-[11px] font-mono ${isVisible ? 'text-green-400' : 'text-red-400'}`}>
                             {isVisible ? '▲ VISIBLE' : '▽ OCULTO'}
                         </span>
                         <button
@@ -166,7 +166,7 @@ export default function ObjectInfoTab({ onGoToGuide }: { onGoToGuide?: () => voi
                 {isStar && (
                     <div className="mb-3 flex items-center gap-2">
                         <StarIcon className="object-accent h-2.5 w-2.5" />
-                        <span className="object-accent-90 text-[9px] font-mono tracking-wider">
+                        <span className="object-accent-90 text-[11px] font-mono tracking-wider">
                             {(selected as Star).constellation}
                         </span>
                     </div>
@@ -176,7 +176,7 @@ export default function ObjectInfoTab({ onGoToGuide }: { onGoToGuide?: () => voi
                     <div className="mb-3 flex flex-col gap-2">
                         <div className="flex items-center gap-2">
                             <Globe className="object-accent h-2.5 w-2.5" />
-                            <span className="object-accent-90 text-[9px] font-mono tracking-wider">
+                            <span className="object-accent-90 text-[11px] font-mono tracking-wider">
                                 Sistema Solar · {solarSystemDate}
                             </span>
                         </div>
@@ -222,20 +222,20 @@ export default function ObjectInfoTab({ onGoToGuide }: { onGoToGuide?: () => voi
                             {isVisible
                                 ? <Eye className="h-3.5 w-3.5 text-emerald-400" />
                                 : <EyeOff className="h-3.5 w-3.5 text-red-400" />}
-                            <span className={`text-[9px] font-bold uppercase tracking-[0.2em] ${isVisible ? 'text-green-400' : 'text-red-400'}`}>
+                            <span className={`text-[11px] font-bold uppercase tracking-[0.2em] ${isVisible ? 'text-green-400' : 'text-red-400'}`}>
                                 {isVisible ? 'Visible ahora' : 'Bajo el horizonte'}
                             </span>
                         </div>
 
                         <div className="mb-3 grid grid-cols-2 gap-3">
                             <div>
-                                <div className="mb-1 text-[8px] uppercase tracking-wider text-white/20">Altitud</div>
+                                <div className="mb-1 text-[11px] uppercase tracking-wider text-white/20">Altitud</div>
                                 <div className={`text-base font-bold font-mono ${isVisible ? 'text-green-400' : 'text-white/40'}`}>
                                     {coords.alt.toFixed(1)}°
                                 </div>
                             </div>
                             <div>
-                                <div className="mb-1 text-[8px] uppercase tracking-wider text-white/20">Azimut</div>
+                                <div className="mb-1 text-[11px] uppercase tracking-wider text-white/20">Azimut</div>
                                 <div className="text-base font-bold font-mono text-white/70">
                                     {coords.az.toFixed(1)}°
                                 </div>
@@ -277,7 +277,7 @@ export default function ObjectInfoTab({ onGoToGuide }: { onGoToGuide?: () => voi
                 <div className="animate-in rounded-xl border-2 border-yellow-400/40 bg-gradient-to-br from-yellow-400/20 to-orange-500/10 p-5 shadow-[0_0_20px_rgba(250,204,21,0.15)] bounce-in duration-500">
                     <div className="mb-3 flex w-fit items-center gap-2 rounded-full border border-yellow-500/30 bg-black/20 px-3 py-1.5">
                         <Rocket className="h-4 w-4 animate-bounce text-yellow-400" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-yellow-400">¡Dato Espacial!</span>
+                        <span className="text-[11px] font-black uppercase tracking-widest text-yellow-400">¡Dato Espacial!</span>
                     </div>
                     <p className="text-[14px] font-semibold leading-relaxed text-white/90 drop-shadow-md">
                         {getKidFact(selected.name, isStar, isPlanet)}
@@ -300,10 +300,10 @@ function MetricCard({ label, value, sub, color, icon }: {
         <div className="atlas-card rounded-xl p-3.5">
             <div className="metric-label mb-2 flex items-center gap-1.5" style={metricVars}>
                 {icon}
-                <span className="text-[8px] font-bold uppercase tracking-wider">{label}</span>
+                <span className="text-[11px] font-bold uppercase tracking-wider">{label}</span>
             </div>
             <div className="text-lg font-bold font-mono text-white/90">{value}</div>
-            <div className="text-[9px] font-mono text-white/30">{sub}</div>
+            <div className="text-[11px] font-mono text-white/30">{sub}</div>
         </div>
     );
 }
@@ -311,7 +311,7 @@ function MetricCard({ label, value, sub, color, icon }: {
 function InfoBlock({ title, text }: { title: string; text: string }) {
     return (
         <div>
-            <div className="mb-1 text-[8px] uppercase tracking-wider text-white/20">{title}</div>
+            <div className="mb-1 text-[11px] uppercase tracking-wider text-white/20">{title}</div>
             <p className="text-[11px] leading-relaxed text-white/65 min-h-[30px]">
                 {text}
             </p>
@@ -322,7 +322,7 @@ function InfoBlock({ title, text }: { title: string; text: string }) {
 function DataPoint({ label, value }: { label: string; value: string }) {
     return (
         <div>
-            <div className="mb-1 text-[8px] uppercase tracking-wider text-white/20">{label}</div>
+            <div className="mb-1 text-[11px] uppercase tracking-wider text-white/20">{label}</div>
             <div className="text-[11px] font-mono text-white/70">{value}</div>
         </div>
     );

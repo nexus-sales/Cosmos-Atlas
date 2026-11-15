@@ -188,7 +188,7 @@ function InfoRow({ item }: { item: DetailItem }) {
 function StoryBlock({ item, accent }: { item: StoryItem; accent: string }) {
     return (
         <div className="rounded-xl border border-white/[0.07] bg-white/[0.035] p-3.5">
-            <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: `${accent}ee` }}>
+            <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: `${accent}ee` }}>
                 {item.title}
             </div>
             <p className="text-[13px] leading-relaxed text-white/68">{item.text}</p>
@@ -295,10 +295,10 @@ export default function MobileObjectSheet() {
 
                         <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2">
-                                <span className="rounded border border-white/10 bg-white/6 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.18em] text-white/45">
+                                <span className="rounded border border-white/10 bg-white/6 px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">
                                     {objectTypeLabel(selected)}
                                 </span>
-                                <span className={cn('text-[9px] font-bold uppercase tracking-[0.16em]', visible ? 'text-emerald-300' : 'text-rose-300')}>
+                                <span className={cn('text-[11px] font-bold uppercase tracking-[0.16em]', visible ? 'text-emerald-300' : 'text-rose-300')}>
                                     {visible ? 'Visible' : 'Oculto'}
                                 </span>
                             </div>

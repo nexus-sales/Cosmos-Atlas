@@ -112,24 +112,24 @@ function InfoCard({ obj }: { obj: Star | DSO | Planet }) {
     return (
         <div className="atlas-card mx-1 mb-2 mt-0.5 p-3 rounded-md space-y-1.5">
             {isDSO ? (
-                <p className="text-[10px] font-bold text-white/70 uppercase tracking-wider">
+                <p className="text-[11px] font-bold text-white/70 uppercase tracking-wider">
                     {(obj as DSO).type} &middot; mag {(obj as DSO).mag}
                 </p>
             ) : isConstellation ? (
-                <p className="text-[10px] font-bold text-white/70 uppercase tracking-wider">
+                <p className="text-[11px] font-bold text-white/70 uppercase tracking-wider">
                     &#10038; Constelaci&oacute;n
                 </p>
             ) : isPlanet ? (
-                <p className="text-[10px] font-bold text-white/70 uppercase tracking-wider">
+                <p className="text-[11px] font-bold text-white/70 uppercase tracking-wider">
                     {(obj as Planet).symbol} Planeta &middot; mag {(obj as Planet).mag.toFixed(1)}
                 </p>
             ) : (
-                <p className="text-[10px] font-bold text-white/70 uppercase tracking-wider">
+                <p className="text-[11px] font-bold text-white/70 uppercase tracking-wider">
                     {getConstellationDisplayName((obj as Star).constellation)}
                 </p>
             )}
             <p className="text-[11px] text-white/80 leading-relaxed">{obj.desc}</p>
-            <p className="text-[10px] text-white/40 font-mono">
+            <p className="text-[11px] text-white/40 font-mono">
                 RA {obj.ra.toFixed(2)}&deg; &middot; Dec {obj.dec.toFixed(2)}&deg;
             </p>
         </div>
@@ -368,7 +368,7 @@ export default function GuideTab() {
             </div>
 
             {q.length >= 3 && isSearchingRemote && (
-                <div className="flex items-center gap-2 px-3 py-1.5 text-[10px] text-blue-400 font-mono animate-pulse">
+                <div className="flex items-center gap-2 px-3 py-1.5 text-[11px] text-blue-400 font-mono animate-pulse">
                     <Sparkles className="w-3 h-3" />
                     Consultando bases de datos SIMBAD/CDS...
                 </div>
@@ -382,7 +382,7 @@ export default function GuideTab() {
                             key={id}
                             onClick={() => setFilter(id)}
                             className={cn(
-                                'px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wider border transition-all',
+                                'px-2 py-0.5 rounded-md text-[11px] font-bold tracking-wider border transition-all',
                                 filter === id
                                     ? activeClass
                                     : 'text-white/40 border-white/12 hover:text-white/65 hover:border-white/20'
@@ -397,7 +397,7 @@ export default function GuideTab() {
                     <button
                         onClick={() => setSortBy('magnitude')}
                         className={cn(
-                            'px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest rounded-md transition-all',
+                            'px-2 py-0.5 text-[11px] font-bold uppercase tracking-widest rounded-md transition-all',
                             sortBy === 'magnitude' ? 'bg-blue-500/20 text-blue-300' : 'text-white/30 hover:text-white/60'
                         )}
                         title="Ordenar por brillo"
@@ -407,7 +407,7 @@ export default function GuideTab() {
                     <button
                         onClick={() => setSortBy('altitude')}
                         className={cn(
-                            'px-2 py-0.5 text-[8px] font-bold uppercase tracking-widest rounded-md transition-all',
+                            'px-2 py-0.5 text-[11px] font-bold uppercase tracking-widest rounded-md transition-all',
                             sortBy === 'altitude' ? 'bg-emerald-500/20 text-emerald-300' : 'text-white/30 hover:text-white/60'
                         )}
                         title="Ordenar por altura (observabilidad)"
@@ -421,19 +421,19 @@ export default function GuideTab() {
                 <div className="atlas-card hidden rounded-xl p-2.5 space-y-2 md:block">
                     <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0">
-                            <p className="text-[9px] font-bold uppercase tracking-[0.24em] text-white/35">Acceso rápido</p>
+                            <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-white/35">Acceso rápido</p>
                             <p className="text-[11px] text-white/55">Abre o salta a una sección sin recorrer todo el panel.</p>
                         </div>
                         <div className="flex items-center gap-1">
                             <button
                                 onClick={() => setVisibleSectionsOpen(true)}
-                                className="rounded-md border border-white/10 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.18em] text-white/45 transition-colors hover:border-white/20 hover:text-white/70"
+                                className="rounded-md border border-white/10 px-2 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-white/45 transition-colors hover:border-white/20 hover:text-white/70"
                             >
                                 Abrir
                             </button>
                             <button
                                 onClick={() => setVisibleSectionsOpen(false)}
-                                className="rounded-md border border-white/10 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.18em] text-white/45 transition-colors hover:border-white/20 hover:text-white/70"
+                                className="rounded-md border border-white/10 px-2 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-white/45 transition-colors hover:border-white/20 hover:text-white/70"
                             >
                                 Cerrar
                             </button>
@@ -447,7 +447,7 @@ export default function GuideTab() {
                                     key={`pinned-${key}`}
                                     onClick={() => jumpToSection(key)}
                                     className={cn(
-                                        'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[10px] font-bold tracking-[0.12em] uppercase transition-transform hover:-translate-y-0.5',
+                                        'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold tracking-[0.12em] uppercase transition-transform hover:-translate-y-0.5',
                                         tone
                                     )}
                                 >
@@ -465,7 +465,7 @@ export default function GuideTab() {
                                 key={key}
                                 onClick={() => jumpToSection(key)}
                                 className={cn(
-                                    'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[10px] font-bold tracking-[0.12em] uppercase text-white/75 transition-colors hover:text-white',
+                                    'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold tracking-[0.12em] uppercase text-white/75 transition-colors hover:text-white',
                                     tone
                                 )}
                             >
@@ -520,22 +520,22 @@ export default function GuideTab() {
                                             <div className="flex flex-col flex-1 min-w-0">
                                                 <span className="text-[13px] font-semibold truncate">{planet.name}</span>
                                                 {planet.phaseInfo && (
-                                                    <span className="text-[9px] text-amber-200/80 font-bold tracking-wide">
+                                                    <span className="text-[11px] text-amber-200/80 font-bold tracking-wide">
                                                         {planet.phaseInfo}
                                                     </span>
                                                 )}
                                                 {planet.dist && planet.name !== 'Luna' && (
-                                                    <span className="text-[9px] text-white/30 font-mono">
+                                                    <span className="text-[11px] text-white/30 font-mono">
                                                         {(planet.dist * 149.6).toFixed(1)}M km
                                                     </span>
                                                 )}
                                                 {planet.name === 'Luna' && planet.dist && (
-                                                    <span className="text-[9px] text-white/30 font-mono">
+                                                    <span className="text-[11px] text-white/30 font-mono">
                                                         {(planet.dist * 149597870 / 1000).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ".")} km
                                                     </span>
                                                 )}
                                             </div>
-                                            <span className="text-[10px] text-white/40 shrink-0 font-mono">{planet.mag.toFixed(1)}</span>
+                                            <span className="text-[11px] text-white/40 shrink-0 font-mono">{planet.mag.toFixed(1)}</span>
                                             <div suppressHydrationWarning title={planet.alt > 0 ? `Visible \u00b7 Alt ${planet.alt.toFixed(0)}\u00b0` : 'Bajo el horizonte'}
                                                 className={cn('w-1.5 h-1.5 rounded-full shrink-0 ml-0.5', planet.alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15')} />
                                         </button>
@@ -571,8 +571,8 @@ export default function GuideTab() {
                                                 style={{ '--accent-color': star.color } as CSSProperties}
                                             />
                                             <span className="text-[13px] font-semibold flex-1 truncate">{star.name}</span>
-                                            <span className="text-[10px] text-white/40 shrink-0 font-mono">{star.mag.toFixed(1)}</span>
-                                            <span className="text-[10px] text-white/35 shrink-0 italic hidden sm:block truncate max-w-[64px]">
+                                            <span className="text-[11px] text-white/40 shrink-0 font-mono">{star.mag.toFixed(1)}</span>
+                                            <span className="text-[11px] text-white/35 shrink-0 italic hidden sm:block truncate max-w-[64px]">
                                                 {getConstellationDisplayName(star.constellation)}
                                             </span>
                                             <div suppressHydrationWarning title={star.alt > 0 ? `Visible \u00b7 Alt ${star.alt.toFixed(0)}\u00b0` : 'Bajo el horizonte'}
@@ -662,7 +662,7 @@ export default function GuideTab() {
                 <section className="animate-in slide-in-from-bottom-2 duration-500">
                     <div className="flex items-center gap-2 px-1 mb-2">
                         <Globe2 className="w-3.5 h-3.5 text-blue-400" />
-                        <span className="text-[10px] font-bold tracking-widest text-blue-300 uppercase">Resultado SIMBAD</span>
+                        <span className="text-[11px] font-bold tracking-widest text-blue-300 uppercase">Resultado SIMBAD</span>
                     </div>
                     {(() => {
                         const obj: Planet = {
@@ -686,7 +686,7 @@ export default function GuideTab() {
                                     <span className="text-[14px] shrink-0 leading-none text-blue-400">&#x2727;</span>
                                     <div className="flex flex-col flex-1 min-w-0">
                                         <span className="text-[13px] font-bold truncate">{obj.name}</span>
-                                        <span className="text-[9px] text-blue-400/60 font-mono tracking-tighter uppercase">{visibleRemoteResult.type || 'Objeto'}</span>
+                                        <span className="text-[11px] text-blue-400/60 font-mono tracking-tighter uppercase">{visibleRemoteResult.type || 'Objeto'}</span>
                                     </div>
                                     <div suppressHydrationWarning title={alt > 0 ? `Visible \u00b7 Alt ${alt.toFixed(0)}\u00b0` : 'Bajo el horizonte'}
                                         className={cn('w-1.5 h-1.5 rounded-full shrink-0 ml-0.5', alt > 0 ? 'bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.7)]' : 'bg-white/15')} />
@@ -769,9 +769,9 @@ function DSOSection({ title, items, total, isOpen, onToggle, isTargeted, onSelec
                                             <DSOTypeIcon type={dso.type} />
                                             <div className="flex flex-col flex-1 min-w-0">
                                                 <span className="text-[13px] font-semibold truncate">{dso.name}</span>
-                                                <span className="text-[10px] text-white/40 font-mono">{dso.id}</span>
+                                                <span className="text-[11px] text-white/40 font-mono">{dso.id}</span>
                                             </div>
-                                            <span className="text-[10px] text-white/40 shrink-0 font-mono">{dso.mag.toFixed(1)}</span>
+                                            <span className="text-[11px] text-white/40 shrink-0 font-mono">{dso.mag.toFixed(1)}</span>
                                             <div
                                                 suppressHydrationWarning
                                                 title={dso.alt > 0 ? `Visible \u00b7 Alt ${dso.alt.toFixed(0)}\u00b0` : 'Bajo el horizonte'}
@@ -825,11 +825,11 @@ function SectionToggle({ label, icon, count, total, isOpen, onToggle, isPinned, 
                         {icon}
                     </div>
                     <span className={cn(
-                        "text-[10px] font-bold tracking-[0.18em] uppercase transition-colors truncate",
+                        "text-[11px] font-bold tracking-[0.18em] uppercase transition-colors truncate",
                         isOpen ? "text-white" : "text-white/40 group-hover:text-white/60"
                     )}>
                         {label}
-                        <span className="ml-2 text-[9px] font-normal text-white/15">
+                        <span className="ml-2 text-[11px] font-normal text-white/15">
                             ({count}{total > count ? `/${total}` : ''})
                         </span>
                     </span>

@@ -186,11 +186,11 @@ export default function UpcomingConjunctions() {
     return (
         <div className="flex flex-col gap-1.5">
             {loading ? (
-                <div className="text-[10px] text-center py-3 opacity-40" style={{ color: dimColor }}>
+                <div className="text-[11px] text-center py-3 opacity-40" style={{ color: dimColor }}>
                     Calculando efemérides…
                 </div>
             ) : conjunctions.length === 0 ? (
-                <div className="text-[10px] text-center py-3 opacity-40" style={{ color: dimColor }}>
+                <div className="text-[11px] text-center py-3 opacity-40" style={{ color: dimColor }}>
                     Sin conjunciones próximas (&lt;3.5°) en 90 días
                 </div>
             ) : (
@@ -216,20 +216,20 @@ export default function UpcomingConjunctions() {
 
                         {/* Nombres y fecha */}
                         <div className="flex-1 min-w-0">
-                            <div className="text-[10px] font-bold font-mono truncate" style={{ color: accentColor }}>
+                            <div className="text-[11px] font-bold font-mono truncate" style={{ color: accentColor }}>
                                 {c.bodyA} — {c.bodyB}
                             </div>
-                            <div className="text-[9px] mt-0.5 opacity-60 font-mono" style={{ color: dimColor }}>
+                            <div className="text-[11px] mt-0.5 opacity-60 font-mono" style={{ color: dimColor }}>
                                 {formatDate(c.date)}
                             </div>
                         </div>
 
                         {/* Separación y cuenta atrás */}
                         <div className="text-right shrink-0">
-                            <div className="text-[10px] font-mono font-bold" style={{ color: accentColor }}>
+                            <div className="text-[11px] font-mono font-bold" style={{ color: accentColor }}>
                                 {formatSep(c.separation)}
                             </div>
-                            <div className="text-[9px] font-mono opacity-55" style={{ color: dimColor }}>
+                            <div className="text-[11px] font-mono opacity-55" style={{ color: dimColor }}>
                                 {formatDays(c.daysFromNow)}
                             </div>
                         </div>

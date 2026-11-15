@@ -33,7 +33,7 @@ export default function MeteorShowerInfo() {
             <div className="atlas-card rounded-2xl p-4">
                 <div className="flex items-start justify-between gap-3">
                     <div>
-                        <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/42">
+                        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/42">
                             <CloudRain className="h-3.5 w-3.5 text-cyan-300/70" />
                             Vigilancia de Meteoros
                         </div>
@@ -44,7 +44,7 @@ export default function MeteorShowerInfo() {
                             Resumen de lluvias activas, máximo previsto e intensidad esperada.
                         </div>
                     </div>
-                    <div className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white/64">
+                    <div className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-white/64">
                         {activeShowers.length} activas
                     </div>
                 </div>
@@ -76,7 +76,7 @@ export default function MeteorShowerInfo() {
 
             {bestShower && (
                 <div className="atlas-card rounded-2xl p-3.5">
-                    <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/34">
+                    <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/34">
                         <Sparkles className="h-3.5 w-3.5 text-cyan-300/70" />
                         Lluvia Principal
                     </div>
@@ -93,7 +93,7 @@ export default function MeteorShowerInfo() {
                             </div>
                         </div>
                         <div className="rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-3 py-2 text-right">
-                            <div className="text-[9px] uppercase tracking-[0.16em] text-cyan-200/60">Actividad</div>
+                            <div className="text-[11px] uppercase tracking-[0.16em] text-cyan-200/60">Actividad</div>
                             <div className="mt-1 text-[15px] font-semibold text-cyan-100">
                                 {Math.round(getShowerActivity(bestShower, date) * 100)}%
                             </div>
@@ -104,7 +104,7 @@ export default function MeteorShowerInfo() {
 
             {activeShowers.length > 1 && (
                 <section className="space-y-2">
-                    <div className="flex items-center gap-2 px-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/34">
+                    <div className="flex items-center gap-2 px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/34">
                         <TrendingUp className="h-3.5 w-3.5 text-cyan-300/70" />
                         Otras Lluvias Activas
                     </div>
@@ -130,7 +130,7 @@ export default function MeteorShowerInfo() {
             )}
 
             <section className="space-y-2">
-                <div className="flex items-center gap-2 px-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/34">
+                <div className="flex items-center gap-2 px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/34">
                     <Clock3 className="h-3.5 w-3.5 text-cyan-300/70" />
                     Próximos Máximos
                 </div>
@@ -181,7 +181,7 @@ function ShowerRow({
             </div>
             <div
                 className={cn(
-                    'rounded-full border px-2 py-1 text-[9px] font-bold uppercase tracking-[0.14em]',
+                    'rounded-full border px-2 py-1 text-[11px] font-bold uppercase tracking-[0.14em]',
                     badgeTone === 'good'
                         ? 'border-emerald-400/25 bg-emerald-500/10 text-emerald-200'
                         : badgeTone === 'warning'
@@ -207,9 +207,9 @@ function ShowerIndicator({ color }: { color: string }) {
 function Metric({ label, value, hint }: { label: string; value: string; hint: string }) {
     return (
         <div className="atlas-card rounded-xl px-3 py-2.5">
-            <div className="text-[9px] uppercase tracking-[0.18em] text-white/38">{label}</div>
+            <div className="text-[11px] uppercase tracking-[0.18em] text-white/38">{label}</div>
             <div className="mt-1 text-[14px] font-semibold text-white">{value}</div>
-            <div className="text-[9px] uppercase tracking-[0.14em] text-white/32">{hint}</div>
+            <div className="text-[11px] uppercase tracking-[0.14em] text-white/32">{hint}</div>
         </div>
     );
 }

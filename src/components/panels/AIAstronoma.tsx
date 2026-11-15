@@ -628,7 +628,9 @@ export default function AIAstronoma() {
     return (
         <div className={cn(
             'fixed z-[60] flex flex-col items-end gap-3 pointer-events-none',
-            'md:bottom-24 md:right-6',
+            'transition-[right] md:bottom-24',
+            // En escritorio el panel lateral mide 52 px plegado y 340 px abierto: no taparlo.
+            sidebarOpen ? 'md:right-[356px]' : 'md:right-[68px]',
             sidebarOpen && !chatOpen ? 'hidden md:flex' : 'bottom-24 right-4'
         )}>
             <AnimatePresence>
@@ -641,10 +643,10 @@ export default function AIAstronoma() {
                     >
                         <div className="mb-3 flex items-center justify-between gap-3">
                             <div className="min-w-0">
-                                <div className="text-[10px] font-bold uppercase tracking-widest text-cyan-300">
+                                <div className="text-[11px] font-bold uppercase tracking-widest text-cyan-300">
                                     Consulta Astronomica
                                 </div>
-                                <div className="truncate font-mono text-[9px] text-white/35">
+                                <div className="truncate font-mono text-[11px] text-white/35">
                                     {brief?.title || selected?.name || targetedObject?.name || 'Contexto del cielo actual'}
                                 </div>
                             </div>
@@ -655,7 +657,7 @@ export default function AIAstronoma() {
                                         type="button"
                                         onClick={() => setAstronomerMode(mode)}
                                         className={cn(
-                                            'rounded-full px-2 py-1 text-[8px] font-bold uppercase tracking-widest transition-colors',
+                                            'rounded-full px-2 py-1 text-[11px] font-bold uppercase tracking-widest transition-colors',
                                             astronomerMode === mode
                                                 ? 'bg-cyan-400/18 text-cyan-100'
                                                 : 'text-white/30 hover:text-white/60'
@@ -695,14 +697,14 @@ export default function AIAstronoma() {
                                 >
                                     <p className="whitespace-pre-wrap">{item.text}</p>
                                     {item.role === 'assistant' && item.source && (
-                                        <div className="mt-2 border-t border-white/5 pt-1.5 font-mono text-[8px] uppercase tracking-widest text-white/25">
+                                        <div className="mt-2 border-t border-white/5 pt-1.5 font-mono text-[11px] uppercase tracking-widest text-white/25">
                                             {item.source === 'openai' ? 'Respuesta IA' : 'Respuesta local'}
                                         </div>
                                     )}
                                 </div>
                             ))}
                             {chatLoading && (
-                                <div className="mr-8 flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2 text-[10px] text-white/50">
+                                <div className="mr-8 flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2 text-[11px] text-white/50">
                                     <Loader2 className="h-3.5 w-3.5 animate-spin text-cyan-300" />
                                     Analizando contexto astronomico...
                                 </div>
@@ -716,7 +718,7 @@ export default function AIAstronoma() {
                                     key={item}
                                     onClick={() => { void askAstronomer(item); }}
                                     disabled={chatLoading}
-                                    className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide text-white/45 transition-colors hover:border-cyan-400/30 hover:text-cyan-200 disabled:opacity-50"
+                                    className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white/45 transition-colors hover:border-cyan-400/30 hover:text-cyan-200 disabled:opacity-50"
                                 >
                                     {item}
                                 </button>
@@ -747,7 +749,7 @@ export default function AIAstronoma() {
                             </button>
                         </form>
                         {chatError && (
-                            <div className="mt-2 text-[9px] text-red-300/70">{chatError}</div>
+                            <div className="mt-2 text-[11px] text-red-300/70">{chatError}</div>
                         )}
                     </motion.div>
                 )}
@@ -770,11 +772,11 @@ export default function AIAstronoma() {
                         <div className="flex items-start gap-3">
                             <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-400" />
                             <div className="flex-1">
-                                <span className="block text-[10px] font-bold uppercase tracking-widest text-cyan-400">
+                                <span className="block text-[11px] font-bold uppercase tracking-widest text-cyan-400">
                                     Asistente Astronomico
                                 </span>
                                 {brief && (
-                                    <span className="mt-1 block truncate font-mono text-[9px] text-white/35">
+                                    <span className="mt-1 block truncate font-mono text-[11px] text-white/35">
                                         {brief.subtitle}
                                     </span>
                                 )}
@@ -812,20 +814,20 @@ export default function AIAstronoma() {
                             <>
                                 <div className="mt-3 flex flex-wrap gap-1.5">
                                     {brief.tags.map((tag) => (
-                                        <span key={tag} className="rounded border border-white/10 bg-white/5 px-2 py-1 font-mono text-[9px] text-white/50">
+                                        <span key={tag} className="rounded border border-white/10 bg-white/5 px-2 py-1 font-mono text-[11px] text-white/50">
                                             {tag}
                                         </span>
                                     ))}
                                 </div>
                                 <div className="mt-3 flex gap-2 rounded-lg border border-cyan-400/15 bg-cyan-400/10 px-3 py-2">
                                     <Telescope className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-300/80" />
-                                    <p className="text-[10px] leading-relaxed text-cyan-50/65">{brief.observing}</p>
+                                    <p className="text-[11px] leading-relaxed text-cyan-50/65">{brief.observing}</p>
                                 </div>
                             </>
                         )}
 
                         <div className="mt-2 flex justify-end border-t border-white/5 pt-2">
-                            <span className="text-[8px] font-bold uppercase tracking-widest text-white/20">Cerrar</span>
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-white/20">Cerrar</span>
                         </div>
                     </motion.div>
                 )}
@@ -908,7 +910,7 @@ function BriefMetric({
         )}>
             <div className="mb-1 flex items-center gap-1.5 text-white/35">
                 {icon}
-                <span className="text-[8px] font-bold uppercase tracking-widest">{label}</span>
+                <span className="text-[11px] font-bold uppercase tracking-widest">{label}</span>
             </div>
             <div className="text-[11px] font-bold leading-snug text-white/80">{value}</div>
         </div>

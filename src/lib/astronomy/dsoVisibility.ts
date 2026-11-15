@@ -5,6 +5,8 @@
 export const NAKED_EYE_LABEL_MAG = 4.5;
 /** Tope de etiquetas simultáneas a campo amplio: cada <Html> es un nodo DOM. */
 export const MAX_WIDE_FIELD_LABELS = 12;
+/** Dos etiquetas a menos de esta separación se pisan a campo amplio (p. ej. el Cúmulo Doble). */
+export const MIN_LABEL_SEPARATION_DEG = 2.5;
 /** Por debajo de este FOV se aplica la regla de etiquetado de detalle. */
 export const DETAIL_LABEL_FOV = 35;
 const DETAIL_LABEL_MAG = 8.5;
@@ -33,21 +35,34 @@ export function dsoSpriteVisibility(mag: number, bortle: number, fov: number, ho
     return Math.max(hovered ? 0.35 : 0, magVisibility * pollutionFactor);
 }
 
+const toRad = (deg: number) => (deg * Math.PI) / 180;
+
+function angularSeparationDeg(a: { ra: number; dec: number }, b: { ra: number; dec: number }) {
+    const cos = Math.sin(toRad(a.dec)) * Math.sin(toRad(b.dec))
+        + Math.cos(toRad(a.dec)) * Math.cos(toRad(b.dec)) * Math.cos(toRad(a.ra - b.ra));
+    return (Math.acos(clamp(cos, -1, 1)) * 180) / Math.PI;
+}
+
 /**
  * Ids de los DSO que pueden llevar etiqueta a campo amplio: los visibles a
- * simple vista, priorizados por brillo y limitados a `max`.
+ * simple vista, priorizados por brillo, limitados a `max` y sin dos
+ * etiquetas pegadas (gana la del objeto más brillante). Quien llama pasa
+ * solo los objetos que están sobre el horizonte.
  */
 export function selectWideFieldLabelIds(
-    dsos: ReadonlyArray<{ id: string; mag: number }>,
+    dsos: ReadonlyArray<{ id: string; mag: number; ra: number; dec: number }>,
     max = MAX_WIDE_FIELD_LABELS,
 ): Set<string> {
-    return new Set(
-        dsos
-            .filter((dso) => dso.mag <= NAKED_EYE_LABEL_MAG)
-            .sort((a, b) => a.mag - b.mag)
-            .slice(0, max)
-            .map((dso) => dso.id),
-    );
+    const selected: Array<{ id: string; ra: number; dec: number }> = [];
+    const candidates = dsos
+        .filter((dso) => dso.mag <= NAKED_EYE_LABEL_MAG)
+        .sort((a, b) => a.mag - b.mag);
+    for (const dso of candidates) {
+        if (selected.length >= max) break;
+        if (selected.some((other) => angularSeparationDeg(dso, other) < MIN_LABEL_SEPARATION_DEG)) continue;
+        selected.push(dso);
+    }
+    return new Set(selected.map((dso) => dso.id));
 }
 
 /**
@@ -56,6 +71,7 @@ export function selectWideFieldLabelIds(
  * - en detalle (FOV < 35), los de mag < 8.5;
  * - a campo amplio, solo los de simple vista que entren en el tope
  *   (`wideFieldAllowed`, ver `selectWideFieldLabelIds`).
+ * Sin hover, un objeto bajo el horizonte nunca se nombra.
  */
 export function shouldShowDsoLabel(
     dso: { mag: number },
@@ -63,8 +79,10 @@ export function shouldShowDsoLabel(
     fov: number,
     hovered: boolean,
     wideFieldAllowed = true,
+    aboveHorizon = true,
 ): boolean {
     if (hovered) return true;
+    if (!aboveHorizon) return false;
     if (fov < DETAIL_LABEL_FOV && dso.mag < DETAIL_LABEL_MAG) return true;
     return wideFieldAllowed
         && dso.mag <= NAKED_EYE_LABEL_MAG

@@ -252,7 +252,7 @@ export default function CelestialSearch() {
                     <div className="p-1">
                         {results.length > 0 && results[0].resultType === 'history' && (
                             <div className="mb-1 flex items-center justify-between border-b border-white/5 px-3 py-1.5">
-                                <span className="flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-widest text-white/40">
+                                <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-white/40">
                                     <History className="h-2.5 w-2.5" /> Recientes
                                 </span>
                                 <button onClick={clearHistory} className="group rounded p-1 hover:bg-red-500/10" title="Limpiar historial">
@@ -284,7 +284,7 @@ export default function CelestialSearch() {
                                         <div className="truncate text-[11px] font-semibold tracking-wide text-white">
                                             {result.name}
                                         </div>
-                                        <div className="truncate text-[9px] font-mono text-white/35">
+                                        <div className="truncate text-[11px] font-mono text-white/35">
                                             {result.desc || result.constellation || 'Sin descripción'}
                                         </div>
                                     </div>
@@ -295,7 +295,7 @@ export default function CelestialSearch() {
                         {results.length === 0 && query.length > 2 && (
                             <button
                                 onClick={() => void searchSimbad()}
-                                className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-300 transition-colors hover:bg-white/5"
+                                className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-300 transition-colors hover:bg-white/5"
                             >
                                 {isSearching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ExternalLink className="h-3.5 w-3.5" />}
                                 Buscar en SIMBAD

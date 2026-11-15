@@ -124,7 +124,7 @@ function TerrainHorizon() {
             }
             {loaded && (
                 <Html fullscreen zIndexRange={[6, 0]}>
-                    <div className="pointer-events-none absolute left-3 top-3 rounded border border-white/10 bg-black/45 px-2 py-1 font-mono text-[8px] uppercase tracking-wider text-white/35 backdrop-blur-sm">
+                    <div className="pointer-events-none absolute left-3 top-9 rounded border border-white/10 bg-black/45 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-white/55 backdrop-blur-sm">
                         Relieve real · Copernicus DEM 90 m
                     </div>
                 </Html>
