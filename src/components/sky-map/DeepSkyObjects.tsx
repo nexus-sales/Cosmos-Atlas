@@ -9,6 +9,7 @@ import { Html } from '@react-three/drei';
 import { DSOType, DSO } from '@/types/celestial';
 import { getDSOImage, preloadDSOImage } from '@/data/dsoImages';
 import NebulaVolume from '@/components/sky-map/NebulaVolume';
+import { DETAIL_LABEL_FOV, dsoSpriteVisibility, dsoVisualSize, selectWideFieldLabelIds, shouldShowDsoLabel } from '@/lib/astronomy/dsoVisibility';
 
 // Cache global: clave = "tipo:color". Las texturas procedurales son idénticas para
 // el mismo tipo+color, así que no tiene sentido crearlas N veces con Math.random().
@@ -183,7 +184,7 @@ interface DSOData extends DSO {
     visualSize: number;
 }
 
-function DSOItem({ dso }: { dso: DSOData }) {
+function DSOItem({ dso, wideFieldLabel }: { dso: DSOData; wideFieldLabel: boolean }) {
     const [hovered, setHovered] = useState(false);
     const setTargetedObject = useAppStore((state) => state.setTargetedObject);
     const markAsVisited = useAppStore((state) => state.markAsVisited);
@@ -194,16 +195,13 @@ function DSOItem({ dso }: { dso: DSOData }) {
     const texture = useDSOTexture(dso, shouldLoadRealImage);
 
     const displayColor = nightMode ? '#ff4444' : dso.color;
-    const limitingMag = 8.8 - (bortleScale - 1) * 0.55 + THREE.MathUtils.clamp(40 / camFov, 0, 2.2);
-    const magVisibility = THREE.MathUtils.clamp((limitingMag + 0.8 - dso.mag) / 1.6, 0, 1);
-    const pollutionVisibility = THREE.MathUtils.lerp(1.0, 0.15, (bortleScale - 1) / 8);
-    const visibility = Math.max(hovered ? 0.35 : 0, magVisibility * pollutionVisibility);
+    const visibility = dsoSpriteVisibility(dso.mag, bortleScale, camFov, hovered);
 
     // Transición suave: a medida que bajamos el FOV (< 35), aparece el volumen.
     const volumeIntensity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 45, 20, 0, 1), 0, 1);
     const spriteIntensity = (1.0 - volumeIntensity * 0.7) * visibility; // El sprite no desaparece del todo, sirve de centro brillante.
 
-    if (visibility < 0.02 && camFov > 35) return null;
+    if (visibility < 0.02 && camFov > DETAIL_LABEL_FOV) return null;
 
     return (
         <group position={dso.pos}>
@@ -242,8 +240,8 @@ function DSOItem({ dso }: { dso: DSOData }) {
                 />
             </mesh>
 
-            {/* Label progresivo: aparece si estamos cerca (FOV < 35) o si hacemos hover */}
-            {(hovered || (camFov < 35 && dso.mag < 8.5)) && (
+            {/* Label progresivo: hover, detalle (FOV < 35) o DSO de simple vista a campo amplio */}
+            {shouldShowDsoLabel(dso, bortleScale, camFov, hovered, wideFieldLabel) && (
                 <Html zIndexRange={[100, 0]}>
                     <div 
                         className="pointer-events-none whitespace-nowrap flex flex-col items-center -translate-y-6 transition-opacity duration-300"
@@ -277,16 +275,15 @@ export default function DeepSkyObjects() {
     const dsoData = useMemo(() => {
         return dsos.map((dso) => {
             const pos = equatorialTo3D(dso.ra, dso.dec, DSO_RADIUS) as [number, number, number];
-            // visualSize: representative size, capped so even M31/LMC don't flood the screen
-            const visualSize = Math.max(0.12, Math.min(2.2, (dso.sizeArcmin || 5) * 0.027));
-            return { ...dso, pos, visualSize };
+            return { ...dso, pos, visualSize: dsoVisualSize(dso.sizeArcmin, dso.type) };
         });
     }, [dsos]);
+    const wideFieldLabelIds = useMemo(() => selectWideFieldLabelIds(dsos), [dsos]);
 
     return (
         <group>
             {dsoData.map((dso) => (
-                <DSOItem key={dso.id} dso={dso} />
+                <DSOItem key={dso.id} dso={dso} wideFieldLabel={wideFieldLabelIds.has(dso.id)} />
             ))}
         </group>
     );
