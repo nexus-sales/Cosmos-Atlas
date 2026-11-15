@@ -114,9 +114,11 @@ function SubHorizonAlert() {
 function FovZoom({
     trackingRef,
     manualFovRef,
+    controlsRef,
 }: {
     trackingRef: React.MutableRefObject<boolean>;
     manualFovRef: React.MutableRefObject<number | null>;
+    controlsRef: React.MutableRefObject<OrbitControlsImpl | null>;
 }) {
     const { camera, gl } = useThree();
     const fovRef = useRef(60);
@@ -135,6 +137,40 @@ function FovZoom({
         const viewport = canvas.closest<HTMLElement>('[data-sky-viewport]') ?? canvas;
         const cam = camera as THREE.PerspectiveCamera;
 
+        // Dirección del mundo que hay bajo un punto de la pantalla.
+        const directionAt = (clientX: number, clientY: number, out: THREE.Vector3) => {
+            const rect = canvas.getBoundingClientRect();
+            out.set(
+                ((clientX - rect.left) / rect.width) * 2 - 1,
+                -((clientY - rect.top) / rect.height) * 2 + 1,
+                0.5,
+            );
+            cam.updateMatrixWorld();
+            return out.unproject(cam).sub(cam.position).normalize();
+        };
+        const anchorBefore = new THREE.Vector3();
+        const anchorAfter = new THREE.Vector3();
+        const anchorRotation = new THREE.Quaternion();
+
+        // Zoom anclado: lo que hay bajo los dedos (o el cursor) se queda bajo
+        // ellos al cambiar el FOV. Sin esto el zoom iba siempre al centro de la
+        // pantalla y un objeto descentrado se salía del encuadre al acercar.
+        const zoomAround = (clientX: number, clientY: number, nextFov: number) => {
+            // En AR la cámara la gobierna el sensor: ahí solo se cambia el FOV.
+            const anchored = !useAppStore.getState().followOrientation;
+            if (anchored) directionAt(clientX, clientY, anchorBefore);
+            fovRef.current = nextFov;
+            cam.fov = nextFov;
+            cam.updateProjectionMatrix();
+            if (anchored) {
+                directionAt(clientX, clientY, anchorAfter);
+                anchorRotation.setFromUnitVectors(anchorAfter, anchorBefore);
+                cam.position.applyQuaternion(anchorRotation);
+                cam.lookAt(0, 0, 0);
+            }
+            setCamFov(nextFov);
+        };
+
         // ── Rueda de ratón ──────────────────────────────────────────────────
         const onWheel = (e: WheelEvent) => {
             e.preventDefault();
@@ -148,14 +184,21 @@ function FovZoom({
                 setCamFov(next);
                 return;
             }
-            fovRef.current = THREE.MathUtils.clamp(fovRef.current + delta, 10, 90);
-            cam.fov = fovRef.current;
-            cam.updateProjectionMatrix();
-            setCamFov(fovRef.current);
+            zoomAround(e.clientX, e.clientY, THREE.MathUtils.clamp(fovRef.current + delta, 10, 90));
         };
 
         // ── Pinch táctil nativo en toda la bóveda ─────────────────────────
         let lastDist = 0;
+        let pinchX = 0;
+        let pinchY = 0;
+
+        const updatePinchCenter = (touches: TouchList) => {
+            const a = touches.item(0);
+            const b = touches.item(1);
+            if (!a || !b) return;
+            pinchX = (a.clientX + b.clientX) / 2;
+            pinchY = (a.clientY + b.clientY) / 2;
+        };
 
         const touchDistance = (touches: TouchList) => {
             const a = touches.item(0);
@@ -173,16 +216,17 @@ function FovZoom({
                 setCamFov(next);
                 return;
             }
-            fovRef.current = THREE.MathUtils.clamp(fovRef.current + delta, 10, 90);
-            cam.fov = fovRef.current;
-            cam.updateProjectionMatrix();
-            setCamFov(fovRef.current);
+            zoomAround(pinchX, pinchY, THREE.MathUtils.clamp(fovRef.current + delta, 10, 90));
         };
 
         const onTouchStart = (e: TouchEvent) => {
             if (e.touches.length === 2) {
                 e.preventDefault();
                 lastDist = touchDistance(e.touches);
+                updatePinchCenter(e.touches);
+                // OrbitControls seguiría girando con el punto medio de los dos
+                // dedos (salto brusco de encuadre): se pausa mientras dura el pinch.
+                if (controlsRef.current) controlsRef.current.enabled = false;
             }
         };
 
@@ -190,6 +234,7 @@ function FovZoom({
             if (e.touches.length !== 2) return;
             e.preventDefault();
             const dist = touchDistance(e.touches);
+            updatePinchCenter(e.touches);
             if (lastDist <= 0 || dist <= 0) {
                 lastDist = dist;
                 return;
@@ -202,6 +247,9 @@ function FovZoom({
 
         const onTouchEnd = (e: TouchEvent) => {
             if (e.touches.length < 2) lastDist = 0;
+            // Se reactiva al levantar todos los dedos: si quedara uno, el giro
+            // se reanudaría desde una posición antigua y daría otro salto.
+            if (e.touches.length === 0 && controlsRef.current) controlsRef.current.enabled = true;
         };
 
         canvas.addEventListener('wheel', onWheel, { passive: false, capture: true });
@@ -218,7 +266,7 @@ function FovZoom({
             viewport.removeEventListener('touchcancel', onTouchEnd, { capture: true });
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [camera, gl, setCamFov]); // trackingRef/manualFovRef son refs — estables por diseño
+    }, [camera, gl, setCamFov]); // trackingRef/manualFovRef/controlsRef son refs — estables por diseño
 
     return null;
 }
@@ -556,6 +604,7 @@ export default function SkyCanvas() {
                     <FovZoom
                         trackingRef={trackingRef}
                         manualFovRef={manualFovRef}
+                        controlsRef={controlsRef}
                     />
 
                     {/* Esfera atmosférica con scattering Rayleigh/Mie y posición real del Sol */}

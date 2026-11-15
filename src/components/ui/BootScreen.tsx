@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, Loader2 } from 'lucide-react';
 import { useAppStore } from '@/stores/useAppStore';
@@ -105,6 +105,13 @@ export default function BootScreen() {
 
     const visible = !dismissed;
     const canContinue = complete || waitedTooLong;
+
+    // autoFocus no sirve: el botón nace desactivado. Se enfoca al activarse
+    // para que baste con pulsar Enter.
+    const continueRef = useRef<HTMLButtonElement>(null);
+    useEffect(() => {
+        if (canContinue) continueRef.current?.focus();
+    }, [canContinue]);
     const doneCount = useMemo(() => BOOT_STEPS.filter((step) => done[step.id]).length, [done]);
 
     return (
@@ -173,7 +180,7 @@ export default function BootScreen() {
                             </div>
                             <button
                                 type="button"
-                                autoFocus
+                                ref={continueRef}
                                 disabled={!canContinue}
                                 onClick={() => setDismissed(true)}
                                 className={cn(
