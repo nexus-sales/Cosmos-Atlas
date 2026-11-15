@@ -9,9 +9,8 @@ import { loadHipparcos } from '@/lib/astronomy/hipparcos';
 import { buildTonightSummary, type TonightSummary } from '@/lib/astronomy/tonightSummary';
 import { cn } from '@/lib/utils';
 
-// La portada no retiene a nadie: se va en cuanto la bóveda está lista, con un
-// mínimo para que no parpadee y un máximo por si un paso se queda colgado.
-const MIN_VISIBLE_MS = 700;
+// La portada se queda hasta que el usuario pulsa "Continuar". El botón aparece
+// cuando la bóveda está lista, o pasado un máximo por si un paso se queda colgado.
 const MAX_WAIT_MS = 9000;
 
 // Campo de estrellas en CSS: no depende de la escena 3D que estamos esperando.
@@ -80,20 +79,16 @@ export default function BootScreen() {
     const nightMode = useAppStore((state) => state.settings.nightMode);
     const observer = useAppStore((state) => state.observer);
     const [dismissed, setDismissed] = useState(false);
-    const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+    const [waitedTooLong, setWaitedTooLong] = useState(false);
     const [summary, setSummary] = useState<TonightSummary | null>(null);
 
     const complete = isBootComplete(done);
 
     useEffect(() => {
-        const minTimer = setTimeout(() => setMinTimeElapsed(true), MIN_VISIBLE_MS);
-        const maxTimer = setTimeout(() => setDismissed(true), MAX_WAIT_MS);
+        const maxTimer = setTimeout(() => setWaitedTooLong(true), MAX_WAIT_MS);
         // El catálogo de estrellas lo comparte HipparcosStars: misma promesa, sin doble descarga.
         void loadHipparcos().finally(() => markDone('stars'));
-        return () => {
-            clearTimeout(minTimer);
-            clearTimeout(maxTimer);
-        };
+        return () => clearTimeout(maxTimer);
     }, [markDone]);
 
     // Se calcula en cliente: depende de la hora y de la ubicación guardada.
@@ -108,7 +103,8 @@ export default function BootScreen() {
         return () => clearTimeout(id);
     }, [observer.lat, observer.lon]);
 
-    const visible = !dismissed && !(complete && minTimeElapsed);
+    const visible = !dismissed;
+    const canContinue = complete || waitedTooLong;
     const doneCount = useMemo(() => BOOT_STEPS.filter((step) => done[step.id]).length, [done]);
 
     return (
@@ -122,9 +118,8 @@ export default function BootScreen() {
                         'fixed inset-0 z-[9999] overflow-y-auto',
                         nightMode ? 'bg-[#0a0000]' : 'bg-[#030814]',
                     )}
-                    role="status"
-                    aria-live="polite"
-                    aria-label="Cargando Cosmos Atlas"
+                    role="dialog"
+                    aria-label="Portada de Cosmos Atlas"
                 >
                     <div className="pointer-events-none absolute inset-0 opacity-70" style={{ backgroundImage: STARFIELD }} />
                     <div className={cn(
@@ -152,7 +147,7 @@ export default function BootScreen() {
                                 Estrellas, planetas y cielo profundo calculados para tu ubicación y tu hora.
                             </p>
 
-                            <ul className="mt-8 space-y-2.5">
+                            <ul className="mt-8 space-y-2.5" role="status" aria-live="polite">
                                 {BOOT_STEPS.map((step) => {
                                     const stepDone = done[step.id];
                                     return (
@@ -178,13 +173,18 @@ export default function BootScreen() {
                             </div>
                             <button
                                 type="button"
+                                autoFocus
+                                disabled={!canContinue}
                                 onClick={() => setDismissed(true)}
                                 className={cn(
-                                    'mt-6 text-xs font-semibold underline underline-offset-4',
-                                    nightMode ? 'text-red-200/60 hover:text-red-100' : 'text-white/55 hover:text-white',
+                                    'mt-7 inline-flex min-h-12 items-center justify-center rounded-xl px-7 text-base font-bold transition-all',
+                                    'disabled:cursor-wait disabled:opacity-40',
+                                    nightMode
+                                        ? 'bg-red-500/85 text-red-50 enabled:hover:bg-red-400'
+                                        : 'bg-cyan-300 text-[#03101f] enabled:hover:bg-cyan-200 enabled:shadow-[0_0_28px_rgba(103,232,249,0.35)]',
                                 )}
                             >
-                                Entrar ya
+                                {canContinue ? 'Continuar →' : 'Cargando…'}
                             </button>
                         </div>
 
