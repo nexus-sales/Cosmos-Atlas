@@ -44,6 +44,7 @@ import { cameraHeadingRef, cameraRef, moonHorRef, sunHorRef } from '@/lib/skyRef
 import { ocularExposureTarget } from '@/lib/astronomy/skyBrightness';
 import { computeMagneticDeclination } from '@/lib/astronomy/magneticDeclination';
 import { calibrateArToTarget } from '@/lib/astronomy/arCalibration';
+import { describeTargetDirection, isPlausibleElevationCorrection, listArAlignmentTargets, type ArAlignmentTarget } from '@/lib/astronomy/arAlignmentTargets';
 import * as Astronomy from 'astronomy-engine';
 
 // Observador reutilizable — evita allocations en useFrame
@@ -413,7 +414,11 @@ export default function SkyCanvas() {
     const setArCalibrationUpdatedAt = useAppStore((state) => state.setArCalibrationUpdatedAt);
     const observer = useAppStore((state) => state.observer);
     const time = useAppStore((state) => state.time);
-    const [isArAligning, setIsArAligning] = useState(false);
+    // Astros candidatos para alinear; null = no se está alineando.
+    const [arTargets, setArTargets] = useState<ArAlignmentTarget[] | null>(null);
+    const [arTargetIndex, setArTargetIndex] = useState(0);
+    const isArAligning = arTargets !== null;
+    const arTarget = arTargets?.[arTargetIndex] ?? null;
     const [arAlignmentMessage, setArAlignmentMessage] = useState<string | null>(null);
     const arOverlayReady = (viewMode !== 'camera' || followOrientation) && !isArAligning;
 
@@ -431,15 +436,28 @@ export default function SkyCanvas() {
         setCamFov(next);
     };
 
-    const alignCameraToMoon = useCallback(() => {
+    const startArAlignment = useCallback(() => {
+        // Hora real, no la simulada: se alinea contra el cielo que ve la cámara.
+        const targets = listArAlignmentTargets(new Date(), observer.lat, observer.lon);
+        if (targets.length === 0) {
+            setArAlignmentMessage('Ahora no hay ningún astro brillante bien situado para alinear. Prueba más tarde.');
+            window.setTimeout(() => setArAlignmentMessage(null), 4500);
+            return;
+        }
+        setArAlignmentMessage(null);
+        setArTargetIndex(0);
+        setArTargets(targets);
+    }, [observer.lat, observer.lon]);
+
+    const alignCameraToTarget = useCallback(() => {
+        if (!arTarget) return;
         if (!deviceOrientationRef.active) {
             setArAlignmentMessage('El sensor de orientación no está activo.');
             return;
         }
-        if (moonHorRef.alt <= 0) {
-            setArAlignmentMessage('La Luna está bajo el horizonte y no puede usarse para alinear.');
-            return;
-        }
+        // Se recalcula al confirmar: el astro se ha movido mientras el usuario apuntaba.
+        const current = listArAlignmentTargets(new Date(), observer.lat, observer.lon)
+            .find((target) => target.id === arTarget.id) ?? arTarget;
 
         const result = calibrateArToTarget({
             sensorHeading: deviceOrientationRef.heading,
@@ -447,18 +465,26 @@ export default function SkyCanvas() {
             magneticDeclination: computeMagneticDeclination(observer.lat, observer.lon, time),
             currentHeadingOffset: compassCalibrationOffset,
             currentElevationOffset: arElevationCalibrationOffset,
-            targetAzimuth: moonHorRef.az,
-            targetAltitude: moonHorRef.alt,
+            targetAzimuth: current.azimuth,
+            targetAltitude: current.altitude,
         });
+
+        // La elevación sale de la gravedad y es fiable: un desvío grande
+        // significa que en la retícula no estaba el astro pedido.
+        if (!isPlausibleElevationCorrection(result.elevationCorrection)) {
+            setArAlignmentMessage(`Eso no parece ${current.name}: está a ${Math.round(current.altitude)}° de altura. Vuelve a centrarlo.`);
+            return;
+        }
 
         setCompassCalibrationOffset(result.headingOffset);
         setArElevationCalibrationOffset(result.elevationOffset);
         setArCalibrationUpdatedAt(Date.now());
-        setIsArAligning(false);
-        setArAlignmentMessage('Alineación con la Luna aplicada.');
+        setArTargets(null);
+        setArAlignmentMessage(`Alineación con ${current.name} aplicada.`);
         window.setTimeout(() => setArAlignmentMessage(null), 3500);
     }, [
         arElevationCalibrationOffset,
+        arTarget,
         compassCalibrationOffset,
         observer.lat,
         observer.lon,
@@ -578,29 +604,36 @@ export default function SkyCanvas() {
             {viewMode === 'camera' && followOrientation && !isArAligning && (
                 <button
                     type="button"
-                    onClick={() => {
-                        setArAlignmentMessage(null);
-                        setIsArAligning(true);
-                    }}
+                    onClick={startArAlignment}
                     className="absolute left-1/2 top-4 z-[75] flex -translate-x-1/2 items-center gap-2 rounded-full border border-cyan-300/45 bg-[#06101d]/90 px-4 py-2 text-[11px] font-bold tracking-[0.12em] text-cyan-100 shadow-xl backdrop-blur-md"
                 >
                     <Crosshair className="h-4 w-4" />
-                    ALINEAR LUNA
+                    ALINEAR CON UN ASTRO
                 </button>
             )}
 
-            {viewMode === 'camera' && followOrientation && isArAligning && (
+            {viewMode === 'camera' && followOrientation && arTarget && arTargets && (
                 <div className="absolute inset-0 z-[80]">
                     <div className="pointer-events-none absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-cyan-200 shadow-[0_0_24px_rgba(103,232,249,0.65)]">
                         <span className="absolute left-1/2 top-1/2 h-px w-28 -translate-x-1/2 bg-cyan-100/80" />
                         <span className="absolute left-1/2 top-1/2 h-28 w-px -translate-y-1/2 bg-cyan-100/80" />
                     </div>
                     <div className="absolute bottom-28 left-1/2 flex w-[min(92vw,360px)] -translate-x-1/2 flex-col gap-3 rounded-2xl border border-cyan-300/35 bg-[#050b16]/94 p-4 text-center shadow-2xl backdrop-blur-md">
-                        <p className="text-sm font-bold text-white">Centra la Luna real en la retícula</p>
-                        <p className="text-[11px] leading-relaxed text-white/65">No centres el marcador del mapa. Apunta la cámara directamente a la Luna que ves en el cielo.</p>
+                        <p className="text-sm font-bold text-white">Centra {arTarget.name} en la retícula</p>
+                        <p className="font-mono text-[11px] text-cyan-100/85">Búscalo al {describeTargetDirection(arTarget)}</p>
+                        <p className="text-[11px] leading-relaxed text-white/65">No centres el marcador del mapa. Apunta la cámara directamente al astro real que ves en el cielo.</p>
+                        {arTargets.length > 1 && (
+                            <button
+                                type="button"
+                                onClick={() => setArTargetIndex((index) => (index + 1) % arTargets.length)}
+                                className="rounded-lg border border-white/15 px-3 py-2 text-[11px] font-semibold text-white/80"
+                            >
+                                NO LO VEO · USAR {arTargets[(arTargetIndex + 1) % arTargets.length].name.toUpperCase()}
+                            </button>
+                        )}
                         <div className="grid grid-cols-2 gap-2">
-                            <button type="button" onClick={() => setIsArAligning(false)} className="rounded-lg border border-white/15 px-3 py-2 text-[11px] font-semibold text-white/70">CANCELAR</button>
-                            <button type="button" onClick={alignCameraToMoon} className="rounded-lg border border-cyan-300/45 bg-cyan-400/20 px-3 py-2 text-[11px] font-bold text-cyan-50">LUNA CENTRADA</button>
+                            <button type="button" onClick={() => setArTargets(null)} className="rounded-lg border border-white/15 px-3 py-2 text-[11px] font-semibold text-white/70">CANCELAR</button>
+                            <button type="button" onClick={alignCameraToTarget} className="rounded-lg border border-cyan-300/45 bg-cyan-400/20 px-3 py-2 text-[11px] font-bold text-cyan-50">YA ESTÁ CENTRADO</button>
                         </div>
                     </div>
                 </div>
