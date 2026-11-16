@@ -20,7 +20,7 @@ const serwist = new Serwist({
         // ── Catálogos binarios astronómicos ─────────────────────────────────
         // hipparcos.bin (234KB) y ngc.bin (200KB): raramente cambian, siempre en caché
         {
-            matcher: /\/(hipparcos|ngc|iau-boundaries)\.bin$/,
+            matcher: ({ url }) => /\/(hipparcos|ngc|iau-boundaries)\.bin$/.test(url.pathname),
             handler: new CacheFirst({
                 cacheName: "cosmos-catalogs-v2",
                 plugins: [

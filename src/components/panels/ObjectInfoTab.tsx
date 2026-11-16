@@ -201,7 +201,7 @@ export default function ObjectInfoTab({ onGoToGuide }: { onGoToGuide?: () => voi
                             />
                         ) : (
                             <MetricCard
-                                label="Magnitud"
+                                label={'magnitudeBand' in selected && selected.magnitudeBand === 'G' ? 'Magnitud G' : 'Magnitud'}
                                 value={selected.mag?.toFixed(2) ?? '?'}
                                 sub={selected.mag === undefined ? 'N/A' : (selected.mag < 0 ? 'Superbrill.' : selected.mag < 2 ? 'Muy brillante' : 'Brillante')}
                                 color={accentColor}

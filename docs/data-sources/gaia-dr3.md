@@ -16,9 +16,11 @@ El píxel HEALPix anidado de orden 8 se deriva del `source_id` oficial mediante 
 
 Gaia permanece desactivado en campo amplio, donde Hipparcos es suficiente. Al ampliar se solicitan conos centrados en la cámara:
 
-1. FOV 12–25°: G < 10,5; máximo 1.500 fuentes.
-2. FOV 5–12°: G < 13; máximo 3.500 fuentes.
-3. FOV < 5°: G < 17; máximo 6.000 fuentes según capacidad del dispositivo.
+1. FOV 8-18°, G hasta 10,5, máximo 650 fuentes.
+2. FOV 3-8°, G hasta 13, máximo 1.400 fuentes.
+3. FOV 1,5-3°, G hasta 17, máximo 6.000 fuentes en calidad alta, 1.400 en media y 700 en baja.
+
+Estos son techos de consulta. Bortle reduce la magnitud en `(B-1)*0.55` y el cupo de fuentes. La cantidad devuelta también depende de la densidad del cono. El FOV mínimo compartido es 1,5°.
 
 Las consultas se retrasan hasta que la cámara se estabiliza, tienen timeout, caché HTTP y caché temporal del servidor. Si ESA no responde, la aplicación declara el fallo y mantiene Hipparcos; no sustituye datos con puntos inventados.
 

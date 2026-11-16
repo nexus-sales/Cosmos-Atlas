@@ -53,6 +53,7 @@ interface AppState {
     setSelectedObject: (obj: CelestialObject | null) => void;
     targetedObject: CelestialObject | null;
     setTargetedObject: (obj: CelestialObject | null) => void;
+    pauseTargetTracking: () => void;
     time: Date;
     /** Igual que `time` pero solo cambia cuando cambia el MINUTO.
      *  Usar en componentes 3D (Planets, Comets...) para evitar re-renders cada segundo. */
@@ -70,6 +71,7 @@ interface AppState {
         showEcliptic: boolean;
         nightMode: boolean;
         bortleScale: number;
+        exploreDeepSky: boolean;
         showFOV: boolean;
         showSatellites: boolean;
         showStarlink: boolean;
@@ -199,6 +201,7 @@ export const useAppStore = create<AppState>()(
                     foundChallenges: foundChallengesForObject(obj, state.foundChallenges, challenges),
                 }
             }),
+            pauseTargetTracking: () => set({ targetedObject: null, isFlying: false, warpFactor: 0 }),
             targetedObject: null,
             setTargetedObject: (obj) => set((state) => {
                 const challenges = useCatalog.getState().challenges
@@ -252,6 +255,7 @@ export const useAppStore = create<AppState>()(
                 showEcliptic: false,
                 nightMode: false,
                 bortleScale: 4,
+                exploreDeepSky: false,
                 showFOV: false,
                 showSatellites: true,
                 showStarlink: false,

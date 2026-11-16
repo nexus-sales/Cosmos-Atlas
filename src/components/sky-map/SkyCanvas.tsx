@@ -13,7 +13,7 @@ import MilkyWaySkyDome from '@/components/sky-map/MilkyWaySkyDome';
 import CelestialGrid from '@/components/sky-map/CelestialGrid';
 import Ecliptic from '@/components/sky-map/Ecliptic';
 import Horizon from '@/components/sky-map/Horizon';
-import BackgroundStars from '@/components/sky-map/BackgroundStars';
+import { clampSkyFov, wheelZoomFov } from '@/lib/astronomy/skyZoom';
 import TargetPointer from '@/components/sky-map/TargetPointer';
 import FOVOverlay from '@/components/sky-map/FOVOverlay';
 import Compass from '@/components/panels/Compass';
@@ -174,17 +174,18 @@ function FovZoom({
         // ── Rueda de ratón ──────────────────────────────────────────────────
         const onWheel = (e: WheelEvent) => {
             e.preventDefault();
-            const delta = e.deltaY > 0 ? 3 : -3;
+            const currentFov = trackingRef.current ? (manualFovRef.current ?? cam.fov) : fovRef.current;
+            const delta = wheelZoomFov(currentFov, e.deltaY, e.deltaMode) - currentFov;
             if (trackingRef.current) {
                 const current = manualFovRef.current ?? cam.fov;
-                const next = THREE.MathUtils.clamp(current + delta, 10, 90);
+                const next = clampSkyFov(current + delta);
                 manualFovRef.current = next;
                 cam.fov = next;
                 cam.updateProjectionMatrix();
                 setCamFov(next);
                 return;
             }
-            zoomAround(e.clientX, e.clientY, THREE.MathUtils.clamp(fovRef.current + delta, 10, 90));
+            zoomAround(e.clientX, e.clientY, clampSkyFov(fovRef.current + delta));
         };
 
         // ── Pinch táctil nativo en toda la bóveda ─────────────────────────
@@ -209,14 +210,14 @@ function FovZoom({
         const applyPinchDelta = (delta: number) => {
             if (trackingRef.current) {
                 const current = manualFovRef.current ?? cam.fov;
-                const next = THREE.MathUtils.clamp(current + delta, 10, 90);
+                const next = clampSkyFov(current + delta);
                 manualFovRef.current = next;
                 cam.fov = next;
                 cam.updateProjectionMatrix();
                 setCamFov(next);
                 return;
             }
-            zoomAround(pinchX, pinchY, THREE.MathUtils.clamp(fovRef.current + delta, 10, 90));
+            zoomAround(pinchX, pinchY, clampSkyFov(fovRef.current + delta));
         };
 
         const onTouchStart = (e: TouchEvent) => {
@@ -240,7 +241,7 @@ function FovZoom({
                 return;
             }
             // Escala logarítmica: sensibilidad consistente en cualquier pantalla.
-            const delta = -Math.log(dist / lastDist) * 55;
+            const delta = (manualFovRef.current ?? cam.fov) * (lastDist / dist - 1);
             lastDist = dist;
             applyPinchDelta(delta);
         };
@@ -252,6 +253,7 @@ function FovZoom({
             if (e.touches.length === 0 && controlsRef.current) controlsRef.current.enabled = true;
         };
 
+        viewport.dataset.zoomReady = 'true';
         canvas.addEventListener('wheel', onWheel, { passive: false, capture: true });
         viewport.addEventListener('touchstart', onTouchStart, { passive: false, capture: true });
         viewport.addEventListener('touchmove', onTouchMove, { passive: false, capture: true });
@@ -259,6 +261,7 @@ function FovZoom({
         viewport.addEventListener('touchcancel', onTouchEnd, { capture: true });
 
         return () => {
+            delete viewport.dataset.zoomReady;
             canvas.removeEventListener('wheel', onWheel, { capture: true });
             viewport.removeEventListener('touchstart', onTouchStart, { capture: true });
             viewport.removeEventListener('touchmove', onTouchMove, { capture: true });
@@ -459,6 +462,11 @@ function OcularAdaptation() {
 
 
 export default function SkyCanvas() {
+    const selectedObject = useAppStore((state) => state.selectedObject);
+    const targetedObject = useAppStore((state) => state.targetedObject);
+    const followTarget = useAppStore((state) => state.settings.followTarget);
+    const pauseTargetTracking = useAppStore((state) => state.pauseTargetTracking);
+    const sidebarOpen = useAppStore((state) => state.sidebarOpen);
     const viewMode = useAppStore((state) => state.viewMode);
     const showGrid = useAppStore((state) => state.settings.showGrid);
     const showMilkyWay = useAppStore((state) => state.settings.showMilkyWay);
@@ -493,7 +501,7 @@ export default function SkyCanvas() {
     const manualFovRef = useRef<number | null>(null);
 
     const changeZoom = (delta: number) => {
-        const next = THREE.MathUtils.clamp(camFov + delta, 10, 90);
+        const next = clampSkyFov(camFov * Math.exp(delta / 30));
         manualFovRef.current = next;
         setCamFov(next);
     };
@@ -579,6 +587,11 @@ export default function SkyCanvas() {
                     gl.setClearColor(0x000000, 0);
                 }}
             >
+                <FovZoom
+                    trackingRef={trackingRef}
+                    manualFovRef={manualFovRef}
+                    controlsRef={controlsRef}
+                />
                 <Suspense fallback={null}>
                     <SetupRenderer />
 
@@ -597,30 +610,24 @@ export default function SkyCanvas() {
                         target={[0, 0, 0]}
                         onStart={() => {
                             trackingRef.current = false;
-                            setTargetedObject(null);
+                            pauseTargetTracking();
                         }}
                     />
                     <OrientationDriver />
-                    <FovZoom
-                        trackingRef={trackingRef}
-                        manualFovRef={manualFovRef}
-                        controlsRef={controlsRef}
-                    />
 
                     {/* Esfera atmosférica con scattering Rayleigh/Mie y posición real del Sol */}
                     <AtmosphericSky />
 
                     {/* Grupo rotado al sistema horizontal del observador */}
                     {arOverlayReady && <CelestialGroup>
-                        <ErrorBoundary label="BackgroundStars"><BackgroundStars /></ErrorBoundary>
                         {showMilkyWay && <ErrorBoundary label="MilkyWay"><MilkyWaySkyDome /></ErrorBoundary>}
                         {/* Catálogo Hipparcos — 14.984 estrellas hasta mag 7, carga asíncrona */}
                         <ErrorBoundary label="HipparcosStars"><HipparcosStars /></ErrorBoundary>
                         {/* Gaia DR3 real, bajo demanda y solo al ampliar el campo. */}
                         <ErrorBoundary label="GaiaStars"><GaiaStars /></ErrorBoundary>
-                        {/* Estrellas nombradas (355) con hitboxes e interacción — encima del catálogo */}
+                        {/* Estrellas nombradas (882) con hitboxes e interacción — encima del catálogo */}
                         <ErrorBoundary label="Stars"><Stars /></ErrorBoundary>
-                        {/* Catálogo NGC/IC — 10.000 objetos, puntos difusos, renderOrder=0 (debajo de DSOs nombrados) */}
+                        {/* Catálogo NGC/IC — magnitudes V e identidades OpenNGC, puntos difusos, renderOrder=0 (debajo de DSOs nombrados) */}
                         <ErrorBoundary label="NGCObjects"><NGCObjects /></ErrorBoundary>
                         <ErrorBoundary label="DeepSkyObjects"><DeepSkyObjects /></ErrorBoundary>
                         <ErrorBoundary label="Constellations"><Constellations /></ErrorBoundary>
@@ -721,10 +728,18 @@ export default function SkyCanvas() {
             )}
 
             <div
-                className="absolute right-3 top-1/2 z-[70] flex -translate-y-1/2 flex-col items-center overflow-hidden rounded-xl border border-white/10 bg-[#050a16]/90 text-white/70 shadow-lg backdrop-blur-md md:right-4"
+                className={cn(
+                    'absolute right-3 top-1/2 z-[70] flex -translate-y-1/2 flex-col items-center overflow-hidden rounded-xl border border-white/10 bg-[#050a16]/90 text-white/70 shadow-lg backdrop-blur-md',
+                    sidebarOpen ? 'md:right-[352px]' : 'md:right-16',
+                )}
                 aria-label="Controles de zoom"
                 data-fov={camFov.toFixed(2)}
             >
+                {selectedObject && !targetedObject && followTarget && !followOrientation && (
+                    <button type="button" onClick={() => setTargetedObject(selectedObject)} title="Volver a centrar" aria-label="Volver a centrar" className="flex h-9 w-9 items-center justify-center border-b border-white/10 text-cyan-200 hover:bg-white/10">
+                        <Crosshair className="h-4 w-4" />
+                    </button>
+                )}
                 <button type="button" onClick={() => changeZoom(5)} title="Alejar" aria-label="Alejar" className="flex h-9 w-9 items-center justify-center hover:bg-white/10 hover:text-white"><Minus className="h-4 w-4" /></button>
                 <button type="button" onClick={() => { manualFovRef.current = 60; setCamFov(60); }} title="Restablecer zoom" aria-label="Restablecer zoom" className="flex h-9 w-9 items-center justify-center border-y border-white/10 hover:bg-white/10 hover:text-white"><RotateCcw className="h-3.5 w-3.5" /></button>
                 <button type="button" onClick={() => changeZoom(-5)} title="Acercar" aria-label="Acercar" className="flex h-9 w-9 items-center justify-center hover:bg-white/10 hover:text-white"><Plus className="h-4 w-4" /></button>

@@ -52,6 +52,7 @@ function PanelContent({
     const showStarlink = useAppStore((state) => state.settings.showStarlink);
     const showComets = useAppStore((state) => state.settings.showComets ?? true);
     const nightMode = useAppStore((state) => state.settings.nightMode);
+    const exploreDeepSky = useAppStore((state) => state.settings.exploreDeepSky ?? false);
     const followTarget = useAppStore((state) => state.settings.followTarget);
     const bortleScale = useAppStore((state) => state.settings.bortleScale);
     const setBortleScale = useAppStore((state) => state.setBortleScale);
@@ -155,6 +156,11 @@ function PanelContent({
                                     <span className="text-[11px] font-bold tracking-widest uppercase">Seguir</span>
                                 </motion.button>
                             </div>
+
+                            <button type="button" onClick={() => toggleSetting('exploreDeepSky')} aria-pressed={exploreDeepSky} className={cn('rounded-xl border p-3 text-left', exploreDeepSky ? 'border-cyan-300/40 bg-cyan-400/10 text-cyan-100' : 'border-white/10 text-white/70')}>
+                                <span className="block text-xs font-semibold">Explorar cielo profundo</span>
+                                <span className="mt-1 block text-[11px] leading-relaxed text-white/50">{exploreDeepSky ? 'Realce ilustrativo independiente de Bortle.' : 'Atenuación orientativa de objetos según Bortle.'}</span>
+                            </button>
 
                             {/* Bloque 2: Entorno Celeste */}
                             <div className="bg-white/[0.02] border border-white/5 rounded-xl p-2 grid grid-cols-3 gap-1">

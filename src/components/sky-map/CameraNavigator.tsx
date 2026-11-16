@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { useAppStore } from '@/stores/useAppStore';
 import { getLST } from '@/lib/astronomy/time';
 import { equatorialTo3D, equToHor } from '@/lib/astronomy/transforms';
+import { targetSkyFov } from '@/lib/astronomy/skyZoom';
 import type { Star, DSO, Planet } from '@/types/celestial';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 
@@ -38,6 +39,7 @@ export default function CameraNavigator({
     const bezierP1 = useRef(new THREE.Vector3()); // end direction (unit)
     const bezierPc = useRef(new THREE.Vector3()); // control point (lifted midpoint)
     const bezierT  = useRef(0);                   // progress [0, 1]
+    const warpEnabled = useRef(false);
     const bezierDur = useRef(3.5);                // flight duration in seconds
 
     /** Quadratic Bézier between unit vectors using slerp pairs */
@@ -49,9 +51,14 @@ export default function CameraNavigator({
     }
 
     useFrame((_, delta) => {
-        if (!followTarget) {
+        if (!followTarget || !targetedObject) {
+            if (isFlying.current) {
+                setIsFlying(false);
+                setWarpFactor(0);
+            }
             trackingRef.current = false;
             isFlying.current = false;
+            prevTarget.current = null;
             return;
         }
 
@@ -87,26 +94,15 @@ export default function CameraNavigator({
             bezierP1.current.copy(targetWorldDir).negate();
             // Control point: midpoint lifted toward zenith (+Y)
             const mid = bezierP0.current.clone().add(bezierP1.current).normalize();
-            const lift = new THREE.Vector3(0, 1, 0).multiplyScalar(0.4);
+            const angle = Math.acos(THREE.MathUtils.clamp(bezierP0.current.dot(bezierP1.current), -1, 1));
+            const lift = new THREE.Vector3(0, 1, 0).multiplyScalar(Math.sin(angle / 2) * 0.4);
             bezierPc.current.copy(mid).add(lift).normalize();
             bezierT.current = 0;
             // Shorter flight if already close
-            const dot = bezierP0.current.dot(bezierP1.current.clone().negate());
-            bezierDur.current = THREE.MathUtils.clamp(2.0 + Math.acos(Math.max(-1, Math.min(1, dot))) * 0.8, 1.5, 4.0);
+            bezierDur.current = THREE.MathUtils.clamp(0.6 + angle * 0.8, 0.6, 3.2);
+            warpEnabled.current = bezierDur.current >= 1.5;
 
-            const isPlanet = 'kind' in targetedObject && targetedObject.kind === 'planet';
-            const isDSO = 'type' in targetedObject;
-            const isConstel = 'symbol' in targetedObject && targetedObject.symbol === '\u2726';
-
-            if (isConstel) {
-                targetFov.current = ('angularSize' in targetedObject && typeof targetedObject.angularSize === 'number')
-                    ? targetedObject.angularSize
-                    : 45;
-            } else if (isPlanet || isDSO) {
-                targetFov.current = 22;
-            } else {
-                targetFov.current = 36;
-            }
+            targetFov.current = targetSkyFov(targetedObject);
 
             // Nuevo objetivo -> el zoom manual del vuelo anterior ya no aplica,
             // empezamos con el encuadre por defecto de este objeto.
@@ -140,15 +136,15 @@ export default function CameraNavigator({
             camera.position.copy(arcDir).multiplyScalar(0.01);
 
             // Warp Effect: Aumentar FOV drásticamente en el centro del viaje
-            const wf = Math.sin(bezierT.current * Math.PI);
+            const wf = warpEnabled.current && manualFovRef.current === null ? Math.sin(bezierT.current * Math.PI) : 0;
             setWarpFactor(wf);
             setIsFlying(true);
             
-            const warpFovBoost = wf * 45;
-            // eslint-disable-next-line react-hooks/immutability
-            cam.fov = THREE.MathUtils.lerp(cam.fov, desiredFov + warpFovBoost, 0.15);
-            cam.updateProjectionMatrix();
-            setCamFov(cam.fov);
+            if (manualFovRef.current === null) {
+                cam.fov = THREE.MathUtils.damp(cam.fov, desiredFov + wf * 45, 9.75, delta);
+                cam.updateProjectionMatrix();
+                setCamFov(cam.fov);
+            }
 
             if (bezierT.current >= 1) {
                 isFlying.current = false;
@@ -157,8 +153,8 @@ export default function CameraNavigator({
             }
         } else {
             // Normal FOV lerp
-            if (Math.abs(cam.fov - desiredFov) > 0.1) {
-                cam.fov = THREE.MathUtils.lerp(cam.fov, desiredFov, 0.05);
+            if (manualFovRef.current === null && Math.abs(cam.fov - desiredFov) > 0.1) {
+                cam.fov = THREE.MathUtils.damp(cam.fov, desiredFov, 3, delta);
                 cam.updateProjectionMatrix();
                 setCamFov(cam.fov);
             }

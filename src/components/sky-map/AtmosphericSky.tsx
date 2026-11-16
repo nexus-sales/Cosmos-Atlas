@@ -109,6 +109,7 @@ export default function AtmosphericSky() {
     const meshRef = useRef<THREE.Mesh>(null);
     const camFov = useAppStore((s) => s.camFov);
     const viewMode = useAppStore((s) => s.viewMode);
+    const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
     const setSelectedObject = useAppStore((s) => s.setSelectedObject);
     const setTargetedObject = useAppStore((s) => s.setTargetedObject);
     const sunPos = useMemo(() => new THREE.Vector3(100, 0, 0), []);
@@ -188,8 +189,14 @@ export default function AtmosphericSky() {
         <mesh
             ref={meshRef}
             renderOrder={-5}
+            onPointerDown={(e) => {
+                pointerDownRef.current = { x: e.nativeEvent.clientX, y: e.nativeEvent.clientY };
+            }}
             onClick={(e) => {
                 e.stopPropagation();
+                const start = pointerDownRef.current;
+                pointerDownRef.current = null;
+                if (!start || e.delta > 6 || Math.hypot(e.nativeEvent.clientX - start.x, e.nativeEvent.clientY - start.y) > 6) return;
                 setSelectedObject(null);
                 setTargetedObject(null);
             }}

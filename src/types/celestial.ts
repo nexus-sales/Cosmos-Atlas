@@ -18,6 +18,7 @@ export interface Star {
     ra: number;
     dec: number;
     mag: number;
+    magnitudeBand?: 'G' | 'V';
     constellation: string;
     desc: string;
     color: string;

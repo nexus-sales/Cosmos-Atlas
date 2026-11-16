@@ -1,8 +1,8 @@
 import { Star } from '../types/celestial';
 
 // Catálogo derivado del Yale Bright Star Catalogue (BSC5, dominio público).
-// Incluye todas las estrellas hasta magnitud ≈ 3.5 visibles a ojo desnudo
-// (~270 objetos) con posiciones J2000, colores espectrales y descripciones.
+// Incluye 882 entradas nominales hasta magnitud 5,42.
+// Posiciones J2000, colores espectrales y descripciones.
 export const STARS: Star[] = [
     { name: "Sirius", ra: 101.287, dec: -16.716, mag: -1.46, constellation: "Canis Major", desc: "La estrella más brillante del cielo. Solo 8.6 al. Su nombre griego significa 'abrasador'.", color: "#c8e0ff", baseSize: 6.0 },
     { name: "Canopus", ra: 95.988, dec: -52.695, mag: -0.74, constellation: "Carina", desc: "Segunda más brillante. Guía de navegación de sondas NASA. 310 al.", color: "#ddeeff", baseSize: 5.5 },

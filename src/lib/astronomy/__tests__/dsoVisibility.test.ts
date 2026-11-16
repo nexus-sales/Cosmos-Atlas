@@ -12,8 +12,7 @@ import { DSOS } from '@/data/dsos';
 const M45 = { mag: 1.6 };
 const DEFAULT_FOV = 60;
 
-// Fórmula anterior al fix: sirve de referencia para comprobar que los
-// objetos débiles conservan exactamente su comportamiento.
+// Referencia anterior con dos factores dependientes de Bortle.
 function legacyVisibility(mag: number, bortle: number, fov: number) {
     const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
     const limitingMag = 8.8 - (bortle - 1) * 0.55 + clamp(40 / fov, 0, 2.2);
@@ -26,14 +25,12 @@ describe('dsoSpriteVisibility', () => {
         expect(dsoSpriteVisibility(M45.mag, bortle, DEFAULT_FOV)).toBeGreaterThanOrEqual(0.95);
     });
 
-    it('no cambia los objetos débiles (mag >= 6) respecto a la fórmula anterior', () => {
-        for (const mag of [6, 8, 9, 12]) {
-            for (let bortle = 1; bortle <= 9; bortle++) {
-                for (const fov of [15, 25, 60, 90]) {
-                    expect(dsoSpriteVisibility(mag, bortle, fov)).toBeCloseTo(legacyVisibility(mag, bortle, fov), 10);
-                }
-            }
-        }
+    it('aplica Bortle una sola vez y permite explorar M51 con cielo urbano', () => {
+        const observed = dsoSpriteVisibility(7, 6, 60);
+        expect(observed).toBeGreaterThan(legacyVisibility(7, 6, 60));
+        expect(dsoSpriteVisibility(8.4, 6, 30)).toBe(0);
+        expect(dsoSpriteVisibility(8.4, 6, 30, false, true)).toBe(1);
+        expect(dsoSpriteVisibility(8.4, 1, 30, false, true)).toBe(dsoSpriteVisibility(8.4, 9, 30, false, true));
     });
 
     it('nunca atenúa más que la fórmula anterior y decrece con la magnitud', () => {
@@ -112,12 +109,12 @@ describe('etiquetas pegadas y bajo el horizonte', () => {
 });
 
 describe('dsoVisualSize', () => {
-    it('dibuja M45 a su tamaño aparente y mantiene acotadas las galaxias', () => {
+    it('respeta el tamaño angular de M45 y M31', () => {
         const radius = 94;
         const m45Degrees = (dsoVisualSize(110, 'cluster') / radius) * (180 / Math.PI);
         expect(m45Degrees).toBeGreaterThan(1.7);
         expect(m45Degrees).toBeLessThan(1.9);
-        expect(dsoVisualSize(190, 'galaxy')).toBe(2.2);
-        expect(dsoVisualSize(undefined, 'nebula')).toBeCloseTo(0.135, 5);
+        expect(dsoVisualSize(190, 'galaxy') / radius * 180 / Math.PI).toBeCloseTo(190 / 60, 2);
+        expect(dsoVisualSize(undefined, 'nebula')).toBeCloseTo(0.13672, 5);
     });
 });

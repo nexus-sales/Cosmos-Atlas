@@ -35,6 +35,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "coverage/**",
+    "playwright-report/**",
+    "test-results/**",
     "tmp/**",
     "docs/dev-notes/tmp/**",
     "public/sw.js",

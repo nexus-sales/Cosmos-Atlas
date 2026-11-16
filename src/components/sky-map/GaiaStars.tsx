@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { equatorialTo3D } from '@/lib/astronomy/transforms';
 import { useAppStore } from '@/stores/useAppStore';
 import { useCatalog } from '@/stores/useCatalogStore';
+import { lodForFov } from '@/lib/astronomy/skyZoom';
 import { findNamedStarNear } from '@/lib/astronomy/starIdentification';
 
 interface GaiaSource {
@@ -37,14 +38,6 @@ function applyProperMotion(source: GaiaSource, date: Date) {
         ra: source.ra + ((source.pmRa ?? 0) * years) / (3_600_000 * cosDec),
         dec: source.dec + ((source.pmDec ?? 0) * years) / 3_600_000,
     };
-}
-
-function lodForFov(fov: number, quality: 'high' | 'medium' | 'low') {
-    const cap = quality === 'low' ? 700 : quality === 'medium' ? 1400 : 2500;
-    if (fov >= 18) return null;
-    if (fov >= 8) return { mag: 10.5, limit: Math.min(cap, 650), radius: Math.min(8, fov * 0.58), level: 1 };
-    if (fov >= 3) return { mag: 13, limit: Math.min(cap, 1400), radius: Math.max(0.8, fov * 0.62), level: 2 };
-    return { mag: 15.5, limit: cap, radius: Math.max(0.3, fov * 0.68), level: 3 };
 }
 
 const gaiaVertexShader = `
@@ -186,8 +179,9 @@ export default function GaiaStars() {
         setSelectedObject({
             name: `Fuente DR3 ${source.sourceId}`,
             ra: position.ra, dec: position.dec, mag: source.mag,
+            magnitudeBand: 'G',
             constellation: `Catálogo Gaia DR3 · HEALPix 8/${source.healpix8}`,
-            desc: `Estrella sin nombre propio registrado en el catálogo nominal de la app. Fuente astrométrica Gaia DR3, época 2016.0. BP−RP ${source.bpRp?.toFixed(2) ?? 'sin dato'}; movimiento propio aplicado a la fecha mostrada.`,
+            desc: `Estrella sin nombre propio registrado en el catálogo nominal de la app. Magnitud G (banda ancha). Fuente astrométrica Gaia DR3, época 2016.0. BP−RP ${source.bpRp?.toFixed(2) ?? 'sin dato'}; movimiento propio aplicado a la fecha mostrada.`,
             color: gaiaColor(source.bpRp), baseSize: 1, kind: 'star',
         });
     };

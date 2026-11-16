@@ -11,28 +11,15 @@ export const MIN_LABEL_SEPARATION_DEG = 2.5;
 export const DETAIL_LABEL_FOV = 35;
 const DETAIL_LABEL_MAG = 8.5;
 
-// Hasta BRIGHT_MAG la contaminación no atenúa el objeto; entre BRIGHT_MAG y
-// FAINT_MAG se recupera linealmente la penalización completa.
-const BRIGHT_MAG = 4;
-const FAINT_MAG = 6;
-
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-const lerp = (from: number, to: number, t: number) => from + (to - from) * t;
-
-/**
- * Visibilidad [0..1] del sprite de un DSO.
- *
- * `limitingMag` ya incluye el Bortle, así que el factor de contaminación solo
- * se aplica a objetos débiles: un cúmulo de mag 1.6 (M45) se ve a simple vista
- * incluso desde una ciudad y no debe penalizarse dos veces.
- */
-export function dsoSpriteVisibility(mag: number, bortle: number, fov: number, hovered = false): number {
-    const limitingMag = 8.8 - (bortle - 1) * 0.55 + clamp(40 / fov, 0, 2.2);
-    const magVisibility = clamp((limitingMag + 0.8 - mag) / 1.6, 0, 1);
-    const pollutionVisibility = lerp(1.0, 0.15, (bortle - 1) / 8);
-    const brightness = clamp((FAINT_MAG - mag) / (FAINT_MAG - BRIGHT_MAG), 0, 1);
-    const pollutionFactor = lerp(pollutionVisibility, 1.0, brightness);
-    return Math.max(hovered ? 0.35 : 0, magVisibility * pollutionFactor);
+/** Illustrative visibility. Bortle is applied once, in the observation threshold. */
+export function dsoSpriteVisibility(mag: number, bortle: number, fov: number, hovered = false, exploreDeepSky = false): number {
+    const zoomBonus = clamp(40 / Math.max(1.5, fov), 0, 2.2);
+    const limitingMag = exploreDeepSky
+        ? 10 + clamp(Math.log2(60 / Math.max(1.5, fov)), 0, 4)
+        : 8.8 - (clamp(bortle, 1, 9) - 1) * 0.55 + zoomBonus;
+    const visibility = clamp((limitingMag + 0.8 - mag) / 1.6, 0, 1);
+    return Math.max(hovered ? 0.35 : 0, visibility);
 }
 
 const toRad = (deg: number) => (deg * Math.PI) / 180;
@@ -80,21 +67,20 @@ export function shouldShowDsoLabel(
     hovered: boolean,
     wideFieldAllowed = true,
     aboveHorizon = true,
+    exploreDeepSky = false,
 ): boolean {
     if (hovered) return true;
     if (!aboveHorizon) return false;
-    if (fov < DETAIL_LABEL_FOV && dso.mag < DETAIL_LABEL_MAG) return true;
+    const visible = dsoSpriteVisibility(dso.mag, bortle, fov, false, exploreDeepSky) >= 0.02;
+    if (fov < DETAIL_LABEL_FOV && (exploreDeepSky || dso.mag < DETAIL_LABEL_MAG) && visible) return true;
     return wideFieldAllowed
         && dso.mag <= NAKED_EYE_LABEL_MAG
-        && dsoSpriteVisibility(dso.mag, bortle, fov) >= 0.02;
+        && visible;
 }
 
-/**
- * Tamaño representativo del sprite sobre la bóveda. Acotado para que M31/LMC
- * no inunden la pantalla; los cúmulos abiertos tienen un tope mayor para que
- * M45 (110') salga a su tamaño aparente real (≈1.8°).
- */
+/** Angular diameter on the sky sphere of radius 94. */
+// Retain the type argument for existing callers.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function dsoVisualSize(sizeArcmin: number | undefined, type: string): number {
-    const cap = type === 'cluster' ? 3.0 : 2.2;
-    return Math.max(0.12, Math.min(cap, (sizeArcmin || 5) * 0.027));
+    return 2 * 94 * Math.tan(((sizeArcmin && sizeArcmin > 0 ? sizeArcmin : 5) / 60) * Math.PI / 360);
 }

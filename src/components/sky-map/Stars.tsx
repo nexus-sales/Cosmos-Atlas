@@ -185,7 +185,7 @@ export default function Stars() {
         );
     }, [observer.lat, observer.lon, timeMinute]);
 
-    const limitingMag = 5.5 - (bortleScale - 1) * 0.45;
+    const limitingMag = 7.0 - (bortleScale - 1) * 0.6;
 
     // Estado del tooltip hover — una sola instancia para toda la nube de puntos
     const [hovered, setHovered] = useState<{

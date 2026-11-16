@@ -154,7 +154,7 @@ export default function HipparcosStars() {
 
     // Magnitud límite por Bortle + penalización en dispositivos de gama baja
     const qualityOffset = deviceQuality === 'low' ? -2.0 : deviceQuality === 'medium' ? -1.0 : 0;
-    const limitingMag = 5.5 - (bortleScale - 1) * 0.45 + qualityOffset;
+    const limitingMag = 7.0 - (bortleScale - 1) * 0.6 + qualityOffset;
 
     // Filtrar por limitingMag y reconstruir geometría
     const [geometry, material, visibleStars] = useMemo(() => {

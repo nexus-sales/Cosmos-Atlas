@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Crosshair, ExternalLink, Globe, History, Loader2, Search, Star, Trash2 } from 'lucide-react';
 
 import { useAppStore } from '@/stores/useAppStore';
+import { loadNGC, ngcToDSO, type NGCObject } from '@/lib/astronomy/ngc';
 import { resolveObjectName } from '@/lib/astronomy/sesame';
 import { useCatalog } from '@/stores/useCatalogStore';
 import { getSolarSystemPosition, SOLAR_SYSTEM_EPHEMERIS } from '@/lib/solarSystem';
@@ -65,6 +66,12 @@ function loadSearchHistory(): StarType[] {
 }
 
 export default function CelestialSearch() {
+    const [ngcObjects, setNgcObjects] = useState<NGCObject[]>([]);
+    useEffect(() => {
+        let active = true;
+        void loadNGC().then(objects => { if (active) setNgcObjects(objects); });
+        return () => { active = false; };
+    }, []);
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<SearchResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
@@ -76,6 +83,13 @@ export default function CelestialSearch() {
     const addSimbadObject = useAppStore((state) => state.addSimbadObject);
     const stars = useCatalog((state) => state.stars);
     const dsos = useCatalog((state) => state.dsos);
+    const localDsos = useMemo(() => {
+        const curatedIds = new Set(dsos.map(dso => dso.id.replace(/ /g, '').toLowerCase()));
+        const additional = ngcObjects
+            .filter(obj => obj.mag <= 10 && !curatedIds.has(obj.id.replace(/ /g, '').toLowerCase()))
+            .map(ngcToDSO);
+        return [...dsos, ...additional];
+    }, [dsos, ngcObjects]);
     const solarSystemBodies = useCatalog((state) => state.solarSystemBodies);
 
     useEffect(() => {
@@ -133,8 +147,8 @@ export default function CelestialSearch() {
             .slice(0, 3)
             .map((star) => ({ ...star, resultType: 'star' as const, source: 'local' as const }));
 
-        const dsoMatches: SearchResult[] = dsos
-            .filter((dso) => dso.name.toLowerCase().includes(q) || dso.id?.toLowerCase().includes(q))
+        const dsoMatches: SearchResult[] = localDsos
+            .filter((dso) => dso.name.toLowerCase().includes(q) || dso.id?.toLowerCase().replace(/ /g, '').includes(q.replace(/ /g, '')))
             .slice(0, 2)
             .map((dso) => ({ ...dso, resultType: 'dso' as const, source: 'local' as const }));
 

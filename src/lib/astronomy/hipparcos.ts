@@ -19,6 +19,32 @@ export interface HipStar {
     bv: number;   // índice B-V (color)
 }
 
+export function parseHipparcos(buf: ArrayBuffer): HipStar[] {
+    const view = new DataView(buf);
+    if (buf.byteLength < 4) throw new Error('Truncated Hipparcos header');
+    const count = view.getUint32(0, true); // little-endian
+
+    const stride = (buf.byteLength - 4) / count;
+    if (stride !== 16 && stride !== 20) throw new Error(`Formato Hipparcos desconocido: ${stride} bytes/estrella`);
+    const stars: HipStar[] = new Array(count);
+    for (let i = 0; i < count; i++) {
+        const off = 4 + i * stride;
+        const modern = stride === 20;
+        stars[i] = {
+            hip: modern ? view.getUint32(off, true) : i + 1,
+            ra:  view.getFloat32(off + (modern ? 4 : 0), true),
+            dec: view.getFloat32(off + (modern ? 8 : 4), true),
+            mag: view.getFloat32(off + (modern ? 12 : 8), true),
+            bv:  view.getFloat32(off + (modern ? 16 : 12), true),
+        };
+        const star = stars[i];
+        if (!Number.isFinite(star.ra) || star.ra < 0 || star.ra >= 360 || !Number.isFinite(star.dec) || Math.abs(star.dec) > 90 || !Number.isFinite(star.mag)) {
+            throw new Error('Invalid Hipparcos coordinates or magnitude');
+        }
+    }
+    return stars;
+}
+
 /** Singleton: se descarga una sola vez y se cachea en memoria */
 let cachedStars: HipStar[] | null = null;
 let loadPromise: Promise<HipStar[]> | null = null;
@@ -91,28 +117,12 @@ export async function loadHipparcos(): Promise<HipStar[]> {
         const timer = setTimeout(() => controller.abort(), 15000);
 
         try {
-            const res = await fetch('/hipparcos.bin', { signal: controller.signal });
+            const res = await fetch('/hipparcos.bin?v=2', { signal: controller.signal });
             clearTimeout(timer);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
             const buf = await res.arrayBuffer();
-            const view = new DataView(buf);
-            const count = view.getUint32(0, true); // little-endian
-
-            const stride = (buf.byteLength - 4) / count;
-            if (stride !== 16 && stride !== 20) throw new Error(`Formato Hipparcos desconocido: ${stride} bytes/estrella`);
-            const stars: HipStar[] = new Array(count);
-            for (let i = 0; i < count; i++) {
-                const off = 4 + i * stride;
-                const modern = stride === 20;
-                stars[i] = {
-                    hip: modern ? view.getUint32(off, true) : i + 1,
-                    ra:  view.getFloat32(off + (modern ? 4 : 0), true),
-                    dec: view.getFloat32(off + (modern ? 8 : 4), true),
-                    mag: view.getFloat32(off + (modern ? 12 : 8), true),
-                    bv:  view.getFloat32(off + (modern ? 16 : 12), true),
-                };
-            }
+            const stars = parseHipparcos(buf);
 
             cachedStars = stars;
             return stars;

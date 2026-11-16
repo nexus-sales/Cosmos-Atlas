@@ -7,7 +7,7 @@ import { equatorialTo3D, equToHor } from '@/lib/astronomy/transforms';
 import { useAppStore } from '@/stores/useAppStore';
 import { horizonAltitudeAtAzimuth } from '@/lib/astronomy/horizonProfile';
 import { terrainHorizonRef } from '@/lib/skyRefs';
-import { Html } from '@react-three/drei';
+import { Billboard, Html } from '@react-three/drei';
 import { DSOType, DSO } from '@/types/celestial';
 import { getDSOImage, preloadDSOImage } from '@/data/dsoImages';
 import NebulaVolume from '@/components/sky-map/NebulaVolume';
@@ -192,16 +192,17 @@ function DSOItem({ dso, wideFieldLabel, aboveHorizon }: { dso: DSOData; wideFiel
     const markAsVisited = useAppStore((state) => state.markAsVisited);
     const nightMode = useAppStore((state) => state.settings.nightMode);
     const bortleScale = useAppStore((state) => state.settings.bortleScale);
+    const exploreDeepSky = useAppStore((state) => state.settings.exploreDeepSky ?? false);
     const camFov = useAppStore((state) => state.camFov);
     const shouldLoadRealImage = hovered || camFov < 20;
     const texture = useDSOTexture(dso, shouldLoadRealImage);
 
     const displayColor = nightMode ? '#ff4444' : dso.color;
-    const visibility = dsoSpriteVisibility(dso.mag, bortleScale, camFov, hovered);
+    const visibility = dsoSpriteVisibility(dso.mag, bortleScale, camFov, hovered, exploreDeepSky);
 
     // Transición suave: a medida que bajamos el FOV (< 35), aparece el volumen.
     const volumeIntensity = THREE.MathUtils.clamp(THREE.MathUtils.mapLinear(camFov, 45, 20, 0, 1), 0, 1);
-    const spriteIntensity = (1.0 - volumeIntensity * 0.7) * visibility; // El sprite no desaparece del todo, sirve de centro brillante.
+    const spriteIntensity = (1.0 - volumeIntensity * 0.25) * visibility;
 
     if (visibility < 0.02 && camFov > DETAIL_LABEL_FOV) return null;
 
@@ -231,19 +232,21 @@ function DSOItem({ dso, wideFieldLabel, aboveHorizon }: { dso: DSOData; wideFiel
             )}
 
             {/* Textura visual del DSO (Sprite clásico) */}
-            <mesh>
-                <planeGeometry args={[dso.visualSize, dso.visualSize]} />
-                <meshBasicMaterial
-                    map={texture}
-                    transparent
-                    opacity={0.35 * spriteIntensity}
-                    depthWrite={false}
-                    blending={THREE.AdditiveBlending}
-                />
-            </mesh>
+            <Billboard>
+                <mesh>
+                    <planeGeometry args={[dso.visualSize, dso.visualSize]} />
+                    <meshBasicMaterial
+                        map={texture}
+                        transparent
+                        opacity={(exploreDeepSky ? 0.85 : 0.6) * spriteIntensity}
+                        depthWrite={false}
+                        blending={THREE.AdditiveBlending}
+                    />
+                </mesh>
+            </Billboard>
 
             {/* Label progresivo: hover, detalle (FOV < 35) o DSO de simple vista a campo amplio */}
-            {shouldShowDsoLabel(dso, bortleScale, camFov, hovered, wideFieldLabel, aboveHorizon) && (
+            {shouldShowDsoLabel(dso, bortleScale, camFov, hovered, wideFieldLabel, aboveHorizon, exploreDeepSky) && (
                 <Html zIndexRange={[100, 0]}>
                     <div 
                         className="pointer-events-none whitespace-nowrap flex flex-col items-center -translate-y-6 transition-opacity duration-300"

@@ -4,8 +4,11 @@ test.use({ serviceWorkers: 'allow' });
 
 test('production PWA registers, versions caches and reloads offline', async ({ page, context }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-edge', 'One production PWA check is sufficient');
+  test.setTimeout(90_000);
   await page.addInitScript(() => sessionStorage.setItem('cosmos_booted', 'true'));
   await page.goto('/');
+  await page.getByRole('button', { name: /Continuar/ }).click({ timeout: 25_000 });
+  await expect(page.getByRole('dialog', { name: 'Portada de Cosmos Atlas' })).toBeHidden();
   const skip = page.getByRole('button', { name: /Saltar introducción/i });
   if (await skip.isVisible().catch(() => false)) await skip.click();
   await expect(page.locator('canvas').first()).toBeVisible();

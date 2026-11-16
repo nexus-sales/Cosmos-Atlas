@@ -18,8 +18,8 @@ const MAG_LIMIT = 8.0;
 const NAMED_STAR_MATCH_DEG = 0.035;
 
 // VizieR ASU-TSV — catálogo Hipparcos I/239/hip_main
-// Formato: tab-separated, columnas RArad (rad), DErad (rad), Vmag, B-V
-const VIZIER_URL = 'https://vizier.cds.unistra.fr/viz-bin/asu-tsv';
+// Formato: tab-separated, columnas _RAJ2000 (deg), _DEJ2000 (deg), Vmag, B-V
+const VIZIER_URL = 'https://vizier.cfa.harvard.edu/viz-bin/asu-tsv';
 const params = new URLSearchParams({
     '-source': 'I/239/hip_main',
     '-out': 'HIP,_RAJ2000,_DEJ2000,Vmag,B-V',
@@ -48,7 +48,8 @@ try {
 // Formato de datos: HIP  _RAJ2000  _DEJ2000  Vmag  B-V (separados por tab)
 const allLines = csv.split('\n');
 // Encontrar el índice de la línea de cabecera de columnas (la que tiene _RAJ2000)
-const headerIdx = allLines.findIndex(l => l.includes('_RAJ2000') && l.includes('_DEJ2000'));
+const headerIdx = allLines.findIndex(l => !l.startsWith('#') && l.includes('_RAJ2000') && l.includes('_DEJ2000'));
+if (headerIdx < 0) throw new Error('Missing Hipparcos coordinate columns');
 const header = headerIdx >= 0 ? allLines[headerIdx] : '';
 console.log('Header detectado:', header.trim().slice(0, 80));
 // Las líneas de datos vienen después del header (saltar la línea de unidades y la de guiones)
@@ -89,20 +90,18 @@ const namedStars = loadNamedStarCoordinates();
 console.log(`Filtro de estrellas nombradas: ${namedStars.length} coordenadas`);
 
 for (const line of dataLines) {
-    // TSV: HIP   RArad   DErad   Vmag   B-V (separados por tabulador o espacios múltiples)
+    // TSV: HIP   _RAJ2000   _DEJ2000   Vmag   B-V (separados por tabulador o espacios múltiples)
     const parts = line.trim().split(/\s+/);
     if (parts.length < 5) { skipped++; continue; }
 
-    const raRad  = parseFloat(parts[1]);
-    const decRad = parseFloat(parts[2]);
+    const raDeg  = parseFloat(parts[1]);
+    const decDeg = parseFloat(parts[2]);
     const vmag   = parseFloat(parts[3]);
     const bv     = parseFloat(parts[4]);
 
-    if (isNaN(raRad) || isNaN(decRad) || isNaN(vmag)) { skipped++; continue; }
+    if (!Number.isFinite(raDeg) || raDeg < 0 || raDeg >= 360 || !Number.isFinite(decDeg) || Math.abs(decDeg) > 90 || !Number.isFinite(vmag)) { skipped++; continue; }
 
-    // Convertir radianes → grados para compatibilidad con el sistema existente
-    const raDeg  = (raRad  * 180.0 / Math.PI);
-    const decDeg = (decRad * 180.0 / Math.PI);
+    // _RAJ2000 and _DEJ2000 are already in degrees.
     const bvSafe = isNaN(bv) ? 0.5 : Math.max(-0.5, Math.min(2.5, bv));
 
     const duplicatesNamedStar = namedStars.some((star) =>

@@ -41,6 +41,7 @@ export default function ConstellationLabels() {
     const focusedConstellation = useAppStore((state) => state.focusedConstellation);
     const setFocusedConstellation = useAppStore((state) => state.setFocusedConstellation);
     const selectedObject = useAppStore((state) => state.selectedObject);
+    const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
     const setSelectedObject = useAppStore((state) => state.setSelectedObject);
     const setTargetedObject = useAppStore((state) => state.setTargetedObject);
     const stars = useCatalog(s => s.stars);
@@ -200,8 +201,12 @@ export default function ConstellationLabels() {
                         <div
                             onPointerEnter={() => { hoveredRef.current = name; }}
                             onPointerLeave={() => { hoveredRef.current = null; }}
+                            onPointerDown={(e) => { pointerDownRef.current = { x: e.clientX, y: e.clientY }; }}
                             onClick={(e) => {
                                 e.stopPropagation();
+                                const start = pointerDownRef.current;
+                                pointerDownRef.current = null;
+                                if (start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 6) return;
                                 pinnedRef.current = { name, until: Date.now() + PIN_MS };
 
                                 setFocusedConstellation(name);
