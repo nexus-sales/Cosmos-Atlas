@@ -116,6 +116,83 @@ test.describe('Cosmos Atlas visual journeys', () => {
     expect(errors).toEqual([]);
   });
 
+  test('zoom keeps the same celestial point under the gesture after release', async ({ page }, testInfo) => {
+    test.setTimeout(90_000);
+    await page.clock.setFixedTime(new Date('2026-11-16T22:00:00Z'));
+    await enterAtlas(page);
+    const mobile = testInfo.project.name === 'mobile-edge';
+    if (mobile) await page.getByRole('button', { name: 'Buscar objeto', exact: true }).click();
+    const search = page.locator('input[placeholder="Explorar el Cosmos..."]:visible');
+    await search.fill('M31');
+    await page.getByRole('button', { name: /M31|Andrómeda/i }).first().click();
+    if (mobile) await page.getByRole('button', { name: 'Cerrar', exact: true }).click();
+    const zoom = page.getByLabel('Controles de zoom');
+    await expect.poll(async () => Number(await zoom.getAttribute('data-fov'))).toBeCloseTo(190 * 4 / 60, 0);
+    await page.getByRole('button', { name: 'Restablecer zoom', exact: true }).click();
+    await expect(zoom).toHaveAttribute('data-fov', '60.00');
+    await page.getByRole('button', { name: 'Cerrar ficha', exact: true }).click();
+    const canvas = page.locator('canvas').first();
+    const box = (await canvas.boundingBox())!;
+    const cdp = await page.context().newCDPSession(page);
+    const x = box.x + box.width * 0.15;
+    const y = box.y + box.height * 0.2;
+    if (mobile) {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1 }] });
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + 20, y: y + 8, id: 1 }] });
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    } else {
+      await page.mouse.move(x, y);
+      await page.mouse.down();
+      await page.mouse.move(x + 40, y + 15, { steps: 5 });
+      await page.mouse.up();
+    }
+    const label = page.getByText('M31', { exact: true }).first();
+    const position = () => label.evaluate(element => {
+      let wrapper = element.parentElement;
+      while (wrapper && !wrapper.style.transform.startsWith('translate3d(')) wrapper = wrapper.parentElement;
+      if (!wrapper) throw new Error('Missing projected DSO label');
+      const bounds = wrapper.getBoundingClientRect();
+      return { x: bounds.x, y: bounds.y };
+    });
+    await expect(label).toBeVisible();
+    await page.waitForTimeout(250);
+    let anchor = await position();
+    expect(anchor.x).toBeGreaterThan(box.x + 90);
+    expect(anchor.x).toBeLessThan(box.x + box.width - 90);
+    if (mobile) {
+      for (let pinch = 0; pinch < 3; pinch++) {
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [
+          { x: anchor.x - 15, y: anchor.y, id: 1 }, { x: anchor.x + 15, y: anchor.y, id: 2 },
+        ] });
+        for (let step = 1; step <= 5; step++) {
+          const spread = 15 + step * 13;
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [
+            { x: anchor.x + 6 * step / 5 - spread, y: anchor.y + 4 * step / 5, id: 1 },
+            { x: anchor.x + 6 * step / 5 + spread, y: anchor.y + 4 * step / 5, id: 2 },
+          ] });
+        }
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        await page.waitForTimeout(250);
+        const after = await position();
+        expect(Math.hypot(after.x - anchor.x - 6, after.y - anchor.y - 4)).toBeLessThan(2);
+        anchor = after;
+      }
+    } else {
+      const cursor = { x: Math.round(anchor.x), y: Math.round(anchor.y) };
+      await page.mouse.move(cursor.x, cursor.y);
+      for (let step = 0; step < 16; step++) await page.mouse.wheel(0, -250);
+      // Wheel coordinates use whole CSS pixels. Preserve the initial subpixel
+      // offset, magnified by the perspective change from 60 to 1.5 degrees.
+      const scale = Math.tan(Math.PI / 6) / Math.tan(1.5 * Math.PI / 360);
+      anchor = { x: cursor.x + (anchor.x - cursor.x) * scale, y: cursor.y + (anchor.y - cursor.y) * scale };
+    }
+    await expect.poll(async () => Number(await zoom.getAttribute('data-fov'))).toBe(1.5);
+    await page.waitForTimeout(700);
+    const settled = await position();
+    expect(Math.hypot(settled.x - anchor.x, settled.y - anchor.y)).toBeLessThan(2);
+    await page.screenshot({ path: testInfo.outputPath('anchored-deep-zoom.png'), fullPage: true });
+  });
+
   test.describe('HiPS loading', () => {
     test.use({ serviceWorkers: 'block' });
 

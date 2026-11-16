@@ -13,7 +13,7 @@ import MilkyWaySkyDome from '@/components/sky-map/MilkyWaySkyDome';
 import CelestialGrid from '@/components/sky-map/CelestialGrid';
 import Ecliptic from '@/components/sky-map/Ecliptic';
 import Horizon from '@/components/sky-map/Horizon';
-import { clampSkyFov, wheelZoomFov } from '@/lib/astronomy/skyZoom';
+import { clampSkyFov, wheelZoomFov, zoomCameraAt, orbitRotationSpeed } from '@/lib/astronomy/skyZoom';
 import TargetPointer from '@/components/sky-map/TargetPointer';
 import FOVOverlay from '@/components/sky-map/FOVOverlay';
 import Compass from '@/components/panels/Compass';
@@ -121,13 +121,11 @@ function FovZoom({
     controlsRef: React.MutableRefObject<OrbitControlsImpl | null>;
 }) {
     const { camera, gl } = useThree();
-    const fovRef = useRef(60);
     const camFov = useAppStore((state) => state.camFov);
     const setCamFov = useAppStore((state) => state.setCamFov);
 
     useEffect(() => {
         const cam = camera as THREE.PerspectiveCamera;
-        fovRef.current = camFov;
         cam.fov = camFov;
         cam.updateProjectionMatrix();
     }, [camera, camFov]);
@@ -137,55 +135,35 @@ function FovZoom({
         const viewport = canvas.closest<HTMLElement>('[data-sky-viewport]') ?? canvas;
         const cam = camera as THREE.PerspectiveCamera;
 
-        // Dirección del mundo que hay bajo un punto de la pantalla.
-        const directionAt = (clientX: number, clientY: number, out: THREE.Vector3) => {
-            const rect = canvas.getBoundingClientRect();
-            out.set(
-                ((clientX - rect.left) / rect.width) * 2 - 1,
-                -((clientY - rect.top) / rect.height) * 2 + 1,
-                0.5,
-            );
-            cam.updateMatrixWorld();
-            return out.unproject(cam).sub(cam.position).normalize();
-        };
-        const anchorBefore = new THREE.Vector3();
-        const anchorAfter = new THREE.Vector3();
-        const anchorRotation = new THREE.Quaternion();
-
-        // Zoom anclado: lo que hay bajo los dedos (o el cursor) se queda bajo
-        // ellos al cambiar el FOV. Sin esto el zoom iba siempre al centro de la
-        // pantalla y un objeto descentrado se salía del encuadre al acercar.
-        const zoomAround = (clientX: number, clientY: number, nextFov: number) => {
-            // En AR la cámara la gobierna el sensor: ahí solo se cambia el FOV.
-            const anchored = !useAppStore.getState().followOrientation;
-            if (anchored) directionAt(clientX, clientY, anchorBefore);
-            fovRef.current = nextFov;
-            cam.fov = nextFov;
-            cam.updateProjectionMatrix();
-            if (anchored) {
-                directionAt(clientX, clientY, anchorAfter);
-                anchorRotation.setFromUnitVectors(anchorAfter, anchorBefore);
-                cam.position.applyQuaternion(anchorRotation);
-                cam.lookAt(0, 0, 0);
+        const anchorNdc = new THREE.Vector2();
+        const destinationNdc = new THREE.Vector2();
+        const zoomAround = (clientX: number, clientY: number, nextFov: number, previousX = clientX, previousY = clientY) => {
+            trackingRef.current = false;
+            if (useAppStore.getState().targetedObject) useAppStore.getState().pauseTargetTracking();
+            manualFovRef.current = nextFov;
+            if (useAppStore.getState().followOrientation) {
+                cam.fov = nextFov;
+                cam.updateProjectionMatrix();
+            } else {
+                const rect = canvas.getBoundingClientRect();
+                anchorNdc.set(
+                    ((previousX - rect.left) / rect.width) * 2 - 1,
+                    -((previousY - rect.top) / rect.height) * 2 + 1,
+                );
+                destinationNdc.set(
+                    ((clientX - rect.left) / rect.width) * 2 - 1,
+                    -((clientY - rect.top) / rect.height) * 2 + 1,
+                );
+                zoomCameraAt(cam, nextFov, anchorNdc, destinationNdc);
             }
             setCamFov(nextFov);
         };
 
         // ── Rueda de ratón ──────────────────────────────────────────────────
         const onWheel = (e: WheelEvent) => {
+            if (e.target instanceof Element && e.target.closest('button, input, select, textarea, a')) return;
             e.preventDefault();
-            const currentFov = trackingRef.current ? (manualFovRef.current ?? cam.fov) : fovRef.current;
-            const delta = wheelZoomFov(currentFov, e.deltaY, e.deltaMode) - currentFov;
-            if (trackingRef.current) {
-                const current = manualFovRef.current ?? cam.fov;
-                const next = clampSkyFov(current + delta);
-                manualFovRef.current = next;
-                cam.fov = next;
-                cam.updateProjectionMatrix();
-                setCamFov(next);
-                return;
-            }
-            zoomAround(e.clientX, e.clientY, clampSkyFov(fovRef.current + delta));
+            zoomAround(e.clientX, e.clientY, wheelZoomFov(cam.fov, e.deltaY, e.deltaMode));
         };
 
         // ── Pinch táctil nativo en toda la bóveda ─────────────────────────
@@ -207,43 +185,33 @@ function FovZoom({
             return a && b ? Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY) : 0;
         };
 
-        const applyPinchDelta = (delta: number) => {
-            if (trackingRef.current) {
-                const current = manualFovRef.current ?? cam.fov;
-                const next = clampSkyFov(current + delta);
-                manualFovRef.current = next;
-                cam.fov = next;
-                cam.updateProjectionMatrix();
-                setCamFov(next);
+        const onTouchStart = (e: TouchEvent) => {
+            if (e.touches.length !== 2) {
+                lastDist = 0;
                 return;
             }
-            zoomAround(pinchX, pinchY, clampSkyFov(fovRef.current + delta));
-        };
-
-        const onTouchStart = (e: TouchEvent) => {
-            if (e.touches.length === 2) {
-                e.preventDefault();
-                lastDist = touchDistance(e.touches);
-                updatePinchCenter(e.touches);
-                // OrbitControls seguiría girando con el punto medio de los dos
-                // dedos (salto brusco de encuadre): se pausa mientras dura el pinch.
-                if (controlsRef.current) controlsRef.current.enabled = false;
-            }
+            e.preventDefault();
+            lastDist = touchDistance(e.touches);
+            updatePinchCenter(e.touches);
+            // OrbitControls seguiría girando con el punto medio de los dos
+            // dedos (salto brusco de encuadre): se pausa mientras dura el pinch.
+            if (controlsRef.current) controlsRef.current.enabled = false;
         };
 
         const onTouchMove = (e: TouchEvent) => {
             if (e.touches.length !== 2) return;
             e.preventDefault();
             const dist = touchDistance(e.touches);
+            const previousX = pinchX;
+            const previousY = pinchY;
             updatePinchCenter(e.touches);
             if (lastDist <= 0 || dist <= 0) {
                 lastDist = dist;
                 return;
             }
-            // Escala logarítmica: sensibilidad consistente en cualquier pantalla.
-            const delta = (manualFovRef.current ?? cam.fov) * (lastDist / dist - 1);
+            const nextFov = clampSkyFov(cam.fov * lastDist / dist);
             lastDist = dist;
-            applyPinchDelta(delta);
+            zoomAround(pinchX, pinchY, nextFov, previousX, previousY);
         };
 
         const onTouchEnd = (e: TouchEvent) => {
@@ -254,7 +222,7 @@ function FovZoom({
         };
 
         viewport.dataset.zoomReady = 'true';
-        canvas.addEventListener('wheel', onWheel, { passive: false, capture: true });
+        viewport.addEventListener('wheel', onWheel, { passive: false, capture: true });
         viewport.addEventListener('touchstart', onTouchStart, { passive: false, capture: true });
         viewport.addEventListener('touchmove', onTouchMove, { passive: false, capture: true });
         viewport.addEventListener('touchend', onTouchEnd, { capture: true });
@@ -262,7 +230,7 @@ function FovZoom({
 
         return () => {
             delete viewport.dataset.zoomReady;
-            canvas.removeEventListener('wheel', onWheel, { capture: true });
+            viewport.removeEventListener('wheel', onWheel, { capture: true });
             viewport.removeEventListener('touchstart', onTouchStart, { capture: true });
             viewport.removeEventListener('touchmove', onTouchMove, { capture: true });
             viewport.removeEventListener('touchend', onTouchEnd, { capture: true });
@@ -501,6 +469,8 @@ export default function SkyCanvas() {
     const manualFovRef = useRef<number | null>(null);
 
     const changeZoom = (delta: number) => {
+        trackingRef.current = false;
+        pauseTargetTracking();
         const next = clampSkyFov(camFov * Math.exp(delta / 30));
         manualFovRef.current = next;
         setCamFov(next);
@@ -603,10 +573,11 @@ export default function SkyCanvas() {
                     {/* OrbitControls ya no usa key para evitar re-mounting que corta el drag */}
                     <OrbitControls
                         ref={controlsRef}
+                        enableDamping={false}
                         enableZoom={false}
                         enablePan={false}
                         enableRotate={!followOrientation}
-                        rotateSpeed={-0.4}
+                        rotateSpeed={orbitRotationSpeed(camFov)}
                         target={[0, 0, 0]}
                         onStart={() => {
                             trackingRef.current = false;

@@ -61,3 +61,13 @@ La prueba de HiPS simula un primer script con HTTP 404 y una API satisfactoria e
 ### Comprobaciones remotas y pendientes
 
 Las consultas reales se realizaron el 15 de noviembre de 2026. La conexión al TAP de ESA no completó la petición y el espejo oficial de Heidelberg agotó el tiempo de espera. El script Aladin 3.8.1 y los metadatos de 2MASS, DSS2 y Pan-STARRS devolvieron HTTP 404 desde este entorno. La validación visual de imágenes remotas y del nivel Gaia G17 sigue pendiente. La calibración y la correspondencia de AR requieren comprobación en teléfono físico.
+
+## Corrección del desplazamiento durante el zoom, 16 de noviembre
+
+La queja de salida de pantalla evidenció una limitación de las pruebas previas, que verificaban FOV y recuperación de selección. Se añade la comprobación de permanencia de un punto celeste bajo el cursor y los dedos. El anclaje anterior rotaba la posición y reconstruía la orientación con lookAt sin rotar el vector up. Además, drei habilitaba inercia por defecto y el giro tenía sensibilidad fija a cualquier FOV.
+
+Se conserva la orientación completa al ampliar, se desactiva la inercia y se escala la sensibilidad del arrastre con el campo de visión. La rueda se escucha también sobre las etiquetas de la bóveda. El punto celeste acompaña el desplazamiento del centro del gesto de dos dedos. El zoom manual pausa el vuelo y el seguimiento automático, conserva la selección y permite volver a centrar.
+
+Las 342 pruebas unitarias pasan. TypeScript y ESLint pasan. Las nuevas pruebas E2E de escritorio y móvil emulado comprueban la posición proyectada de M31 tras ampliar desde 60° hasta 1,5° y soltar el gesto. La tolerancia es de 2 píxeles CSS. La comprobación de rueda contempla la ampliación del desplazamiento subpíxel inicial respecto al cursor entero del navegador. La validación en teléfono físico y AR sigue pendiente.
+
+La compilación de producción pasa. La ejecución conjunta en producción local termina con cuatro recorridos E2E satisfactorios. Incluye las dos nuevas comprobaciones de anclaje y los recorridos existentes de escritorio y móvil. Se omiten dos combinaciones que pertenecen al otro dispositivo. Los proveedores remotos siguen sujetos a las limitaciones documentadas anteriormente.
