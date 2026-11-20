@@ -29,3 +29,15 @@ No se deben guardar valores reales en GitHub. Se configuran en Vercel y, para CI
 5. Comprobar `/api/health` y una navegación instalada como PWA.
 
 La PWA elimina precachés obsoletos y usa nombres de caché versionados para catálogos y TLE. Al cambiar el formato de un catálogo, se debe incrementar otra vez el sufijo de su caché.
+
+## Despliegue en Dokploy (sustituye a Vercel)
+
+1. Application → Provider GitHub, rama `main`, Build Type **Dockerfile** (ruta `./Dockerfile`).
+2. Variables de entorno (pestaña Environment) y, **además, como Build Args** (las `NEXT_PUBLIC_*` se incrustan en el bundle durante el build, si solo están en runtime llegan vacías):
+   `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_CELESTRAK_ISS_URL`, `NEXT_PUBLIC_CELESTRAK_STARLINK_URL`, `NEXT_PUBLIC_SESAME_URL`.
+   Solo runtime: `OPENAI_API_KEY`, `OPENAI_MODEL`, `UPSTASH_REDIS_REST_URL`/`TOKEN` (opcionales; con una sola réplica el rate limit en memoria basta).
+3. Dominio: puerto del contenedor `3000`, HTTPS con Let's Encrypt.
+4. Healthcheck: `GET /api/health` (el Dockerfile ya lo define).
+5. Rate limit: detrás de Traefik se usa `x-real-ip` / último valor de `x-forwarded-for`. No expongas el contenedor sin el proxy.
+6. Supabase sigue siendo externo; el workflow `supabase-keepalive.yml` no cambia.
+7. Cuando el dominio apunte a Dokploy, desactiva el proyecto en Vercel.

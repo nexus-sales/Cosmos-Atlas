@@ -1,0 +1,12 @@
+node_modules
+.next
+.git
+.env*
+!.env.example
+playwright-report
+test-results
+tsconfig.tsbuildinfo
+.vscode
+.agents
+.qwen
+.claude

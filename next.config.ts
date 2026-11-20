@@ -2,6 +2,8 @@ import withSerwist from "@serwist/next";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+    // Imagen Docker minima para Dokploy (genera .next/standalone)
+    output: "standalone",
     // Headers de caché para los catálogos binarios grandes
     async headers() {
         return [
